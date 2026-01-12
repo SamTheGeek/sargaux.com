@@ -5,12 +5,20 @@ on:
     branches: [main]
     paths-ignore:
       - '**.md'
+      - '**.yml'
+      - '**.yaml'
       - 'LICENSE'
+      - '.gitignore'
+      - 'playwright.config.ts'
   push:
     branches: [main]
     paths-ignore:
       - '**.md'
+      - '**.yml'
+      - '**.yaml'
       - 'LICENSE'
+      - '.gitignore'
+      - 'playwright.config.ts'
 
 jobs:
   test:
