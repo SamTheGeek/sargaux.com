@@ -37,12 +37,6 @@ jobs:
           wait-interval: 10
           running-workflow-name: 'auto-merge'
 
-      - name: Approve PR
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Enable auto-merge
         run: gh pr merge --auto --squash "$PR_URL"
         env:
