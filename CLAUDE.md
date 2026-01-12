@@ -47,16 +47,20 @@ npm run test:install
 
 1. Create a new branch for your changes
 2. Make commits to your branch
-3. Push your branch and create a pull request
-4. Wait for automated tests to pass (accessibility & best practices)
-5. Merge via pull request after approval
+3. Push your branch and create a pull request **in draft mode**
+4. Only humans should mark PRs as "Ready for review" via the GitHub website
+5. Wait for automated tests to pass (accessibility & best practices)
+6. Merge via pull request after approval
+
+**Note**: Always open PRs as drafts initially. This prevents running tests excessively and allows for review of changes before triggering the full test suite.
 
 Example workflow:
 ```bash
 git checkout -b feature/my-changes
 # Make your changes and commit
 git push -u origin feature/my-changes
-# Create PR on GitHub
+# Create DRAFT PR on GitHub using gh CLI:
+gh pr create --draft --title "Your title" --body "Your description"
 ```
 
 ## Project Structure
