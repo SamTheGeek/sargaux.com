@@ -26,9 +26,20 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run tests
+npm test
 ```
 
 The dev server runs at `http://localhost:1213`.
+
+## Testing
+
+Automated tests run on every PR:
+- **Accessibility Tests**: WCAG 2.0/2.1 AA compliance, semantic HTML, keyboard navigation
+- **Performance Tests**: Core Web Vitals (LCP, FCP, CLS), page load times, resource optimization
+
+Both test suites run in parallel for faster feedback.
 
 ## License
 

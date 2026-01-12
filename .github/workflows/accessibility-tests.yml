@@ -1,0 +1,68 @@
+name: Accessibility Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '**.yml'
+      - '**.yaml'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'playwright.config.ts'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '**.yml'
+      - '**.yaml'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'playwright.config.ts'
+
+jobs:
+  accessibility:
+    name: Accessibility & Best Practices
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip tests for draft PRs
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npm run test:install
+
+      - name: Build site
+        run: npm run build
+
+      - name: Run accessibility tests
+        run: npx playwright test tests/accessibility.spec.ts tests/best-practices.spec.ts
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: accessibility-test-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test traces
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: accessibility-test-traces
+          path: test-results/
+          retention-days: 30

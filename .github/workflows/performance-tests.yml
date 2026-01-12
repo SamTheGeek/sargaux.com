@@ -1,7 +1,8 @@
-name: PR Quality Checks
+name: Performance Tests
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths-ignore:
       - '**.md'
@@ -21,10 +22,12 @@ on:
       - 'playwright.config.ts'
 
 jobs:
-  test:
-    name: Accessibility & Best Practices Tests
+  performance:
+    name: Performance & Core Web Vitals
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Skip tests for draft PRs
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
 
     steps:
       - name: Checkout code
@@ -45,14 +48,14 @@ jobs:
       - name: Build site
         run: npm run build
 
-      - name: Run accessibility tests
-        run: npm test
+      - name: Run performance tests
+        run: npx playwright test tests/performance.spec.ts
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: performance-test-report
           path: playwright-report/
           retention-days: 30
 
@@ -60,6 +63,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-traces
+          name: performance-test-traces
           path: test-results/
           retention-days: 30
