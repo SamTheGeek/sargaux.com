@@ -54,6 +54,8 @@ npm run test:install
 
 **Note**: Always open PRs as drafts initially. This prevents running tests excessively and allows for review of changes before triggering the full test suite.
 
+**Test Skipping**: Automated tests are automatically skipped for PRs that only modify markdown files (`*.md`) or the LICENSE file, as these changes don't affect the website's accessibility or functionality.
+
 Example workflow:
 ```bash
 git checkout -b feature/my-changes
