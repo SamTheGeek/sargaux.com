@@ -25,7 +25,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 ## Development Commands
 
 ```bash
-# Start development server (http://localhost:4322)
+# Start development server (http://localhost:1213)
 npm run dev
 
 # Build for production

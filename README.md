@@ -25,7 +25,7 @@ npm run build
 npm run preview
 ```
 
-The dev server runs at `http://localhost:4322`.
+The dev server runs at `http://localhost:1213`.
 
 ## License
 
