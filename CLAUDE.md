@@ -54,7 +54,14 @@ npm run test:install
 
 **Note**: Always open PRs as drafts initially. This prevents running tests excessively and allows for review of changes before triggering the full test suite.
 
-**Test Skipping**: Automated tests are automatically skipped for PRs that only modify markdown files (`*.md`) or the LICENSE file, as these changes don't affect the website's accessibility or functionality.
+**Test Skipping**: Automated tests are automatically skipped for PRs that only modify:
+- Markdown files (`*.md`)
+- YAML files (`*.yml`, `*.yaml`) - CI/CD and configuration
+- LICENSE file
+- `.gitignore`
+- `playwright.config.ts` - test configuration
+
+These changes are build configuration and documentation that don't affect the website's accessibility or functionality.
 
 Example workflow:
 ```bash
