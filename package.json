@@ -7,9 +7,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "pretest": "bash scripts/ensure-browsers.sh",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:install": "playwright install --with-deps chromium"
+    "test:quick": "playwright test tests/accessibility.spec.ts",
+    "test:install": "playwright install --with-deps chromium",
+    "verify": "npm run build && npm test"
   },
   "dependencies": {
     "astro": "^5.16.8"

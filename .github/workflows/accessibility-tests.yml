@@ -25,6 +25,8 @@ jobs:
     name: Accessibility & Best Practices
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Skip tests for draft PRs
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
 
     steps:
       - name: Checkout code

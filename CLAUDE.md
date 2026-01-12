@@ -35,16 +35,25 @@ npm run build
 npm run preview
 
 # Run all tests (accessibility, best practices, and performance)
+# Note: This automatically installs Playwright browsers if needed
 npm test
+
+# Quick verification (build + all tests)
+npm run verify
 
 # Run specific test suites
 npx playwright test tests/accessibility.spec.ts
 npx playwright test tests/best-practices.spec.ts
 npx playwright test tests/performance.spec.ts
 
-# Install Playwright browsers (required for testing)
+# Quick accessibility-only test
+npm run test:quick
+
+# Manually install Playwright browsers
 npm run test:install
 ```
+
+**Note**: The `npm test` command includes a `pretest` hook that automatically checks for and installs Playwright browsers if they're not already installed, so you don't need to run `test:install` manually in most cases.
 
 ## Testing
 
@@ -69,7 +78,7 @@ The project includes comprehensive automated testing that runs on every PR:
    - Server response time
    - Font loading optimization
 
-Both test suites run simultaneously in CI to provide faster feedback.
+Both test suites run simultaneously in CI to provide faster feedback. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
 ## Git Workflow
 
@@ -77,12 +86,18 @@ Both test suites run simultaneously in CI to provide faster feedback.
 
 1. Create a new branch for your changes
 2. Make commits to your branch
-3. Push your branch and create a pull request **in draft mode**
-4. Only humans should mark PRs as "Ready for review" via the GitHub website
-5. Wait for automated tests to pass (accessibility, best practices, and performance run in parallel)
-6. Merge via pull request after approval
+3. **BEFORE pushing**: Verify changes locally
+   - **Always run**: `npm run build` to ensure the build succeeds
+   - **Prefer to run**: `npm test` to run all tests (accessibility, best practices, performance)
+   - If Playwright browsers aren't installed, run `npm run test:install`
+4. Push your branch and create a pull request **in draft mode**
+5. Only humans should mark PRs as "Ready for review" via the GitHub website
+6. Wait for automated tests to pass (accessibility, best practices, and performance run in parallel)
+7. Merge via pull request after approval
 
-**Note**: Always open PRs as drafts initially. This prevents running tests excessively and allows for review of changes before triggering the full test suite.
+**Note**: Always open PRs as drafts initially. Draft PRs do NOT trigger the automated test suite in CI - tests only run when a PR is marked as "Ready for review". This allows for review and iteration before consuming CI resources.
+
+**Local Testing Requirement**: You MUST verify builds and tests locally before creating PRs since draft PRs don't run CI tests. Even for non-code changes (documentation, configuration), always run at least `npm run build` to ensure nothing is broken. Use `npm run verify` for a complete local check (build + all tests).
 
 **Test Skipping**: Automated tests are automatically skipped for PRs that only modify:
 - Markdown files (`*.md`)
@@ -97,8 +112,17 @@ Example workflow:
 ```bash
 git checkout -b feature/my-changes
 # Make your changes and commit
+git commit -m "Your changes"
+
+# BEFORE pushing, verify locally:
+npm run build          # Always verify build works
+npm test              # Run all tests (or npm run test:quick for faster check)
+
+# If tests fail due to missing browsers:
+npm run test:install  # Install Playwright browsers
+
+# After tests pass locally:
 git push -u origin feature/my-changes
-# Create DRAFT PR on GitHub using gh CLI:
 gh pr create --draft --title "Your title" --body "Your description"
 ```
 
