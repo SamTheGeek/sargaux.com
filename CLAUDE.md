@@ -33,6 +33,36 @@ npm run build
 
 # Preview production build locally
 npm run preview
+
+# Run tests (accessibility & best practices)
+npm test
+
+# Install Playwright browsers (required for testing)
+npm run test:install
+```
+
+## Git Workflow
+
+**IMPORTANT**: Direct pushes to the `main` branch are not allowed. All code changes must go through the following process:
+
+1. Create a new branch for your changes
+2. Make commits to your branch
+3. Push your branch and create a pull request **in draft mode**
+4. Only humans should mark PRs as "Ready for review" via the GitHub website
+5. Wait for automated tests to pass (accessibility & best practices)
+6. Merge via pull request after approval
+
+**Note**: Always open PRs as drafts initially. This prevents running tests excessively and allows for review of changes before triggering the full test suite.
+
+**Test Skipping**: Automated tests are automatically skipped for PRs that only modify markdown files (`*.md`) or the LICENSE file, as these changes don't affect the website's accessibility or functionality.
+
+Example workflow:
+```bash
+git checkout -b feature/my-changes
+# Make your changes and commit
+git push -u origin feature/my-changes
+# Create DRAFT PR on GitHub using gh CLI:
+gh pr create --draft --title "Your title" --body "Your description"
 ```
 
 ## Project Structure
