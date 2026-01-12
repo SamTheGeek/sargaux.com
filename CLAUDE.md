@@ -33,6 +33,30 @@ npm run build
 
 # Preview production build locally
 npm run preview
+
+# Run tests (accessibility & best practices)
+npm test
+
+# Install Playwright browsers (required for testing)
+npm run test:install
+```
+
+## Git Workflow
+
+**IMPORTANT**: Direct pushes to the `main` branch are not allowed. All code changes must go through the following process:
+
+1. Create a new branch for your changes
+2. Make commits to your branch
+3. Push your branch and create a pull request
+4. Wait for automated tests to pass (accessibility & best practices)
+5. Merge via pull request after approval
+
+Example workflow:
+```bash
+git checkout -b feature/my-changes
+# Make your changes and commit
+git push -u origin feature/my-changes
+# Create PR on GitHub
 ```
 
 ## Project Structure
