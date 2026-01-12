@@ -6,11 +6,27 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-      timezone: "America/Los_Angeles"
+      timezone: "America/New_York"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "automated"
+      - "automerge"
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      astro:
+        patterns:
+          - "astro*"
+      dev-dependencies:
+        dependency-type: "development"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "automated"
+      - "automerge"
