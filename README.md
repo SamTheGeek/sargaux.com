@@ -4,7 +4,7 @@ Wedding website for Sam & Margaux
 
 ## Tech Stack
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/157edc7e-ad0d-4e06-9095-42dfc690f4fd/deploy-status)](https://app.netlify.com/projects/samthegeeknet/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/03408f0d-5152-46f6-bade-bd6a69486657/deploy-status)](https://app.netlify.com/projects/sargaux/deploys)
 
 - **Framework**: [Astro](https://astro.build/) v5.16.8
 - **Language**: TypeScript (strict mode)
