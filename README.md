@@ -8,7 +8,7 @@ Wedding website for Sam & Margaux
 
 - **Framework**: [Astro](https://astro.build/) v5.16.8
 - **Language**: TypeScript (strict mode)
-- **Node.js**: v24.12.0 (current), LTS recommended: v22.x
+- **Node.js**: v24.12.0 (current)
 - **Package Manager**: npm v11.6.2
 
 

@@ -4,22 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'playwright.config.ts'
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'playwright.config.ts'
 
 jobs:
   accessibility:
@@ -33,6 +19,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Filter docs/config changes
+        id: paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - '**/*.yml'
+              - '**/*.yaml'
+              - 'LICENSE'
+              - '.gitignore'
+              - 'playwright.config.ts'
+            non_docs:
+              - '**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!**/*.yaml'
+              - '!LICENSE'
+              - '!.gitignore'
+              - '!playwright.config.ts'
+
+      - name: Determine docs-only changes
+        id: filter
+        run: |
+          if [[ "${{ steps.paths.outputs.docs }}" == "true" && "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -40,19 +56,23 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.filter.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Install Playwright browsers
+        if: steps.filter.outputs.docs_only != 'true'
         run: npm run test:install
 
       - name: Build site
+        if: steps.filter.outputs.docs_only != 'true'
         run: npm run build
 
       - name: Run accessibility tests
+        if: steps.filter.outputs.docs_only != 'true'
         run: npx playwright test tests/accessibility.spec.ts tests/best-practices.spec.ts
 
       - name: Upload test results
-        if: always()
+        if: steps.filter.outputs.docs_only != 'true'
         uses: actions/upload-artifact@v6
         with:
           name: accessibility-test-report
@@ -60,9 +80,13 @@ jobs:
           retention-days: 30
 
       - name: Upload test traces
-        if: failure()
+        if: steps.filter.outputs.docs_only != 'true' && failure()
         uses: actions/upload-artifact@v6
         with:
           name: accessibility-test-traces
           path: test-results/
           retention-days: 30
+
+      - name: Docs-only change detected; tests skipped
+        if: steps.filter.outputs.docs_only == 'true'
+        run: echo "Docs-only change detected; tests skipped"
