@@ -15,7 +15,7 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
-    "astro": "^5.16.11"
+    "astro": "^5.16.15"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
