@@ -1,0 +1,402 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+---
+
+<WireframeLayout title="NYC Event" description="NYC Wedding - October 2026">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <div class="nav-right">
+        <div class="content-box event-toggle">
+          <h3>Event Toggle (if invited to both)</h3>
+          <span class="toggle-item active">NYC</span>
+          <span class="toggle-divider">|</span>
+          <a href="/france" class="toggle-item">France</a>
+        </div>
+        <span class="user-greeting">[User Name]</span>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <ImagePlaceholder
+        name="nyc-hero"
+        folder="nyc"
+        description="NYC skyline at dusk, or the venue exterior if available. Sets the urban, elegant tone."
+        aspectRatio="21/9"
+      />
+      <div class="hero-overlay">
+        <p class="content-label">Event Location</p>
+        <h1>New York</h1>
+        <p class="content-label">Date</p>
+        <p class="date">October 11, 2026</p>
+        <p class="content-label">Event Type</p>
+        <p class="event-type">Dinner & Dancing</p>
+      </div>
+    </section>
+
+    <!-- Quick Info Section -->
+    <section class="quick-info">
+      <div class="info-cards">
+        <div class="content-box info-card">
+          <h3>When</h3>
+          <p><strong>Sunday, October 11, 2026</strong></p>
+          <p>Columbus Day Weekend</p>
+          <p class="note"><em>Note: Date may shift to Sat 10th or later weekend</em></p>
+        </div>
+        <div class="content-box info-card">
+          <h3>Where</h3>
+          <p><strong>Dinner Venue TBD</strong></p>
+          <p>Cocktails & Dinner</p>
+          <p class="separator">followed by</p>
+          <p><strong>Dancing Venue TBD</strong></p>
+        </div>
+        <div class="content-box info-card">
+          <h3>Dress Code</h3>
+          <p><em>Decision: What dress code?</em></p>
+          <ul>
+            <li>Cocktail Attire</li>
+            <li>Semi-Formal</li>
+            <li>Black Tie Optional</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Cards -->
+    <section class="nav-cards">
+      <p class="content-label">Page Navigation</p>
+      <nav class="event-nav" aria-label="Event sections">
+        <a href="/nyc/schedule" class="nav-card">
+          <span class="nav-icon">📅</span>
+          <span class="nav-title">Schedule</span>
+          <span class="nav-desc">Timeline of the evening</span>
+        </a>
+        <a href="/nyc/details" class="nav-card">
+          <span class="nav-icon">📍</span>
+          <span class="nav-title">Details</span>
+          <span class="nav-desc">Venues & what to expect</span>
+        </a>
+        <a href="/nyc/travel" class="nav-card">
+          <span class="nav-icon">✈️</span>
+          <span class="nav-title">Travel</span>
+          <span class="nav-desc">Hotels & getting around</span>
+        </a>
+        <a href="/nyc/rsvp" class="nav-card highlight">
+          <span class="nav-icon">💌</span>
+          <span class="nav-title">RSVP</span>
+          <span class="nav-desc">Let us know you're coming</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- Venue Preview -->
+    <section class="venue-preview">
+      <p class="content-label">Venue Images (when available)</p>
+      <div class="venue-grid">
+        <ImagePlaceholder
+          name="nyc-venue"
+          folder="nyc"
+          description="Interior of the dinner venue — cocktail atmosphere, table settings, or similar aesthetic."
+          aspectRatio="4/3"
+        />
+        <ImagePlaceholder
+          name="nyc-dancing"
+          folder="nyc"
+          description="Dancing venue interior, or a mood-board style image showing the vibe (low lighting, celebration)."
+          aspectRatio="4/3"
+        />
+      </div>
+    </section>
+
+    <!-- Calendar Subscribe -->
+    <section class="calendar-section">
+      <div class="content-box">
+        <h3>Calendar Subscription</h3>
+        <p>Subscribe button will add NYC events to guest's calendar</p>
+        <button disabled class="calendar-btn">📅 Add to Calendar</button>
+        <p class="note">Generates ICS file from Notion events data</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <nav class="footer-nav">
+      <a href="/registry">Registry</a>
+      <span>·</span>
+      <a href="/api/logout">Logout</a>
+    </nav>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  /* Header */
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .event-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem !important;
+  }
+
+  .event-toggle h3 {
+    display: none;
+  }
+
+  .toggle-item {
+    text-decoration: none;
+    color: #888;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .toggle-item.active {
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+
+  .toggle-divider {
+    color: #ccc;
+  }
+
+  .user-greeting {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+  }
+
+  .hero-overlay {
+    padding: 3rem 2rem;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.9), white);
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .date {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .event-type {
+    font-size: 1.125rem;
+    color: #666;
+  }
+
+  /* Quick Info */
+  .quick-info {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info-card p {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card .separator {
+    font-size: 0.875rem;
+    color: #888;
+    font-style: italic;
+  }
+
+  .info-card .note {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    margin-top: 0.5rem;
+  }
+
+  .info-card ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .info-card em {
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  /* Navigation Cards */
+  .nav-cards {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .event-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .nav-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: #1a1a1a;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .nav-card:hover {
+    border-color: #1a1a1a;
+    background: #fafafa;
+  }
+
+  .nav-card.highlight {
+    border-color: #1a1a1a;
+    border-width: 2px;
+  }
+
+  .nav-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-desc {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Venue Preview */
+  .venue-preview {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .venue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Calendar Section */
+  .calendar-section {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .calendar-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    background: #e5e5e5;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+    margin: 1rem 0;
+  }
+
+  .calendar-section .note {
+    font-size: 0.75rem;
+    color: #888;
+  }
+
+  /* Footer */
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+    margin-top: 2rem;
+  }
+
+  .footer-nav {
+    margin-bottom: 1rem;
+  }
+
+  .footer-nav a {
+    color: #666;
+    text-decoration: none;
+  }
+
+  .footer-nav a:hover {
+    color: #1a1a1a;
+  }
+
+  .footer-nav span {
+    color: #ccc;
+    margin: 0 0.5rem;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .date {
+      font-size: 1.25rem;
+    }
+
+    .main-nav {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .nav-right {
+      flex-direction: column;
+    }
+  }
+</style>

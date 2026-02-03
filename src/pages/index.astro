@@ -1,71 +1,144 @@
 ---
-
+import WireframeLayout from '../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../components/ImagePlaceholder.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Chez Sargaux</title>
-	</head>
-	<body>
-		<main>
-			<h1>Chez Sargaux</h1>
-		</main>
-		<footer>
-			<p>&copy; 2026</p>
-		</footer>
-	</body>
-</html>
+<WireframeLayout title="Homepage">
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-image">
+        <ImagePlaceholder
+          name="hero-main"
+          folder="hero"
+          description="Full-width couple photo — candid moment, engagement-style, or favorite photo together. Should feel warm and inviting."
+          aspectRatio="21/9"
+        />
+      </div>
+      <div class="hero-content">
+        <p class="content-label">Site Title</p>
+        <h1>Chez Sargaux</h1>
+        <p class="content-label">Couple Names</p>
+        <p class="tagline">Sam & Margaux</p>
+        <p class="content-label">Call to Action</p>
+        <div class="cta-area">
+          <a href="/login" class="cta">Login to Continue</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Optional: Teaser Section -->
+    <section class="teaser">
+      <div class="content-box">
+        <h3>Optional Section: Teaser/Preview</h3>
+        <p>Could include a brief welcome message visible before login, e.g.:</p>
+        <ul>
+          <li>"We're getting married!"</li>
+          <li>A hint about the two celebrations</li>
+          <li>Or keep it minimal — just the hero and login</li>
+        </ul>
+        <p><em>Decision: Keep or remove this section?</em></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
 
 <style>
-	* {
-		margin: 0;
-		padding: 0;
-		box-sizing: border-box;
-	}
+  main {
+    flex: 1;
+  }
 
-	html,
-	body {
-		height: 100%;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	}
+  /* Hero Section */
+  .hero {
+    display: flex;
+    flex-direction: column;
+  }
 
-	body {
-		display: flex;
-		flex-direction: column;
-		background-color: #ffffff;
-		color: #1a1a1a;
-	}
+  .hero-image {
+    width: 100%;
+  }
 
-	main {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .hero-content {
+    padding: 3rem 2rem;
+    text-align: center;
+  }
 
-	h1 {
-		font-size: 3rem;
-		font-weight: 300;
-		letter-spacing: 0.05em;
-	}
+  h1 {
+    font-size: 3.5rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
 
-	footer {
-		padding: 2rem;
-		text-align: center;
-	}
+  .tagline {
+    font-size: 1.5rem;
+    color: #666;
+    margin-bottom: 2rem;
+  }
 
-	footer p {
-		font-size: 0.875rem;
-		color: #666;
-	}
+  .cta-area {
+    margin-top: 1rem;
+  }
 
-	@media (max-width: 768px) {
-		h1 {
-			font-size: 2rem;
-		}
-	}
+  .cta {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
+    text-decoration: none;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    border-radius: 0.5rem;
+  }
+
+  .cta:hover {
+    background: #1a1a1a;
+    color: white;
+  }
+
+  /* Teaser Section */
+  .teaser {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .teaser ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .teaser li {
+    margin-bottom: 0.5rem;
+  }
+
+  .teaser em {
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  /* Footer */
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+
+    .tagline {
+      font-size: 1.25rem;
+    }
+  }
 </style>

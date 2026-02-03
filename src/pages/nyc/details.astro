@@ -1,0 +1,169 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+---
+
+<WireframeLayout title="NYC Details">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/nyc" class="back-link">← Back to NYC</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Details</h1>
+    <p class="subtitle">Everything you need to know</p>
+
+    <section class="details-grid">
+      <div class="content-box">
+        <h3>Dinner Venue</h3>
+        <ImagePlaceholder
+          name="nyc-venue"
+          folder="nyc"
+          description="Dinner venue interior or exterior"
+          aspectRatio="16/9"
+        />
+        <p><strong>[Venue Name TBD]</strong></p>
+        <p class="address">[Address]</p>
+        <p class="desc">[Brief description of the space and vibe]</p>
+      </div>
+
+      <div class="content-box">
+        <h3>Dancing Venue</h3>
+        <ImagePlaceholder
+          name="nyc-dancing"
+          folder="nyc"
+          description="Dancing venue interior"
+          aspectRatio="16/9"
+        />
+        <p><strong>[Venue Name TBD]</strong></p>
+        <p class="address">[Address]</p>
+        <p class="desc">[Brief description]</p>
+      </div>
+
+      <div class="content-box">
+        <h3>Dress Code</h3>
+        <p><em>Decision needed: What dress code?</em></p>
+        <ul>
+          <li>Cocktail Attire</li>
+          <li>Semi-Formal</li>
+          <li>Black Tie Optional</li>
+        </ul>
+        <p class="note">Include guidance for weather (October in NYC)</p>
+      </div>
+
+      <div class="content-box">
+        <h3>What to Expect</h3>
+        <ul>
+          <li>Cocktails & passed appetizers</li>
+          <li>Seated dinner</li>
+          <li>Toasts & celebration</li>
+          <li>Dancing into the night</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 3rem;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .content-box p {
+    margin-top: 0.5rem;
+  }
+
+  .address {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  .desc {
+    font-size: 0.875rem;
+    color: #888;
+  }
+
+  .content-box ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box em {
+    color: #f59e0b;
+  }
+
+  .note {
+    font-size: 0.75rem;
+    color: #888;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>

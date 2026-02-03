@@ -1,0 +1,239 @@
+---
+import WireframeLayout from '../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../components/ImagePlaceholder.astro';
+---
+
+<WireframeLayout title="Registry">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <div class="nav-links">
+        <a href="/nyc">NYC</a>
+        <span>·</span>
+        <a href="/france">France</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <ImagePlaceholder
+        name="couple-registry"
+        folder="couple"
+        description="Fun or playful couple photo — could be casual, candid, or showing personality"
+        aspectRatio="3/1"
+      />
+    </section>
+
+    <section class="registry-intro">
+      <h1>Registry</h1>
+      <div class="content-box">
+        <h3>Intro Message</h3>
+        <p>[Personalized message from Sam & Margaux about gifts]</p>
+        <p>Example: "Your presence at our celebration is the greatest gift. If you wish to honor us with a gift, we've registered at the following places..."</p>
+      </div>
+    </section>
+
+    <section class="registry-options">
+      <p class="content-label">Registry Links</p>
+
+      <div class="registry-grid">
+        <div class="content-box registry-card">
+          <h3>Registry Option 1</h3>
+          <p><strong>[Store/Service Name]</strong></p>
+          <p class="desc">[Brief description — what kind of items]</p>
+          <a href="#" class="registry-link">View Registry →</a>
+        </div>
+
+        <div class="content-box registry-card">
+          <h3>Registry Option 2</h3>
+          <p><strong>[Store/Service Name]</strong></p>
+          <p class="desc">[Brief description]</p>
+          <a href="#" class="registry-link">View Registry →</a>
+        </div>
+
+        <div class="content-box registry-card">
+          <h3>Honeymoon Fund?</h3>
+          <p><em>Decision: Include a honeymoon/experience fund?</em></p>
+          <p class="desc">Contribution toward travel, experiences, etc.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="open-question">
+      <div class="content-box highlight">
+        <h3>Open Question: French Guests</h3>
+        <p><strong>How do we handle registry for French guests?</strong></p>
+        <ul>
+          <li>Different registry service available in France/EU?</li>
+          <li>Currency considerations (€ vs $)?</li>
+          <li>Shipping logistics?</li>
+        </ul>
+        <p class="note">Note: Ask Alice for input</p>
+      </div>
+    </section>
+
+    <section class="shipping-note">
+      <div class="content-box">
+        <h3>Shipping Information</h3>
+        <p><em>Decision: Include shipping address or instructions?</em></p>
+        <p>Options:</p>
+        <ul>
+          <li>Ship directly through registry</li>
+          <li>Provide a shipping address</li>
+          <li>Bring to wedding (probably not ideal)</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .nav-links a {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .nav-links a:hover {
+    color: #1a1a1a;
+  }
+
+  .nav-links span {
+    color: #ccc;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  .hero {
+    margin-bottom: 2rem;
+  }
+
+  .registry-intro {
+    padding: 0 2rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+
+  .registry-intro .content-box {
+    text-align: left;
+  }
+
+  .registry-options {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .registry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .registry-card p {
+    margin-bottom: 0.5rem;
+  }
+
+  .registry-card .desc {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  .registry-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #1a1a1a;
+    font-weight: 500;
+  }
+
+  .registry-card em {
+    color: #f59e0b;
+  }
+
+  .open-question,
+  .shipping-note {
+    padding: 0 2rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .content-box.highlight {
+    background: #fef3c7;
+    border-color: #f59e0b;
+  }
+
+  .content-box ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box em {
+    color: #f59e0b;
+  }
+
+  .note {
+    font-size: 0.875rem;
+    color: #92400e;
+    font-weight: 500;
+    margin-top: 1rem;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+    margin-top: 2rem;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>

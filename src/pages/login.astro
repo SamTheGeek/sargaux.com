@@ -1,0 +1,130 @@
+---
+import WireframeLayout from '../layouts/WireframeLayout.astro';
+---
+
+<WireframeLayout title="Login">
+  <main>
+    <div class="login-container">
+      <p class="content-label">Page Title</p>
+      <h1>Welcome</h1>
+
+      <p class="content-label">Instructions</p>
+      <p class="subtitle">Please enter your password to continue</p>
+
+      <div class="content-box form-preview">
+        <h3>Login Form</h3>
+        <form>
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter password"
+            disabled
+          />
+          <button type="button" disabled>Continue</button>
+        </form>
+        <p class="form-note">
+          <strong>MVP:</strong> Static passwords (one per family)<br>
+          <strong>Future:</strong> Guest name-based login
+        </p>
+      </div>
+
+      <div class="content-box">
+        <h3>Decision: Error Messaging</h3>
+        <p>On invalid password, show:</p>
+        <ul>
+          <li>Generic "Invalid password" (more secure)</li>
+          <li>Helpful hint like "Check your invitation" (friendlier)</li>
+        </ul>
+        <p><em>Which approach?</em></p>
+      </div>
+    </div>
+  </main>
+</WireframeLayout>
+
+<style>
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .login-container {
+    max-width: 500px;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .form-preview {
+    margin-bottom: 1.5rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  input {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    text-align: center;
+    background: white;
+  }
+
+  button {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    background: #e5e5e5;
+    color: #888;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+  }
+
+  .form-note {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e5e5e5;
+  }
+
+  .content-box ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.25rem;
+  }
+
+  .content-box em {
+    color: #f59e0b;
+    font-weight: 600;
+  }
+</style>

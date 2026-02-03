@@ -1,0 +1,255 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+---
+
+<WireframeLayout title="France RSVP">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/france" class="back-link">← Back to France</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>RSVP</h1>
+    <p class="subtitle">France · May 28–30, 2027</p>
+
+    <section class="rsvp-form">
+      <div class="content-box">
+        <h3>RSVP Form Structure</h3>
+
+        <div class="form-section">
+          <p class="field-label">Attendance</p>
+          <div class="mock-radio">
+            <span>○ Joyfully accepts</span>
+            <span>○ Regretfully declines</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <p class="field-label">Guest Name(s)</p>
+          <div class="mock-input">[Guest Name]</div>
+        </div>
+
+        <div class="form-section highlight">
+          <p class="field-label">Accommodation at Village De Sully</p>
+          <p class="field-note">€75/night per room, breakfast included</p>
+          <div class="mock-checkbox">
+            <span>☐ Friday night (May 28)</span>
+            <span>☐ Saturday night (May 29)</span>
+          </div>
+          <p class="field-note">
+            <em>Decision: Room type selection? Single/double? Max guests per room?</em>
+          </p>
+        </div>
+
+        <div class="form-section">
+          <p class="field-label">Events Attending</p>
+          <p class="field-note">Check all that apply</p>
+          <div class="mock-checkbox vertical">
+            <span>☐ Friday Welcome Dinner</span>
+            <span>☐ Saturday Ceremony & Reception</span>
+            <span>☐ Sunday Farewell Brunch</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <p class="field-label">Travel Plans</p>
+          <p class="field-note">Help us coordinate group transport</p>
+          <div class="mock-radio vertical">
+            <span>○ Arriving by car</span>
+            <span>○ Arriving by train — need transport from station</span>
+            <span>○ Arriving by plane — need transport from airport</span>
+            <span>○ Other / Will arrange own transport</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <p class="field-label">Dietary Restrictions</p>
+          <div class="mock-input">[Free text or checkboxes]</div>
+        </div>
+
+        <div class="form-section">
+          <p class="field-label">Message for the Couple (optional)</p>
+          <div class="mock-textarea">[Your message]</div>
+        </div>
+
+        <button disabled class="submit-btn">Submit RSVP</button>
+
+        <p class="form-note">
+          <strong>Note:</strong> Accommodation payment handled separately<br>
+          <em>Decision: How is accommodation paid? Through us? Direct to venue?</em>
+        </p>
+      </div>
+    </section>
+
+    <section class="deadline">
+      <div class="content-box">
+        <h3>RSVP Deadline</h3>
+        <p><em>Decision: What's the RSVP deadline?</em></p>
+        <p>Suggested: 3 months before (late February 2027) to confirm accommodation</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  .rsvp-form {
+    margin-bottom: 2rem;
+  }
+
+  .form-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed #e5e5e5;
+  }
+
+  .form-section.highlight {
+    background: #fef3c7;
+    margin: 0 -1.5rem 1.5rem;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border-bottom: none;
+  }
+
+  .field-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .field-note {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .field-note em {
+    color: #f59e0b;
+  }
+
+  .mock-radio,
+  .mock-checkbox {
+    display: flex;
+    gap: 1.5rem;
+    color: #888;
+    flex-wrap: wrap;
+  }
+
+  .mock-radio.vertical,
+  .mock-checkbox.vertical {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mock-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: white;
+    color: #888;
+  }
+
+  .mock-textarea {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: white;
+    color: #888;
+    min-height: 80px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    background: #e5e5e5;
+    color: #888;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+    margin-top: 1rem;
+  }
+
+  .form-note {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e5e5e5;
+  }
+
+  .form-note em {
+    color: #f59e0b;
+  }
+
+  .deadline {
+    margin-top: 2rem;
+  }
+
+  .deadline em {
+    color: #f59e0b;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>

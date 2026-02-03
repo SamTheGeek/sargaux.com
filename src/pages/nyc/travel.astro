@@ -1,0 +1,151 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+---
+
+<WireframeLayout title="NYC Travel">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/nyc" class="back-link">← Back to NYC</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Travel</h1>
+    <p class="subtitle">Getting to and around NYC</p>
+
+    <section class="travel-grid">
+      <div class="content-box">
+        <h3>Hotels</h3>
+        <p>Suggested accommodations near the venues:</p>
+        <ul>
+          <li><strong>[Hotel 1]</strong> — [Distance/neighborhood]</li>
+          <li><strong>[Hotel 2]</strong> — [Distance/neighborhood]</li>
+          <li><strong>[Hotel 3]</strong> — Budget option</li>
+        </ul>
+        <p class="note"><em>Decision: Room block at any hotel?</em></p>
+      </div>
+
+      <div class="content-box">
+        <h3>Getting There</h3>
+        <p><strong>By Air</strong></p>
+        <ul>
+          <li>JFK — [Transit options to Manhattan]</li>
+          <li>LGA — [Transit options]</li>
+          <li>EWR — [Transit options]</li>
+        </ul>
+        <p><strong>By Train</strong></p>
+        <p>Amtrak to Penn Station</p>
+      </div>
+
+      <div class="content-box">
+        <h3>Getting Around</h3>
+        <p>On the day of:</p>
+        <ul>
+          <li>Venues are [walkable / require transit / etc.]</li>
+          <li>Uber/Lyft widely available</li>
+          <li>Subway [relevant lines]</li>
+        </ul>
+        <p class="note"><em>Decision: Provide shuttle between venues?</em></p>
+      </div>
+
+      <div class="content-box">
+        <h3>While You're Here</h3>
+        <p>Columbus Day Weekend activities:</p>
+        <ul>
+          <li>[Neighborhood/area suggestions]</li>
+          <li>[Restaurant recommendations]</li>
+          <li>[Things to do]</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 3rem;
+  }
+
+  .travel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .content-box p {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box ul {
+    margin: 0.5rem 0 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.5rem;
+  }
+
+  .note {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>
