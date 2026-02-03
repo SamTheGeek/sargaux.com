@@ -45,7 +45,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 ## Tech Stack
 
 - **Framework**: Astro v5.x with SSR hybrid mode
-- **Adapter**: @astrojs/netlify (for server endpoints)
+- **Adapter**: @astrojs/node (standalone mode for local dev; Netlify for production)
 - **Language**: TypeScript with strict mode enabled
 - **CSS**: Astro scoped styles (Tailwind optional for design phase)
 - **Backend**: Notion API
@@ -66,8 +66,9 @@ npm run build
 # Preview production build locally
 npm run preview
 
-# Run all tests (accessibility, best practices, and performance)
+# Run all tests (accessibility, best practices, auth, and performance)
 # Note: This automatically installs Playwright browsers if needed
+# Tests run against built server: node ./dist/server/entry.mjs
 npm test
 
 # Quick verification (build + all tests)
@@ -172,3 +173,12 @@ gh pr create --draft --title "Your title" --body "Your description"
 - TypeScript strict mode is enabled for type safety
 - File-based routing: pages in `src/pages/` become routes
 - Static assets in `public/` are served at root path
+- SSR enabled with `@astrojs/node` adapter (standalone mode)
+- **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
+
+## Authentication
+
+- Name-based login (no passwords) — validates against hardcoded guest list in `src/lib/auth.ts`
+- Names normalized: lowercase, remove accents (NFD), collapse whitespace
+- Cookie: `sargaux_auth` (90-day expiry, httpOnly)
+- Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated

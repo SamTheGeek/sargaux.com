@@ -15,6 +15,7 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
+    "@astrojs/node": "^9.5.2",
     "astro": "^5.16.15"
   },
   "devDependencies": {

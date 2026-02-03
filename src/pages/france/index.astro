@@ -1,6 +1,8 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+
+const guest = Astro.locals.guest;
 ---
 
 <WireframeLayout title="France Event" description="France Wedding - May 2027">
@@ -14,7 +16,7 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
           <span class="toggle-divider">|</span>
           <span class="toggle-item active">France</span>
         </div>
-        <span class="user-greeting">[User Name]</span>
+        <span class="user-greeting">{guest}</span>
       </div>
     </nav>
   </header>
