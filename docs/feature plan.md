@@ -29,8 +29,8 @@ tags: [website, product, requirements]
 ## Second Event Details
 
 - Weekend at Village De Sully
-- Location: https://maps.app.goo.gl/JHZfysCfNYZqmN4T9
-- URL: https://www.groupeamadeus.com/le-village-de-sully
+- Location: <https://maps.app.goo.gl/JHZfysCfNYZqmN4T9>
+- URL: <https://www.groupeamadeus.com/le-village-de-sully>
 - Dates: Friday, May 28 2027 - Sunday May 30 2027
 - Guests may choose to stay at the village (€75 per night, breakfast included)
 - Friday night welcome dinner
