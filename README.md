@@ -11,7 +11,6 @@ Wedding website for Sam & Margaux
 - **Node.js**: v24.12.0 (current)
 - **Package Manager**: npm v11.6.2
 
-
 ## Development
 
 ```bash
@@ -36,6 +35,7 @@ The dev server runs at `http://localhost:1213`.
 ## Testing
 
 Automated tests run on every PR:
+
 - **Accessibility Tests**: WCAG 2.0/2.1 AA compliance, semantic HTML, keyboard navigation
 - **Performance Tests**: Core Web Vitals (LCP, FCP, CLS), page load times, resource optimization
 

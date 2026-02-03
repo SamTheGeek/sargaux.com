@@ -70,7 +70,7 @@ tags: [website, product, requirements]
 
 ### URL Structure (Event-centric)
 
-```
+```text
 /                       # Homepage — hero, welcome, login CTA
 /login                  # Login page (password entry)
 /registry               # Shared wedding registry (accessible from both events)
@@ -173,7 +173,7 @@ tags: [website, product, requirements]
 ## Risks & mitigations
 
 | Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
+| ------ | -------- | ------------ | ------------ |
 | Notion API rate limits | Build failures, slow RSVP | Low | Cache at build-time, only runtime writes for RSVPs |
 | Two-event confusion | Guest RSVPs to wrong event | Medium | Clear UI separation, confirmation flows, event-specific URLs |
 | Password sharing | Unauthorized access | Medium | Acceptable for MVP; plan migration to guest-name auth for launch |
