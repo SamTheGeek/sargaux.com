@@ -1,0 +1,92 @@
+name: Performance Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  performance:
+    name: Performance & Core Web Vitals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip tests for draft PRs
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Filter docs/config changes
+        id: paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - '**/*.yml'
+              - '**/*.yaml'
+              - 'LICENSE'
+              - '.gitignore'
+              - 'playwright.config.ts'
+            non_docs:
+              - '**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!**/*.yaml'
+              - '!LICENSE'
+              - '!.gitignore'
+              - '!playwright.config.ts'
+
+      - name: Determine docs-only changes
+        id: filter
+        run: |
+          if [[ "${{ steps.paths.outputs.docs }}" == "true" && "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm run test:install
+
+      - name: Build site
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm run build
+
+      - name: Run performance tests
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npx playwright test tests/performance.spec.ts
+
+      - name: Upload test results
+        if: steps.filter.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: performance-test-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test traces
+        if: steps.filter.outputs.docs_only != 'true' && failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: performance-test-traces
+          path: test-results/
+          retention-days: 30
+
+      - name: Docs-only change detected; tests skipped
+        if: steps.filter.outputs.docs_only == 'true'
+        run: echo "Docs-only change detected; tests skipped"

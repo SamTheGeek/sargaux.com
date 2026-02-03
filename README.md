@@ -8,7 +8,7 @@ Wedding website for Sam & Margaux
 
 - **Framework**: [Astro](https://astro.build/) v5.16.8
 - **Language**: TypeScript (strict mode)
-- **Node.js**: v24.12.0 (current), LTS recommended: v22.x
+- **Node.js**: v24.12.0 (current)
 - **Package Manager**: npm v11.6.2
 
 
@@ -26,9 +26,20 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run tests
+npm test
 ```
 
 The dev server runs at `http://localhost:1213`.
+
+## Testing
+
+Automated tests run on every PR:
+- **Accessibility Tests**: WCAG 2.0/2.1 AA compliance, semantic HTML, keyboard navigation
+- **Performance Tests**: Core Web Vitals (LCP, FCP, CLS), page load times, resource optimization
+
+Both test suites run in parallel for faster feedback.
 
 ## License
 

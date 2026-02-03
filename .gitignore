@@ -148,4 +148,5 @@ vite.config.ts.timestamp-*
 test-results/
 playwright-report/
 playwright/.cache/
+sargaux.com.code-workspace
 .DS_Store
