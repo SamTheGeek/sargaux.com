@@ -28,7 +28,7 @@ const guest = Astro.locals.guest;
         name="france-hero"
         folder="france"
         description="Village De Sully exterior — the grounds, main building, or scenic view of the property."
-        aspectRatio="21/9"
+        aspectRatio="16/9"
       />
       <div class="hero-overlay">
         <h1>France</h1>
@@ -48,7 +48,7 @@ const guest = Astro.locals.guest;
         <div class="content-box info-card">
           <h3>Where</h3>
           <p><strong>Village De Sully</strong></p>
-          <p>Burgundy, France</p>
+          <p>Ile-de-France, near Paris</p>
           <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">View on Map ↗</a>
         </div>
         <div class="content-box info-card">
@@ -92,6 +92,25 @@ const guest = Astro.locals.guest;
             <p><strong>Farewell Brunch</strong></p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Location Map -->
+    <section class="location-map">
+      <h2>The Location</h2>
+      <div class="map-placeholder">
+        <p class="placeholder-note">Interactive map showing Village de Sully and Paris will be added here</p>
+        <p class="location-context">Village de Sully is located in the Ile-de-France region, approximately 60km west of Paris.</p>
+      </div>
+    </section>
+
+    <!-- Calendar Subscribe (Prominent) -->
+    <section class="calendar-subscribe">
+      <div class="calendar-content">
+        <h2>Save the Dates</h2>
+        <p>Add the full weekend to your calendar.</p>
+        <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
+        <p class="calendar-note">Personalized calendar link available after RSVP</p>
       </div>
     </section>
 
@@ -145,15 +164,6 @@ const guest = Astro.locals.guest;
       </div>
     </section>
 
-    <!-- Calendar Subscribe -->
-    <section class="calendar-section">
-      <div class="content-box">
-        <h3>Calendar Subscription</h3>
-        <p>Subscribe button will add all weekend events to guest's calendar</p>
-        <button disabled class="calendar-btn">📅 Add to Calendar</button>
-        <p class="note">Includes: Welcome dinner, ceremony, reception, brunch</p>
-      </div>
-    </section>
   </main>
 
   <footer>
@@ -334,6 +344,91 @@ const guest = Astro.locals.guest;
     color: #666;
   }
 
+  /* Location Map */
+  .location-map {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .location-map h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .map-placeholder {
+    background: #f5f5f5;
+    border: 1px dashed #ccc;
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0.75rem;
+  }
+
+  .location-context {
+    font-size: 0.9375rem;
+    color: #444;
+  }
+
+  /* Calendar Subscribe (Prominent) */
+  .calendar-subscribe {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .calendar-content {
+    background: #f9f9f9;
+    border-radius: 0.75rem;
+    padding: 2rem;
+  }
+
+  .calendar-content h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-content > p {
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  .calendar-btn-prominent {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .calendar-btn-prominent:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .calendar-btn-prominent:disabled {
+    background: #888;
+    cursor: not-allowed;
+  }
+
+  .calendar-note {
+    font-size: 0.875rem;
+    color: #888;
+    font-style: italic;
+  }
+
   /* Navigation Cards */
   .nav-cards {
     padding: 2rem;
@@ -398,28 +493,6 @@ const guest = Astro.locals.guest;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
     margin-top: 0.5rem;
-  }
-
-  /* Calendar Section */
-  .calendar-section {
-    padding: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .calendar-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    background: #e5e5e5;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: not-allowed;
-    margin: 1rem 0;
-  }
-
-  .calendar-section .note {
-    font-size: 0.75rem;
-    color: #888;
   }
 
   /* Footer */
