@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { validateGuest, createSessionToken, AUTH_COOKIE_NAME } from '../../lib/auth';
 
-export const POST: APIRoute = async ({ request, cookies, redirect }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
   const name = formData.get('name');
 

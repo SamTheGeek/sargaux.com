@@ -97,7 +97,7 @@ test.describe('Best Practices Tests', () => {
   test('should have proper footer copyright', async ({ page }) => {
     await page.goto('/');
 
-    const footer = await page.locator('footer');
+    const footer = page.locator('footer');
     await expect(footer).toBeVisible();
 
     const footerText = await footer.textContent();
