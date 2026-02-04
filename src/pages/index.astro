@@ -38,13 +38,15 @@ if (isSiteEnabled()) {
         </div>
       </section>
 
-      <!-- Teaser Section -->
-      <section class="teaser">
-        <div class="teaser-content">
-          <p class="content-label">Welcome Message</p>
-          <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
-        </div>
-      </section>
+      <!-- Teaser Section (feature flagged) -->
+      {isEnabled('homepage.teaser') && (
+        <section class="teaser">
+          <div class="teaser-content">
+            <p class="content-label">Welcome Message</p>
+            <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+          </div>
+        </section>
+      )}
     </main>
 
     <!-- Login Modal -->
