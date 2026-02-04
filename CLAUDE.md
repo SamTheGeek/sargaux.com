@@ -182,3 +182,56 @@ gh pr create --draft --title "Your title" --body "Your description"
 - Names normalized: lowercase, remove accents (NFD), collapse whitespace
 - Cookie: `sargaux_auth` (90-day expiry, httpOnly)
 - Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated
+
+## Feature Flags
+
+The site uses a feature flag system (`src/config/features.ts`) for gradual rollout and protecting production.
+
+### Master Switch
+
+The `global.weddingSiteEnabled` flag controls whether the full wedding site is visible:
+- **Production (default: `false`)**: Only shows a minimal "Chez Sargaux" placeholder
+- **Development (`npm run dev`)**: Automatically enabled — you always see the full site locally
+- **Netlify Preview Deploys**: Automatically enabled via `netlify.toml`
+
+### Running Locally
+
+```bash
+# Standard development - wedding site is automatically enabled
+npm run dev
+
+# To test with specific flags, set environment variables:
+FEATURE_NYC_CALENDAR_SUBSCRIBE=true npm run dev
+
+# To test production behavior (site disabled):
+FEATURE_GLOBAL_WEDDING_SITE_ENABLED=false npm run dev
+```
+
+### Environment Variable Format
+
+Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
+- `global.weddingSiteEnabled` → `FEATURE_GLOBAL_WEDDING_SITE_ENABLED`
+- `nyc.calendarSubscribe` → `FEATURE_NYC_CALENDAR_SUBSCRIBE`
+- `france.euAllergens` → `FEATURE_FRANCE_EU_ALLERGENS`
+
+### Available Flags
+
+See `src/config/features.ts` for the full list. Key flags:
+- `global.weddingSiteEnabled` — Master switch for the entire wedding site
+- `global.i18n` — French language support
+- `nyc.*` / `france.*` — Event-specific features
+- `registry.enabled` — Registry page visibility
+
+### For Netlify Preview Deploys
+
+When setting up preview deploys for new features, add env overrides to `netlify.toml`:
+
+```toml
+[context.deploy-preview.environment]
+  FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+  FEATURE_NYC_CALENDAR_SUBSCRIBE = "true"  # if testing this feature
+```
+
+### Future Enhancement
+
+**TODO**: Create a more sophisticated local development detection system that can automatically enable in-development feature flags based on the current git branch or a local config file. This would allow developers to work on new features without manually setting environment variables each time.

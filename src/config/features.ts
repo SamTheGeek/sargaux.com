@@ -150,9 +150,28 @@ function applyOverrides(defaults: FeatureFlags): FeatureFlags {
 }
 
 /**
- * The resolved feature flags (defaults + env overrides)
+ * Check if we're in a local development environment.
+ * Uses import.meta.env.DEV which Astro sets to true during `npm run dev`.
  */
-export const features = applyOverrides(defaultFeatures);
+function isLocalDev(): boolean {
+  return import.meta.env.DEV === true;
+}
+
+/**
+ * Apply local development overrides.
+ * In dev mode, we always enable the wedding site so developers can see it.
+ */
+function applyDevOverrides(flags: FeatureFlags): FeatureFlags {
+  if (isLocalDev()) {
+    flags.global.weddingSiteEnabled = true;
+  }
+  return flags;
+}
+
+/**
+ * The resolved feature flags (defaults + env overrides + dev overrides)
+ */
+export const features = applyDevOverrides(applyOverrides(defaultFeatures));
 
 /**
  * Check if a feature is enabled by dot-path
