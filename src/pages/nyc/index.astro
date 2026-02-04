@@ -31,11 +31,8 @@ const guest = Astro.locals.guest;
         aspectRatio="21/9"
       />
       <div class="hero-overlay">
-        <p class="content-label">Event Location</p>
         <h1>New York</h1>
-        <p class="content-label">Date</p>
         <p class="date">October 11, 2026</p>
-        <p class="content-label">Event Type</p>
         <p class="event-type">Dinner & Dancing</p>
       </div>
     </section>
@@ -70,7 +67,6 @@ const guest = Astro.locals.guest;
 
     <!-- Navigation Cards -->
     <section class="nav-cards">
-      <p class="content-label">Page Navigation</p>
       <nav class="event-nav" aria-label="Event sections">
         <a href="/nyc/schedule" class="nav-card">
           <span class="nav-icon">📅</span>
@@ -97,7 +93,6 @@ const guest = Astro.locals.guest;
 
     <!-- Venue Preview -->
     <section class="venue-preview">
-      <p class="content-label">Venue Images (when available)</p>
       <div class="venue-grid">
         <ImagePlaceholder
           name="nyc-venue"
