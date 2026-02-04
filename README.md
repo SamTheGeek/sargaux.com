@@ -62,7 +62,7 @@ This site uses build-time feature flags to control which features are active.
 See `src/config/features.ts` for the complete list and current defaults.
 
 | Flag | Default | Description |
-|------|---------|-------------|
+| ------ | --------- | ------------- |
 | `FEATURE_GLOBAL_WEDDING_SITE_ENABLED` | `false` | Master switch for full wedding site |
 | `FEATURE_GLOBAL_I18N` | `false` | French translation support |
 | `FEATURE_HOMEPAGE_TEASER` | `false` | Homepage teaser section |
