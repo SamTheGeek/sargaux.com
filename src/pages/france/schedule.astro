@@ -6,7 +6,7 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">← Back to France</a>
+      <a href="/france" class="back-link">&larr; Back to France</a>
     </nav>
   </header>
 
@@ -14,21 +14,44 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     <h1>Weekend Schedule</h1>
     <p class="subtitle">May 28–30, 2027</p>
 
+    <!-- Check-in/Check-out Info -->
+    <div class="stay-info">
+      <div class="stay-time">
+        <span class="stay-label">Check-in</span>
+        <span class="stay-value">Friday, 4:00 PM</span>
+      </div>
+      <div class="stay-divider"></div>
+      <div class="stay-time">
+        <span class="stay-label">Check-out</span>
+        <span class="stay-value">Sunday, 4:00 PM</span>
+      </div>
+    </div>
+
+    <!-- Calendar Subscribe -->
+    <section class="calendar-subscribe">
+      <button class="calendar-btn" disabled>Add Weekend to Calendar</button>
+      <p class="calendar-note">Personalized calendar with your RSVP'd events</p>
+    </section>
+
     <section class="days">
       <!-- Friday -->
       <div class="day-section">
         <h2>Friday, May 28</h2>
         <div class="timeline">
-          <div class="content-box timeline-item">
-            <p class="time">Afternoon</p>
-            <p class="event-name"><strong>Guest Arrival</strong></p>
-            <p class="description">Check in to accommodations at the village</p>
+          <div class="timeline-item">
+            <span class="time">4:00 PM</span>
+            <div class="event">
+              <h4>Check-in Opens</h4>
+              <p>Settle into your accommodations at the village</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Evening [Time TBD]</p>
-            <p class="event-name"><strong>Welcome Dinner</strong></p>
-            <p class="location">📍 Village De Sully</p>
-            <p class="description">Casual gathering to kick off the weekend</p>
+          <div class="timeline-item">
+            <span class="time">7:00 PM</span>
+            <div class="event">
+              <h4>Welcome Dinner</h4>
+              <p class="location">Village De Sully</p>
+              <p>Casual gathering to kick off the weekend</p>
+            </div>
           </div>
         </div>
       </div>
@@ -36,28 +59,42 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
       <!-- Saturday -->
       <div class="day-section highlight">
         <h2>Saturday, May 29</h2>
-        <p class="day-note">✨ Main Event Day</p>
+        <p class="day-note">Main Event Day</p>
         <div class="timeline">
-          <div class="content-box timeline-item">
-            <p class="time">Morning</p>
-            <p class="event-name"><strong>Breakfast</strong></p>
-            <p class="description">For overnight guests (included with accommodation)</p>
+          <div class="timeline-item">
+            <span class="time">Morning</span>
+            <div class="event">
+              <h4>Breakfast</h4>
+              <p>Included for overnight guests</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Afternoon [Time TBD]</p>
-            <p class="event-name"><strong>Ceremony</strong></p>
-            <p class="location">📍 [Ceremony location on grounds]</p>
+          <div class="timeline-item optional">
+            <span class="time">Late Morning</span>
+            <div class="event">
+              <h4>Optional Excursions</h4>
+              <p class="placeholder-note">Details TBD — possible activities in the area</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Following Ceremony</p>
-            <p class="event-name"><strong>Cocktail Hour</strong></p>
-            <p class="location">📍 [Location on grounds]</p>
+          <div class="timeline-item">
+            <span class="time">Afternoon</span>
+            <div class="event">
+              <h4>Ceremony</h4>
+              <p class="location">On the grounds</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Evening [Time TBD]</p>
-            <p class="event-name"><strong>Reception & Dinner</strong></p>
-            <p class="location">📍 [Reception location]</p>
-            <p class="description">Dinner, toasts, dancing</p>
+          <div class="timeline-item">
+            <span class="time">Following</span>
+            <div class="event">
+              <h4>Cocktail Hour</h4>
+              <p class="location">On the grounds</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span class="time">Evening</span>
+            <div class="event">
+              <h4>Reception & Dinner</h4>
+              <p>Dinner, toasts, and dancing into the night</p>
+            </div>
           </div>
         </div>
       </div>
@@ -66,21 +103,27 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
       <div class="day-section">
         <h2>Sunday, May 30</h2>
         <div class="timeline">
-          <div class="content-box timeline-item">
-            <p class="time">Morning</p>
-            <p class="event-name"><strong>Breakfast</strong></p>
-            <p class="description">For overnight guests</p>
+          <div class="timeline-item">
+            <span class="time">Morning</span>
+            <div class="event">
+              <h4>Breakfast</h4>
+              <p>Included for overnight guests</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Late Morning [Time TBD]</p>
-            <p class="event-name"><strong>Farewell Brunch</strong></p>
-            <p class="location">📍 Village De Sully</p>
-            <p class="description">Final gathering before departures</p>
+          <div class="timeline-item">
+            <span class="time">11:00 AM</span>
+            <div class="event">
+              <h4>Farewell Brunch</h4>
+              <p class="location">Village De Sully</p>
+              <p>Final gathering before departures</p>
+            </div>
           </div>
-          <div class="content-box timeline-item">
-            <p class="time">Afternoon</p>
-            <p class="event-name"><strong>Departures</strong></p>
-            <p class="description">Check out by [time TBD]</p>
+          <div class="timeline-item">
+            <span class="time">4:00 PM</span>
+            <div class="event">
+              <h4>Check-out</h4>
+              <p>Please vacate rooms by this time</p>
+            </div>
           </div>
         </div>
       </div>
@@ -120,6 +163,10 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
     flex: 1;
     padding: 3rem 2rem;
@@ -136,13 +183,83 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
   .subtitle {
     color: #666;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
+  /* Stay Info */
+  .stay-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: #f9f9f9;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stay-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .stay-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+  }
+
+  .stay-value {
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  .stay-divider {
+    width: 1px;
+    height: 2.5rem;
+    background: #e5e5e5;
+  }
+
+  /* Calendar Subscribe */
+  .calendar-subscribe {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .calendar-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-btn:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .calendar-btn:disabled {
+    background: #888;
+    cursor: not-allowed;
+  }
+
+  .calendar-note {
+    font-size: 0.875rem;
+    color: #888;
+    font-style: italic;
+  }
+
+  /* Days */
   .days {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 2.5rem;
   }
 
   .day-section h2 {
@@ -161,38 +278,67 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     font-size: 0.875rem;
     color: #666;
     margin-bottom: 1rem;
+    font-weight: 500;
   }
 
+  /* Timeline */
   .timeline {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
     margin-top: 1rem;
   }
 
-  .timeline-item .time {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #888;
-    margin-bottom: 0.25rem;
+  .timeline-item {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: white;
   }
 
-  .timeline-item .event-name {
-    margin-bottom: 0.25rem;
+  .timeline-item.optional {
+    border-style: dashed;
+    background: #fafafa;
   }
 
-  .timeline-item .location {
+  .time {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .event {
+    flex: 1;
+  }
+
+  .event h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .event p {
+    margin: 0;
     font-size: 0.875rem;
     color: #666;
   }
 
-  .timeline-item .description {
-    font-size: 0.875rem;
+  .event .location {
     color: #888;
-    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
   }
 
+  .placeholder-note {
+    font-style: italic;
+    color: #888 !important;
+  }
+
+  /* Footer */
   footer {
     padding: 2rem;
     text-align: center;
@@ -202,5 +348,26 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   footer p {
     font-size: 0.875rem;
     color: #888;
+  }
+
+  @media (max-width: 480px) {
+    .stay-info {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .stay-divider {
+      width: 100%;
+      height: 1px;
+    }
+
+    .timeline-item {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .time {
+      min-width: auto;
+    }
   }
 </style>
