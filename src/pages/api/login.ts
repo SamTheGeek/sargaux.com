@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const guestName = validateGuest(name);
 
   if (!guestName) {
-    return new Response(JSON.stringify({ error: "We couldn't find that name. Please enter your name as it appears on your invitation." }), {
+    return new Response(JSON.stringify({ error: "Please enter your name as it appears on your invitation." }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
