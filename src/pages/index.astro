@@ -50,7 +50,7 @@ if (isSiteEnabled()) {
     </main>
 
     <!-- Login Modal -->
-    <div class="modal-backdrop" id="login-modal" aria-hidden="true">
+    <div class="modal-backdrop" id="login-modal" aria-hidden="true" inert>
       <div class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
         <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
 
@@ -315,13 +315,19 @@ if (isSiteEnabled()) {
       var submitBtn = document.getElementById('submit-btn');
 
       function openModal() {
-        if (modal) modal.setAttribute('aria-hidden', 'false');
+        if (modal) {
+          modal.setAttribute('aria-hidden', 'false');
+          modal.removeAttribute('inert');
+        }
         document.body.style.overflow = 'hidden';
         if (nameInput) nameInput.focus();
       }
 
       function closeModal() {
-        if (modal) modal.setAttribute('aria-hidden', 'true');
+        if (modal) {
+          modal.setAttribute('aria-hidden', 'true');
+          modal.setAttribute('inert', '');
+        }
         document.body.style.overflow = '';
         if (errorMessage) errorMessage.textContent = '';
       }

@@ -87,10 +87,15 @@ function pathToEnvKey(path: string): string {
 
 /**
  * Get environment variable override for a flag path
+ * Uses process.env for server-side (SSR) and import.meta.env as fallback
  */
 function getEnvOverride(path: string): boolean | undefined {
   const envKey = pathToEnvKey(path);
-  const value = import.meta.env[envKey];
+  // In SSR mode, process.env is available at runtime
+  // In static mode, import.meta.env is replaced at build time
+  const value = typeof process !== 'undefined' && process.env?.[envKey]
+    ? process.env[envKey]
+    : import.meta.env[envKey];
   if (value === 'true') return true;
   if (value === 'false') return false;
   return undefined;

@@ -33,7 +33,7 @@ test.describe('Authentication', () => {
 
     // Should show error message
     const errorMessage = page.locator('#error-message');
-    await expect(errorMessage).toContainText("We couldn't find that name");
+    await expect(errorMessage).toContainText("Please enter your name as it appears on your invitation");
 
     // Should still be on homepage
     await expect(page).toHaveURL('/');

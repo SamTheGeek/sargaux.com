@@ -25,6 +25,7 @@ export default defineConfig({
     env: {
       HOST: '0.0.0.0',
       PORT: '4321',
+      FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
     },
   },
 });
