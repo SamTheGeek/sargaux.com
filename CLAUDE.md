@@ -56,6 +56,8 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 
 ## Development Commands
 
+**Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open http://localhost:1213 in a browser. This allows watching changes in real time as edits are made.
+
 ```bash
 # Start development server (http://localhost:1213)
 npm run dev
