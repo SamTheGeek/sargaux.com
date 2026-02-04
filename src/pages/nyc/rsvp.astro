@@ -1,69 +1,145 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+
+const guest = Astro.locals.guest;
 ---
 
 <WireframeLayout title="NYC RSVP">
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">← Back to NYC</a>
+      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
     </nav>
   </header>
 
   <main>
     <h1>RSVP</h1>
-    <p class="subtitle">New York · October 11, 2026</p>
+    <p class="subtitle">New York · October 11, 2026 <span class="tentative">(Tentative)</span></p>
 
-    <section class="rsvp-form">
-      <div class="content-box">
-        <h3>RSVP Form Structure</h3>
+    <div class="deadline-banner">
+      <p>Please respond by <strong>September 1, 2026</strong></p>
+    </div>
 
-        <div class="form-section">
-          <p class="field-label">Attendance</p>
-          <div class="mock-radio">
-            <span>○ Joyfully accepts</span>
-            <span>○ Regretfully declines</span>
+    <form class="rsvp-form">
+      <!-- Guest Attendance Section -->
+      <section class="form-section">
+        <h2>Who's Coming?</h2>
+        <p class="section-note">Toggle each guest's attendance below. Names are editable if needed.</p>
+
+        <!-- Example Guest 1 (from invitation) -->
+        <div class="guest-row">
+          <label class="guest-toggle">
+            <input type="checkbox" name="guest_1_attending" checked disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" value="Sam Gross" disabled />
+            <span class="guest-status accepting">Attending</span>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Guest Name(s)</p>
-          <p class="field-note">Pre-filled from Notion guest data, or editable</p>
-          <div class="mock-input">[Guest Name]</div>
-          <p class="field-note"><em>Decision: Allow +1? How to handle?</em></p>
+        <!-- Example Guest 2 (from invitation) -->
+        <div class="guest-row">
+          <label class="guest-toggle">
+            <input type="checkbox" name="guest_2_attending" checked disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" value="Margaux Ancel" disabled />
+            <span class="guest-status accepting">Attending</span>
+          </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Dietary Restrictions</p>
-          <div class="mock-input">[Free text or checkboxes]</div>
+        <!-- +1 Guest (if applicable) -->
+        <div class="guest-row plus-one">
+          <label class="guest-toggle">
+            <input type="checkbox" name="plus_one_attending" disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" placeholder="Guest name" disabled />
+            <span class="guest-status">Not attending</span>
+          </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Song Request (optional)</p>
-          <div class="mock-input">[What song will get you on the dance floor?]</div>
+        <p class="placeholder-note">Guest list will be populated from Notion based on your invitation</p>
+      </section>
+
+      <!-- Optional Weekend Events -->
+      <section class="form-section">
+        <h2>Optional Events</h2>
+        <p class="section-note">Join us for additional celebrations throughout the weekend (optional).</p>
+
+        <div class="optional-event">
+          <label class="event-checkbox">
+            <input type="checkbox" name="event_friday" disabled />
+            <span class="checkbox-mark"></span>
+            <div class="event-details">
+              <strong>Friday Welcome Drinks</strong>
+              <span class="event-info">TBD · 7:00 PM</span>
+            </div>
+          </label>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Message for the Couple (optional)</p>
-          <div class="mock-textarea">[Your message]</div>
+        <div class="optional-event">
+          <label class="event-checkbox">
+            <input type="checkbox" name="event_sunday" disabled />
+            <span class="checkbox-mark"></span>
+            <div class="event-details">
+              <strong>Sunday Brunch</strong>
+              <span class="event-info">TBD · 11:00 AM</span>
+            </div>
+          </label>
         </div>
 
-        <button disabled class="submit-btn">Submit RSVP</button>
+        <p class="placeholder-note">Optional events will be listed here once confirmed</p>
+      </section>
 
-        <p class="form-note">
-          <strong>Backend:</strong> Submits to Notion via /api/rsvp endpoint<br>
-          <strong>Confirmation:</strong> Show success message, optionally send confirmation email
-        </p>
-      </div>
-    </section>
+      <!-- Dietary Restrictions -->
+      <section class="form-section">
+        <h2>Dietary Restrictions</h2>
+        <p class="section-note">Let us know about any allergies or dietary needs.</p>
+        <textarea
+          name="dietary"
+          class="dietary-input"
+          placeholder="e.g., Vegetarian, nut allergy, gluten-free..."
+          rows="3"
+          disabled
+        ></textarea>
+      </section>
 
-    <section class="deadline">
-      <div class="content-box">
-        <h3>RSVP Deadline</h3>
-        <p><em>Decision: What's the RSVP deadline?</em></p>
-        <p>Suggested: 6-8 weeks before event (late August / early September)</p>
-      </div>
-    </section>
+      <!-- Song Request -->
+      <section class="form-section">
+        <h2>Song Request</h2>
+        <p class="section-note">What song will get you on the dance floor?</p>
+        <input
+          type="text"
+          name="song"
+          class="text-input"
+          placeholder="Artist — Song title"
+          disabled
+        />
+      </section>
+
+      <!-- Message -->
+      <section class="form-section">
+        <h2>Message for Us</h2>
+        <textarea
+          name="message"
+          class="message-input"
+          placeholder="Share your well wishes or let us know anything else..."
+          rows="4"
+          disabled
+        ></textarea>
+      </section>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn" disabled>Submit RSVP</button>
+
+      <p class="form-note">
+        You can update your response anytime before the deadline.
+      </p>
+    </form>
   </main>
 
   <footer>
@@ -99,6 +175,10 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
     flex: 1;
     padding: 3rem 2rem;
@@ -116,84 +196,245 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
   .subtitle {
     color: #666;
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
     text-align: center;
   }
 
-  .rsvp-form {
+  .tentative {
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  .deadline-banner {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
     margin-bottom: 2rem;
   }
 
-  .form-section {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px dashed #e5e5e5;
+  .deadline-banner p {
+    margin: 0;
+    color: #444;
   }
 
-  .field-label {
-    font-weight: 600;
+  .rsvp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-section {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .form-section:last-of-type {
+    border-bottom: none;
+  }
+
+  .form-section h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
     margin-bottom: 0.5rem;
   }
 
-  .field-note {
+  .section-note {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  /* Guest Toggles */
+  .guest-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    background: white;
+  }
+
+  .guest-row.plus-one {
+    border-style: dashed;
+    background: #fafafa;
+  }
+
+  .guest-toggle {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .guest-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: not-allowed;
+    inset: 0;
+    background-color: #e5e5e5;
+    border-radius: 28px;
+    transition: 0.2s;
+  }
+
+  .toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+
+  .guest-toggle input:checked + .toggle-slider {
+    background-color: #22c55e;
+  }
+
+  .guest-toggle input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+  }
+
+  .guest-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .guest-name {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    background: transparent;
+  }
+
+  .guest-name:focus {
+    outline: none;
+    border-color: #1a1a1a;
+    background: white;
+  }
+
+  .guest-status {
     font-size: 0.75rem;
     color: #888;
-    margin-bottom: 0.5rem;
+    white-space: nowrap;
   }
 
-  .field-note em {
-    color: #f59e0b;
+  .guest-status.accepting {
+    color: #22c55e;
   }
 
-  .mock-radio {
+  /* Optional Events */
+  .optional-event {
+    margin-bottom: 0.75rem;
+  }
+
+  .event-checkbox {
     display: flex;
-    gap: 1.5rem;
-    color: #888;
-  }
-
-  .mock-input {
-    padding: 0.75rem 1rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
+    cursor: not-allowed;
     background: white;
-    color: #888;
   }
 
-  .mock-textarea {
-    padding: 0.75rem 1rem;
+  .event-checkbox input {
+    display: none;
+  }
+
+  .checkbox-mark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e5e5e5;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .event-checkbox input:checked + .checkbox-mark {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+  }
+
+  .event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .event-info {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Text Inputs */
+  .text-input,
+  .dietary-input,
+  .message-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
-    background: white;
-    color: #888;
-    min-height: 80px;
+    font-family: inherit;
+    resize: vertical;
   }
 
+  .text-input:focus,
+  .dietary-input:focus,
+  .message-input:focus {
+    outline: none;
+    border-color: #1a1a1a;
+  }
+
+  /* Submit Button */
   .submit-btn {
     width: 100%;
     padding: 1rem;
     font-size: 1rem;
-    background: #e5e5e5;
-    color: #888;
+    background: #1a1a1a;
+    color: white;
     border: none;
     border-radius: 0.5rem;
+    cursor: pointer;
+    margin-top: 1.5rem;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .submit-btn:disabled {
+    background: #888;
     cursor: not-allowed;
-    margin-top: 1rem;
   }
 
   .form-note {
-    font-size: 0.75rem;
-    color: #888;
+    font-size: 0.875rem;
+    color: #666;
+    text-align: center;
     margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed #e5e5e5;
   }
 
-  .deadline {
-    margin-top: 2rem;
-  }
-
-  .deadline em {
-    color: #f59e0b;
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin-top: 0.75rem;
   }
 
   footer {
@@ -205,5 +446,17 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   footer p {
     font-size: 0.875rem;
     color: #888;
+  }
+
+  @media (max-width: 480px) {
+    .guest-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .guest-name {
+      width: 100%;
+    }
   }
 </style>
