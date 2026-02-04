@@ -602,6 +602,51 @@ git commit -m "fix: address any issues from feature flag testing"
 
 ---
 
+## Task 9: Replace Favicon with Square Drapeau
+
+**Files:**
+- Modify: `public/favicon.svg`
+- Reference: `public/drapeau.svg`
+
+**Step 1: Create square favicon from drapeau**
+
+The drapeau.svg is a rectangular flag (158.75mm × 105.83mm). Create a square version that:
+- Uses a 128×128 viewBox (standard favicon size)
+- Centers/crops the drapeau content to fit square
+- Maintains the flag design essence
+- Keeps dark/light mode support like current favicon
+
+Replace `public/favicon.svg` with a square adaptation:
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Square crop/adaptation of drapeau.svg -->
+  <!-- Preserve key visual elements, center the design -->
+</svg>
+```
+
+Note: The exact implementation will depend on how best to adapt the rectangular drapeau to a square format. May need to:
+- Center-crop the design
+- Scale to fit with padding
+- Or use a simplified/iconic version of the flag motif
+
+**Step 2: Verify favicon appears correctly**
+
+```bash
+npm run dev
+```
+
+Open http://localhost:1213/ and check the browser tab shows the new favicon.
+
+**Step 3: Commit**
+
+```bash
+git add public/favicon.svg
+git commit -m "feat: replace favicon with square drapeau design"
+```
+
+---
+
 ## Summary
 
 | Task | Description | Commit |
@@ -614,7 +659,8 @@ git commit -m "fix: address any issues from feature flag testing"
 | 6 | Create netlify.toml | `feat: add netlify.toml` |
 | 7 | Add TypeScript env declarations | `feat: add env var types` |
 | 8 | Build and test verification | (fix commit if needed) |
+| 9 | Replace favicon with square drapeau | `feat: replace favicon with drapeau` |
 
-**Total: 8 tasks, 7-8 commits**
+**Total: 9 tasks, 8-9 commits**
 
 **After completion:** The live site remains unchanged. Preview deploys show the full wedding site. Ready to proceed with wireframe updates plan.
