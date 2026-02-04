@@ -1,67 +1,95 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+
+const guest = Astro.locals.guest;
 ---
 
 <WireframeLayout title="NYC Details">
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">← Back to NYC</a>
+      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
     </nav>
   </header>
 
   <main>
-    <h1>Details</h1>
-    <p class="subtitle">Everything you need to know</p>
+    <h1>The Evening</h1>
+    <p class="subtitle">October 11, 2026 <span class="tentative">(Tentative)</span></p>
 
-    <section class="details-grid">
-      <div class="content-box">
-        <h3>Dinner Venue</h3>
-        <ImagePlaceholder
-          name="nyc-venue"
-          folder="nyc"
-          description="Dinner venue interior or exterior"
-          aspectRatio="16/9"
-        />
-        <p><strong>[Venue Name TBD]</strong></p>
-        <p class="address">[Address]</p>
-        <p class="desc">[Brief description of the space and vibe]</p>
+    <!-- Schedule Timeline -->
+    <section class="schedule">
+      <h2>Schedule</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <span class="time">6:00 PM</span>
+          <div class="event">
+            <h4>Cocktails & Dinner</h4>
+            <p>Join us for an evening of celebration</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <span class="time">9:00 PM</span>
+          <div class="event">
+            <h4>Dancing</h4>
+            <p>Continue the celebration at our second venue</p>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <div class="content-box">
-        <h3>Dancing Venue</h3>
-        <ImagePlaceholder
-          name="nyc-dancing"
-          folder="nyc"
-          description="Dancing venue interior"
-          aspectRatio="16/9"
-        />
-        <p><strong>[Venue Name TBD]</strong></p>
-        <p class="address">[Address]</p>
-        <p class="desc">[Brief description]</p>
+    <!-- Venues - Responsive horizontal/vertical -->
+    <section class="venues">
+      <h2>The Venues</h2>
+      <div class="venue-grid">
+        <div class="venue-card">
+          <ImagePlaceholder
+            name="nyc-dinner"
+            folder="nyc"
+            description="Dinner venue interior"
+            aspectRatio="4/3"
+          />
+          <h3>Dinner</h3>
+          <p>Venue name TBD</p>
+          <div class="map-placeholder">
+            <!-- Google Maps Static API placeholder -->
+            <p class="placeholder-note">Map will be added here</p>
+          </div>
+        </div>
+        <div class="venue-card">
+          <ImagePlaceholder
+            name="nyc-dancing"
+            folder="nyc"
+            description="Dancing venue"
+            aspectRatio="4/3"
+          />
+          <h3>Dancing</h3>
+          <p>Venue name TBD</p>
+          <div class="map-placeholder">
+            <p class="placeholder-note">Map will be added here</p>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <div class="content-box">
-        <h3>Dress Code</h3>
-        <p><em>Decision needed: What dress code?</em></p>
-        <ul>
-          <li>Cocktail Attire</li>
-          <li>Semi-Formal</li>
-          <li>Black Tie Optional</li>
-        </ul>
-        <p class="note">Include guidance for weather (October in NYC)</p>
-      </div>
+    <!-- What to Expect -->
+    <section class="what-to-expect">
+      <h2>What to Expect</h2>
+      <p>The evening will begin with cocktails and a non-seated dinner at our first venue. Later, we'll move to a second location for dancing and continued celebration.</p>
+    </section>
 
-      <div class="content-box">
-        <h3>What to Expect</h3>
-        <ul>
-          <li>Cocktails & passed appetizers</li>
-          <li>Seated dinner</li>
-          <li>Toasts & celebration</li>
-          <li>Dancing into the night</li>
-        </ul>
-      </div>
+    <!-- Dress Code -->
+    <section class="dress-code">
+      <h2>Dress Code</h2>
+      <p><strong>Festive Attire</strong></p>
+      <p>Think jackets but no tie required. The couple will be in suits.</p>
+    </section>
+
+    <!-- Calendar Subscribe -->
+    <section class="calendar-section">
+      <h2>Add to Calendar</h2>
+      <button class="calendar-btn" disabled>Subscribe to Calendar</button>
+      <p class="placeholder-note">Personalized calendar link based on your RSVP</p>
     </section>
   </main>
 
@@ -98,17 +126,19 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
-    flex: 1;
-    padding: 3rem 2rem;
-    max-width: 1000px;
+    max-width: 900px;
     margin: 0 auto;
+    padding: 2rem;
   }
 
   h1 {
     font-size: 2.5rem;
     font-weight: 300;
-    letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
   }
 
@@ -117,45 +147,137 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
     margin-bottom: 3rem;
   }
 
-  .details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .content-box p {
-    margin-top: 0.5rem;
-  }
-
-  .address {
+  .tentative {
     font-size: 0.875rem;
-    color: #666;
-  }
-
-  .desc {
-    font-size: 0.875rem;
-    color: #888;
-  }
-
-  .content-box ul {
-    margin: 1rem 0;
-    padding-left: 1.5rem;
-  }
-
-  .content-box li {
-    margin-bottom: 0.5rem;
-  }
-
-  .content-box em {
-    color: #f59e0b;
-  }
-
-  .note {
-    font-size: 0.75rem;
-    color: #888;
     font-style: italic;
   }
 
+  section {
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .time {
+    font-weight: 600;
+    min-width: 80px;
+    color: #1a1a1a;
+  }
+
+  .event h4 {
+    margin: 0 0 0.25rem 0;
+    font-weight: 500;
+  }
+
+  .event p {
+    margin: 0;
+    color: #666;
+  }
+
+  /* Venue Grid - Horizontal on desktop, vertical on mobile */
+  .venue-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .venue-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .venue-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .venue-card h3 {
+    margin: 1rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  .venue-card > p {
+    margin: 0 1rem 1rem;
+    color: #666;
+  }
+
+  .map-placeholder {
+    margin: 1rem;
+    padding: 2rem;
+    background: #f5f5f5;
+    border-radius: 0.25rem;
+    text-align: center;
+  }
+
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* What to Expect */
+  .what-to-expect p {
+    line-height: 1.8;
+    color: #444;
+  }
+
+  /* Dress Code */
+  .dress-code p {
+    margin: 0.5rem 0;
+  }
+
+  /* Calendar */
+  .calendar-section {
+    text-align: center;
+    padding: 2rem;
+    background: #f9f9f9;
+    border-radius: 0.5rem;
+  }
+
+  .calendar-btn {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    background: #1a1a1a;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+  }
+
+  .calendar-btn:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .calendar-btn:disabled {
+    background: #888;
+    cursor: not-allowed;
+  }
+
+  /* Footer */
   footer {
     padding: 2rem;
     text-align: center;
