@@ -140,6 +140,8 @@ if (isSiteEnabled()) {
       max-width: 600px;
       margin: 0 auto;
       text-align: center;
+      content-visibility: auto;
+      contain-intrinsic-size: 300px;
     }
 
     .teaser-content {
@@ -285,6 +287,8 @@ if (isSiteEnabled()) {
       padding: 2rem;
       text-align: center;
       border-top: 1px solid #e5e5e5;
+      content-visibility: auto;
+      contain-intrinsic-size: 120px;
     }
 
     footer p {
@@ -304,103 +308,95 @@ if (isSiteEnabled()) {
     </style>
   </WireframeLayout>
 
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      var modal = document.getElementById('login-modal');
-      var trigger = document.getElementById('login-trigger');
-      var closeBtn = document.getElementById('modal-close');
-      var nameInput = document.getElementById('name');
-      var form = document.getElementById('login-form');
-      var errorMessage = document.getElementById('error-message');
-      var submitBtn = document.getElementById('submit-btn');
+  <script is:inline type="module">
+    const modal = document.getElementById('login-modal');
+    const trigger = document.getElementById('login-trigger');
+    const closeBtn = document.getElementById('modal-close');
+    const nameInput = document.getElementById('name');
+    const form = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    const submitBtn = document.getElementById('submit-btn');
 
-      function openModal() {
-        if (modal) {
-          modal.setAttribute('aria-hidden', 'false');
-          modal.removeAttribute('inert');
-        }
-        document.body.style.overflow = 'hidden';
-        if (nameInput) nameInput.focus();
-      }
-
-      function closeModal() {
-        if (modal) {
-          modal.setAttribute('aria-hidden', 'true');
-          modal.setAttribute('inert', '');
-        }
-        document.body.style.overflow = '';
-        if (errorMessage) errorMessage.textContent = '';
-      }
-
-      function showError(message) {
-        if (errorMessage) {
-          errorMessage.textContent = message;
-        }
-      }
-
-      if (trigger) trigger.addEventListener('click', openModal);
-      if (closeBtn) closeBtn.addEventListener('click', closeModal);
-
-      // Close on backdrop click
+    const openModal = () => {
       if (modal) {
-        modal.addEventListener('click', function(e) {
-          if (e.target === modal) closeModal();
-        });
+        modal.setAttribute('aria-hidden', 'false');
+        modal.removeAttribute('inert');
+      }
+      document.body.style.overflow = 'hidden';
+      nameInput?.focus();
+    };
+
+    const closeModal = () => {
+      if (modal) {
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+      }
+      document.body.style.overflow = '';
+      if (errorMessage) errorMessage.textContent = '';
+    };
+
+    const showError = (message) => {
+      if (errorMessage) {
+        errorMessage.textContent = message;
+      }
+    };
+
+    trigger?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    // Close on backdrop click
+    modal?.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal?.getAttribute('aria-hidden') === 'false') {
+        closeModal();
+      }
+    });
+
+    // Handle form submission
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const name = nameInput?.value.trim() ?? '';
+      if (!name) {
+        showError('Please enter your name');
+        return;
       }
 
-      // Close on Escape
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal && modal.getAttribute('aria-hidden') === 'false') {
-          closeModal();
-        }
-      });
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Checking...';
+      }
 
-      // Handle form submission
-      if (form) {
-        form.addEventListener('submit', async function(e) {
-          e.preventDefault();
+      try {
+        const formData = new FormData();
+        formData.append('name', name);
 
-          var name = nameInput ? nameInput.value.trim() : '';
-          if (!name) {
-            showError('Please enter your name');
-            return;
-          }
-
-          // Disable button while submitting
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Checking...';
-          }
-
-          try {
-            var formData = new FormData();
-            formData.append('name', name);
-
-            var response = await fetch('/api/login', {
-              method: 'POST',
-              body: formData,
-            });
-
-            var data = await response.json();
-
-            if (response.ok) {
-              // Redirect to NYC event page on success
-              window.location.href = '/nyc';
-            } else {
-              showError(data.error || 'Something went wrong. Please try again.');
-              if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Continue';
-              }
-            }
-          } catch (error) {
-            showError('Something went wrong. Please try again.');
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Continue';
-            }
-          }
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          body: formData,
         });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          window.location.href = '/nyc';
+        } else {
+          showError(data.error || 'Something went wrong. Please try again.');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Continue';
+          }
+        }
+      } catch (error) {
+        showError('Something went wrong. Please try again.');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Continue';
+        }
       }
     });
   </script>

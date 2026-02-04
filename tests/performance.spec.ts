@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Performance Tests', () => {
   test('should have fast First Contentful Paint (FCP)', async ({ page }) => {
-    const startTime = Date.now();
     await page.goto('/');
 
     // Wait for first contentful paint
@@ -27,8 +26,9 @@ test.describe('Performance Tests', () => {
     await page.waitForLoadState('networkidle');
 
     const loadTime = await page.evaluate(() => {
-      const perfData = window.performance.timing;
-      return perfData.loadEventEnd - perfData.navigationStart;
+      const [navEntry] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      if (!navEntry) return 0;
+      return navEntry.loadEventEnd - navEntry.startTime;
     });
 
     // TTI should be under 3.8 seconds (good threshold)
@@ -39,8 +39,9 @@ test.describe('Performance Tests', () => {
     await page.goto('/');
 
     const domContentLoaded = await page.evaluate(() => {
-      const perfData = window.performance.timing;
-      return perfData.domContentLoadedEventEnd - perfData.navigationStart;
+      const [navEntry] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      if (!navEntry) return 0;
+      return navEntry.domContentLoadedEventEnd - navEntry.startTime;
     });
 
     // DOM Content Loaded should be under 1.5 seconds
@@ -48,7 +49,7 @@ test.describe('Performance Tests', () => {
   });
 
   test('should have small total page size', async ({ page }) => {
-    const response = await page.goto('/');
+    await page.goto('/');
 
     // Get all resources loaded
     const resources = await page.evaluate(() => {
