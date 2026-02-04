@@ -150,3 +150,6 @@ playwright-report/
 playwright/.cache/
 sargaux.com.code-workspace
 .DS_Store
+
+# Local Netlify folder
+.netlify

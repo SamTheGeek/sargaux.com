@@ -15,7 +15,8 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
-    "@astrojs/node": "^9.5.2",
+    "@astrojs/netlify": "^6.5.7",
+    "@astrojs/node": "^9.4.4",
     "astro": "^5.16.15"
   },
   "devDependencies": {

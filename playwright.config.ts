@@ -18,13 +18,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node ./dist/server/entry.mjs',
+    command: 'npm run build && node ./dist/server/entry.mjs',
     url: 'http://localhost:4321',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
       HOST: '0.0.0.0',
       PORT: '4321',
+      ASTRO_ADAPTER: 'node',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
     },
   },
