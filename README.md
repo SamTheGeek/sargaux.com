@@ -11,7 +11,6 @@ Wedding website for Sam & Margaux
 - **Node.js**: v24.12.0 (current)
 - **Package Manager**: npm v11.6.2
 
-
 ## Development
 
 ```bash
@@ -33,9 +32,46 @@ npm test
 
 The dev server runs at `http://localhost:1213`.
 
+## Feature Flags
+
+This site uses build-time feature flags to control which features are active.
+
+### How It Works
+
+1. **Defaults** are set in `src/config/features.ts`
+2. **Environment variables** can override defaults (format: `FEATURE_PATH_TO_FLAG=true|false`)
+3. Changes require a **rebuild** to take effect
+
+### Toggling Flags in Netlify
+
+**To change a flag:**
+
+1. Go to [Netlify Dashboard](https://app.netlify.com) → Site → Site settings → Environment variables
+2. Add or edit the variable (e.g., `FEATURE_GLOBAL_WEDDING_SITE_ENABLED=true`)
+3. Trigger a redeploy: Deploys → Trigger deploy → Deploy site
+
+**Preview deploys** (PRs) can have different flags via `netlify.toml`:
+
+```toml
+[context.deploy-preview.environment]
+  FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+```
+
+### Available Flags
+
+See `src/config/features.ts` for the complete list and current defaults.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `FEATURE_GLOBAL_WEDDING_SITE_ENABLED` | `false` | Master switch for full wedding site |
+| `FEATURE_GLOBAL_I18N` | `false` | French translation support |
+| `FEATURE_HOMEPAGE_TEASER` | `false` | Homepage teaser section |
+| ... | ... | See config file for full list |
+
 ## Testing
 
 Automated tests run on every PR:
+
 - **Accessibility Tests**: WCAG 2.0/2.1 AA compliance, semantic HTML, keyboard navigation
 - **Performance Tests**: Core Web Vitals (LCP, FCP, CLS), page load times, resource optimization
 

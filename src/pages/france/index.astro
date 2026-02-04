@@ -1,0 +1,480 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+
+const guest = Astro.locals.guest;
+---
+
+<WireframeLayout title="France Event" description="France Wedding - May 2027">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <div class="nav-right">
+        <div class="content-box event-toggle">
+          <h3>Event Toggle (if invited to both)</h3>
+          <a href="/nyc" class="toggle-item">NYC</a>
+          <span class="toggle-divider">|</span>
+          <span class="toggle-item active">France</span>
+        </div>
+        <span class="user-greeting">{guest}</span>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <ImagePlaceholder
+        name="france-hero"
+        folder="france"
+        description="Village De Sully exterior — the grounds, main building, or scenic view of the property."
+        aspectRatio="21/9"
+      />
+      <div class="hero-overlay">
+        <p class="content-label">Event Location</p>
+        <h1>France</h1>
+        <p class="content-label">Dates</p>
+        <p class="date">May 28–30, 2027</p>
+        <p class="content-label">Event Type</p>
+        <p class="event-type">Weekend Celebration at Village De Sully</p>
+      </div>
+    </section>
+
+    <!-- Quick Info Section -->
+    <section class="quick-info">
+      <div class="info-cards">
+        <div class="content-box info-card">
+          <h3>When</h3>
+          <p><strong>Friday, May 28</strong> – <strong>Sunday, May 30, 2027</strong></p>
+          <p>Full weekend celebration</p>
+        </div>
+        <div class="content-box info-card">
+          <h3>Where</h3>
+          <p><strong>Village De Sully</strong></p>
+          <p>Burgundy, France</p>
+          <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">View on Map ↗</a>
+        </div>
+        <div class="content-box info-card">
+          <h3>Accommodation</h3>
+          <p>Stay at the village</p>
+          <p><strong>€75/night</strong> (breakfast included)</p>
+          <p class="note"><em>Reserve through RSVP</em></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Weekend Overview -->
+    <section class="weekend-overview">
+      <p class="content-label">Weekend Schedule Overview</p>
+      <div class="day-cards">
+        <div class="content-box day-card">
+          <h3>Friday</h3>
+          <div class="day-content">
+            <p class="time">Evening</p>
+            <p><strong>Welcome Dinner</strong></p>
+            <p class="desc">Casual gathering as guests arrive</p>
+          </div>
+        </div>
+        <div class="content-box day-card highlight">
+          <h3>Saturday</h3>
+          <div class="day-content">
+            <p class="time">Morning</p>
+            <p>Breakfast for overnight guests</p>
+            <p class="time">Afternoon</p>
+            <p><strong>Ceremony</strong></p>
+            <p><strong>Cocktail Hour</strong></p>
+            <p class="time">Evening</p>
+            <p><strong>Reception & Dinner</strong></p>
+          </div>
+        </div>
+        <div class="content-box day-card">
+          <h3>Sunday</h3>
+          <div class="day-content">
+            <p class="time">Morning</p>
+            <p>Breakfast for overnight guests</p>
+            <p class="time">Midday</p>
+            <p><strong>Farewell Brunch</strong></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Cards -->
+    <section class="nav-cards">
+      <p class="content-label">Page Navigation</p>
+      <nav class="event-nav" aria-label="Event sections">
+        <a href="/france/schedule" class="nav-card">
+          <span class="nav-icon">📅</span>
+          <span class="nav-title">Schedule</span>
+          <span class="nav-desc">Full weekend timeline</span>
+        </a>
+        <a href="/france/details" class="nav-card">
+          <span class="nav-icon">🏰</span>
+          <span class="nav-title">The Venue</span>
+          <span class="nav-desc">Village De Sully & grounds</span>
+        </a>
+        <a href="/france/travel" class="nav-card">
+          <span class="nav-icon">✈️</span>
+          <span class="nav-title">Travel</span>
+          <span class="nav-desc">Getting there & around</span>
+        </a>
+        <a href="/france/rsvp" class="nav-card highlight">
+          <span class="nav-icon">💌</span>
+          <span class="nav-title">RSVP</span>
+          <span class="nav-desc">Confirm & book accommodation</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- Venue Preview -->
+    <section class="venue-preview">
+      <p class="content-label">Venue Images</p>
+      <div class="venue-grid">
+        <ImagePlaceholder
+          name="france-grounds"
+          folder="france"
+          description="The village grounds — gardens, walkways, outdoor spaces where guests will gather."
+          aspectRatio="4/3"
+        />
+        <ImagePlaceholder
+          name="france-accommodation"
+          folder="france"
+          description="Guest accommodation at the village — room interior or building exterior."
+          aspectRatio="4/3"
+        />
+        <ImagePlaceholder
+          name="france-ceremony"
+          folder="france"
+          description="Ceremony location on the property, or similar outdoor ceremony setting."
+          aspectRatio="4/3"
+        />
+      </div>
+    </section>
+
+    <!-- Calendar Subscribe -->
+    <section class="calendar-section">
+      <div class="content-box">
+        <h3>Calendar Subscription</h3>
+        <p>Subscribe button will add all weekend events to guest's calendar</p>
+        <button disabled class="calendar-btn">📅 Add to Calendar</button>
+        <p class="note">Includes: Welcome dinner, ceremony, reception, brunch</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <nav class="footer-nav">
+      <a href="/registry">Registry</a>
+      <span>·</span>
+      <a href="/api/logout">Logout</a>
+    </nav>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  /* Header */
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .event-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem !important;
+  }
+
+  .event-toggle h3 {
+    display: none;
+  }
+
+  .toggle-item {
+    text-decoration: none;
+    color: #888;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .toggle-item.active {
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+
+  .toggle-divider {
+    color: #ccc;
+  }
+
+  .user-greeting {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+  }
+
+  .hero-overlay {
+    padding: 3rem 2rem;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.9), white);
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .date {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .event-type {
+    font-size: 1.125rem;
+    color: #666;
+  }
+
+  /* Quick Info */
+  .quick-info {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info-card p {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card .note {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    font-style: italic;
+    margin-top: 0.5rem;
+  }
+
+  .map-link {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Weekend Overview */
+  .weekend-overview {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .day-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .day-card {
+    min-height: 200px;
+  }
+
+  .day-card.highlight {
+    border-color: #1a1a1a;
+    border-width: 2px;
+  }
+
+  .day-content {
+    margin-top: 0.5rem;
+  }
+
+  .day-content .time {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .day-content .time:first-child {
+    margin-top: 0;
+  }
+
+  .day-content p {
+    margin-bottom: 0.25rem;
+  }
+
+  .day-content .desc {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Navigation Cards */
+  .nav-cards {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .event-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .nav-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: #1a1a1a;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .nav-card:hover {
+    border-color: #1a1a1a;
+    background: #fafafa;
+  }
+
+  .nav-card.highlight {
+    border-color: #1a1a1a;
+    border-width: 2px;
+  }
+
+  .nav-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-desc {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Venue Preview */
+  .venue-preview {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .venue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Calendar Section */
+  .calendar-section {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .calendar-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    background: #e5e5e5;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+    margin: 1rem 0;
+  }
+
+  .calendar-section .note {
+    font-size: 0.75rem;
+    color: #888;
+  }
+
+  /* Footer */
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+    margin-top: 2rem;
+  }
+
+  .footer-nav {
+    margin-bottom: 1rem;
+  }
+
+  .footer-nav a {
+    color: #666;
+    text-decoration: none;
+  }
+
+  .footer-nav a:hover {
+    color: #1a1a1a;
+  }
+
+  .footer-nav span {
+    color: #ccc;
+    margin: 0 0.5rem;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .date {
+      font-size: 1.25rem;
+    }
+
+    .main-nav {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .nav-right {
+      flex-direction: column;
+    }
+  }
+</style>

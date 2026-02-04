@@ -1,0 +1,13 @@
+# Netlify configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Preview deploys (PRs) enable the full wedding site for testing
+[context.deploy-preview.environment]
+  FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+
+# Production keeps defaults from src/config/features.ts
+# Override specific flags in Netlify Dashboard when ready to launch

@@ -51,7 +51,7 @@ tags: [website, product, requirements]
 
 - F-001: Homepage — hero, welcome information, log in CTA
 - F-002: Two experiences, one for guests invited to each event. No evidence of the other event unless the guest is marked as invited to both (in this early stage, anyone logged in can be assumed as invited to both). Guests can switch between the two of them with a toggle in the upper right.
-- F-003: Infrastructure to send emails. If this is incompatible with the current architecture, work on a plan to extend the architecture to send emails. Do research and select a vendor.
+- F-003: Infrastructure to send emails using Resend (transactional email vendor). Set up SPF/DKIM on sargaux.com domain via Spaceship. Used for save-the-dates, reminders, and RSVP confirmations.
 - F-004: Subscribe to a calendar on each wedding's page. This will be in ics format and will be generated from the events information. Example as a PNG, but make sure to include only events we have scheduled (create/update the first few in Notion, make sure to link them to the existing 'date' pages for NYC, Friday, Saturday, and Sunday)
 - F-005: Login experience should, for now, use a static password (one for Sam, one for Margaux, and one for each set of parents). Eventually this will use guest names as the login information.
 - F-006: Notion will serve as the backend for all of the guest data and also the events. We already have a workspace that needs to be connected and possibly updated to store the information.
@@ -60,6 +60,7 @@ tags: [website, product, requirements]
 - F-009: Accessibility features — keyboard nav, ARIA, semantic HTML.
 - F-010: Performance optimizations — critical CSS, image CDN if necessary, caching.
 - F-011: The ability for guests to RSVP on the website with their RSVP updating the Notion guest database.
+- F-012: Wedding registry page — single shared page accessible from both events at /registry. Content TBD (see open questions re: French guests).
 
 ## Acceptance criteria (per feature, testable)
 
@@ -67,7 +68,43 @@ tags: [website, product, requirements]
 
 ## Information Architecture (high-level)
 
-- AI assistant, please propose an information architecture
+### URL Structure (Event-centric)
+
+```text
+/                       # Homepage — hero, welcome, login CTA
+/login                  # Login page (password entry)
+/registry               # Shared wedding registry (accessible from both events)
+
+/nyc/                   # NYC event landing page
+/nyc/schedule           # NYC event schedule/timeline
+/nyc/details            # NYC venue, dress code, etc.
+/nyc/travel             # NYC travel & accommodation info
+/nyc/rsvp               # NYC RSVP form
+/nyc/calendar.ics       # NYC calendar subscription
+
+/france/                # France event landing page
+/france/schedule        # France weekend schedule (Fri-Sun)
+/france/details         # Village De Sully info, accommodation options
+/france/travel          # France travel & accommodation info
+/france/rsvp            # France RSVP form
+/france/calendar.ics    # France calendar subscription
+
+/api/rsvp               # Server endpoint for RSVP submissions
+```
+
+### Event Toggle Behavior
+
+- Toggle in header switches between NYC and France views
+- Only visible to guests invited to both events
+- Base implementation: standard navigation links
+- Dream feature: pushState() for seamless URL updates without page reload
+
+### Auth & Access Control
+
+- Unauthenticated: Homepage only, all other routes redirect to /login
+- Authenticated: Access to event(s) based on invitation status
+- Cookie stores auth state (httpOnly, secure)
+- localStorage stores preferences (last viewed event, toggle state)
 
 ## User flows (primary)
 
@@ -101,7 +138,16 @@ tags: [website, product, requirements]
 
 ## Tech stack (recommended)
 
-- AI Assistant — fill this in from the existing notes.
+- **Framework**: Astro v5.x with SSR hybrid mode (static pages + server endpoints)
+- **Adapter**: @astrojs/netlify for server endpoints (RSVP writes, etc.)
+- **Language**: TypeScript with strict mode
+- **CSS**: Astro scoped styles (Tailwind optional, add when design work begins)
+- **Backend**: Notion API — build-time fetch for content, runtime writes for RSVPs
+- **Auth**: Cookie-based session + localStorage for preferences (with graceful fallback)
+- **Email**: Resend (transactional email vendor, free tier covers expected volume)
+- **Calendar**: ICS file generation from Notion events data
+- **Hosting**: Netlify (static hosting + edge functions)
+- **Testing**: Playwright for accessibility, performance, and best practices
 
 ## Security & Privacy
 
@@ -116,17 +162,28 @@ tags: [website, product, requirements]
 - CRM: Notion backend (please ask for help connecting if you need it. I've installed the plugin.)
 - Observability: Sentry for frontend errors
 
-## Milestones & timeline (example)
+## Milestones & timeline
 
-- M1 (February): Basic site, framework, early features.
-- M2 (March): Emailing, login, save-the-date style pages.
-- M3 (April): Full launch of October (NYC) portion.
-- M4 (May): Save-the-date launch of May 2027 (France) portion
-- M5 (October): Full launch of May 2027 (France) portion
+- **M1 (February 2026)**: Basic site framework, Notion integration, authentication (F-001, F-005, F-006)
+- **M2 (March 2026)**: Email infrastructure, save-the-date pages, calendar subscriptions (F-003, F-004)
+- **M3 (April 2026)**: NYC full launch — RSVP, registry, all NYC pages (F-002, F-011, F-012 for NYC)
+- **M4 (May 2026)**: France save-the-date launch
+- **M5 (October 2026)**: France full launch — RSVP, all France pages complete
 
 ## Risks & mitigations
 
-- Suggest some!
+| Risk | Impact | Likelihood | Mitigation |
+| ------ | -------- | ------------ | ------------ |
+| Notion API rate limits | Build failures, slow RSVP | Low | Cache at build-time, only runtime writes for RSVPs |
+| Two-event confusion | Guest RSVPs to wrong event | Medium | Clear UI separation, confirmation flows, event-specific URLs |
+| Password sharing | Unauthorized access | Medium | Acceptable for MVP; plan migration to guest-name auth for launch |
+| Email deliverability | Save-the-dates go to spam | Medium | Use Resend with proper SPF/DKIM on sargaux.com domain |
+| Timeline pressure | NYC go-live is fixed (Oct 2026) | High | Prioritize NYC features in M1-M3, France can iterate after |
+| Notion data sync | Stale content on site | Low | Webhook-triggered rebuilds, or manual rebuild after updates |
+
+## Open questions
+
+- [ ] How do we handle registry for French guests? (Ask Alice) — Different registry service? Currency considerations?
 
 ## QA & Release checklist
 

@@ -1,0 +1,171 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+---
+
+<WireframeLayout title="France Travel">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/france" class="back-link">← Back to France</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Travel</h1>
+    <p class="subtitle">Getting to Village De Sully</p>
+
+    <section class="travel-grid">
+      <div class="content-box">
+        <h3>Getting There</h3>
+        <p><strong>By Air</strong></p>
+        <ul>
+          <li><strong>Paris CDG</strong> — [Distance, ~Xh by car/train]</li>
+          <li><strong>Paris Orly</strong> — [Distance]</li>
+          <li><strong>Lyon</strong> — [Distance, may be closer?]</li>
+        </ul>
+        <p class="note"><em>Research needed: Best airport for the venue location</em></p>
+      </div>
+
+      <div class="content-box">
+        <h3>By Train</h3>
+        <p>TGV from Paris to [nearest station]</p>
+        <ul>
+          <li><strong>[Station Name]</strong> — [Distance from venue]</li>
+          <li>Trains run [frequency]</li>
+        </ul>
+        <p class="note"><em>Decision: Arrange group transport from station?</em></p>
+      </div>
+
+      <div class="content-box">
+        <h3>By Car</h3>
+        <p>From Paris: [Xh drive via A6/etc.]</p>
+        <p>Parking available at the village</p>
+        <p class="note">Rental car recommended if exploring the region</p>
+      </div>
+
+      <div class="content-box">
+        <h3>Shuttle Service</h3>
+        <p><em>Decision: Provide group transport?</em></p>
+        <ul>
+          <li>From Paris on Friday?</li>
+          <li>From nearest train station?</li>
+          <li>Back to Paris/station on Sunday?</li>
+        </ul>
+        <p class="note">Let us know your travel plans in the RSVP</p>
+      </div>
+
+      <div class="content-box">
+        <h3>Extending Your Trip</h3>
+        <p>If you're coming from abroad, consider:</p>
+        <ul>
+          <li><strong>Burgundy wine region</strong> — Famous vineyards nearby</li>
+          <li><strong>Dijon</strong> — [Distance], historic city</li>
+          <li><strong>Lyon</strong> — [Distance], food capital of France</li>
+          <li><strong>Paris</strong> — Before or after the weekend</li>
+        </ul>
+      </div>
+
+      <div class="content-box">
+        <h3>Practical Info</h3>
+        <ul>
+          <li><strong>Currency:</strong> Euro (€)</li>
+          <li><strong>Language:</strong> French (English widely understood)</li>
+          <li><strong>Timezone:</strong> CET (UTC+1) / CEST in May (UTC+2)</li>
+          <li><strong>Weather in late May:</strong> [Typical conditions]</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 3rem;
+  }
+
+  .travel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .content-box p {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box ul {
+    margin: 0.5rem 0 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box em {
+    color: #f59e0b;
+  }
+
+  .note {
+    font-size: 0.75rem;
+    color: #888;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>

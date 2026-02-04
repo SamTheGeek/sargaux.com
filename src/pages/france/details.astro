@@ -1,0 +1,243 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+---
+
+<WireframeLayout title="France Details">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/france" class="back-link">← Back to France</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>The Venue</h1>
+    <p class="subtitle">Village De Sully</p>
+
+    <section class="hero-venue">
+      <ImagePlaceholder
+        name="france-hero"
+        folder="france"
+        description="Village De Sully main view — the full property or most impressive angle"
+        aspectRatio="21/9"
+      />
+    </section>
+
+    <section class="venue-info">
+      <div class="content-box">
+        <h3>About the Venue</h3>
+        <p><strong>Village De Sully</strong></p>
+        <p>Burgundy, France</p>
+        <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank" class="map-link">View on Google Maps ↗</a>
+        <a href="https://www.groupeamadeus.com/le-village-de-sully" target="_blank" class="map-link">Venue Website ↗</a>
+        <p class="desc">[Description of the venue — history, setting, what makes it special. To be written.]</p>
+      </div>
+    </section>
+
+    <section class="venue-spaces">
+      <p class="content-label">Venue Spaces</p>
+      <div class="spaces-grid">
+        <div class="space-card">
+          <ImagePlaceholder
+            name="france-grounds"
+            folder="france"
+            description="Village grounds, gardens, outdoor gathering spaces"
+            aspectRatio="4/3"
+          />
+          <h4>The Grounds</h4>
+          <p>[Description of outdoor spaces]</p>
+        </div>
+        <div class="space-card">
+          <ImagePlaceholder
+            name="france-ceremony"
+            folder="france"
+            description="Ceremony location — outdoor setting on the property"
+            aspectRatio="4/3"
+          />
+          <h4>Ceremony Space</h4>
+          <p>[Description of where ceremony will be held]</p>
+        </div>
+        <div class="space-card">
+          <ImagePlaceholder
+            name="france-accommodation"
+            folder="france"
+            description="Guest accommodations at the village"
+            aspectRatio="4/3"
+          />
+          <h4>Accommodations</h4>
+          <p>[Description of guest rooms/cottages]</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="accommodation-details">
+      <div class="content-box">
+        <h3>Staying at the Village</h3>
+        <p>Guests may choose to stay on-site at the village:</p>
+        <ul>
+          <li><strong>€75 per night</strong> per room</li>
+          <li>Breakfast included</li>
+          <li>Check-in: Friday afternoon</li>
+          <li>Check-out: Sunday [time TBD]</li>
+        </ul>
+        <p class="note">Reserve your room through the RSVP form</p>
+        <p class="desc"><em>Decision: Room types? Single vs double? Maximum capacity?</em></p>
+      </div>
+    </section>
+
+    <section class="dress-code">
+      <div class="content-box">
+        <h3>Dress Code</h3>
+        <p><em>Decision needed: What dress code for each event?</em></p>
+        <ul>
+          <li><strong>Friday Welcome:</strong> Casual / Smart Casual</li>
+          <li><strong>Saturday Ceremony & Reception:</strong> [Formal / Semi-Formal / Garden Party?]</li>
+          <li><strong>Sunday Brunch:</strong> Casual</li>
+        </ul>
+        <p class="note">Note: Outdoor ceremony — suggest comfortable shoes for grass/garden</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding-bottom: 3rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    padding-top: 3rem;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .hero-venue {
+    margin-bottom: 2rem;
+  }
+
+  .venue-info {
+    padding: 0 2rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .venue-info p {
+    margin-bottom: 0.5rem;
+  }
+
+  .map-link {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .desc {
+    margin-top: 1rem;
+    color: #666;
+  }
+
+  .venue-spaces {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .spaces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .space-card h4 {
+    margin-top: 1rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+  }
+
+  .space-card p {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+  }
+
+  .accommodation-details,
+  .dress-code {
+    padding: 0 2rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .content-box ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .content-box li {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-box em {
+    color: #f59e0b;
+  }
+
+  .note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>

@@ -15,11 +15,14 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
+    "@astrojs/node": "^9.5.2",
     "astro": "^5.16.15"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.6",
     "@axe-core/playwright": "^4.11.0",
     "@playwright/test": "^1.58.1",
-    "axe-core": "^4.11.1"
+    "axe-core": "^4.11.1",
+    "typescript": "^5.9.3"
   }
 }

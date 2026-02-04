@@ -1,71 +1,436 @@
 ---
+import WireframeLayout from '../layouts/WireframeLayout.astro';
+import ImagePlaceholder from '../components/ImagePlaceholder.astro';
+import { getAuthenticatedGuest } from '../lib/auth';
+import { isSiteEnabled, isEnabled } from '../config/features';
 
+// Only redirect if site is enabled and user is logged in
+if (isSiteEnabled()) {
+  const guest = getAuthenticatedGuest(Astro.cookies);
+  if (guest) {
+    return Astro.redirect('/nyc');
+  }
+}
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Chez Sargaux</title>
-	</head>
-	<body>
-		<main>
-			<h1>Chez Sargaux</h1>
-		</main>
-		<footer>
-			<p>&copy; 2026</p>
-		</footer>
-	</body>
-</html>
+{isSiteEnabled() ? (
+  <WireframeLayout title="Homepage">
+    <main>
+      <!-- Hero Section -->
+      <section class="hero">
+        <div class="hero-image">
+          <ImagePlaceholder
+            name="hero-main"
+            folder="hero"
+            description="Full-width couple photo — candid moment, engagement-style, or favorite photo together. Should feel warm and inviting."
+            aspectRatio="21/9"
+          />
+        </div>
+        <div class="hero-content">
+          <p class="content-label">Site Title</p>
+          <h1>Chez Sargaux</h1>
+          <p class="content-label">Couple Names</p>
+          <p class="tagline">Sam & Margaux</p>
+          <p class="content-label">Call to Action</p>
+          <div class="cta-area">
+            <button class="cta" id="login-trigger">Enter</button>
+          </div>
+        </div>
+      </section>
 
-<style>
-	* {
-		margin: 0;
-		padding: 0;
-		box-sizing: border-box;
-	}
+      <!-- Teaser Section (feature flagged) -->
+      {isEnabled('homepage.teaser') && (
+        <section class="teaser">
+          <div class="teaser-content">
+            <p class="content-label">Welcome Message</p>
+            <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+          </div>
+        </section>
+      )}
+    </main>
 
-	html,
-	body {
-		height: 100%;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	}
+    <!-- Login Modal -->
+    <div class="modal-backdrop" id="login-modal" aria-hidden="true" inert>
+      <div class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+        <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
 
-	body {
-		display: flex;
-		flex-direction: column;
-		background-color: #ffffff;
-		color: #1a1a1a;
-	}
+        <h2 id="modal-title">Welcome</h2>
+        <p class="modal-subtitle">Please enter your name to continue</p>
 
-	main {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+        <form id="login-form">
+          <label for="name" class="visually-hidden">Your name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="Your name"
+            autocomplete="off"
+            autocapitalize="words"
+            spellcheck="false"
+            required
+          />
+          <div id="error-message" class="error-message" aria-live="polite"></div>
+          <button type="submit" class="submit-btn" id="submit-btn">Continue</button>
+        </form>
+      </div>
+    </div>
 
-	h1 {
-		font-size: 3rem;
-		font-weight: 300;
-		letter-spacing: 0.05em;
-	}
+    <footer>
+      <p>&copy; 2026 Sam Gross</p>
+    </footer>
 
-	footer {
-		padding: 2rem;
-		text-align: center;
-	}
 
-	footer p {
-		font-size: 0.875rem;
-		color: #666;
-	}
+    <style>
+    main {
+      flex: 1;
+    }
 
-	@media (max-width: 768px) {
-		h1 {
-			font-size: 2rem;
-		}
-	}
-</style>
+    /* Hero Section */
+    .hero {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-image {
+      width: 100%;
+    }
+
+    .hero-content {
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .tagline {
+      font-size: 1.5rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    .cta-area {
+      margin-top: 1rem;
+    }
+
+    .cta {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      font-size: 1rem;
+      color: #1a1a1a;
+      background: transparent;
+      border: 2px solid #1a1a1a;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cta:hover {
+      background: #1a1a1a;
+      color: white;
+    }
+
+    /* Teaser Section */
+    .teaser {
+      padding: 3rem 2rem;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .teaser-content {
+      padding: 2rem;
+    }
+
+    .teaser-text {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #444;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+      padding: 1rem;
+      opacity: 1;
+      transition: opacity 0.2s;
+    }
+
+    .modal-backdrop[aria-hidden="true"] {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      max-width: 400px;
+      width: 100%;
+      position: relative;
+      transform: scale(1);
+      transition: transform 0.2s;
+    }
+
+    .modal-backdrop[aria-hidden="true"] .modal {
+      transform: scale(0.95);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #888;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .modal-close:hover {
+      background: #f5f5f5;
+      color: #1a1a1a;
+    }
+
+    .modal h2 {
+      font-size: 1.75rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .modal-subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 0.9375rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    input {
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #e5e5e5;
+      border-radius: 0.5rem;
+      text-align: center;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1a1a1a;
+    }
+
+    .error-message {
+      color: #dc2626;
+      font-size: 0.875rem;
+      text-align: center;
+      min-height: 1.25rem;
+    }
+
+    .submit-btn {
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: #333;
+    }
+
+    .submit-btn:disabled {
+      background: #888;
+      cursor: not-allowed;
+    }
+
+    /* Footer */
+    footer {
+      padding: 2rem;
+      text-align: center;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    footer p {
+      font-size: 0.875rem;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      .tagline {
+        font-size: 1.25rem;
+      }
+    }
+    </style>
+  </WireframeLayout>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      var modal = document.getElementById('login-modal');
+      var trigger = document.getElementById('login-trigger');
+      var closeBtn = document.getElementById('modal-close');
+      var nameInput = document.getElementById('name');
+      var form = document.getElementById('login-form');
+      var errorMessage = document.getElementById('error-message');
+      var submitBtn = document.getElementById('submit-btn');
+
+      function openModal() {
+        if (modal) {
+          modal.setAttribute('aria-hidden', 'false');
+          modal.removeAttribute('inert');
+        }
+        document.body.style.overflow = 'hidden';
+        if (nameInput) nameInput.focus();
+      }
+
+      function closeModal() {
+        if (modal) {
+          modal.setAttribute('aria-hidden', 'true');
+          modal.setAttribute('inert', '');
+        }
+        document.body.style.overflow = '';
+        if (errorMessage) errorMessage.textContent = '';
+      }
+
+      function showError(message) {
+        if (errorMessage) {
+          errorMessage.textContent = message;
+        }
+      }
+
+      if (trigger) trigger.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+      // Close on backdrop click
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+      }
+
+      // Close on Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal && modal.getAttribute('aria-hidden') === 'false') {
+          closeModal();
+        }
+      });
+
+      // Handle form submission
+      if (form) {
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+
+          var name = nameInput ? nameInput.value.trim() : '';
+          if (!name) {
+            showError('Please enter your name');
+            return;
+          }
+
+          // Disable button while submitting
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Checking...';
+          }
+
+          try {
+            var formData = new FormData();
+            formData.append('name', name);
+
+            var response = await fetch('/api/login', {
+              method: 'POST',
+              body: formData,
+            });
+
+            var data = await response.json();
+
+            if (response.ok) {
+              // Redirect to NYC event page on success
+              window.location.href = '/nyc';
+            } else {
+              showError(data.error || 'Something went wrong. Please try again.');
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Continue';
+              }
+            }
+          } catch (error) {
+            showError('Something went wrong. Please try again.');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Continue';
+            }
+          }
+        });
+      }
+    });
+  </script>
+) : (
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <meta name="viewport" content="width=device-width" />
+      <meta name="generator" content={Astro.generator} />
+      <title>Chez Sargaux</title>
+    </head>
+    <body>
+      <main>
+        <h1>Chez Sargaux</h1>
+      </main>
+      <footer>
+        <p>&copy; 2026</p>
+      </footer>
+    </body>
+  </html>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+    body { display: flex; flex-direction: column; background-color: #ffffff; color: #1a1a1a; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; }
+    h1 { font-size: 3rem; font-weight: 300; letter-spacing: 0.05em; }
+    footer { padding: 2rem; text-align: center; }
+    footer p { font-size: 0.875rem; color: #666; }
+    @media (max-width: 768px) { h1 { font-size: 2rem; } }
+  </style>
+)}

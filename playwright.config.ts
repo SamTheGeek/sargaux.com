@@ -18,9 +18,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview -- --port 4321',
+    command: 'node ./dist/server/entry.mjs',
     url: 'http://localhost:4321',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      HOST: '0.0.0.0',
+      PORT: '4321',
+      FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
+    },
   },
 });

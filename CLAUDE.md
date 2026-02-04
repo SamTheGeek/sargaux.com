@@ -6,6 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the wedding website repository for Sam & Margaux (sargaux.com), built with Astro.
 
+### Who You're Talking To
+
+The primary user is **Sam Gross**, one half of the couple getting married. Margaux Ancel is the other half and may review work or provide input.
+
+### Wedding Details
+
+Two separate events with distinct guest lists (minimal overlap):
+- **NYC Event**: October 11, 2026 — Dinner and dancing in New York City
+- **France Event**: May 28-30, 2027 — Weekend at Village De Sully
+
+### Key Architecture Decisions
+
+- **Notion Backend**: Guest data and event details stored in Notion, fetched at build-time
+- **Hybrid SSR**: Static pages + Astro server endpoints for RSVP writes
+- **Netlify Adapter**: @astrojs/netlify for server endpoints
+- **Auth**: Cookie-based sessions + localStorage for preferences
+- **Email**: Resend for transactional emails (save-the-dates, RSVP confirmations)
+- **URL Structure**: Event-centric (`/nyc/`, `/france/`) with shared pages (`/registry`)
+
+### Product Documentation
+
+See `docs/feature plan.md` for the full product specification including:
+- Feature list (F-001 through F-012)
+- Information architecture and URL structure
+- Milestones and timeline
+- Risks and mitigations
+
 ## License
 
 The website source code (HTML, CSS, JavaScript) is licensed under **Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0)**:
@@ -17,8 +44,13 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 
 ## Tech Stack
 
-- **Framework**: Astro v5.16.8
+- **Framework**: Astro v5.x with SSR hybrid mode
+- **Adapter**: @astrojs/node (standalone mode for local dev; Netlify for production)
 - **Language**: TypeScript with strict mode enabled
+- **CSS**: Astro scoped styles (Tailwind optional for design phase)
+- **Backend**: Notion API
+- **Email**: Resend (transactional)
+- **Hosting**: Netlify
 - **Node.js**: v24.12.0 (LTS v22.x recommended)
 - **Package Manager**: npm v11.6.2
 
@@ -34,8 +66,9 @@ npm run build
 # Preview production build locally
 npm run preview
 
-# Run all tests (accessibility, best practices, and performance)
+# Run all tests (accessibility, best practices, auth, and performance)
 # Note: This automatically installs Playwright browsers if needed
+# Tests run against built server: node ./dist/server/entry.mjs
 npm test
 
 # Quick verification (build + all tests)
@@ -140,3 +173,12 @@ gh pr create --draft --title "Your title" --body "Your description"
 - TypeScript strict mode is enabled for type safety
 - File-based routing: pages in `src/pages/` become routes
 - Static assets in `public/` are served at root path
+- SSR enabled with `@astrojs/node` adapter (standalone mode)
+- **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
+
+## Authentication
+
+- Name-based login (no passwords) — validates against hardcoded guest list in `src/lib/auth.ts`
+- Names normalized: lowercase, remove accents (NFD), collapse whitespace
+- Cookie: `sargaux_auth` (90-day expiry, httpOnly)
+- Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated

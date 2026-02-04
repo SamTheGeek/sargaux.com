@@ -1,0 +1,94 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Wedding website for Sam & Margaux' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | Chez Sargaux (Wireframe)</title>
+  </head>
+  <body>
+    <div class="wireframe-banner">
+      <span>Wireframe Review</span>
+      <span class="wireframe-page">Page: {title}</span>
+    </div>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    line-height: 1.6;
+  }
+
+  .wireframe-banner {
+    background: #fef3c7;
+    border-bottom: 2px solid #f59e0b;
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #92400e;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .wireframe-page {
+    font-family: monospace;
+    font-weight: normal;
+  }
+
+  /* Wireframe content box styling */
+  .content-box {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    background: #fafafa;
+  }
+
+  .content-box h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .content-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #666; /* WCAG AA compliant contrast ratio */
+    margin-bottom: 0.25rem;
+  }
+</style>

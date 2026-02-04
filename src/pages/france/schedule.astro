@@ -1,0 +1,206 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+---
+
+<WireframeLayout title="France Schedule">
+  <header>
+    <nav class="main-nav">
+      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/france" class="back-link">← Back to France</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Weekend Schedule</h1>
+    <p class="subtitle">May 28–30, 2027</p>
+
+    <section class="days">
+      <!-- Friday -->
+      <div class="day-section">
+        <h2>Friday, May 28</h2>
+        <div class="timeline">
+          <div class="content-box timeline-item">
+            <p class="time">Afternoon</p>
+            <p class="event-name"><strong>Guest Arrival</strong></p>
+            <p class="description">Check in to accommodations at the village</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Evening [Time TBD]</p>
+            <p class="event-name"><strong>Welcome Dinner</strong></p>
+            <p class="location">📍 Village De Sully</p>
+            <p class="description">Casual gathering to kick off the weekend</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saturday -->
+      <div class="day-section highlight">
+        <h2>Saturday, May 29</h2>
+        <p class="day-note">✨ Main Event Day</p>
+        <div class="timeline">
+          <div class="content-box timeline-item">
+            <p class="time">Morning</p>
+            <p class="event-name"><strong>Breakfast</strong></p>
+            <p class="description">For overnight guests (included with accommodation)</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Afternoon [Time TBD]</p>
+            <p class="event-name"><strong>Ceremony</strong></p>
+            <p class="location">📍 [Ceremony location on grounds]</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Following Ceremony</p>
+            <p class="event-name"><strong>Cocktail Hour</strong></p>
+            <p class="location">📍 [Location on grounds]</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Evening [Time TBD]</p>
+            <p class="event-name"><strong>Reception & Dinner</strong></p>
+            <p class="location">📍 [Reception location]</p>
+            <p class="description">Dinner, toasts, dancing</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sunday -->
+      <div class="day-section">
+        <h2>Sunday, May 30</h2>
+        <div class="timeline">
+          <div class="content-box timeline-item">
+            <p class="time">Morning</p>
+            <p class="event-name"><strong>Breakfast</strong></p>
+            <p class="description">For overnight guests</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Late Morning [Time TBD]</p>
+            <p class="event-name"><strong>Farewell Brunch</strong></p>
+            <p class="location">📍 Village De Sully</p>
+            <p class="description">Final gathering before departures</p>
+          </div>
+          <div class="content-box timeline-item">
+            <p class="time">Afternoon</p>
+            <p class="event-name"><strong>Departures</strong></p>
+            <p class="description">Check out by [time TBD]</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Sam Gross</p>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+
+  .back-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: none;
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 3rem;
+  }
+
+  .days {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .day-section h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e5e5;
+  }
+
+  .day-section.highlight h2 {
+    border-bottom-color: #1a1a1a;
+  }
+
+  .day-note {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .timeline-item .time {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-item .event-name {
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-item .location {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  .timeline-item .description {
+    font-size: 0.875rem;
+    color: #888;
+    margin-top: 0.25rem;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  footer p {
+    font-size: 0.875rem;
+    color: #888;
+  }
+</style>
