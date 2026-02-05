@@ -6,7 +6,7 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">← Back to France</a>
+      <a href="/france" class="back-link">&larr; Back to France</a>
     </nav>
   </header>
 
@@ -14,65 +14,79 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     <h1>Travel</h1>
     <p class="subtitle">Getting to Village De Sully</p>
 
-    <section class="travel-grid">
-      <div class="content-box">
-        <h3>Getting There</h3>
-        <p><strong>By Air</strong></p>
+    <section class="travel-sections">
+      <!-- Getting to France (will be conditionally hidden for French guests via i18n/Notion) -->
+      <div class="travel-card">
+        <h2>Getting to France</h2>
+        <p class="section-note">For guests traveling from abroad.</p>
+
+        <h3>By Air</h3>
+        <p>Paris has two major international airports:</p>
         <ul>
-          <li><strong>Paris CDG</strong> — [Distance, ~Xh by car/train]</li>
-          <li><strong>Paris Orly</strong> — [Distance]</li>
-          <li><strong>Lyon</strong> — [Distance, may be closer?]</li>
+          <li><strong>Paris CDG (Charles de Gaulle)</strong> — Most international flights arrive here. Well connected to central Paris via RER B train (~35 min).</li>
+          <li><strong>Paris Orly</strong> — Closer to the city center, serves European and some international flights. Orlyval + RER B or Tram T7 to reach Paris.</li>
         </ul>
-        <p class="note"><em>Research needed: Best airport for the venue location</em></p>
+
+        <h3>By Train (Eurostar)</h3>
+        <p>From London, the Eurostar runs to Paris Gare du Nord in ~2h15. Book early for the best fares.</p>
       </div>
 
-      <div class="content-box">
+      <!-- Getting to the Venue from Paris (shown to everyone) -->
+      <div class="travel-card">
+        <h2>Getting to the Venue from Paris</h2>
+        <p>Village De Sully is in the Ile-de-France region, approximately 60km west of Paris.</p>
+
         <h3>By Train</h3>
-        <p>TGV from Paris to [nearest station]</p>
         <ul>
-          <li><strong>[Station Name]</strong> — [Distance from venue]</li>
-          <li>Trains run [frequency]</li>
+          <li>Take a <strong>Transilien train (Line J or N)</strong> from Paris Saint-Lazare to <strong>Mantes-la-Jolie</strong> station (~45 min)</li>
+          <li>From Mantes-la-Jolie, the venue is a short drive (~15 min)</li>
         </ul>
-        <p class="note"><em>Decision: Arrange group transport from station?</em></p>
-      </div>
+        <p class="transport-note">Ubers are available around Mantes-la-Jolie station. Taxis are right in front of the station.</p>
 
-      <div class="content-box">
         <h3>By Car</h3>
-        <p>From Paris: [Xh drive via A6/etc.]</p>
-        <p>Parking available at the village</p>
-        <p class="note">Rental car recommended if exploring the region</p>
+        <p>From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.</p>
+        <p class="placeholder-note">Detailed driving directions will be provided closer to the event.</p>
       </div>
 
-      <div class="content-box">
-        <h3>Shuttle Service</h3>
-        <p><em>Decision: Provide group transport?</em></p>
+      <!-- Extending Your Trip -->
+      <div class="travel-card">
+        <h2>Extending Your Trip</h2>
+        <p>If you're coming from abroad, consider spending extra time exploring:</p>
         <ul>
-          <li>From Paris on Friday?</li>
-          <li>From nearest train station?</li>
-          <li>Back to Paris/station on Sunday?</li>
-        </ul>
-        <p class="note">Let us know your travel plans in the RSVP</p>
-      </div>
-
-      <div class="content-box">
-        <h3>Extending Your Trip</h3>
-        <p>If you're coming from abroad, consider:</p>
-        <ul>
-          <li><strong>Burgundy wine region</strong> — Famous vineyards nearby</li>
-          <li><strong>Dijon</strong> — [Distance], historic city</li>
-          <li><strong>Lyon</strong> — [Distance], food capital of France</li>
-          <li><strong>Paris</strong> — Before or after the weekend</li>
+          <li><strong>Paris</strong> — Arrive a few days early or stay after the weekend</li>
+          <li><strong>Versailles</strong> — Just 30 minutes from the venue, a must-see</li>
+          <li><strong>Giverny</strong> — Monet's gardens, nearby in the Seine valley</li>
+          <li><strong>Normandy</strong> — D-Day beaches and charming coastal towns, ~2h drive</li>
         </ul>
       </div>
 
-      <div class="content-box">
-        <h3>Practical Info</h3>
-        <ul>
-          <li><strong>Currency:</strong> Euro (€)</li>
-          <li><strong>Language:</strong> French (English widely understood)</li>
-          <li><strong>Timezone:</strong> CET (UTC+1) / CEST in May (UTC+2)</li>
-          <li><strong>Weather in late May:</strong> [Typical conditions]</li>
-        </ul>
+      <!-- Practical Info -->
+      <div class="travel-card">
+        <h2>Practical Info</h2>
+        <p class="date-ref">For the weekend of May 28–30, 2027:</p>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <h3>Time Zone</h3>
+            <p><strong>CEST (UTC+2)</strong></p>
+            <p>6 hours ahead of New York</p>
+          </div>
+          <div class="info-item">
+            <h3>Currency</h3>
+            <p><strong>Euro (€)</strong></p>
+            <p>Cards widely accepted; some small shops prefer cash</p>
+          </div>
+          <div class="info-item">
+            <h3>Language</h3>
+            <p><strong>French</strong></p>
+            <p>English understood in Paris and tourist areas</p>
+          </div>
+          <div class="info-item">
+            <h3>Weather</h3>
+            <p><strong>Late May</strong></p>
+            <p>Typically 15–22°C (60–72°F), pleasant and sunny. Light layers recommended for evenings.</p>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -110,10 +124,14 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
     flex: 1;
     padding: 3rem 2rem;
-    max-width: 1000px;
+    max-width: 900px;
     margin: 0 auto;
   }
 
@@ -129,35 +147,111 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     margin-bottom: 3rem;
   }
 
-  .travel-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+  .travel-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
   }
 
-  .content-box p {
+  .travel-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+  }
+
+  .travel-card h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .travel-card h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 1.5rem 0 0.75rem;
+    color: #1a1a1a;
+  }
+
+  .travel-card h3:first-of-type {
+    margin-top: 0.5rem;
+  }
+
+  .travel-card p {
     margin-bottom: 0.5rem;
+    line-height: 1.6;
   }
 
-  .content-box ul {
+  .travel-card ul {
     margin: 0.5rem 0 1rem;
     padding-left: 1.5rem;
   }
 
-  .content-box li {
+  .travel-card li {
     margin-bottom: 0.5rem;
+    line-height: 1.5;
   }
 
-  .content-box em {
-    color: #f59e0b;
+  .section-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 1rem;
   }
 
-  .note {
-    font-size: 0.75rem;
-    color: #888;
+  .transport-note {
+    font-size: 0.9375rem;
+    color: #444;
+    background: #f9f9f9;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.75rem 0;
+  }
+
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
     font-style: italic;
   }
 
+  .date-ref {
+    font-size: 0.9375rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .info-item {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+
+  .info-item h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin: 0 0 0.5rem;
+  }
+
+  .info-item p {
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .info-item p:last-child {
+    font-size: 0.8125rem;
+    color: #666;
+  }
+
+  /* Footer */
   footer {
     padding: 2rem;
     text-align: center;
@@ -167,5 +261,11 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   footer p {
     font-size: 0.875rem;
     color: #888;
+  }
+
+  @media (max-width: 480px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
