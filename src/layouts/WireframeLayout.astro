@@ -17,13 +17,9 @@ const { title, description = 'Wedding website for Sam & Margaux' } = Astro.props
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title} | Chez Sargaux (Wireframe)</title>
+    <title>{title} | Chez Sargaux</title>
   </head>
   <body>
-    <div class="wireframe-banner">
-      <span>Wireframe Review</span>
-      <span class="wireframe-page">Page: {title}</span>
-    </div>
     <slot />
   </body>
 </html>
@@ -49,27 +45,7 @@ const { title, description = 'Wedding website for Sam & Margaux' } = Astro.props
     line-height: 1.6;
   }
 
-  .wireframe-banner {
-    background: #fef3c7;
-    border-bottom: 2px solid #f59e0b;
-    padding: 0.5rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #92400e;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-
-  .wireframe-page {
-    font-family: monospace;
-    font-weight: normal;
-  }
-
-  /* Wireframe content box styling */
+  /* Content box styling */
   .content-box {
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
