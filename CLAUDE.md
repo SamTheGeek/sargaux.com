@@ -13,6 +13,7 @@ The primary user is **Sam Gross**, one half of the couple getting married. Marga
 ### Wedding Details
 
 Two separate events with distinct guest lists (minimal overlap):
+
 - **NYC Event**: October 11, 2026 — Dinner and dancing in New York City
 - **France Event**: May 28-30, 2027 — Weekend at Village De Sully
 
@@ -28,6 +29,7 @@ Two separate events with distinct guest lists (minimal overlap):
 ### Product Documentation
 
 See `docs/feature plan.md` for the full product specification including:
+
 - Feature list (F-001 through F-012)
 - Information architecture and URL structure
 - Milestones and timeline
@@ -36,6 +38,7 @@ See `docs/feature plan.md` for the full product specification including:
 ## License
 
 The website source code (HTML, CSS, JavaScript) is licensed under **Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0)**:
+
 - ✅ You may reuse and adapt the code for non-commercial purposes
 - ✅ Attribution is required
 - ❌ Commercial use is not permitted
@@ -56,7 +59,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 
 ## Development Commands
 
-**Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open http://localhost:1213 in a browser. This allows watching changes in real time as edits are made.
+**Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open <http://localhost:1213> in a browser. This allows watching changes in real time as edits are made.
 
 ```bash
 # Start development server (http://localhost:1213)
@@ -135,6 +138,7 @@ Both test suites run simultaneously in CI to provide faster feedback. **Importan
 **Local Testing Requirement**: You MUST verify builds and tests locally before creating PRs since draft PRs don't run CI tests. Even for non-code changes (documentation, configuration), always run at least `npm run build` to ensure nothing is broken. Use `npm run verify` for a complete local check (build + all tests).
 
 **Test Skipping**: Automated tests are automatically skipped for PRs that only modify:
+
 - Markdown files (`*.md`)
 - YAML files (`*.yml`, `*.yaml`) - CI/CD and configuration
 - LICENSE file
@@ -192,6 +196,7 @@ The site uses a feature flag system (`src/config/features.ts`) for gradual rollo
 ### Master Switch
 
 The `global.weddingSiteEnabled` flag controls whether the full wedding site is visible:
+
 - **Production (default: `false`)**: Only shows a minimal "Chez Sargaux" placeholder
 - **Development (`npm run dev`)**: Automatically enabled — you always see the full site locally
 - **Netlify Preview Deploys**: Automatically enabled via `netlify.toml`
@@ -212,6 +217,7 @@ FEATURE_GLOBAL_WEDDING_SITE_ENABLED=false npm run dev
 ### Environment Variable Format
 
 Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
+
 - `global.weddingSiteEnabled` → `FEATURE_GLOBAL_WEDDING_SITE_ENABLED`
 - `nyc.calendarSubscribe` → `FEATURE_NYC_CALENDAR_SUBSCRIBE`
 - `france.euAllergens` → `FEATURE_FRANCE_EU_ALLERGENS`
@@ -219,6 +225,7 @@ Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
 ### Available Flags
 
 See `src/config/features.ts` for the full list. Key flags:
+
 - `global.weddingSiteEnabled` — Master switch for the entire wedding site
 - `global.i18n` — French language support
 - `nyc.*` / `france.*` — Event-specific features
