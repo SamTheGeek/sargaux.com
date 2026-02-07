@@ -21,6 +21,7 @@ function flag(value: string | boolean | undefined, fallback: boolean): boolean {
 type FeatureFlags = {
   global: {
     weddingSiteEnabled: boolean;
+    notionBackend: boolean;
     i18n: boolean;
     contentLabelsRemoved: boolean;
   };
@@ -55,6 +56,7 @@ type FeatureFlags = {
 const features: FeatureFlags = {
   global: {
     weddingSiteEnabled: flag(import.meta.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED, false) || import.meta.env.DEV,
+    notionBackend: flag(import.meta.env.FEATURE_GLOBAL_NOTION_BACKEND, false),
     i18n: flag(import.meta.env.FEATURE_GLOBAL_I18N, false),
     contentLabelsRemoved: flag(import.meta.env.FEATURE_GLOBAL_CONTENT_LABELS_REMOVED, false),
   },

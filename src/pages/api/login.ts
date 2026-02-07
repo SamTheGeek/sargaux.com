@@ -1,5 +1,12 @@
 import type { APIRoute } from 'astro';
-import { validateGuest, createSessionToken, AUTH_COOKIE_NAME } from '../../lib/auth';
+import {
+  validateGuest,
+  validateGuestFromRecords,
+  createSessionToken,
+  AUTH_COOKIE_NAME,
+} from '../../lib/auth';
+import { features } from '../../config/features';
+import { fetchAllGuests } from '../../lib/notion';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
@@ -12,17 +19,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const guestName = validateGuest(name);
+  let guestName: string | null = null;
+  let notionId: string | undefined;
+
+  if (features.global.notionBackend) {
+    try {
+      const guests = await fetchAllGuests();
+      const record = validateGuestFromRecords(name, guests);
+      if (record) {
+        guestName = record.name;
+        notionId = record.id;
+      }
+    } catch (err) {
+      console.error('Notion fetch failed, falling back to hardcoded list:', err);
+      guestName = validateGuest(name);
+    }
+  } else {
+    guestName = validateGuest(name);
+  }
 
   if (!guestName) {
-    return new Response(JSON.stringify({ error: "Please enter your name as it appears on your invitation." }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        error: 'Please enter your name as it appears on your invitation.',
+      }),
+      {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   // Create session token and set cookie
-  const token = createSessionToken(guestName);
+  const token = createSessionToken(guestName, notionId);
 
   cookies.set(AUTH_COOKIE_NAME, token, {
     path: '/',

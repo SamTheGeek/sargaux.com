@@ -41,15 +41,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Check authentication
-  const guest = getAuthenticatedGuest(context.cookies);
+  const auth = getAuthenticatedGuest(context.cookies);
 
-  if (!guest) {
+  if (!auth) {
     // Redirect to homepage for login
     return context.redirect('/');
   }
 
   // Add guest info to locals for use in pages
-  context.locals.guest = guest;
+  context.locals.guest = auth.guest;
+  if (auth.notionId) {
+    context.locals.guestId = auth.notionId;
+  }
 
   return next();
 });
