@@ -51,7 +51,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Adapter**: @astrojs/node (standalone mode for local dev; Netlify for production)
 - **Language**: TypeScript with strict mode enabled
 - **CSS**: Astro scoped styles (Tailwind optional for design phase)
-- **Backend**: Notion API
+- **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
 - **Node.js**: v24.12.0 (LTS v22.x recommended)
@@ -95,28 +95,37 @@ npm run test:install
 
 ## Testing
 
-The project includes comprehensive automated testing that runs on every PR:
+The project includes 51 automated tests that run on every PR:
 
 ### Test Suites (run in parallel)
 
-1. **Accessibility Tests** (`.github/workflows/accessibility-tests.yml`)
+1. **Accessibility Tests** (`tests/accessibility.spec.ts`)
    - WCAG 2.0/2.1 AA compliance
    - Proper document structure (h1, lang, meta tags)
    - Color contrast requirements
    - Keyboard navigation support
    - Semantic HTML structure
 
-2. **Performance Tests** (`.github/workflows/performance-tests.yml`)
-   - Core Web Vitals (LCP, FCP, CLS)
-   - Time to Interactive (TTI)
-   - DOM Content Loaded timing
-   - Total page size limits
-   - JavaScript execution time
-   - Resource loading efficiency
-   - Server response time
-   - Font loading optimization
+2. **Auth Tests** (`tests/auth.spec.ts` + `tests/auth-unit.spec.ts`)
+   - Login modal behavior (open, close, escape, backdrop)
+   - Login with valid/invalid names, case sensitivity, whitespace
+   - Session cookie properties (httpOnly, base64 JSON payload)
+   - Login API response shapes (200, 400, 401)
+   - Protected route redirects and logout flow
+   - Session token round-trip with and without notionId
+   - Name normalization (case, accents, whitespace)
+   - Guest validation against GuestRecord lists
 
-Both test suites run simultaneously in CI to provide faster feedback. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
+3. **Best Practices Tests** (`tests/best-practices.spec.ts`)
+   - Valid HTML structure, meta tags, responsive viewport
+   - No JavaScript errors, no broken links
+
+4. **Performance Tests** (`tests/performance.spec.ts`)
+   - Core Web Vitals (LCP, FCP, CLS)
+   - Time to Interactive (TTI), DOM Content Loaded
+   - Page size, JavaScript execution time, resource loading
+
+All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
 ## Git Workflow
 
@@ -169,8 +178,16 @@ gh pr create --draft --title "Your title" --body "Your description"
 ## Project Structure
 
 - `src/pages/` - Astro pages (file-based routing)
-- `src/` - Source code (components, layouts, etc.)
+- `src/pages/api/` - Server-side API endpoints (login, logout, RSVP)
+- `src/lib/auth.ts` - Authentication utilities (name validation, session tokens)
+- `src/lib/notion.ts` - Notion client wrapper (guest data fetching)
+- `src/types/guest.ts` - GuestRecord type definition
+- `src/config/features.ts` - Build-time feature flags
+- `src/middleware.ts` - Route protection and auth context
+- `src/layouts/` - Page layouts (WireframeLayout, etc.)
 - `public/` - Static assets (served at root)
+- `tests/` - Playwright test suites
+- `docs/plans/` - Implementation plans
 - `astro.config.mjs` - Astro configuration
 - `tsconfig.json` - TypeScript configuration (extends astro/tsconfigs/strict)
 
@@ -182,6 +199,7 @@ gh pr create --draft --title "Your title" --body "Your description"
 - Static assets in `public/` are served at root path
 - SSR enabled with `@astrojs/node` adapter (standalone mode)
 - **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
+- **Notion SDK**: Uses `@notionhq/client` v5.x targeting Notion API v2025-09-03. Key difference from older versions: `dataSources.query()` replaces `databases.query()`, using `data_source_id` instead of `database_id`. See [upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
 
 ## Authentication
 
@@ -201,9 +219,10 @@ gh pr create --draft --title "Your title" --body "Your description"
 - `NOTION_API_KEY` — Notion integration token. Store in:
   - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
   - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
-- `NOTION_GUEST_LIST_DB` — Notion database ID (not secret, but stored as env var for flexibility)
+- `NOTION_GUEST_LIST_DB` — Notion **data source** ID (Notion API v2025-09-03 uses data sources, not database IDs)
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
+- **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
 
 ## Feature Flags
 
@@ -245,6 +264,7 @@ Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
 See `src/config/features.ts` for the full list. Key flags:
 
 - `global.weddingSiteEnabled` — Master switch for the entire wedding site
+- `global.notionBackend` — Use Notion Guest List for auth (requires `NOTION_API_KEY` and `NOTION_GUEST_LIST_DB`). When off, falls back to hardcoded guest list.
 - `global.i18n` — French language support
 - `nyc.*` / `france.*` — Event-specific features
 - `registry.enabled` — Registry page visibility
