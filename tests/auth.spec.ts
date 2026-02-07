@@ -149,4 +149,82 @@ test.describe('Authentication', () => {
     // Modal should be hidden
     await expect(modal).toHaveAttribute('aria-hidden', 'true');
   });
+
+  test('login API returns JSON with success and guest name', async ({ page }) => {
+    await page.goto('/');
+
+    // Call the login API directly
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', 'Sam Gross');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.guest).toBe('Sam Gross');
+  });
+
+  test('login API returns 401 for unknown guest', async ({ page }) => {
+    await page.goto('/');
+
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', 'Not A Real Guest');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toContain('your name as it appears on your invitation');
+  });
+
+  test('login API returns 400 for empty name', async ({ page }) => {
+    await page.goto('/');
+
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', '');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('enter your name');
+  });
+
+  test('session cookie is set as httpOnly after login', async ({ page, context }) => {
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.click('#submit-btn');
+    await expect(page).toHaveURL('/nyc');
+
+    // Check the cookie exists
+    const cookies = await context.cookies();
+    const authCookie = cookies.find(c => c.name === 'sargaux_auth');
+    expect(authCookie).toBeDefined();
+    expect(authCookie!.httpOnly).toBe(true);
+    expect(authCookie!.path).toBe('/');
+  });
+
+  test('session cookie contains valid base64 JSON payload', async ({ page, context }) => {
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.click('#submit-btn');
+    await expect(page).toHaveURL('/nyc');
+
+    const cookies = await context.cookies();
+    const authCookie = cookies.find(c => c.name === 'sargaux_auth');
+    expect(authCookie).toBeDefined();
+
+    // Decode and validate the session payload
+    const payload = JSON.parse(Buffer.from(authCookie!.value, 'base64').toString('utf-8'));
+    expect(payload.guest).toBe('Sam Gross');
+    expect(payload.created).toBeGreaterThan(0);
+    // notionId is optional — absent when using hardcoded fallback
+    expect(typeof payload.guest).toBe('string');
+  });
 });
