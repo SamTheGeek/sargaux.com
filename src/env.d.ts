@@ -4,12 +4,22 @@
 declare namespace App {
   interface Locals {
     guest?: string;
+    guestId?: string; // Notion page ID (when notionBackend is enabled)
+  }
+}
+
+// Runtime env vars accessed via process.env (set in Netlify Dashboard — NEVER commit these)
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NOTION_API_KEY?: string;
+    NOTION_GUEST_LIST_DB?: string; // Notion data source ID (not database ID)
   }
 }
 
 interface ImportMetaEnv {
   // Feature flags (all optional, override defaults in src/config/features.ts)
   readonly FEATURE_GLOBAL_WEDDING_SITE_ENABLED?: string;
+  readonly FEATURE_GLOBAL_NOTION_BACKEND?: string;
   readonly FEATURE_GLOBAL_I18N?: string;
   readonly FEATURE_GLOBAL_CONTENT_LABELS_REMOVED?: string;
   readonly FEATURE_HOMEPAGE_TEASER?: string;

@@ -8,6 +8,7 @@
 # Preview deploys (PRs) enable the full wedding site for testing
 [context.deploy-preview.environment]
   FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+  FEATURE_GLOBAL_NOTION_BACKEND = "true"
   FEATURE_GLOBAL_CONTENT_LABELS_REMOVED = "true"
   FEATURE_NYC_DETAILS_PAGE_CONSOLIDATED = "true"
   FEATURE_NYC_OPTIONAL_EVENTS = "true"

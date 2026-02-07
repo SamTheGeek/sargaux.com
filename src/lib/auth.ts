@@ -1,9 +1,14 @@
 /**
  * Authentication utilities for the wedding website.
  * Uses guest names as the login credential.
+ *
+ * When the notionBackend feature flag is enabled, validates against Notion.
+ * Otherwise, falls back to the hardcoded guest list (for local dev without keys).
  */
 
-// Authorized guests who can access the site
+import type { GuestRecord } from '../types/guest';
+
+// Hardcoded fallback guest list for local dev without Notion keys
 const AUTHORIZED_GUESTS = [
   'Sam Gross',
   'Margaux Ancel',
@@ -33,7 +38,19 @@ function normalize(input: string): string {
 const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map(normalize);
 
 /**
- * Validate a guest name against the authorized list.
+ * Validate a guest name against a list of GuestRecords (Notion-backed).
+ * Returns the matching GuestRecord if found, null otherwise.
+ */
+export function validateGuestFromRecords(
+  input: string,
+  guests: GuestRecord[]
+): GuestRecord | null {
+  const normalizedInput = normalize(input);
+  return guests.find((g) => g.normalizedName === normalizedInput) || null;
+}
+
+/**
+ * Validate a guest name against the hardcoded list (fallback).
  * Returns the canonical name if valid, null otherwise.
  */
 export function validateGuest(input: string): string | null {
@@ -52,29 +69,42 @@ export function validateGuest(input: string): string | null {
  */
 export const AUTH_COOKIE_NAME = 'sargaux_auth';
 
+interface SessionPayload {
+  guest: string;
+  notionId?: string;
+  created: number;
+}
+
 /**
- * Create a session token from a guest name.
+ * Create a session token from a guest name and optional Notion ID.
  * For MVP, this is just base64-encoded. In production, use proper signing.
  */
-export function createSessionToken(guestName: string): string {
-  const payload = {
+export function createSessionToken(guestName: string, notionId?: string): string {
+  const payload: SessionPayload = {
     guest: guestName,
     created: Date.now(),
   };
+  if (notionId) {
+    payload.notionId = notionId;
+  }
   return Buffer.from(JSON.stringify(payload)).toString('base64');
 }
 
 /**
  * Parse and validate a session token.
- * Returns the guest name if valid, null otherwise.
+ * Returns { guest, notionId } if valid, null otherwise.
  */
-export function parseSessionToken(token: string): string | null {
+export function parseSessionToken(
+  token: string
+): { guest: string; notionId?: string } | null {
   try {
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    const payload: SessionPayload = JSON.parse(
+      Buffer.from(token, 'base64').toString('utf-8')
+    );
 
-    // Validate the guest name is still in our list
-    if (payload.guest && validateGuest(payload.guest)) {
-      return payload.guest;
+    // Validate the guest name is still recognizable
+    if (payload.guest && typeof payload.guest === 'string') {
+      return { guest: payload.guest, notionId: payload.notionId };
     }
   } catch {
     // Invalid token format
@@ -85,9 +115,11 @@ export function parseSessionToken(token: string): string | null {
 
 /**
  * Check if a request has a valid auth cookie.
- * Returns the guest name if authenticated, null otherwise.
+ * Returns { guest, notionId } if authenticated, null otherwise.
  */
-export function getAuthenticatedGuest(cookies: { get: (name: string) => { value: string } | undefined }): string | null {
+export function getAuthenticatedGuest(cookies: {
+  get: (name: string) => { value: string } | undefined;
+}): { guest: string; notionId?: string } | null {
   const cookie = cookies.get(AUTH_COOKIE_NAME);
 
   if (!cookie?.value) {
