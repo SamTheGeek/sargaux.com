@@ -57,6 +57,25 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Node.js**: v24.12.0 (LTS v22.x recommended)
 - **Package Manager**: npm v11.6.2
 
+## Environment Setup
+
+To set up a fresh Mac for development, run:
+
+```bash
+./scripts/setup.sh
+```
+
+This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). The only prerequisite is a stock macOS install.
+
+After setup, authenticate once:
+
+```bash
+netlify login      # Authenticate with Netlify
+gh auth login      # Authenticate with GitHub
+```
+
+The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to the correct version.
+
 ## Development Commands
 
 **Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open <http://localhost:1213> in a browser. This allows watching changes in real time as edits are made.
@@ -174,6 +193,16 @@ npm run test:install  # Install Playwright browsers
 git push -u origin feature/my-changes
 gh pr create --draft --title "Your title" --body "Your description"
 ```
+
+## Versioning
+
+The project version in `package.json` follows semantic versioning with wedding milestones:
+
+- **Patch** (`0.5.x`): Bump on every PR merge
+- **Minor** (`0.x.0`): Bump when a plan/epic is completed (e.g., Notion integration Phase 1 → 0.6.0)
+- **Major**: `1.0` = NYC event launch, `2.0` = France event launch
+
+Always bump the patch version as part of each PR.
 
 ## Project Structure
 
