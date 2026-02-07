@@ -12,7 +12,7 @@ declare namespace App {
 declare namespace NodeJS {
   interface ProcessEnv {
     NOTION_API_KEY?: string;
-    NOTION_GUEST_LIST_DB?: string;
+    NOTION_GUEST_LIST_DB?: string; // Notion data source ID (not database ID)
   }
 }
 

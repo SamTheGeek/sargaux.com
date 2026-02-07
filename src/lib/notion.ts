@@ -70,9 +70,9 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
   if (guestCache) return guestCache;
 
   const notion = getClient();
-  const databaseId = process.env.NOTION_GUEST_LIST_DB;
+  const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
 
-  if (!databaseId) {
+  if (!dataSourceId) {
     throw new Error(
       'NOTION_GUEST_LIST_DB is not set. Add it to Netlify environment variables.'
     );
@@ -82,9 +82,10 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
   let cursor: string | undefined = undefined;
 
   do {
+    // Notion API v2025-09-03: use dataSources.query with data_source_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await notion.databases.query({
-      database_id: databaseId,
+    const response: any = await notion.dataSources.query({
+      data_source_id: dataSourceId,
       start_cursor: cursor,
       page_size: 100,
     });
