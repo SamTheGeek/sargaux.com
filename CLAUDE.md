@@ -191,7 +191,7 @@ gh pr create --draft --title "Your title" --body "Your description"
 
 ## Feature Flags
 
-The site uses a feature flag system (`src/config/features.ts`) for gradual rollout and protecting production.
+The site uses a **build-time** feature flag system (`src/config/features.ts`) for gradual rollout and protecting production. Flags are resolved at build time via Vite's static `import.meta.env` replacement — changing a flag requires a rebuild.
 
 ### Master Switch
 
@@ -222,6 +222,8 @@ Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
 - `nyc.calendarSubscribe` → `FEATURE_NYC_CALENDAR_SUBSCRIBE`
 - `france.euAllergens` → `FEATURE_FRANCE_EU_ALLERGENS`
 
+**Important**: Each flag must be a **static** `import.meta.env.FEATURE_*` reference in `features.ts` so Vite can replace it at build time. Dynamic access like `import.meta.env[key]` does NOT work.
+
 ### Available Flags
 
 See `src/config/features.ts` for the full list. Key flags:
@@ -233,14 +235,12 @@ See `src/config/features.ts` for the full list. Key flags:
 
 ### For Netlify Preview Deploys
 
-When setting up preview deploys for new features, add env overrides to `netlify.toml`:
+When developing new features, add their flags to `netlify.toml` so preview deploys show them:
 
 ```toml
 [context.deploy-preview.environment]
   FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
-  FEATURE_NYC_CALENDAR_SUBSCRIBE = "true"  # if testing this feature
+  FEATURE_NYC_CALENDAR_SUBSCRIBE = "true"  # example
 ```
 
-### Future Enhancement
-
-**TODO**: Create a more sophisticated local development detection system that can automatically enable in-development feature flags based on the current git branch or a local config file. This would allow developers to work on new features without manually setting environment variables each time.
+Always add new feature flags to the deploy-preview environment in `netlify.toml` when developing them.

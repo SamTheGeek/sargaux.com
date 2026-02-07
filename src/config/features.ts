@@ -3,12 +3,20 @@
 /**
  * Feature flags for build-time control of site features.
  *
- * Defaults are set here. Environment variables can override:
- *   FEATURE_GLOBAL_WEDDING_SITE_ENABLED=true
- *   FEATURE_NYC_CALENDAR_SUBSCRIBE=false
+ * Each flag reads a static import.meta.env reference so Vite can replace
+ * it at build time. Set env vars in netlify.toml or the shell:
+ *
+ *   FEATURE_GLOBAL_WEDDING_SITE_ENABLED=true npm run dev
  *
  * Changes require a rebuild to take effect.
  */
+
+/** Helper: env var to boolean. Vite may replace with string or boolean. */
+function flag(value: string | boolean | undefined, fallback: boolean): boolean {
+  if (value === 'true' || value === true) return true;
+  if (value === 'false' || value === false) return false;
+  return fallback;
+}
 
 type FeatureFlags = {
   global: {
@@ -42,136 +50,41 @@ type FeatureFlags = {
   };
 };
 
-const defaultFeatures: FeatureFlags = {
+// Each import.meta.env.* reference must be static so Vite replaces it at build time.
+// Dynamic access like import.meta.env[key] does NOT work with Vite's static replacement.
+const features: FeatureFlags = {
   global: {
-    weddingSiteEnabled: false,
-    i18n: false,
-    contentLabelsRemoved: false,
+    weddingSiteEnabled: flag(import.meta.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED, false) || import.meta.env.DEV,
+    i18n: flag(import.meta.env.FEATURE_GLOBAL_I18N, false),
+    contentLabelsRemoved: flag(import.meta.env.FEATURE_GLOBAL_CONTENT_LABELS_REMOVED, false),
   },
   homepage: {
-    teaser: false,
+    teaser: flag(import.meta.env.FEATURE_HOMEPAGE_TEASER, false),
   },
   nyc: {
-    detailsPageConsolidated: false,
-    schedulePage: true,
-    optionalEvents: false,
-    calendarSubscribe: false,
-    mapEmbeds: false,
-    travelBus: false,
-    travelMta: false,
-    travelMuseums: false,
+    detailsPageConsolidated: flag(import.meta.env.FEATURE_NYC_DETAILS_PAGE_CONSOLIDATED, false),
+    schedulePage: flag(import.meta.env.FEATURE_NYC_SCHEDULE_PAGE, true),
+    optionalEvents: flag(import.meta.env.FEATURE_NYC_OPTIONAL_EVENTS, false),
+    calendarSubscribe: flag(import.meta.env.FEATURE_NYC_CALENDAR_SUBSCRIBE, false),
+    mapEmbeds: flag(import.meta.env.FEATURE_NYC_MAP_EMBEDS, false),
+    travelBus: flag(import.meta.env.FEATURE_NYC_TRAVEL_BUS, false),
+    travelMta: flag(import.meta.env.FEATURE_NYC_TRAVEL_MTA, false),
+    travelMuseums: flag(import.meta.env.FEATURE_NYC_TRAVEL_MUSEUMS, false),
   },
   france: {
-    calendarSubscribe: false,
-    optionalExcursions: false,
-    travelRestructured: false,
-    accommodationRequest: false,
-    euAllergens: false,
-    locationMap: false,
+    calendarSubscribe: flag(import.meta.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE, false),
+    optionalExcursions: flag(import.meta.env.FEATURE_FRANCE_OPTIONAL_EXCURSIONS, false),
+    travelRestructured: flag(import.meta.env.FEATURE_FRANCE_TRAVEL_RESTRUCTURED, false),
+    accommodationRequest: flag(import.meta.env.FEATURE_FRANCE_ACCOMMODATION_REQUEST, false),
+    euAllergens: flag(import.meta.env.FEATURE_FRANCE_EU_ALLERGENS, false),
+    locationMap: flag(import.meta.env.FEATURE_FRANCE_LOCATION_MAP, false),
   },
   registry: {
-    enabled: true,
+    enabled: flag(import.meta.env.FEATURE_REGISTRY_ENABLED, true),
   },
 };
 
-/**
- * Convert a dot-path like "nyc.calendarSubscribe" to env var name
- * "FEATURE_NYC_CALENDAR_SUBSCRIBE"
- */
-function pathToEnvKey(path: string): string {
-  return 'FEATURE_' + path
-    .replace(/\./g, '_')
-    .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .toUpperCase();
-}
-
-/**
- * Get environment variable override for a flag path
- * Uses process.env for server-side (SSR) and import.meta.env as fallback
- */
-function getEnvOverride(path: string): boolean | undefined {
-  const envKey = pathToEnvKey(path);
-  // In SSR mode, process.env is available at runtime
-  // In static mode, import.meta.env is replaced at build time
-  const value = typeof process !== 'undefined' && process.env?.[envKey]
-    ? process.env[envKey]
-    : import.meta.env[envKey];
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return undefined;
-}
-
-/**
- * Deep clone an object
- */
-function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-/**
- * Apply environment variable overrides to default features
- */
-function applyOverrides(defaults: FeatureFlags): FeatureFlags {
-  const result = deepClone(defaults);
-
-  // Iterate through all paths and check for overrides
-  const paths = [
-    'global.weddingSiteEnabled',
-    'global.i18n',
-    'global.contentLabelsRemoved',
-    'homepage.teaser',
-    'nyc.detailsPageConsolidated',
-    'nyc.schedulePage',
-    'nyc.optionalEvents',
-    'nyc.calendarSubscribe',
-    'nyc.mapEmbeds',
-    'nyc.travelBus',
-    'nyc.travelMta',
-    'nyc.travelMuseums',
-    'france.calendarSubscribe',
-    'france.optionalExcursions',
-    'france.travelRestructured',
-    'france.accommodationRequest',
-    'france.euAllergens',
-    'france.locationMap',
-    'registry.enabled',
-  ];
-
-  for (const path of paths) {
-    const override = getEnvOverride(path);
-    if (override !== undefined) {
-      const parts = path.split('.');
-      // @ts-expect-error - dynamic path access
-      result[parts[0]][parts[1]] = override;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Check if we're in a local development environment.
- * Uses import.meta.env.DEV which Astro sets to true during `npm run dev`.
- */
-function isLocalDev(): boolean {
-  return import.meta.env.DEV === true;
-}
-
-/**
- * Apply local development overrides.
- * In dev mode, we always enable the wedding site so developers can see it.
- */
-function applyDevOverrides(flags: FeatureFlags): FeatureFlags {
-  if (isLocalDev()) {
-    flags.global.weddingSiteEnabled = true;
-  }
-  return flags;
-}
-
-/**
- * The resolved feature flags (defaults + env overrides + dev overrides)
- */
-export const features = applyDevOverrides(applyOverrides(defaultFeatures));
+export { features };
 
 /**
  * Check if a feature is enabled by dot-path
