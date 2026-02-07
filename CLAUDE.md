@@ -185,10 +185,25 @@ gh pr create --draft --title "Your title" --body "Your description"
 
 ## Authentication
 
-- Name-based login (no passwords) — validates against hardcoded guest list in `src/lib/auth.ts`
+- Name-based login (no passwords) — validates against guest list
+- When `global.notionBackend` flag is on: validates against Notion Guest List database
+- When flag is off (local dev without keys): falls back to hardcoded list in `src/lib/auth.ts`
 - Names normalized: lowercase, remove accents (NFD), collapse whitespace
-- Cookie: `sargaux_auth` (90-day expiry, httpOnly)
+- Cookie: `sargaux_auth` (90-day expiry, httpOnly) — contains guest name + optional Notion page ID
 - Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated
+- `Astro.locals.guest` (string) — guest display name, available in all protected pages
+- `Astro.locals.guestId` (string) — Notion page ID, available when notionBackend is enabled
+
+## Secrets & API Keys
+
+**CRITICAL: Never commit API keys or secrets to the repository.**
+
+- `NOTION_API_KEY` — Notion integration token. Store in:
+  - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
+  - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
+- `NOTION_GUEST_LIST_DB` — Notion database ID (not secret, but stored as env var for flexibility)
+- All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
+- The `.gitignore` already excludes `.env` files, but always double-check before committing
 
 ## Feature Flags
 
