@@ -13,7 +13,9 @@ let notionClient: Client | null = null;
 function getClient(): Client {
   if (notionClient) return notionClient;
 
-  const apiKey = import.meta.env.NOTION_API_KEY;
+  // Notion secrets are runtime env vars (set in Netlify Dashboard, not netlify.toml).
+  // Vite's import.meta.env only includes vars present at build time, so we use process.env.
+  const apiKey = process.env.NOTION_API_KEY;
   if (!apiKey) {
     throw new Error(
       'NOTION_API_KEY is not set. Add it to Netlify environment variables (never commit it to the repo).'
@@ -68,7 +70,7 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
   if (guestCache) return guestCache;
 
   const notion = getClient();
-  const databaseId = import.meta.env.NOTION_GUEST_LIST_DB;
+  const databaseId = process.env.NOTION_GUEST_LIST_DB;
 
   if (!databaseId) {
     throw new Error(

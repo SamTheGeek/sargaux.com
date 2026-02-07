@@ -8,11 +8,15 @@ declare namespace App {
   }
 }
 
-interface ImportMetaEnv {
-  // Notion API (store in Netlify Dashboard / GitHub Secrets — NEVER commit these)
-  readonly NOTION_API_KEY?: string;
-  readonly NOTION_GUEST_LIST_DB?: string;
+// Runtime env vars accessed via process.env (set in Netlify Dashboard — NEVER commit these)
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NOTION_API_KEY?: string;
+    NOTION_GUEST_LIST_DB?: string;
+  }
+}
 
+interface ImportMetaEnv {
   // Feature flags (all optional, override defaults in src/config/features.ts)
   readonly FEATURE_GLOBAL_WEDDING_SITE_ENABLED?: string;
   readonly FEATURE_GLOBAL_NOTION_BACKEND?: string;
