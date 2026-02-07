@@ -148,6 +148,7 @@ Both test suites run simultaneously in CI to provide faster feedback. **Importan
 These changes are build configuration and documentation that don't affect the website's accessibility or functionality.
 
 Example workflow:
+
 ```bash
 git checkout -b feature/my-changes
 # Make your changes and commit
