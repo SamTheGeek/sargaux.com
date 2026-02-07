@@ -6,7 +6,7 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">← Back to NYC</a>
+      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
     </nav>
   </header>
 
@@ -14,48 +14,86 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     <h1>Travel</h1>
     <p class="subtitle">Getting to and around NYC</p>
 
-    <section class="travel-grid">
-      <div class="content-box">
-        <h3>Hotels</h3>
+    <section class="travel-sections">
+      <!-- Hotels -->
+      <div class="travel-card">
+        <h2>Hotels</h2>
         <p>Suggested accommodations near the venues:</p>
         <ul>
-          <li><strong>[Hotel 1]</strong> — [Distance/neighborhood]</li>
-          <li><strong>[Hotel 2]</strong> — [Distance/neighborhood]</li>
-          <li><strong>[Hotel 3]</strong> — Budget option</li>
+          <li><strong>Hotel TBD</strong> — Near dinner venue</li>
+          <li><strong>Hotel TBD</strong> — Near dancing venue</li>
+          <li><strong>Budget Option TBD</strong> — Nearby neighborhood</li>
         </ul>
-        <p class="note"><em>Decision: Room block at any hotel?</em></p>
+        <p class="placeholder-note">Room block details coming soon</p>
       </div>
 
-      <div class="content-box">
-        <h3>Getting There</h3>
-        <p><strong>By Air</strong></p>
+      <!-- Getting There -->
+      <div class="travel-card">
+        <h2>Getting There</h2>
+
+        <h3>By Air</h3>
         <ul>
-          <li>JFK — [Transit options to Manhattan]</li>
-          <li>LGA — [Transit options]</li>
-          <li>EWR — [Transit options]</li>
+          <li><strong>JFK</strong> — AirTrain + subway, ~60-75 min to Manhattan</li>
+          <li><strong>LGA</strong> — Taxi/rideshare or Q70 bus + subway, ~30-45 min</li>
+          <li><strong>EWR</strong> — AirTrain + NJ Transit to Penn Station, ~45-60 min</li>
         </ul>
-        <p><strong>By Train</strong></p>
-        <p>Amtrak to Penn Station</p>
+
+        <h3>By Train</h3>
+        <p>Amtrak arrives at Penn Station (Midtown) or Moynihan Train Hall.</p>
+
+        <h3>By Bus</h3>
+        <p>Multiple bus services arrive at Port Authority Bus Terminal (42nd St):</p>
+        <ul>
+          <li><strong>Greyhound</strong> — Major cities nationwide</li>
+          <li><strong>FlixBus</strong> — Budget option, East Coast cities</li>
+          <li><strong>Megabus</strong> — Budget option, often stops at 34th St</li>
+        </ul>
       </div>
 
-      <div class="content-box">
-        <h3>Getting Around</h3>
-        <p>On the day of:</p>
+      <!-- Getting Around -->
+      <div class="travel-card">
+        <h2>Getting Around</h2>
+
+        <h3>MTA Subway</h3>
+        <p>New York's subway runs 24/7 and is the fastest way to get around Manhattan.</p>
         <ul>
-          <li>Venues are [walkable / require transit / etc.]</li>
-          <li>Uber/Lyft widely available</li>
-          <li>Subway [relevant lines]</li>
+          <li>Single ride: $2.90 (tap contactless or use OMNY)</li>
+          <li>Download the <strong>MTA app</strong> for real-time arrivals</li>
+          <li>Google Maps and Apple Maps have excellent subway directions</li>
         </ul>
-        <p class="note"><em>Decision: Provide shuttle between venues?</em></p>
+        <p class="placeholder-note">Nearest subway stations to venues TBD</p>
+
+        <h3>Rideshare & Taxi</h3>
+        <ul>
+          <li>Uber and Lyft widely available</li>
+          <li>Yellow cabs can be hailed on the street</li>
+          <li>Expect 20-40 min travel times depending on traffic</li>
+        </ul>
       </div>
 
-      <div class="content-box">
-        <h3>While You're Here</h3>
-        <p>Columbus Day Weekend activities:</p>
+      <!-- While You're Here -->
+      <div class="travel-card">
+        <h2>While You're Here</h2>
+        <p>Columbus Day Weekend is a great time to explore NYC's world-class museums and exhibitions:</p>
+
+        <h3>Museums</h3>
         <ul>
-          <li>[Neighborhood/area suggestions]</li>
-          <li>[Restaurant recommendations]</li>
-          <li>[Things to do]</li>
+          <li><strong>The Met</strong> — Fifth Avenue, suggested donation admission</li>
+          <li><strong>MoMA</strong> — Midtown, modern & contemporary art</li>
+          <li><strong>Whitney</strong> — Meatpacking District, American art</li>
+          <li><strong>Natural History</strong> — Upper West Side, great for all ages</li>
+          <li><strong>Guggenheim</strong> — Upper East Side, iconic architecture</li>
+        </ul>
+
+        <h3>Exhibitions & Experiences</h3>
+        <p class="placeholder-note">Current exhibitions for October 2026 TBD — check museum websites closer to date</p>
+
+        <h3>Neighborhoods to Explore</h3>
+        <ul>
+          <li><strong>West Village</strong> — Charming streets, cafes, boutiques</li>
+          <li><strong>SoHo</strong> — Shopping, galleries, cast-iron architecture</li>
+          <li><strong>High Line</strong> — Elevated park, great for a walk</li>
+          <li><strong>Central Park</strong> — Fall foliage should be beautiful</li>
         </ul>
       </div>
     </section>
@@ -94,10 +132,14 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
     flex: 1;
     padding: 3rem 2rem;
-    max-width: 1000px;
+    max-width: 900px;
     margin: 0 auto;
   }
 
@@ -113,28 +155,55 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     margin-bottom: 3rem;
   }
 
-  .travel-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+  .travel-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
   }
 
-  .content-box p {
+  .travel-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+  }
+
+  .travel-card h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .travel-card h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 1.5rem 0 0.75rem;
+    color: #1a1a1a;
+  }
+
+  .travel-card h3:first-of-type {
+    margin-top: 0.5rem;
+  }
+
+  .travel-card p {
     margin-bottom: 0.5rem;
+    line-height: 1.6;
   }
 
-  .content-box ul {
+  .travel-card ul {
     margin: 0.5rem 0 1rem;
     padding-left: 1.5rem;
   }
 
-  .content-box li {
+  .travel-card li {
     margin-bottom: 0.5rem;
+    line-height: 1.5;
   }
 
-  .note {
-    font-size: 0.75rem;
-    color: #f59e0b;
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
     font-style: italic;
   }
 

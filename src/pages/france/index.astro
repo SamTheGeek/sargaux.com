@@ -16,7 +16,7 @@ const guest = Astro.locals.guest;
           <span class="toggle-divider">|</span>
           <span class="toggle-item active">France</span>
         </div>
-        <span class="user-greeting">{guest}</span>
+        <a href="/france/rsvp" class="rsvp-btn">RSVP</a>
       </div>
     </nav>
   </header>
@@ -28,14 +28,11 @@ const guest = Astro.locals.guest;
         name="france-hero"
         folder="france"
         description="Village De Sully exterior — the grounds, main building, or scenic view of the property."
-        aspectRatio="21/9"
+        aspectRatio="16/9"
       />
       <div class="hero-overlay">
-        <p class="content-label">Event Location</p>
         <h1>France</h1>
-        <p class="content-label">Dates</p>
         <p class="date">May 28–30, 2027</p>
-        <p class="content-label">Event Type</p>
         <p class="event-type">Weekend Celebration at Village De Sully</p>
       </div>
     </section>
@@ -51,7 +48,7 @@ const guest = Astro.locals.guest;
         <div class="content-box info-card">
           <h3>Where</h3>
           <p><strong>Village De Sully</strong></p>
-          <p>Burgundy, France</p>
+          <p>Ile-de-France, near Paris</p>
           <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">View on Map ↗</a>
         </div>
         <div class="content-box info-card">
@@ -65,7 +62,6 @@ const guest = Astro.locals.guest;
 
     <!-- Weekend Overview -->
     <section class="weekend-overview">
-      <p class="content-label">Weekend Schedule Overview</p>
       <div class="day-cards">
         <div class="content-box day-card">
           <h3>Friday</h3>
@@ -99,9 +95,27 @@ const guest = Astro.locals.guest;
       </div>
     </section>
 
+    <!-- Location Map -->
+    <section class="location-map">
+      <h2>The Location</h2>
+      <div class="map-placeholder">
+        <p class="placeholder-note">Interactive map showing Village de Sully and Paris will be added here</p>
+        <p class="location-context">Village de Sully is located in the Ile-de-France region, approximately 60km west of Paris.</p>
+      </div>
+    </section>
+
+    <!-- Calendar Subscribe (Prominent) -->
+    <section class="calendar-subscribe">
+      <div class="calendar-content">
+        <h2>Save the Dates</h2>
+        <p>Add the full weekend to your calendar.</p>
+        <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
+        <p class="calendar-note">Personalized calendar link available after RSVP</p>
+      </div>
+    </section>
+
     <!-- Navigation Cards -->
     <section class="nav-cards">
-      <p class="content-label">Page Navigation</p>
       <nav class="event-nav" aria-label="Event sections">
         <a href="/france/schedule" class="nav-card">
           <span class="nav-icon">📅</span>
@@ -128,7 +142,6 @@ const guest = Astro.locals.guest;
 
     <!-- Venue Preview -->
     <section class="venue-preview">
-      <p class="content-label">Venue Images</p>
       <div class="venue-grid">
         <ImagePlaceholder
           name="france-grounds"
@@ -151,20 +164,13 @@ const guest = Astro.locals.guest;
       </div>
     </section>
 
-    <!-- Calendar Subscribe -->
-    <section class="calendar-section">
-      <div class="content-box">
-        <h3>Calendar Subscription</h3>
-        <p>Subscribe button will add all weekend events to guest's calendar</p>
-        <button disabled class="calendar-btn">📅 Add to Calendar</button>
-        <p class="note">Includes: Welcome dinner, ceremony, reception, brunch</p>
-      </div>
-    </section>
   </main>
 
   <footer>
     <nav class="footer-nav">
       <a href="/registry">Registry</a>
+      <span>·</span>
+      <span class="guest-name">{guest}</span>
       <span>·</span>
       <a href="/api/logout">Logout</a>
     </nav>
@@ -175,6 +181,10 @@ const guest = Astro.locals.guest;
 <style>
   /* Header */
   header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
     border-bottom: 1px solid #e5e5e5;
   }
 
@@ -229,9 +239,20 @@ const guest = Astro.locals.guest;
     color: #ccc;
   }
 
-  .user-greeting {
+  .rsvp-btn {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: #1a1a1a;
+    color: white;
+    text-decoration: none;
+    border-radius: 0.375rem;
     font-size: 0.875rem;
-    color: #666;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+
+  .rsvp-btn:hover {
+    background: #333;
   }
 
   /* Hero */
@@ -340,6 +361,91 @@ const guest = Astro.locals.guest;
     color: #666;
   }
 
+  /* Location Map */
+  .location-map {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .location-map h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .map-placeholder {
+    background: #f5f5f5;
+    border: 1px dashed #ccc;
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0.75rem;
+  }
+
+  .location-context {
+    font-size: 0.9375rem;
+    color: #444;
+  }
+
+  /* Calendar Subscribe (Prominent) */
+  .calendar-subscribe {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .calendar-content {
+    background: #f9f9f9;
+    border-radius: 0.75rem;
+    padding: 2rem;
+  }
+
+  .calendar-content h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-content > p {
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  .calendar-btn-prominent {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .calendar-btn-prominent:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .calendar-btn-prominent:disabled {
+    background: #888;
+    cursor: not-allowed;
+  }
+
+  .calendar-note {
+    font-size: 0.875rem;
+    color: #888;
+    font-style: italic;
+  }
+
   /* Navigation Cards */
   .nav-cards {
     padding: 2rem;
@@ -406,28 +512,6 @@ const guest = Astro.locals.guest;
     margin-top: 0.5rem;
   }
 
-  /* Calendar Section */
-  .calendar-section {
-    padding: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .calendar-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    background: #e5e5e5;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: not-allowed;
-    margin: 1rem 0;
-  }
-
-  .calendar-section .note {
-    font-size: 0.75rem;
-    color: #888;
-  }
-
   /* Footer */
   footer {
     padding: 2rem;
@@ -440,7 +524,8 @@ const guest = Astro.locals.guest;
     margin-bottom: 1rem;
   }
 
-  .footer-nav a {
+  .footer-nav a,
+  .footer-nav .guest-name {
     color: #666;
     text-decoration: none;
   }

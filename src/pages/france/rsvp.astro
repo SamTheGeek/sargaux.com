@@ -1,12 +1,14 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+
+const guest = Astro.locals.guest;
 ---
 
 <WireframeLayout title="France RSVP">
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">← Back to France</a>
+      <a href="/france" class="back-link">&larr; Back to France</a>
     </nav>
   </header>
 
@@ -14,82 +16,209 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     <h1>RSVP</h1>
     <p class="subtitle">France · May 28–30, 2027</p>
 
-    <section class="rsvp-form">
-      <div class="content-box">
-        <h3>RSVP Form Structure</h3>
+    <div class="deadline-banner">
+      <p>Please respond by <strong>March 15, 2027</strong></p>
+    </div>
 
-        <div class="form-section">
-          <p class="field-label">Attendance</p>
-          <div class="mock-radio">
-            <span>○ Joyfully accepts</span>
-            <span>○ Regretfully declines</span>
+    <form class="rsvp-form">
+      <!-- Guest Attendance Section -->
+      <section class="form-section">
+        <h2>Who's Coming?</h2>
+        <p class="section-note">Toggle each guest's attendance below. Names are editable if needed.</p>
+
+        <!-- Example Guest 1 -->
+        <div class="guest-row">
+          <label class="guest-toggle">
+            <input type="checkbox" name="guest_1_attending" checked disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" value="Sam Gross" disabled />
+            <span class="guest-status accepting">Attending</span>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Guest Name(s)</p>
-          <div class="mock-input">[Guest Name]</div>
-        </div>
-
-        <div class="form-section highlight">
-          <p class="field-label">Accommodation at Village De Sully</p>
-          <p class="field-note">€75/night per room, breakfast included</p>
-          <div class="mock-checkbox">
-            <span>☐ Friday night (May 28)</span>
-            <span>☐ Saturday night (May 29)</span>
-          </div>
-          <p class="field-note">
-            <em>Decision: Room type selection? Single/double? Max guests per room?</em>
-          </p>
-        </div>
-
-        <div class="form-section">
-          <p class="field-label">Events Attending</p>
-          <p class="field-note">Check all that apply</p>
-          <div class="mock-checkbox vertical">
-            <span>☐ Friday Welcome Dinner</span>
-            <span>☐ Saturday Ceremony & Reception</span>
-            <span>☐ Sunday Farewell Brunch</span>
+        <!-- Example Guest 2 -->
+        <div class="guest-row">
+          <label class="guest-toggle">
+            <input type="checkbox" name="guest_2_attending" checked disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" value="Margaux Ancel" disabled />
+            <span class="guest-status accepting">Attending</span>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Travel Plans</p>
-          <p class="field-note">Help us coordinate group transport</p>
-          <div class="mock-radio vertical">
-            <span>○ Arriving by car</span>
-            <span>○ Arriving by train — need transport from station</span>
-            <span>○ Arriving by plane — need transport from airport</span>
-            <span>○ Other / Will arrange own transport</span>
+        <!-- +1 Guest -->
+        <div class="guest-row plus-one">
+          <label class="guest-toggle">
+            <input type="checkbox" name="plus_one_attending" disabled />
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="guest-info">
+            <input type="text" class="guest-name" placeholder="Guest name" disabled />
+            <span class="guest-status">Not attending</span>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Dietary Restrictions</p>
-          <div class="mock-input">[Free text or checkboxes]</div>
+        <p class="placeholder-note">Guest list will be populated from Notion based on your invitation</p>
+      </section>
+
+      <!-- Accommodation Request -->
+      <section class="form-section accommodation-section">
+        <h2>Accommodation</h2>
+        <p class="section-note">This is a request, not a confirmed reservation. We'll email you with final room details closer to the event.</p>
+
+        <div class="accommodation-nights">
+          <label class="night-option">
+            <input type="checkbox" name="night_friday" disabled />
+            <span class="checkbox-mark"></span>
+            <span>Friday, May 28</span>
+          </label>
+          <label class="night-option">
+            <input type="checkbox" name="night_saturday" disabled />
+            <span class="checkbox-mark"></span>
+            <span>Saturday, May 29</span>
+          </label>
         </div>
 
-        <div class="form-section">
-          <p class="field-label">Message for the Couple (optional)</p>
-          <div class="mock-textarea">[Your message]</div>
+        <!-- Cost Estimate -->
+        <div class="cost-estimate">
+          <div class="cost-row">
+            <span>Rate</span>
+            <span>&euro;75 / person / night</span>
+          </div>
+          <div class="cost-row">
+            <span>Guests attending</span>
+            <span class="cost-dynamic">2</span>
+          </div>
+          <div class="cost-row">
+            <span>Nights selected</span>
+            <span class="cost-dynamic">0</span>
+          </div>
+          <div class="cost-row total">
+            <span>Estimated total</span>
+            <span class="cost-dynamic">&euro;0</span>
+          </div>
         </div>
 
-        <button disabled class="submit-btn">Submit RSVP</button>
+        <p class="payment-note">Payment will be collected closer to the event.</p>
+      </section>
 
-        <p class="form-note">
-          <strong>Note:</strong> Accommodation payment handled separately<br>
-          <em>Decision: How is accommodation paid? Through us? Direct to venue?</em>
-        </p>
-      </div>
-    </section>
+      <!-- Events Attending -->
+      <section class="form-section">
+        <h2>Events</h2>
+        <p class="section-note">Which events will you attend?</p>
 
-    <section class="deadline">
-      <div class="content-box">
-        <h3>RSVP Deadline</h3>
-        <p><em>Decision: What's the RSVP deadline?</em></p>
-        <p>Suggested: 3 months before (late February 2027) to confirm accommodation</p>
-      </div>
-    </section>
+        <div class="event-options">
+          <label class="event-option">
+            <input type="checkbox" name="event_friday" disabled />
+            <span class="checkbox-mark"></span>
+            <div class="event-details">
+              <strong>Friday Welcome Dinner</strong>
+              <span>Evening</span>
+            </div>
+          </label>
+          <label class="event-option">
+            <input type="checkbox" name="event_saturday" disabled />
+            <span class="checkbox-mark"></span>
+            <div class="event-details">
+              <strong>Saturday Ceremony & Reception</strong>
+              <span>Afternoon & Evening</span>
+            </div>
+          </label>
+          <label class="event-option">
+            <input type="checkbox" name="event_sunday" disabled />
+            <span class="checkbox-mark"></span>
+            <div class="event-details">
+              <strong>Sunday Farewell Brunch</strong>
+              <span>Late Morning</span>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <!-- Dietary / Allergens -->
+      <section class="form-section">
+        <h2>Dietary Needs & Allergens</h2>
+        <p class="section-note">Please check any allergens that apply. These follow the EU's 14 major allergens.</p>
+
+        <div class="allergen-grid">
+          <label class="allergen"><input type="checkbox" disabled /> Gluten</label>
+          <label class="allergen"><input type="checkbox" disabled /> Crustaceans</label>
+          <label class="allergen"><input type="checkbox" disabled /> Eggs</label>
+          <label class="allergen"><input type="checkbox" disabled /> Fish</label>
+          <label class="allergen"><input type="checkbox" disabled /> Peanuts</label>
+          <label class="allergen"><input type="checkbox" disabled /> Soybeans</label>
+          <label class="allergen"><input type="checkbox" disabled /> Milk/Dairy</label>
+          <label class="allergen"><input type="checkbox" disabled /> Tree Nuts</label>
+          <label class="allergen"><input type="checkbox" disabled /> Celery</label>
+          <label class="allergen"><input type="checkbox" disabled /> Mustard</label>
+          <label class="allergen"><input type="checkbox" disabled /> Sesame</label>
+          <label class="allergen"><input type="checkbox" disabled /> Sulphites</label>
+          <label class="allergen"><input type="checkbox" disabled /> Lupin</label>
+          <label class="allergen"><input type="checkbox" disabled /> Molluscs</label>
+        </div>
+
+        <p class="kosher-note">If you keep kosher-style, you do not need to mark allergies here.</p>
+
+        <h3>Other Dietary Needs</h3>
+        <textarea
+          name="dietary_other"
+          class="text-area"
+          placeholder="e.g., Vegetarian, vegan, other restrictions..."
+          rows="2"
+          disabled
+        ></textarea>
+      </section>
+
+      <!-- Travel Plans -->
+      <section class="form-section">
+        <h2>Travel Plans</h2>
+        <p class="section-note">Help us understand how you're getting to the venue.</p>
+
+        <div class="travel-options">
+          <label class="travel-option">
+            <input type="radio" name="travel" disabled />
+            <span>Arriving by car</span>
+          </label>
+          <label class="travel-option">
+            <input type="radio" name="travel" disabled />
+            <span>Arriving by train</span>
+          </label>
+          <label class="travel-option">
+            <input type="radio" name="travel" disabled />
+            <span>Need transport from airport</span>
+          </label>
+          <label class="travel-option">
+            <input type="radio" name="travel" disabled />
+            <span>Other / Will arrange own transport</span>
+          </label>
+        </div>
+
+        <p class="transport-note">Ubers are available around Mantes-la-Jolie station. Taxis are right in front.</p>
+      </section>
+
+      <!-- Message -->
+      <section class="form-section">
+        <h2>Message for Us</h2>
+        <textarea
+          name="message"
+          class="text-area"
+          placeholder="Share your well wishes or let us know anything else..."
+          rows="4"
+          disabled
+        ></textarea>
+      </section>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn" disabled>Submit RSVP</button>
+
+      <p class="form-note">
+        You can update your response anytime before the deadline.
+      </p>
+    </form>
   </main>
 
   <footer>
@@ -125,6 +254,10 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
     text-decoration: none;
   }
 
+  .back-link:hover {
+    color: #1a1a1a;
+  }
+
   main {
     flex: 1;
     padding: 3rem 2rem;
@@ -142,106 +275,371 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
   .subtitle {
     color: #666;
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
     text-align: center;
   }
 
-  .rsvp-form {
+  .deadline-banner {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
     margin-bottom: 2rem;
   }
 
-  .form-section {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px dashed #e5e5e5;
+  .deadline-banner p {
+    margin: 0;
+    color: #444;
   }
 
-  .form-section.highlight {
-    background: #fef3c7;
-    margin: 0 -1.5rem 1.5rem;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
+  .rsvp-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-section {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .form-section:last-of-type {
     border-bottom: none;
   }
 
-  .field-label {
-    font-weight: 600;
+  .form-section h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
     margin-bottom: 0.5rem;
   }
 
-  .field-note {
+  .form-section h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  .section-note {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  /* Guest Toggles */
+  .guest-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    background: white;
+  }
+
+  .guest-row.plus-one {
+    border-style: dashed;
+    background: #fafafa;
+  }
+
+  .guest-toggle {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .guest-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: not-allowed;
+    inset: 0;
+    background-color: #e5e5e5;
+    border-radius: 28px;
+    transition: 0.2s;
+  }
+
+  .toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+
+  .guest-toggle input:checked + .toggle-slider {
+    background-color: #22c55e;
+  }
+
+  .guest-toggle input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+  }
+
+  .guest-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .guest-name {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    background: transparent;
+  }
+
+  .guest-status {
     font-size: 0.75rem;
     color: #888;
+    white-space: nowrap;
+  }
+
+  .guest-status.accepting {
+    color: #22c55e;
+  }
+
+  /* Accommodation */
+  .accommodation-section {
+    background: #fffbeb;
+    margin: 0 -1rem;
+    padding: 1.5rem 1rem;
+    border-radius: 0.5rem;
+    border-bottom: none !important;
+  }
+
+  .accommodation-nights {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .night-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+    background: white;
+  }
+
+  .night-option input {
+    display: none;
+  }
+
+  .checkbox-mark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e5e5e5;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .night-option input:checked + .checkbox-mark {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+  }
+
+  .cost-estimate {
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .cost-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 0.9375rem;
+  }
+
+  .cost-row.total {
+    border-top: 1px solid #e5e5e5;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+    font-weight: 600;
+  }
+
+  .cost-dynamic {
+    color: #666;
+  }
+
+  .cost-row.total .cost-dynamic {
+    color: #1a1a1a;
+  }
+
+  .payment-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* Events */
+  .event-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .event-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    cursor: not-allowed;
+    background: white;
+  }
+
+  .event-option input {
+    display: none;
+  }
+
+  .event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .event-details span {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Allergens */
+  .allergen-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .allergen {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.25rem;
+    font-size: 0.9375rem;
+    cursor: not-allowed;
+  }
+
+  .allergen input {
+    accent-color: #1a1a1a;
+  }
+
+  .kosher-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    background: #f9f9f9;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
     margin-bottom: 0.5rem;
   }
 
-  .field-note em {
-    color: #f59e0b;
-  }
-
-  .mock-radio,
-  .mock-checkbox {
+  /* Travel */
+  .travel-options {
     display: flex;
-    gap: 1.5rem;
-    color: #888;
-    flex-wrap: wrap;
-  }
-
-  .mock-radio.vertical,
-  .mock-checkbox.vertical {
     flex-direction: column;
     gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
-  .mock-input {
-    padding: 0.75rem 1rem;
+  .travel-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
-    background: white;
-    color: #888;
+    cursor: not-allowed;
   }
 
-  .mock-textarea {
+  .travel-option input {
+    accent-color: #1a1a1a;
+  }
+
+  .transport-note {
+    font-size: 0.875rem;
+    color: #444;
+    background: #f9f9f9;
     padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+  }
+
+  /* Text Areas */
+  .text-area {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
-    background: white;
-    color: #888;
-    min-height: 80px;
+    font-family: inherit;
+    resize: vertical;
   }
 
+  .text-area:focus {
+    outline: none;
+    border-color: #1a1a1a;
+  }
+
+  /* Submit */
   .submit-btn {
     width: 100%;
     padding: 1rem;
     font-size: 1rem;
-    background: #e5e5e5;
-    color: #888;
+    background: #1a1a1a;
+    color: white;
     border: none;
     border-radius: 0.5rem;
+    cursor: pointer;
+    margin-top: 1.5rem;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .submit-btn:disabled {
+    background: #888;
     cursor: not-allowed;
-    margin-top: 1rem;
   }
 
   .form-note {
-    font-size: 0.75rem;
-    color: #888;
+    font-size: 0.875rem;
+    color: #666;
+    text-align: center;
     margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed #e5e5e5;
   }
 
-  .form-note em {
-    color: #f59e0b;
+  .placeholder-note {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+    margin-top: 0.75rem;
   }
 
-  .deadline {
-    margin-top: 2rem;
-  }
-
-  .deadline em {
-    color: #f59e0b;
-  }
-
+  /* Footer */
   footer {
     padding: 2rem;
     text-align: center;
@@ -251,5 +649,21 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   footer p {
     font-size: 0.875rem;
     color: #888;
+  }
+
+  @media (max-width: 480px) {
+    .allergen-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .guest-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .guest-name {
+      width: 100%;
+    }
   }
 </style>

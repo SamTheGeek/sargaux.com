@@ -8,6 +8,19 @@
 # Preview deploys (PRs) enable the full wedding site for testing
 [context.deploy-preview.environment]
   FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+  FEATURE_GLOBAL_CONTENT_LABELS_REMOVED = "true"
+  FEATURE_NYC_DETAILS_PAGE_CONSOLIDATED = "true"
+  FEATURE_NYC_OPTIONAL_EVENTS = "true"
+  FEATURE_NYC_CALENDAR_SUBSCRIBE = "true"
+  FEATURE_NYC_TRAVEL_BUS = "true"
+  FEATURE_NYC_TRAVEL_MTA = "true"
+  FEATURE_NYC_TRAVEL_MUSEUMS = "true"
+  FEATURE_FRANCE_CALENDAR_SUBSCRIBE = "true"
+  FEATURE_FRANCE_OPTIONAL_EXCURSIONS = "true"
+  FEATURE_FRANCE_TRAVEL_RESTRUCTURED = "true"
+  FEATURE_FRANCE_ACCOMMODATION_REQUEST = "true"
+  FEATURE_FRANCE_EU_ALLERGENS = "true"
+  FEATURE_FRANCE_LOCATION_MAP = "true"
 
 # Production keeps defaults from src/config/features.ts
 # Override specific flags in Netlify Dashboard when ready to launch

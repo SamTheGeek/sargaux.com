@@ -16,7 +16,7 @@ const guest = Astro.locals.guest;
           <span class="toggle-divider">|</span>
           <a href="/france" class="toggle-item">France</a>
         </div>
-        <span class="user-greeting">{guest}</span>
+        <a href="/nyc/rsvp" class="rsvp-btn">RSVP</a>
       </div>
     </nav>
   </header>
@@ -28,14 +28,11 @@ const guest = Astro.locals.guest;
         name="nyc-hero"
         folder="nyc"
         description="NYC skyline at dusk, or the venue exterior if available. Sets the urban, elegant tone."
-        aspectRatio="21/9"
+        aspectRatio="16/9"
       />
       <div class="hero-overlay">
-        <p class="content-label">Event Location</p>
         <h1>New York</h1>
-        <p class="content-label">Date</p>
-        <p class="date">October 11, 2026</p>
-        <p class="content-label">Event Type</p>
+        <p class="date">October 11, 2026 <span class="tentative">(Tentative)</span></p>
         <p class="event-type">Dinner & Dancing</p>
       </div>
     </section>
@@ -58,25 +55,25 @@ const guest = Astro.locals.guest;
         </div>
         <div class="content-box info-card">
           <h3>Dress Code</h3>
-          <p><em>Decision: What dress code?</em></p>
-          <ul>
-            <li>Cocktail Attire</li>
-            <li>Semi-Formal</li>
-            <li>Black Tie Optional</li>
-          </ul>
+          <p><strong>Festive Attire</strong></p>
+          <p class="dress-note">Think jackets but no tie required.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- Calendar Subscribe (Prominent) -->
+    <section class="calendar-subscribe">
+      <div class="calendar-content">
+        <h2>Save the Date</h2>
+        <p>Add our event to your calendar so you don't miss a thing.</p>
+        <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
+        <p class="calendar-note">Personalized calendar link available after RSVP</p>
       </div>
     </section>
 
     <!-- Navigation Cards -->
     <section class="nav-cards">
-      <p class="content-label">Page Navigation</p>
       <nav class="event-nav" aria-label="Event sections">
-        <a href="/nyc/schedule" class="nav-card">
-          <span class="nav-icon">📅</span>
-          <span class="nav-title">Schedule</span>
-          <span class="nav-desc">Timeline of the evening</span>
-        </a>
         <a href="/nyc/details" class="nav-card">
           <span class="nav-icon">📍</span>
           <span class="nav-title">Details</span>
@@ -97,7 +94,6 @@ const guest = Astro.locals.guest;
 
     <!-- Venue Preview -->
     <section class="venue-preview">
-      <p class="content-label">Venue Images (when available)</p>
       <div class="venue-grid">
         <ImagePlaceholder
           name="nyc-venue"
@@ -114,20 +110,18 @@ const guest = Astro.locals.guest;
       </div>
     </section>
 
-    <!-- Calendar Subscribe -->
-    <section class="calendar-section">
-      <div class="content-box">
-        <h3>Calendar Subscription</h3>
-        <p>Subscribe button will add NYC events to guest's calendar</p>
-        <button disabled class="calendar-btn">📅 Add to Calendar</button>
-        <p class="note">Generates ICS file from Notion events data</p>
-      </div>
+    <!-- Optional Weekend Events -->
+    <section class="optional-events">
+      <h2>More to Explore</h2>
+      <p class="placeholder-note">Optional events throughout the weekend will be listed here once confirmed.</p>
     </section>
   </main>
 
   <footer>
     <nav class="footer-nav">
       <a href="/registry">Registry</a>
+      <span>·</span>
+      <span class="guest-name">{guest}</span>
       <span>·</span>
       <a href="/api/logout">Logout</a>
     </nav>
@@ -138,6 +132,10 @@ const guest = Astro.locals.guest;
 <style>
   /* Header */
   header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
     border-bottom: 1px solid #e5e5e5;
   }
 
@@ -192,9 +190,20 @@ const guest = Astro.locals.guest;
     color: #ccc;
   }
 
-  .user-greeting {
+  .rsvp-btn {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: #1a1a1a;
+    color: white;
+    text-decoration: none;
+    border-radius: 0.375rem;
     font-size: 0.875rem;
-    color: #666;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+
+  .rsvp-btn:hover {
+    background: #333;
   }
 
   /* Hero */
@@ -223,6 +232,12 @@ const guest = Astro.locals.guest;
   .event-type {
     font-size: 1.125rem;
     color: #666;
+  }
+
+  .tentative {
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
   }
 
   /* Quick Info */
@@ -262,6 +277,62 @@ const guest = Astro.locals.guest;
   .info-card em {
     color: #f59e0b;
     font-weight: 600;
+  }
+
+  .dress-note {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  /* Calendar Subscribe (Prominent) */
+  .calendar-subscribe {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .calendar-content {
+    background: #f9f9f9;
+    border-radius: 0.75rem;
+    padding: 2rem;
+  }
+
+  .calendar-content h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-content > p {
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  .calendar-btn-prominent {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .calendar-btn-prominent:hover:not(:disabled) {
+    background: #333;
+  }
+
+  .calendar-btn-prominent:disabled {
+    background: #888;
+    cursor: not-allowed;
+  }
+
+  .calendar-note {
+    font-size: 0.875rem;
+    color: #888;
+    font-style: italic;
   }
 
   /* Navigation Cards */
@@ -330,26 +401,24 @@ const guest = Astro.locals.guest;
     margin-top: 0.5rem;
   }
 
-  /* Calendar Section */
-  .calendar-section {
+  /* Optional Events */
+  .optional-events {
     padding: 2rem;
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
+    text-align: center;
   }
 
-  .calendar-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    background: #e5e5e5;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: not-allowed;
-    margin: 1rem 0;
+  .optional-events h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
   }
 
-  .calendar-section .note {
-    font-size: 0.75rem;
-    color: #888;
+  .placeholder-note {
+    font-size: 0.9375rem;
+    color: #666;
+    font-style: italic;
   }
 
   /* Footer */
@@ -364,7 +433,8 @@ const guest = Astro.locals.guest;
     margin-bottom: 1rem;
   }
 
-  .footer-nav a {
+  .footer-nav a,
+  .footer-nav .guest-name {
     color: #666;
     text-decoration: none;
   }

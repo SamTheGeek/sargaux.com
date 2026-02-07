@@ -52,8 +52,8 @@ test.describe('Authentication', () => {
     // Should redirect to NYC page
     await expect(page).toHaveURL('/nyc');
 
-    // Should show guest name in header
-    await expect(page.locator('.user-greeting')).toContainText('Sam Gross');
+    // Should show guest name in footer
+    await expect(page.locator('.guest-name')).toContainText('Sam Gross');
   });
 
   test('should login with case-insensitive name', async ({ page }) => {
