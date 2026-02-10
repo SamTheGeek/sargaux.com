@@ -447,64 +447,107 @@ export async function getLatestRSVP(
     );
   }
 
-  // Query for responses matching guest + event
+  // Query for latest response matching guest + event (server-side filter + sort)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response: any = await notion.dataSources.query({
     data_source_id: dataSourceId,
     page_size: 1,
-    // Note: Notion API v2025-09-03 dataSources.query doesn't support filters directly
-    // We'll filter client-side after fetching
+    archived: false,
+    in_trash: false,
+    result_type: 'page',
+    filter: {
+      and: [
+        {
+          property: 'Guest',
+          relation: { contains: guestId },
+        },
+        {
+          property: 'Event',
+          select: { equals: event },
+        },
+      ],
+    },
+    sorts: [
+      {
+        property: 'Submitted At',
+        direction: 'descending',
+      },
+    ],
+    filter_properties: [
+      'Guest',
+      'Event',
+      'Submitted At',
+      'Status',
+      'Guests Attending',
+      'Dietary Needs',
+      'Message',
+      'Details',
+    ],
   });
 
-  // Filter results manually
-  for (const page of response.results) {
-    if (page.object !== 'page') continue;
+  const page = response.results?.[0];
+  return parseRSVPPage(page, guestId, event);
+}
 
-    const props = page.properties;
+function getRichTextPlainText(prop: any): string | undefined {
+  if (!prop || !Array.isArray(prop.rich_text)) return undefined;
+  return prop.rich_text[0]?.plain_text;
+}
 
-    // Check Guest relation
-    const guestRelation = props['Guest']?.relation?.[0]?.id;
-    if (guestRelation !== guestId) continue;
+export function parseRSVPPage(
+  page: any,
+  guestId: string,
+  event: 'nyc' | 'france'
+): RSVPResponse | null {
+  if (!page || page.object !== 'page') return null;
 
-    // Check Event select
-    const eventSelect = props['Event']?.select?.name?.toLowerCase();
-    if (eventSelect !== event) continue;
+  const props = page.properties ?? {};
 
-    // Parse response
-    const submittedAt = props['Submitted At']?.date?.start || new Date().toISOString();
-    const status = props['Status']?.select?.name || 'Attending';
-    const guestsAttending = props['Guests Attending']?.rich_text?.[0]?.plain_text || '';
-    const dietary = props['Dietary Needs']?.rich_text?.[0]?.plain_text || undefined;
-    const message = props['Message']?.rich_text?.[0]?.plain_text || undefined;
-    const detailsJson = props['Details']?.rich_text?.[0]?.plain_text || '{}';
+  const submittedAt =
+    props['Submitted At']?.date?.start || new Date().toISOString();
+  const status = props['Status']?.select?.name || 'Attending';
+  const guestsAttending = getRichTextPlainText(props['Guests Attending']) || '';
+  const dietary = getRichTextPlainText(props['Dietary Needs']);
+  const message = getRichTextPlainText(props['Message']);
 
-    let details: RSVPDetails | undefined;
-    let eventsAttending: string[] | undefined;
+  const detailsText = getRichTextPlainText(props['Details']);
+  const hasDetailsText =
+    typeof detailsText === 'string' && detailsText.trim().length > 0;
+  const detailsJson = hasDetailsText ? detailsText : '{}';
 
-    try {
-      const parsed = JSON.parse(detailsJson);
-      eventsAttending = parsed.eventsAttending;
+  let details: RSVPDetails | undefined;
+  let eventsAttending: string[] | undefined;
+
+  try {
+    const parsed = JSON.parse(detailsJson);
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.eventsAttending)) {
+        eventsAttending = parsed.eventsAttending.filter(
+          (item: unknown) => typeof item === 'string'
+        );
+      }
       delete parsed.eventsAttending;
-      details = parsed;
-    } catch {
-      details = undefined;
+      const remainingKeys = Object.keys(parsed);
+      if (hasDetailsText && remainingKeys.length > 0) {
+        details = parsed as RSVPDetails;
+      }
     }
-
-    return {
-      id: page.id,
-      guestId,
-      event,
-      submittedAt,
-      status: status as 'Attending' | 'Declined' | 'Partial',
-      guestsAttending,
-      dietary,
-      message,
-      details,
-      eventsAttending,
-    };
+  } catch {
+    details = undefined;
   }
 
-  return null;
+  return {
+    id: page.id,
+    guestId,
+    event,
+    submittedAt,
+    status: status as 'Attending' | 'Declined' | 'Partial',
+    guestsAttending,
+    dietary,
+    message,
+    details,
+    eventsAttending,
+  };
 }
 
 /**
