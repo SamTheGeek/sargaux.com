@@ -149,9 +149,10 @@ export interface GuestRecord {
 
 ---
 
-## Phase 2: Event Catalog & RSVP Endpoints
+## Phase 2: Event Catalog & RSVP Endpoints ✅ COMPLETE
 
 **Goal:** Create Event Catalog in Notion, build RSVP submission endpoints.
+**Status:** Code implementation complete. Notion schema setup done in earlier work.
 
 ### Notion setup (manual) ✅ COMPLETE
 
@@ -217,12 +218,55 @@ export async function getLatestRSVP(guestId: string, event: 'nyc' | 'france'): P
 - GET: validate auth → query by guestId + event → return latest response data
 - On re-submission: find existing page by guest relation + event select, update it
 
+### Implementation Complete ✅
+
+**Files created:**
+- `src/types/event.ts` — EventRecord type definition
+- `src/types/rsvp.ts` — RSVPSubmission, RSVPResponse, and RSVPDetails types
+- `src/pages/api/rsvp.ts` — POST (submit), GET (fetch), DELETE (reset) endpoints
+
+**Files modified:**
+- `src/lib/notion.ts` — Added functions: `getEventCatalog()`, `getGuestEvents()`, `getGuestParty()`, `submitRSVP()`, `getLatestRSVP()`, `deleteRSVP()`, `clearEventCache()`
+- `src/env.d.ts` — Added `NOTION_EVENT_CATALOG_DB` and `NOTION_RSVP_RESPONSES_DB` to ProcessEnv
+- `src/config/features.ts` — Added `nyc.rsvpEnabled` and `france.rsvpEnabled` feature flags
+- `netlify.toml` — Added `FEATURE_NYC_RSVP_ENABLED` and `FEATURE_FRANCE_RSVP_ENABLED` to deploy-preview context
+
+**Tests created:**
+- `tests/rsvp-api.spec.ts` — 14 tests covering POST/GET/DELETE endpoints, validation, auth checks, submission and updates
+- `tests/rsvp.spec.ts` — UI tests (mostly placeholders for Phase 3) covering form structure, submission flow, pre-fill behavior, email capture
+
+### Resetting RSVPs for Testing
+
+To test the "new RSVP" flow vs. updating an existing RSVP:
+
+**Option 1: DELETE endpoint (recommended)**
+```bash
+# Get auth cookie from browser DevTools or login flow
+curl -X DELETE 'http://localhost:1213/api/rsvp?event=nyc' \
+  -H 'Cookie: sargaux_auth=YOUR_COOKIE_HERE'
+```
+
+**Option 2: Direct Notion manipulation**
+- Open Notion → RSVP Responses database
+- Find the response page for the guest + event
+- Archive or delete the page manually
+
+**Option 3: Programmatic via Playwright tests**
+```typescript
+await request.delete('http://localhost:1213/api/rsvp?event=nyc', {
+  headers: { Cookie: `sargaux_auth=${authCookie}` },
+});
+```
+
+The DELETE endpoint archives the Notion page (Notion API doesn't support true deletion), so it won't appear in queries but remains recoverable in Notion's trash.
+
 ### Verification
-- POST with valid auth → creates page in RSVP Responses database
-- POST again → updates same page (not duplicate)
-- GET returns the previously submitted data
-- POST without auth → 401
-- Guest's RSVP status updates in Guest List database
+- ✅ POST with valid auth → creates page in RSVP Responses database
+- ✅ POST again → updates same page (not duplicate)
+- ✅ GET returns the previously submitted data
+- ✅ POST without auth → 401
+- ✅ DELETE removes RSVP (archives Notion page)
+- ✅ Tests cover all endpoints and validation scenarios
 
 ---
 
@@ -349,9 +393,45 @@ Template:
 
 ## Execution Order
 
-1. **Phase 1** — foundation, everything depends on it
-2. **Phase 2** — endpoints + Event Catalog setup (depends on Phase 1 for auth)
-3. **Phase 3** — dynamic forms (depends on Phase 2 for endpoints + events)
-4. **Phase 4** — Notion-driven display (depends on Phase 2 for event data)
+1. **Phase 1** — foundation, everything depends on it ✅
+2. **Phase 2** — endpoints + Event Catalog setup (depends on Phase 1 for auth) ✅
+3. **Phase 3** — dynamic forms (depends on Phase 2 for endpoints + events) ⏳ NEXT
+4. **Phase 4** — Notion-driven display (depends on Phase 2 for event data) ⏳
 
 Each phase gets its own branch and PR.
+
+---
+
+## Future Enhancements (Post-MVP)
+
+### Email Confirmation System
+
+**Goal:** Send email confirmations when guests submit RSVPs, and capture email addresses if not already on file.
+
+**Requirements:**
+1. **Email capture in RSVP form**
+   - If guest record lacks `Guest Email` property in Notion, show email input field
+   - Validate email format client-side and server-side
+   - Save email to Guest List database when RSVP is submitted
+
+2. **Resend integration**
+   - Use existing Resend account (for save-the-dates)
+   - Create RSVP confirmation email template
+   - Include: guest name, event details, attendance summary, dietary notes, optional events selected
+   - Add "Update RSVP" link back to the website
+
+3. **Email sending logic**
+   - Send on initial RSVP submission (not on updates, or include "This is an update" note)
+   - Handle Resend API errors gracefully (log, don't block RSVP submission)
+   - Add `RESEND_API_KEY` to Netlify environment variables
+
+4. **Testing**
+   - Test with real email addresses in local dev
+   - Verify email delivery in Netlify preview deploys
+   - Add Playwright tests for email field validation
+
+**Implementation notes:**
+- Add to Phase 3 or create separate Phase 5
+- Requires `resend` npm package
+- Email template can be HTML or plain text (prefer HTML with plain text fallback)
+- Consider rate limiting if concerned about spam (unlikely for wedding RSVPs)

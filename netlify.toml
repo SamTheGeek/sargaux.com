@@ -22,6 +22,8 @@
   FEATURE_FRANCE_ACCOMMODATION_REQUEST = "true"
   FEATURE_FRANCE_EU_ALLERGENS = "true"
   FEATURE_FRANCE_LOCATION_MAP = "true"
+  FEATURE_NYC_RSVP_ENABLED = "true"
+  FEATURE_FRANCE_RSVP_ENABLED = "true"
 
 # Production keeps defaults from src/config/features.ts
 # Override specific flags in Netlify Dashboard when ready to launch

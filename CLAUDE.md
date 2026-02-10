@@ -80,8 +80,10 @@ The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to
 
 **Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open <http://localhost:1213> in a browser. This allows watching changes in real time as edits are made.
 
+**IMPORTANT - Port 1213**: The development server and all tests use port **1213** (December 13th - the engagement date). This is a sentimental choice and must NEVER be changed. Do not use port 4321 or any other port.
+
 ```bash
-# Start development server (http://localhost:1213)
+# Start development server (http://localhost:1213 - engagement date!)
 npm run dev
 
 # Build for production

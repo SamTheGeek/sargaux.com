@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: 'http://localhost:1213',
     trace: 'on-first-retry',
   },
   projects: [
@@ -19,12 +19,12 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && node ./dist/server/entry.mjs',
-    url: 'http://localhost:4321',
+    url: 'http://localhost:1213',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
       HOST: '0.0.0.0',
-      PORT: '4321',
+      PORT: '1213',
       ASTRO_ADAPTER: 'node',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
     },

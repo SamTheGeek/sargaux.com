@@ -13,6 +13,8 @@ declare namespace NodeJS {
   interface ProcessEnv {
     NOTION_API_KEY?: string;
     NOTION_GUEST_LIST_DB?: string; // Notion data source ID (not database ID)
+    NOTION_EVENT_CATALOG_DB?: string; // Event Catalog data source ID
+    NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses data source ID
   }
 }
 
@@ -37,6 +39,8 @@ interface ImportMetaEnv {
   readonly FEATURE_FRANCE_ACCOMMODATION_REQUEST?: string;
   readonly FEATURE_FRANCE_EU_ALLERGENS?: string;
   readonly FEATURE_FRANCE_LOCATION_MAP?: string;
+  readonly FEATURE_NYC_RSVP_ENABLED?: string;
+  readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
   readonly FEATURE_REGISTRY_ENABLED?: string;
 }
 
