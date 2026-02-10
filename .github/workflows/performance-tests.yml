@@ -66,10 +66,19 @@ jobs:
       - name: Build site
         if: steps.filter.outputs.docs_only != 'true'
         run: npm run build
+        env:
+          FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
 
       - name: Run performance tests
         if: steps.filter.outputs.docs_only != 'true'
         run: npx playwright test tests/performance.spec.ts
+        env:
+          FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
+          FEATURE_GLOBAL_NOTION_BACKEND: 'true'
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
+          NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
+          NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
 
       - name: Upload test results
         if: steps.filter.outputs.docs_only != 'true'

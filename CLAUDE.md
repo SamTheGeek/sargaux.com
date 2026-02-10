@@ -268,6 +268,19 @@ The project version in `package.json` follows semantic versioning with wedding m
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
 
+### GitHub Secrets Configuration
+
+The following secrets must be set in GitHub repository settings (Settings → Secrets and variables → Actions):
+
+- `NOTION_API_KEY` — Notion integration token
+- `NOTION_GUEST_LIST_DB` — Guest List data source ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
+
+These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
+
+**To add/update secrets**: `gh secret set NOTION_API_KEY` (then paste the value when prompted)
+
 ## Feature Flags
 
 The site uses a **build-time** feature flag system (`src/config/features.ts`) for gradual rollout and protecting production. Flags are resolved at build time via Vite's static `import.meta.env` replacement — changing a flag requires a rebuild.
