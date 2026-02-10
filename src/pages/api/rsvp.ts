@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const auth = getAuthenticatedGuest(authCookie.value);
+  const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
     return new Response(JSON.stringify({ error: 'Invalid session' }), {
       status: 401,
@@ -127,7 +127,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const auth = getAuthenticatedGuest(authCookie.value);
+  const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
     return new Response(JSON.stringify({ error: 'Invalid session' }), {
       status: 401,
@@ -203,7 +203,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const auth = getAuthenticatedGuest(authCookie.value);
+  const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
     return new Response(JSON.stringify({ error: 'Invalid session' }), {
       status: 401,
