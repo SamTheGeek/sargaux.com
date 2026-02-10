@@ -43,6 +43,7 @@ This database stays as the "day" level. Event Catalog links to it for day groupi
 | Event Name (title) | Title | e.g. "Friday Welcome Dinner" |
 | Day | Relation → Wedding Timeline | Which day this belongs to |
 | Event Type | Select | `Core`, `Optional` |
+| Wedding | Select | `NYC`, `France` |
 | Time | Text | e.g. "7:00 PM" |
 | Location | Text | Venue name or TBD |
 | Description | Rich Text | Event details for website |
@@ -50,8 +51,10 @@ This database stays as the "day" level. Event Catalog links to it for day groupi
 | Guests Invited | Relation → Guest List | **Bidirectional** with `Events Invited` on Guest List |
 
 Initial pages:
-- **NYC:** Dinner & Dancing (Core), Friday Welcome Drinks (Optional), Sunday Brunch (Optional)
+- **NYC:** Dinner (Core), Dancing (Core), Friday Welcome Drinks (Optional), Sunday Brunch (Optional)
 - **France:** Friday Welcome Dinner (Core), Saturday Ceremony & Reception (Core), Sunday Farewell Brunch (Core), Saturday Morning Excursion (Optional)
+
+> **Note:** "Dinner & Dancing" was split into separate "Dinner" and "Dancing" events so that Dancing can be offered as a standalone digital invite add-on.
 
 ### Create: RSVP Responses Database
 
@@ -69,9 +72,10 @@ Initial pages:
 
 ---
 
-## Phase 1: Notion Foundation & Auth
+## Phase 1: Notion Foundation & Auth ✅ COMPLETE
 
 **Goal:** Install Notion SDK, replace hardcoded guest list with Notion-backed auth.
+**Status:** Merged in PR #25 (`bc1198c`).
 
 ### Notion setup (manual, before coding)
 - Create Notion integration at https://www.notion.so/my-integrations
@@ -149,14 +153,21 @@ export interface GuestRecord {
 
 **Goal:** Create Event Catalog in Notion, build RSVP submission endpoints.
 
-### Notion setup (manual)
-- Create Event Catalog database with schema above
-- Create bidirectional relation between Event Catalog and Guest List
-- Remove old `Days Invited` relation from Guest List
-- Populate initial events (NYC + France)
-- Assign guests to events via the `Guests Invited` / `Events Invited` relation
-- Create RSVP Responses database with schema above
-- Share both new databases with the integration
+### Notion setup (manual) ✅ COMPLETE
+
+- ✅ Created Event Catalog database (data source: `dc1fe06b-5729-4ea9-af65-a32e6eab0151`)
+- ✅ Created bidirectional relation between Event Catalog (`Guests Invited`) and Guest List (`Events Invited`)
+- ✅ Added `Event Invitations` multi-select (`NYC`, `France`) to Guest List
+- ✅ Added `Wedding` select (`NYC`, `France`) to Event Catalog
+- ✅ Updated Wedding Timeline: `Location` property changed from text to select, NYC Event page added
+- ✅ Populated all 8 events (4 NYC + 4 France) with guest assignments via `Guests Invited` relation
+- ✅ Set `Event Invitations` on all active guests: 37 dual-invited (`NYC, France`), 101 NYC-only (`NYC`), 161 France (`France`)
+- ✅ Created RSVP Responses database (data source: `de976342-07ce-422a-892b-73d46832bf6f`)
+- ✅ Shared both new databases with the Notion integration
+- ✅ Added `NOTION_EVENT_CATALOG_DB` and `NOTION_RSVP_RESPONSES_DB` to Netlify Dashboard and GitHub Secrets
+- ⏳ `Days Invited` relation kept for now (not yet removed) — `Events Invited` is the canonical source
+
+> **Note:** 9 archived guest pages could not have `Event Invitations` set. These are likely deleted/removed guests and can be ignored unless they need to be restored.
 
 ### Files to create
 
@@ -314,8 +325,8 @@ Template:
 - `NOTION_API_KEY`
 - `NOTION_GUEST_LIST_DB` = `2c604b63ea2781d797d7000b48670e7e`
 - `NOTION_WEDDING_TIMELINE_DB` = `2cf04b63ea2780a2b200000bed73f404`
-- `NOTION_RSVP_RESPONSES_DB` = (after creating)
-- `NOTION_EVENT_CATALOG_DB` = (after creating)
+- `NOTION_RSVP_RESPONSES_DB` = `de97634207ce422a892b73d46832bf6f`
+- `NOTION_EVENT_CATALOG_DB` = `dc1fe06b57294ea9af65a32e6eab0151`
 
 **netlify.toml** (feature flags for preview):
 - `FEATURE_GLOBAL_NOTION_BACKEND = "true"`

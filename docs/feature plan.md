@@ -19,12 +19,13 @@ tags: [website, product, requirements]
 
 ## First Event Details
 
-- Dinner, followed by dancing.
+- Dinner and dancing are separate events in the system (to allow digital-only dancing invites as add-ons).
 - Date is tentatively set for Sunday October 11, 2026
 - Holiday long weekend — Monday is Columbus Day
 - Still might move to Saturday the 10th or a later weekend. Will keep updating.
 - Dinner will be several hours of cocktail at a restaurant to be confirmed
 - Dancing to follow at a secondary location, also to be confirmed.
+- Optional events: Friday Welcome Drinks, Sunday Brunch
 
 ## Second Event Details
 
