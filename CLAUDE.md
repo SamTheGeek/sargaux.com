@@ -148,6 +148,12 @@ The project includes 51 automated tests that run on every PR:
 
 All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
+**Test infrastructure notes:**
+- Tests use `BASE_URL = 'http://localhost:1213'` constant (port 1213 is sacred!)
+- API tests that require Notion backend use `test.skip()` to gracefully skip when `FEATURE_GLOBAL_NOTION_BACKEND` is not enabled
+- Use `.skip()` for placeholder tests that will be enabled in future phases
+- `beforeAll` hooks can get auth cookies once and reuse across test suite
+
 ## Git Workflow
 
 **IMPORTANT**: Direct pushes to the `main` branch are not allowed. All code changes must go through the following process:
@@ -204,7 +210,10 @@ The project version in `package.json` follows semantic versioning with wedding m
 - **Minor** (`0.x.0`): Bump when a plan/epic is completed (e.g., Notion integration Phase 1 → 0.6.0)
 - **Major**: `1.0` = NYC event launch, `2.0` = France event launch
 
-Always bump the patch version as part of each PR.
+**IMPORTANT**: Always bump the version BEFORE creating the PR:
+- Minor bump when completing a full implementation plan/epic/phase
+- Patch bump for smaller PRs (bug fixes, single features, dependency updates)
+- Check version is updated before running `git commit`
 
 ## Project Structure
 
@@ -291,6 +300,12 @@ Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
 - `france.euAllergens` → `FEATURE_FRANCE_EU_ALLERGENS`
 
 **Important**: Each flag must be a **static** `import.meta.env.FEATURE_*` reference in `features.ts` so Vite can replace it at build time. Dynamic access like `import.meta.env[key]` does NOT work.
+
+**Adding a new feature flag (4-step checklist):**
+1. Add to `FeatureFlags` type definition in `src/config/features.ts`
+2. Add static `import.meta.env.FEATURE_*` reference in features object
+3. Add to `ImportMetaEnv` interface in `src/env.d.ts`
+4. Add to `netlify.toml` `[context.deploy-preview.environment]` for preview deploys
 
 ### Available Flags
 
