@@ -14,7 +14,7 @@ The primary user is **Sam Gross**, one half of the couple getting married. Marga
 
 Two separate events with distinct guest lists (minimal overlap):
 
-- **NYC Event**: October 11, 2026 — Dinner and dancing in New York City
+- **NYC Event**: October 11, 2026 — Dinner + Dancing (separate events) in New York City
 - **France Event**: May 28-30, 2027 — Weekend at Village De Sully
 
 ### Key Architecture Decisions
@@ -249,6 +249,8 @@ Always bump the patch version as part of each PR.
   - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
   - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
 - `NOTION_GUEST_LIST_DB` — Notion **data source** ID (Notion API v2025-09-03 uses data sources, not database IDs)
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
