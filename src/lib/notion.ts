@@ -7,6 +7,8 @@
 
 import { Client } from '@notionhq/client';
 import type { GuestRecord } from '../types/guest';
+import type { EventRecord } from '../types/event';
+import type { RSVPSubmission, RSVPResponse, RSVPDetails } from '../types/rsvp';
 
 let notionClient: Client | null = null;
 
@@ -145,4 +147,437 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
  */
 export function clearGuestCache(): void {
   guestCache = null;
+}
+
+// Event catalog cache — populated once per cold start
+let eventCatalogCache: Map<'nyc' | 'france', EventRecord[]> = new Map();
+
+/**
+ * Fetch all events from the Event Catalog for a specific wedding.
+ * Results are cached in memory for the lifetime of the server process.
+ */
+export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventRecord[]> {
+  if (eventCatalogCache.has(wedding)) {
+    return eventCatalogCache.get(wedding)!;
+  }
+
+  const notion = getClient();
+  const dataSourceId = process.env.NOTION_EVENT_CATALOG_DB;
+
+  if (!dataSourceId) {
+    throw new Error(
+      'NOTION_EVENT_CATALOG_DB is not set. Add it to Netlify environment variables.'
+    );
+  }
+
+  const events: EventRecord[] = [];
+  let cursor: string | undefined = undefined;
+
+  do {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await notion.dataSources.query({
+      data_source_id: dataSourceId,
+      start_cursor: cursor,
+      page_size: 100,
+    });
+
+    for (const page of response.results) {
+      if (page.object !== 'page') continue;
+
+      const props = page.properties;
+
+      // Event Name (title)
+      const name = props['Event Name']?.title?.[0]?.plain_text || '';
+      if (!name) continue;
+
+      // Wedding (select)
+      const weddingProp = props['Wedding']?.select?.name?.toLowerCase();
+      if (weddingProp !== wedding) continue; // Filter by wedding
+
+      // Event Type (select)
+      const typeProp = props['Event Type']?.select?.name;
+      const type = typeProp === 'Optional' ? 'Optional' : 'Core';
+
+      // Time (text)
+      const time = props['Time']?.rich_text?.[0]?.plain_text || undefined;
+
+      // Location (text)
+      const location = props['Location']?.rich_text?.[0]?.plain_text || undefined;
+
+      // Description (rich text)
+      const description = props['Description']?.rich_text?.[0]?.plain_text || undefined;
+
+      // Day (relation to Wedding Timeline)
+      const dayId = props['Day']?.relation?.[0]?.id || undefined;
+
+      // Show on Website (checkbox)
+      const showOnWebsite = props['Show on Website']?.checkbox === true;
+
+      events.push({
+        id: page.id,
+        name,
+        type,
+        wedding,
+        time,
+        location,
+        description,
+        dayId,
+        showOnWebsite,
+      });
+    }
+
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
+
+  eventCatalogCache.set(wedding, events);
+  return events;
+}
+
+/**
+ * Fetch events that a specific guest is invited to.
+ */
+export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
+  const notion = getClient();
+
+  // Fetch the guest page to get Events Invited relation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const guestPage: any = await notion.pages.retrieve({ page_id: guestId });
+  const props = guestPage.properties;
+
+  // Events Invited (relation to Event Catalog)
+  const eventIds: string[] = (props['Events Invited']?.relation || []).map(
+    (r: { id: string }) => r.id
+  );
+
+  if (eventIds.length === 0) {
+    return [];
+  }
+
+  // Fetch each event page
+  const events: EventRecord[] = [];
+  for (const eventId of eventIds) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
+      const eventProps = eventPage.properties;
+
+      const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
+      if (!name) continue;
+
+      const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
+      const wedding = weddingProp === 'france' ? 'france' : 'nyc';
+
+      const typeProp = eventProps['Event Type']?.select?.name;
+      const type = typeProp === 'Optional' ? 'Optional' : 'Core';
+
+      const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
+      const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
+      const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
+      const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
+      const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
+
+      events.push({
+        id: eventId,
+        name,
+        type,
+        wedding,
+        time,
+        location,
+        description,
+        dayId,
+        showOnWebsite,
+      });
+    } catch (error) {
+      console.error(`Failed to fetch event ${eventId}:`, error);
+    }
+  }
+
+  return events;
+}
+
+/**
+ * Fetch a guest and their related party members (Related Guests).
+ * Returns [primary guest, ...related guests], with +1s sorted last.
+ */
+export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
+  const allGuests = await fetchAllGuests();
+  const primaryGuest = allGuests.find(g => g.id === guestId);
+
+  if (!primaryGuest) {
+    throw new Error(`Guest not found: ${guestId}`);
+  }
+
+  const party: GuestRecord[] = [primaryGuest];
+
+  // Fetch related guests
+  for (const relatedId of primaryGuest.relatedGuestIds) {
+    const relatedGuest = allGuests.find(g => g.id === relatedId);
+    if (relatedGuest) {
+      party.push(relatedGuest);
+    }
+  }
+
+  // Sort: primary first, then non-+1s, then +1s
+  return party.sort((a, b) => {
+    if (a.id === guestId) return -1;
+    if (b.id === guestId) return 1;
+    if (a.isPlusOne && !b.isPlusOne) return 1;
+    if (!a.isPlusOne && b.isPlusOne) return -1;
+    return 0;
+  });
+}
+
+/**
+ * Submit or update an RSVP in the RSVP Responses database.
+ * If an existing response exists for this guest + event, it will be updated.
+ * Returns the Notion page ID of the created/updated response.
+ */
+export async function submitRSVP(
+  guestId: string,
+  submission: RSVPSubmission
+): Promise<string> {
+  const notion = getClient();
+  const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
+
+  if (!dataSourceId) {
+    throw new Error(
+      'NOTION_RSVP_RESPONSES_DB is not set. Add it to Netlify environment variables.'
+    );
+  }
+
+  // Fetch the guest name for the title
+  const allGuests = await fetchAllGuests();
+  const guest = allGuests.find(g => g.id === guestId);
+  const guestName = guest?.name || 'Unknown Guest';
+
+  // Determine status
+  const attendingCount = submission.guestsAttending.filter(g => g.attending).length;
+  const totalCount = submission.guestsAttending.length;
+  let status: 'Attending' | 'Declined' | 'Partial';
+  if (attendingCount === 0) {
+    status = 'Declined';
+  } else if (attendingCount === totalCount) {
+    status = 'Attending';
+  } else {
+    status = 'Partial';
+  }
+
+  // Guests Attending: comma-separated names
+  const guestsAttending = submission.guestsAttending
+    .filter(g => g.attending)
+    .map(g => g.name)
+    .join(', ');
+
+  // Details JSON blob
+  const details: RSVPDetails & { eventsAttending?: string[] } = {
+    ...submission.details,
+    eventsAttending: submission.eventsAttending,
+  };
+
+  // Check if an existing RSVP exists for this guest + event
+  const existingRSVP = await getLatestRSVP(guestId, submission.event);
+
+  const properties = {
+    Response: {
+      title: [{ text: { content: `${guestName} — ${submission.event.toUpperCase()}` } }],
+    },
+    Guest: {
+      relation: [{ id: guestId }],
+    },
+    Event: {
+      select: { name: submission.event.toUpperCase() },
+    },
+    'Submitted At': {
+      date: { start: new Date().toISOString() },
+    },
+    Status: {
+      select: { name: status },
+    },
+    'Guests Attending': {
+      rich_text: [{ text: { content: guestsAttending } }],
+    },
+    'Dietary Needs': {
+      rich_text: submission.dietary
+        ? [{ text: { content: submission.dietary } }]
+        : [],
+    },
+    Message: {
+      rich_text: submission.message
+        ? [{ text: { content: submission.message } }]
+        : [],
+    },
+    Details: {
+      rich_text: [{ text: { content: JSON.stringify(details) } }],
+    },
+  };
+
+  if (existingRSVP) {
+    // Update existing page
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await notion.pages.update({
+      page_id: existingRSVP.id,
+      properties,
+    });
+    return existingRSVP.id;
+  } else {
+    // Create new page
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await notion.pages.create({
+      parent: { type: 'database_id', database_id: dataSourceId },
+      properties,
+    });
+    return response.id;
+  }
+}
+
+/**
+ * Fetch the latest RSVP for a guest and event (for pre-filling forms).
+ * Returns null if no RSVP exists.
+ */
+export async function getLatestRSVP(
+  guestId: string,
+  event: 'nyc' | 'france'
+): Promise<RSVPResponse | null> {
+  const notion = getClient();
+  const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
+
+  if (!dataSourceId) {
+    throw new Error(
+      'NOTION_RSVP_RESPONSES_DB is not set. Add it to Netlify environment variables.'
+    );
+  }
+
+  // Query for latest response matching guest + event (server-side filter + sort)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response: any = await notion.dataSources.query({
+    data_source_id: dataSourceId,
+    page_size: 1,
+    archived: false,
+    in_trash: false,
+    result_type: 'page',
+    filter: {
+      and: [
+        {
+          property: 'Guest',
+          relation: { contains: guestId },
+        },
+        {
+          property: 'Event',
+          select: { equals: event },
+        },
+      ],
+    },
+    sorts: [
+      {
+        property: 'Submitted At',
+        direction: 'descending',
+      },
+    ],
+    filter_properties: [
+      'Guest',
+      'Event',
+      'Submitted At',
+      'Status',
+      'Guests Attending',
+      'Dietary Needs',
+      'Message',
+      'Details',
+    ],
+  });
+
+  const page = response.results?.[0];
+  return parseRSVPPage(page, guestId, event);
+}
+
+function getRichTextPlainText(prop: any): string | undefined {
+  if (!prop || !Array.isArray(prop.rich_text)) return undefined;
+  return prop.rich_text[0]?.plain_text;
+}
+
+export function parseRSVPPage(
+  page: any,
+  guestId: string,
+  event: 'nyc' | 'france'
+): RSVPResponse | null {
+  if (!page || page.object !== 'page') return null;
+
+  const props = page.properties ?? {};
+
+  const submittedAt =
+    props['Submitted At']?.date?.start || new Date().toISOString();
+  const status = props['Status']?.select?.name || 'Attending';
+  const guestsAttending = getRichTextPlainText(props['Guests Attending']) || '';
+  const dietary = getRichTextPlainText(props['Dietary Needs']);
+  const message = getRichTextPlainText(props['Message']);
+
+  const detailsText = getRichTextPlainText(props['Details']);
+  const hasDetailsText =
+    typeof detailsText === 'string' && detailsText.trim().length > 0;
+  const detailsJson = hasDetailsText ? detailsText : '{}';
+
+  let details: RSVPDetails | undefined;
+  let eventsAttending: string[] | undefined;
+
+  try {
+    const parsed = JSON.parse(detailsJson);
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.eventsAttending)) {
+        eventsAttending = parsed.eventsAttending.filter(
+          (item: unknown) => typeof item === 'string'
+        );
+      }
+      delete parsed.eventsAttending;
+      const remainingKeys = Object.keys(parsed);
+      if (hasDetailsText && remainingKeys.length > 0) {
+        details = parsed as RSVPDetails;
+      }
+    }
+  } catch {
+    details = undefined;
+  }
+
+  return {
+    id: page.id,
+    guestId,
+    event,
+    submittedAt,
+    status: status as 'Attending' | 'Declined' | 'Partial',
+    guestsAttending,
+    dietary,
+    message,
+    details,
+    eventsAttending,
+  };
+}
+
+/**
+ * Delete an RSVP response (for testing "new RSVP" flows).
+ * Returns true if deleted, false if not found.
+ */
+export async function deleteRSVP(
+  guestId: string,
+  event: 'nyc' | 'france'
+): Promise<boolean> {
+  const existingRSVP = await getLatestRSVP(guestId, event);
+
+  if (!existingRSVP) {
+    return false;
+  }
+
+  const notion = getClient();
+
+  // Archive the page (Notion doesn't have a true delete via API)
+  await notion.pages.update({
+    page_id: existingRSVP.id,
+    archived: true,
+  });
+
+  return true;
+}
+
+/**
+ * Clear the event catalog cache (useful for testing or manual refresh).
+ */
+export function clearEventCache(): void {
+  eventCatalogCache.clear();
 }
