@@ -166,8 +166,10 @@ tags: [website, product, requirements]
 ## Milestones & timeline
 
 - **M1 (February 2026)**: Basic site framework, Notion integration, authentication (F-001, F-005, F-006)
+- **M1.5 (Pre-NYC Launch)**: **Content review & copy editing** — Review all NYC pages (landing, schedule, details, travel, RSVP) for accuracy, tone, and completeness. Update placeholder text, verify venue details, finalize wording.
 - **M2 (March 2026)**: Email infrastructure, save-the-date pages, calendar subscriptions (F-003, F-004)
 - **M3 (April 2026)**: NYC full launch — RSVP, registry, all NYC pages (F-002, F-011, F-012 for NYC)
+- **M3.5 (Pre-France Launch)**: **Content review & copy editing** — Review all France pages (landing, schedule, details, travel, RSVP, Village De Sully info) for accuracy, tone, and completeness. Verify French translations if i18n is enabled, confirm accommodation details.
 - **M4 (May 2026)**: France save-the-date launch
 - **M5 (October 2026)**: France full launch — RSVP, all France pages complete
 
