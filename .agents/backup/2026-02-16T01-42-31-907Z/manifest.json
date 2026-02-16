@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "createdAt": "2026-02-16T01:42:36.007Z",
+  "scope": "project",
+  "operation": "change-to-agents",
+  "entries": [
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.codex/prompts",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.cursor/commands",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.gemini/commands",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.codex/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.cursor/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.gemini/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/sam/Developer/sargaux.com/.github/skills",
+      "kind": "symlink",
+      "action": "create"
+    }
+  ]
+}
