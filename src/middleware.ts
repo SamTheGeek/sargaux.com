@@ -50,8 +50,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Add guest info to locals for use in pages
   context.locals.guest = auth.guest;
+  context.locals.eventInvitations = auth.eventInvitations;
   if (auth.notionId) {
     context.locals.guestId = auth.notionId;
+  }
+
+  const invitedToNyc = auth.eventInvitations.includes('nyc');
+  const invitedToFrance = auth.eventInvitations.includes('france');
+  const primaryEventRoute = invitedToNyc ? '/nyc' : '/france';
+
+  // Event-level route access control
+  if (pathname.startsWith('/nyc') && !invitedToNyc) {
+    return context.redirect(primaryEventRoute, 302);
+  }
+
+  if (pathname.startsWith('/france') && !invitedToFrance) {
+    return context.redirect(primaryEventRoute, 302);
   }
 
   return next();

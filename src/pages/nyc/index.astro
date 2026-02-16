@@ -3,6 +3,8 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 
 const guest = Astro.locals.guest;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 ---
 
 <WireframeLayout title="NYC Event" description="NYC Wedding - October 2026">
@@ -10,12 +12,14 @@ const guest = Astro.locals.guest;
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
       <div class="nav-right">
-        <div class="content-box event-toggle">
-          <h3>Event Toggle (if invited to both)</h3>
-          <span class="toggle-item active">NYC</span>
-          <span class="toggle-divider">|</span>
-          <a href="/france" class="toggle-item">France</a>
-        </div>
+        {showEventToggle && (
+          <div class="content-box event-toggle">
+            <h3>Event Toggle (if invited to both)</h3>
+            <span class="toggle-item active">NYC</span>
+            <span class="toggle-divider">|</span>
+            <a href="/france" class="toggle-item">France</a>
+          </div>
+        )}
         <a href="/nyc/rsvp" class="rsvp-btn">RSVP</a>
       </div>
     </nav>

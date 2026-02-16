@@ -7,6 +7,7 @@
  */
 
 import type { GuestRecord } from '../types/guest';
+export type EventInvitation = 'nyc' | 'france';
 
 // Hardcoded fallback guest list for local dev without Notion keys
 const AUTHORIZED_GUESTS = [
@@ -72,6 +73,7 @@ export const AUTH_COOKIE_NAME = 'sargaux_auth';
 interface SessionPayload {
   guest: string;
   notionId?: string;
+  eventInvitations?: EventInvitation[];
   created: number;
 }
 
@@ -79,7 +81,11 @@ interface SessionPayload {
  * Create a session token from a guest name and optional Notion ID.
  * For MVP, this is just base64-encoded. In production, use proper signing.
  */
-export function createSessionToken(guestName: string, notionId?: string): string {
+export function createSessionToken(
+  guestName: string,
+  notionId?: string,
+  eventInvitations?: EventInvitation[]
+): string {
   const payload: SessionPayload = {
     guest: guestName,
     created: Date.now(),
@@ -87,7 +93,10 @@ export function createSessionToken(guestName: string, notionId?: string): string
   if (notionId) {
     payload.notionId = notionId;
   }
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
+  if (eventInvitations && eventInvitations.length > 0) {
+    payload.eventInvitations = eventInvitations;
+  }
+  return Buffer.from(JSON.stringify(payload)).toString('base64url');
 }
 
 /**
@@ -96,15 +105,21 @@ export function createSessionToken(guestName: string, notionId?: string): string
  */
 export function parseSessionToken(
   token: string
-): { guest: string; notionId?: string } | null {
+): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
   try {
     const payload: SessionPayload = JSON.parse(
-      Buffer.from(token, 'base64').toString('utf-8')
+      Buffer.from(token, 'base64url').toString('utf-8')
     );
 
     // Validate the guest name is still recognizable
     if (payload.guest && typeof payload.guest === 'string') {
-      return { guest: payload.guest, notionId: payload.notionId };
+      const eventInvitations = (payload.eventInvitations || [])
+        .filter((event): event is EventInvitation => event === 'nyc' || event === 'france');
+      return {
+        guest: payload.guest,
+        notionId: payload.notionId,
+        eventInvitations: eventInvitations.length > 0 ? eventInvitations : ['nyc', 'france'],
+      };
     }
   } catch {
     // Invalid token format
@@ -119,7 +134,7 @@ export function parseSessionToken(
  */
 export function getAuthenticatedGuest(cookies: {
   get: (name: string) => { value: string } | undefined;
-}): { guest: string; notionId?: string } | null {
+}): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
   const cookie = cookies.get(AUTH_COOKIE_NAME);
 
   if (!cookie?.value) {

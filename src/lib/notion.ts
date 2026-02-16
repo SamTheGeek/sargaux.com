@@ -29,6 +29,41 @@ function getClient(): Client {
 }
 
 /**
+ * Query a Notion database using the stable REST API (v2022-06-28).
+ *
+ * NOTE: The SDK v5 `dataSources.query` (v2025-09-03) only works for databases
+ * explicitly registered as Notion AI data sources. Using the legacy
+ * `databases/{id}/query` endpoint is more reliable and works for all databases
+ * as long as the integration has page-level access.
+ *
+ * The databaseId here is the Notion database PAGE ID (not the collection/data source ID).
+ */
+async function queryDatabase(
+  databaseId: string,
+  body: Record<string, unknown> = {}
+): Promise<{ results: any[]; has_more: boolean; next_cursor?: string }> {
+  const apiKey = process.env.NOTION_API_KEY;
+  if (!apiKey) throw new Error('NOTION_API_KEY is not set.');
+
+  const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': '2022-06-28',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err: any = await response.json();
+    throw new Error(err.message || `Notion API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Normalize a name for auth matching:
  * lowercase, remove accents, collapse whitespace.
  */
@@ -63,13 +98,26 @@ function deriveEventInvitations(country: string | null): ('nyc' | 'france')[] {
 
 // Module-level cache — populated once per cold start
 let guestCache: GuestRecord[] | null = null;
+// In-flight deduplication — prevents thundering herd on first request
+let guestCachePromise: Promise<GuestRecord[]> | null = null;
 
 /**
  * Fetch all guests from the Notion Guest List database.
  * Results are cached in memory for the lifetime of the server process.
+ * Uses promise deduplication to prevent concurrent Notion fetches.
  */
 export async function fetchAllGuests(): Promise<GuestRecord[]> {
   if (guestCache) return guestCache;
+  if (guestCachePromise) return guestCachePromise;
+  guestCachePromise = _fetchAllGuests().catch((err) => {
+    // Clear promise on error so next call retries
+    guestCachePromise = null;
+    throw err;
+  });
+  return guestCachePromise;
+}
+
+async function _fetchAllGuests(): Promise<GuestRecord[]> {
 
   const notion = getClient();
   const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
@@ -84,10 +132,8 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
   let cursor: string | undefined = undefined;
 
   do {
-    // Notion API v2025-09-03: use dataSources.query with data_source_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await notion.dataSources.query({
-      data_source_id: dataSourceId,
+    const response: any = await queryDatabase(dataSourceId, {
       start_cursor: cursor,
       page_size: 100,
     });
@@ -147,6 +193,7 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
  */
 export function clearGuestCache(): void {
   guestCache = null;
+  guestCachePromise = null;
 }
 
 // Event catalog cache — populated once per cold start
@@ -173,10 +220,12 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
   const events: EventRecord[] = [];
   let cursor: string | undefined = undefined;
 
+  // Map our internal wedding key to the Notion select option name
+  const weddingLabel = wedding === 'nyc' ? 'New York' : 'France';
+
   do {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await notion.dataSources.query({
-      data_source_id: dataSourceId,
+    const response: any = await queryDatabase(dataSourceId, {
       start_cursor: cursor,
       page_size: 100,
     });
@@ -190,9 +239,9 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
       const name = props['Event Name']?.title?.[0]?.plain_text || '';
       if (!name) continue;
 
-      // Wedding (select)
-      const weddingProp = props['Wedding']?.select?.name?.toLowerCase();
-      if (weddingProp !== wedding) continue; // Filter by wedding
+      // Wedding (select) — stored as "New York" or "France", not "nyc"/"france"
+      const weddingProp = props['Wedding']?.select?.name;
+      if (weddingProp !== weddingLabel) continue; // Filter by wedding
 
       // Event Type (select)
       const typeProp = props['Event Type']?.select?.name;
@@ -374,18 +423,21 @@ export async function submitRSVP(
     eventsAttending: submission.eventsAttending,
   };
 
+  // Event label must match the Notion select options: 'NYC' or 'France'
+  const eventLabel = submission.event === 'nyc' ? 'NYC' : 'France';
+
   // Check if an existing RSVP exists for this guest + event
   const existingRSVP = await getLatestRSVP(guestId, submission.event);
 
   const properties = {
     Response: {
-      title: [{ text: { content: `${guestName} — ${submission.event.toUpperCase()}` } }],
+      title: [{ text: { content: `${guestName} — ${eventLabel}` } }],
     },
     Guest: {
       relation: [{ id: guestId }],
     },
     Event: {
-      select: { name: submission.event.toUpperCase() },
+      select: { name: eventLabel },
     },
     'Submitted At': {
       date: { start: new Date().toISOString() },
@@ -447,14 +499,13 @@ export async function getLatestRSVP(
     );
   }
 
+  // Event stored as 'NYC' or 'France' in the database (not 'nyc'/'france')
+  const eventLabel = event === 'nyc' ? 'NYC' : 'France';
+
   // Query for latest response matching guest + event (server-side filter + sort)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response: any = await notion.dataSources.query({
-    data_source_id: dataSourceId,
+  const response: any = await queryDatabase(dataSourceId, {
     page_size: 1,
-    archived: false,
-    in_trash: false,
-    result_type: 'page',
     filter: {
       and: [
         {
@@ -463,7 +514,7 @@ export async function getLatestRSVP(
         },
         {
           property: 'Event',
-          select: { equals: event },
+          select: { equals: eventLabel },
         },
       ],
     },
@@ -472,16 +523,6 @@ export async function getLatestRSVP(
         property: 'Submitted At',
         direction: 'descending',
       },
-    ],
-    filter_properties: [
-      'Guest',
-      'Event',
-      'Submitted At',
-      'Status',
-      'Guests Attending',
-      'Dietary Needs',
-      'Message',
-      'Details',
     ],
   });
 

@@ -65,6 +65,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 
+  if (!auth.eventInvitations.includes(body.event)) {
+    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   if (!Array.isArray(body.guestsAttending)) {
     return new Response(
       JSON.stringify({ error: 'guestsAttending must be an array' }),
@@ -160,6 +167,13 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     );
   }
 
+  if (!auth.eventInvitations.includes(event as 'nyc' | 'france')) {
+    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // Fetch from Notion
   try {
     const rsvp = await getLatestRSVP(guestId, event as 'nyc' | 'france');
@@ -234,6 +248,13 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
+  }
+
+  if (!auth.eventInvitations.includes(event as 'nyc' | 'france')) {
+    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Delete from Notion
