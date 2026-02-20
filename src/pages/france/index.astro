@@ -121,7 +121,7 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
         <p>Add the full weekend to your calendar.</p>
         {calendarToken ? (
           <a
-            href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+            href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
             class="calendar-btn-prominent"
           >
             Add to Calendar
