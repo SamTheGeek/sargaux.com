@@ -622,3 +622,39 @@ export async function deleteRSVP(
 export function clearEventCache(): void {
   eventCatalogCache.clear();
 }
+
+// Day date cache — maps Wedding Timeline page ID to "YYYY-MM-DD" (or undefined)
+const dayDateCache: Map<string, string | undefined> = new Map();
+
+/**
+ * Fetch the date from a Wedding Timeline page (the "Day" relation target).
+ * Returns "YYYY-MM-DD" or undefined if the page has no date property.
+ * Results are cached in memory for the lifetime of the server process.
+ */
+export async function fetchDayDate(dayId: string): Promise<string | undefined> {
+  if (dayDateCache.has(dayId)) {
+    return dayDateCache.get(dayId);
+  }
+
+  const notion = getClient();
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const page: any = await notion.pages.retrieve({ page_id: dayId });
+    const dateProp = page.properties?.['Date'];
+    const dateStr: string | undefined = dateProp?.date?.start ?? undefined;
+    dayDateCache.set(dayId, dateStr);
+    return dateStr;
+  } catch (error) {
+    console.error(`Failed to fetch Day page ${dayId}:`, error);
+    dayDateCache.set(dayId, undefined);
+    return undefined;
+  }
+}
+
+/**
+ * Clear the day date cache (useful for testing or manual refresh).
+ */
+export function clearDayDateCache(): void {
+  dayDateCache.clear();
+}
