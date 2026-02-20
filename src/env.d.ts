@@ -16,6 +16,7 @@ declare namespace NodeJS {
     NOTION_GUEST_LIST_DB?: string; // Notion data source ID (not database ID)
     NOTION_EVENT_CATALOG_DB?: string; // Event Catalog data source ID
     NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses data source ID
+    CALENDAR_HMAC_SECRET?: string; // Signing secret for personalized calendar tokens (never commit)
   }
 }
 
