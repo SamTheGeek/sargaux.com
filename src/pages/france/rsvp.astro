@@ -582,6 +582,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
+      const originalButtonText = submitButton?.textContent || 'Submit RSVP';
       if (submitButton) {
         submitButton.disabled = true;
         submitButton.textContent = 'Saving...';
@@ -635,13 +636,12 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           throw new Error('Request failed');
         }
 
-        if (successMessage) successMessage.hidden = false;
+        window.location.href = '/france';
       } catch (error) {
         if (errorMessage) errorMessage.hidden = false;
-      } finally {
         if (submitButton) {
           submitButton.disabled = false;
-          submitButton.textContent = 'Update RSVP';
+          submitButton.textContent = originalButtonText;
         }
       }
     });
