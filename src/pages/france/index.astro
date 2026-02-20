@@ -1,10 +1,16 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+import { features } from '../../config/features';
+import { generateToken } from '../../lib/calendar';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const guestId = Astro.locals.guestId;
+const calendarToken = (features.france.calendarSubscribe && guestId)
+  ? generateToken(guestId)
+  : null;
 ---
 
 <WireframeLayout title="France Event" description="France Wedding - May 2027">
@@ -113,8 +119,19 @@ const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.inc
       <div class="calendar-content">
         <h2>Save the Dates</h2>
         <p>Add the full weekend to your calendar.</p>
-        <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
-        <p class="calendar-note">Personalized calendar link available after RSVP</p>
+        {calendarToken ? (
+          <a
+            href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+            class="calendar-btn-prominent"
+          >
+            Add to Calendar
+          </a>
+        ) : (
+          <>
+            <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
+            <p class="calendar-note">Personalized calendar link available after RSVP</p>
+          </>
+        )}
       </div>
     </section>
 
