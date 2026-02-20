@@ -6,9 +6,10 @@ import { isSiteEnabled, isEnabled } from '../config/features';
 
 // Only redirect if site is enabled and user is logged in
 if (isSiteEnabled()) {
-  const guest = getAuthenticatedGuest(Astro.cookies);
-  if (guest) {
-    return Astro.redirect('/nyc');
+  const authGuest = getAuthenticatedGuest(Astro.cookies);
+  if (authGuest) {
+    const redirectPath = authGuest.eventInvitations.includes('nyc') ? '/nyc' : '/france';
+    return Astro.redirect(redirectPath);
   }
 }
 ---
@@ -379,7 +380,7 @@ if (isSiteEnabled()) {
         const data = await response.json();
 
         if (response.ok) {
-          window.location.href = '/nyc';
+          window.location.href = data.redirectPath || '/nyc';
         } else {
           showError(data.error || 'Something went wrong. Please try again.');
           if (submitBtn) {

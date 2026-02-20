@@ -11,8 +11,8 @@ test.describe('Auth Module — Session Tokens', () => {
   test('session token round-trips guest name', async () => {
     // Simulate createSessionToken + parseSessionToken
     const payload = { guest: 'Sam Gross', created: Date.now() };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64');
-    const parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
 
     expect(parsed.guest).toBe('Sam Gross');
     expect(parsed.created).toBeGreaterThan(0);
@@ -22,8 +22,8 @@ test.describe('Auth Module — Session Tokens', () => {
   test('session token includes notionId when provided', async () => {
     const notionId = 'abc123-def456';
     const payload = { guest: 'Chad Kosie', notionId, created: Date.now() };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64');
-    const parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
 
     expect(parsed.guest).toBe('Chad Kosie');
     expect(parsed.notionId).toBe(notionId);
@@ -32,8 +32,8 @@ test.describe('Auth Module — Session Tokens', () => {
   test('old tokens without notionId still parse correctly', async () => {
     // Simulate a token created before the Notion integration
     const payload = { guest: 'Margaux Ancel', created: 1700000000000 };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64');
-    const parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
 
     expect(parsed.guest).toBe('Margaux Ancel');
     expect(parsed.notionId).toBeUndefined();
@@ -43,7 +43,7 @@ test.describe('Auth Module — Session Tokens', () => {
     const badToken = 'not-valid-base64!!!';
     let result = null;
     try {
-      const parsed = JSON.parse(Buffer.from(badToken, 'base64').toString('utf-8'));
+      const parsed = JSON.parse(Buffer.from(badToken, 'base64url').toString('utf-8'));
       if (parsed.guest && typeof parsed.guest === 'string') {
         result = { guest: parsed.guest, notionId: parsed.notionId };
       }

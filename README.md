@@ -32,6 +32,26 @@ npm test
 
 The dev server runs at `http://localhost:1213`.
 
+### Local Notion/RSVP Environment
+
+Put local environment variables in:
+
+- `.env.local`
+
+For dynamic RSVP pages and Notion-backed flows in local dev:
+
+```bash
+./scripts/setup-local-env.sh
+```
+
+This writes `.env.local` with the required values:
+
+- `NOTION_API_KEY`
+- `NOTION_GUEST_LIST_DB`
+- `NOTION_EVENT_CATALOG_DB`
+- `NOTION_RSVP_RESPONSES_DB`
+- RSVP/Notion feature flags set to `true` for local usage
+
 ## Feature Flags
 
 This site uses build-time feature flags to control which features are active.

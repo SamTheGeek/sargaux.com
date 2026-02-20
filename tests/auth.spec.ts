@@ -221,7 +221,7 @@ test.describe('Authentication', () => {
     expect(authCookie).toBeDefined();
 
     // Decode and validate the session payload
-    const payload = JSON.parse(Buffer.from(authCookie!.value, 'base64').toString('utf-8'));
+    const payload = JSON.parse(Buffer.from(authCookie!.value, 'base64url').toString('utf-8'));
     expect(payload.guest).toBe('Sam Gross');
     expect(payload.created).toBeGreaterThan(0);
     // notionId is optional — absent when using hardcoded fallback

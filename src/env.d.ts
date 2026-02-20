@@ -5,6 +5,7 @@ declare namespace App {
   interface Locals {
     guest?: string;
     guestId?: string; // Notion page ID (when notionBackend is enabled)
+    eventInvitations?: ('nyc' | 'france')[];
   }
 }
 

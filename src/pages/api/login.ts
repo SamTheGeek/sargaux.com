@@ -7,6 +7,7 @@ import {
 } from '../../lib/auth';
 import { features } from '../../config/features';
 import { fetchAllGuests } from '../../lib/notion';
+import type { EventInvitation } from '../../lib/auth';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
@@ -21,6 +22,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   let guestName: string | null = null;
   let notionId: string | undefined;
+  let eventInvitations: EventInvitation[] = ['nyc', 'france'];
 
   if (features.global.notionBackend) {
     try {
@@ -29,6 +31,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (record) {
         guestName = record.name;
         notionId = record.id;
+        eventInvitations = record.eventInvitations;
       }
     } catch (err) {
       console.error('Notion fetch failed, falling back to hardcoded list:', err);
@@ -51,7 +54,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   // Create session token and set cookie
-  const token = createSessionToken(guestName, notionId);
+  const token = createSessionToken(guestName, notionId, eventInvitations);
+  const redirectPath = eventInvitations.includes('nyc') ? '/nyc' : '/france';
 
   cookies.set(AUTH_COOKIE_NAME, token, {
     path: '/',
@@ -62,7 +66,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   });
 
   // Return success with the canonical guest name
-  return new Response(JSON.stringify({ success: true, guest: guestName }), {
+  return new Response(JSON.stringify({ success: true, guest: guestName, redirectPath }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

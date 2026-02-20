@@ -17,6 +17,10 @@ const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
 const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
 
 test.describe('RSVP API Endpoints', () => {
+  // Run tests serially — they write to shared Notion state (Sam Gross's RSVPs)
+  // and must not run in parallel with each other.
+  test.describe.configure({ mode: 'serial' });
+
   let authCookie: string | undefined;
 
   // Skip all tests if Notion backend is not enabled
@@ -33,14 +37,27 @@ test.describe('RSVP API Endpoints', () => {
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/`);
-    await page.click('button:has-text("Login")');
-    await page.fill('input[type="text"]', TEST_GUEST_NAME);
-    await page.click('button:has-text("Continue")');
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+    await page.click('#submit-btn');
     await page.waitForURL(`${BASE_URL}/nyc`);
 
     const cookies = await context.cookies();
     const auth = cookies.find(c => c.name === 'sargaux_auth');
     authCookie = auth?.value;
+
+    // Clean up any existing RSVPs for the test guest to ensure a clean slate.
+    // Loop until all RSVPs are deleted (there may be multiple from prior test runs).
+    if (authCookie) {
+      for (const event of ['nyc', 'france'] as const) {
+        for (let i = 0; i < 10; i++) {
+          const r = await page.request.delete(`${BASE_URL}/api/rsvp?event=${event}`, {
+            headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
+          });
+          if (r.status() !== 200) break; // 404 = none left, stop
+        }
+      }
+    }
 
     await context.close();
 
@@ -99,10 +116,13 @@ test.describe('RSVP API Endpoints', () => {
   });
 
   test('POST /api/rsvp - submits new RSVP successfully', async ({ request }) => {
-    // First, delete any existing RSVP
-    await request.delete(`${BASE_URL}/api/rsvp?event=nyc`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
-    });
+    // First, delete ALL existing NYC RSVPs to ensure a clean state
+    for (let i = 0; i < 10; i++) {
+      const r = await request.delete(`${BASE_URL}/api/rsvp?event=nyc`, {
+        headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
+      });
+      if (r.status() !== 200) break;
+    }
 
     // Submit new RSVP
     const response = await request.post(`${BASE_URL}/api/rsvp`, {
@@ -188,10 +208,13 @@ test.describe('RSVP API Endpoints', () => {
   });
 
   test('GET /api/rsvp - returns null for no RSVP', async ({ request }) => {
-    // Delete any existing RSVP
-    await request.delete(`${BASE_URL}/api/rsvp?event=france`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
-    });
+    // Delete ALL existing France RSVPs to ensure a clean state
+    for (let i = 0; i < 10; i++) {
+      const r = await request.delete(`${BASE_URL}/api/rsvp?event=france`, {
+        headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
+      });
+      if (r.status() !== 200) break;
+    }
 
     const response = await request.get(`${BASE_URL}/api/rsvp?event=france`, {
       headers: { Cookie: `sargaux_auth=${authCookie}` },
@@ -237,7 +260,9 @@ test.describe('RSVP API Endpoints', () => {
   });
 
   test('DELETE /api/rsvp - requires authentication', async ({ request }) => {
-    const response = await request.delete(`${BASE_URL}/api/rsvp?event=nyc`);
+    const response = await request.delete(`${BASE_URL}/api/rsvp?event=nyc`, {
+      headers: { Origin: BASE_URL },
+    });
 
     expect(response.status()).toBe(401);
     const body = await response.json();
@@ -246,7 +271,7 @@ test.describe('RSVP API Endpoints', () => {
 
   test('DELETE /api/rsvp - validates event parameter', async ({ request }) => {
     const response = await request.delete(`${BASE_URL}/api/rsvp?event=invalid`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
+      headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
     });
 
     expect(response.status()).toBe(400);
@@ -257,12 +282,12 @@ test.describe('RSVP API Endpoints', () => {
   test('DELETE /api/rsvp - returns 404 if no RSVP exists', async ({ request }) => {
     // Delete once to ensure it's gone
     await request.delete(`${BASE_URL}/api/rsvp?event=france`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
+      headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
     });
 
     // Try to delete again
     const response = await request.delete(`${BASE_URL}/api/rsvp?event=france`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
+      headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
     });
 
     expect(response.status()).toBe(404);
@@ -287,7 +312,7 @@ test.describe('RSVP API Endpoints', () => {
 
     // Delete RSVP
     const deleteResponse = await request.delete(`${BASE_URL}/api/rsvp?event=nyc`, {
-      headers: { Cookie: `sargaux_auth=${authCookie}` },
+      headers: { Cookie: `sargaux_auth=${authCookie}`, Origin: BASE_URL },
     });
 
     expect(deleteResponse.status()).toBe(200);
