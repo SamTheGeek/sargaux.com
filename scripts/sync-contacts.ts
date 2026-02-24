@@ -77,9 +77,9 @@ async function fetchNotionGuests(): Promise<NotionGuest[]> {
     const body: Record<string, unknown> = { page_size: 100 };
     if (cursor) body.start_cursor = cursor;
 
-    const res = await fetch(
-      `https://api.notion.com/v1/databases/${NOTION_GUEST_LIST_DB}/query`,
-      {
+    let res: Response | undefined;
+    for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+      res = await fetch(`https://api.notion.com/v1/databases/${NOTION_GUEST_LIST_DB}/query`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${NOTION_API_KEY}`,
@@ -87,11 +87,23 @@ async function fetchNotionGuests(): Promise<NotionGuest[]> {
           'Notion-Version': '2022-06-28',
         },
         body: JSON.stringify(body),
-      }
-    );
+      });
+
+      if (res.status !== 429) break;
+      if (attempt >= MAX_RATE_LIMIT_RETRIES) break;
+
+      const retryAfterSec = Number.parseInt(res.headers.get('retry-after') ?? '1', 10);
+      const waitMs = Number.isFinite(retryAfterSec) ? retryAfterSec * 1000 : 1000 * (attempt + 1);
+      console.log(`  ↻ Notion rate limit hit, retrying in ${waitMs}ms...`);
+      await sleep(waitMs);
+    }
+
+    if (!res) {
+      throw new Error('Notion API error: no response');
+    }
 
     if (!res.ok) {
-      const err: any = await res.json();
+      const err: any = await res.json().catch(() => ({}));
       throw new Error(`Notion API error: ${err.message ?? res.status}`);
     }
 
@@ -146,20 +158,84 @@ function deriveEventInvitations(country: string | null): ('nyc' | 'france')[] {
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const RESEND_MIN_INTERVAL_MS = 550; // Resend allows 2 requests/second
+const MAX_RATE_LIMIT_RETRIES = 4;
+
+let lastResendRequestAt = 0;
+
+function errorMessage(err: unknown): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return String(err);
+}
+
+function isRateLimitedError(err: unknown): boolean {
+  const message = errorMessage(err).toLowerCase();
+  return (
+    message.includes('too many requests') ||
+    message.includes('rate limit') ||
+    message.includes('429')
+  );
+}
+
+async function withResendRateLimit<T>(request: () => Promise<T>): Promise<T> {
+  const elapsed = Date.now() - lastResendRequestAt;
+  if (elapsed < RESEND_MIN_INTERVAL_MS) {
+    await sleep(RESEND_MIN_INTERVAL_MS - elapsed);
+  }
+
+  try {
+    const result = await request();
+    lastResendRequestAt = Date.now();
+    return result;
+  } catch (err) {
+    lastResendRequestAt = Date.now();
+    throw err;
+  }
+}
+
+async function withResendRetry<T>(request: () => Promise<T>): Promise<T> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await withResendRateLimit(request);
+    } catch (err) {
+      if (!isRateLimitedError(err) || attempt >= MAX_RATE_LIMIT_RETRIES) {
+        throw err;
+      }
+      const backoffMs = 1000 * (attempt + 1);
+      console.log(`  ↻ Resend rate limit hit, retrying in ${backoffMs}ms...`);
+      await sleep(backoffMs);
+      attempt++;
+    }
+  }
+}
 
 // ─── Resend helpers ───────────────────────────────────────────────────────────
 
 const resend = new Resend(RESEND_API_KEY);
 
 async function listAudiences(): Promise<ResendAudience[]> {
-  const { data, error } = await resend.audiences.list();
-  if (error) throw new Error(`Failed to list audiences: ${(error as any).message}`);
+  const { data } = await withResendRetry(async () => {
+    const response = await resend.audiences.list();
+    if (response.error) {
+      throw new Error(`Failed to list audiences: ${(response.error as any).message}`);
+    }
+    return response;
+  });
   return (data?.data ?? []) as ResendAudience[];
 }
 
 async function createAudience(name: string): Promise<ResendAudience> {
-  const { data, error } = await resend.audiences.create({ name });
-  if (error) throw new Error(`Failed to create audience "${name}": ${(error as any).message}`);
+  const { data } = await withResendRetry(async () => {
+    const response = await resend.audiences.create({ name });
+    if (response.error) {
+      throw new Error(`Failed to create audience "${name}": ${(response.error as any).message}`);
+    }
+    return response;
+  });
   return data as ResendAudience;
 }
 
@@ -171,8 +247,13 @@ async function ensureAudience(name: string, existing: ResendAudience[]): Promise
 }
 
 async function listContacts(audienceId: string): Promise<ResendContact[]> {
-  const { data, error } = await resend.contacts.list({ audienceId });
-  if (error) throw new Error(`Failed to list contacts: ${(error as any).message}`);
+  const { data } = await withResendRetry(async () => {
+    const response = await resend.contacts.list({ audienceId });
+    if (response.error) {
+      throw new Error(`Failed to list contacts: ${(response.error as any).message}`);
+    }
+    return response;
+  });
   return (data?.data ?? []) as ResendContact[];
 }
 
@@ -180,19 +261,29 @@ async function upsertContact(
   audienceId: string,
   guest: { email: string; firstName: string; lastName?: string }
 ): Promise<void> {
-  const { error } = await resend.contacts.create({
-    audienceId,
-    email: guest.email,
-    firstName: guest.firstName,
-    lastName: guest.lastName,
-    unsubscribed: false,
+  await withResendRetry(async () => {
+    const response = await resend.contacts.create({
+      audienceId,
+      email: guest.email,
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+      unsubscribed: false,
+    });
+    if (response.error) {
+      throw new Error(`Failed to upsert ${guest.email}: ${(response.error as any).message}`);
+    }
+    return response;
   });
-  if (error) throw new Error(`Failed to upsert ${guest.email}: ${(error as any).message}`);
 }
 
 async function deleteContact(audienceId: string, contactId: string): Promise<void> {
-  const { error } = await resend.contacts.remove({ audienceId, id: contactId });
-  if (error) throw new Error(`Failed to delete contact ${contactId}: ${(error as any).message}`);
+  await withResendRetry(async () => {
+    const response = await resend.contacts.remove({ audienceId, id: contactId });
+    if (response.error) {
+      throw new Error(`Failed to delete contact ${contactId}: ${(response.error as any).message}`);
+    }
+    return response;
+  });
 }
 
 // ─── Name parsing ─────────────────────────────────────────────────────────────
@@ -227,7 +318,6 @@ async function syncAudience(
       const { firstName, lastName } = parseName(guest.name);
       await upsertContact(audienceId, { email: guest.email!, firstName, lastName });
       upserted++;
-      await sleep(600);
     } catch (err) {
       console.error(`  ✗ Failed to upsert ${guest.email}:`, err);
       failed++;
@@ -270,12 +360,9 @@ async function main() {
   // Ensure audiences exist
   console.log('\nEnsuring Resend audiences exist...');
   const existingAudiences = await listAudiences();
-  const nycAudience = await ensureAudience(AUDIENCE_NAMES.nyc, existingAudiences);
-  await sleep(600);
-  const franceAudience = await ensureAudience(AUDIENCE_NAMES.france, existingAudiences);
   const audiences: Record<'nyc' | 'france', ResendAudience> = {
-    nyc: nycAudience,
-    france: franceAudience,
+    nyc: await ensureAudience(AUDIENCE_NAMES.nyc, existingAudiences),
+    france: await ensureAudience(AUDIENCE_NAMES.france, existingAudiences),
   };
   console.log(`  ✓ NYC Guests:    ${audiences.nyc.id}`);
   console.log(`  ✓ France Guests: ${audiences.france.id}`);
