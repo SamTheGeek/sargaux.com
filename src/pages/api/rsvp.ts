@@ -8,10 +8,11 @@
 
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
-import { submitRSVP, getLatestRSVP, deleteRSVP, fetchAllGuests, updateGuestEmail } from '../../lib/notion';
+import { submitRSVP, getLatestRSVP, deleteRSVP, fetchAllGuests, updateGuestEmail, getGuestEvents } from '../../lib/notion';
 import { isEnabled } from '../../config/features';
 import { sendEmail } from '../../lib/email';
 import { rsvpConfirmation } from '../../lib/email-templates';
+import { generateToken } from '../../lib/calendar';
 import type { RSVPSubmission } from '../../types/rsvp';
 
 /**
@@ -150,14 +151,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .filter((g: any) => g.attending)
           .map((g: any) => g.name)
           .join(', ');
+
+        // Fetch names of the specific events they're attending
+        let eventNames: string[] | undefined;
+        const attendingEventIds = new Set(body.eventsAttending ?? []);
+        if (attendingEventIds.size > 0) {
+          try {
+            const allEvents = await getGuestEvents(guestId);
+            eventNames = allEvents
+              .filter((e) => attendingEventIds.has(e.id))
+              .map((e) => e.name);
+          } catch (err) {
+            console.error('Failed to fetch event names for confirmation email:', err);
+          }
+        }
+
+        // Generate personalised calendar URL (requires CALENDAR_HMAC_SECRET)
+        let calendarUrl: string | undefined;
+        try {
+          const token = generateToken(guestId);
+          calendarUrl = `https://sargaux.com/api/calendar/${token}.ics`;
+        } catch {
+          // CALENDAR_HMAC_SECRET not set — omit calendar link gracefully
+        }
+
         const updateUrl = `https://sargaux.com/${body.event}/rsvp`;
         const template = rsvpConfirmation({
           guestName: auth.guest,
           event: body.event,
           attending,
           guestsAttending: guestsAttendingStr,
+          eventNames,
           dietary: body.dietary,
           updateUrl,
+          calendarUrl,
         });
         await sendEmail({ to: emailToUse, ...template });
       } catch (err) {

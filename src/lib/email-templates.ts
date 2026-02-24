@@ -44,8 +44,10 @@ export interface RSVPConfirmationParams {
   event: 'nyc' | 'france';
   attending: boolean;
   guestsAttending: string; // comma-separated names
+  eventNames?: string[];   // names of the specific events they're attending
   dietary?: string;
   updateUrl: string;
+  calendarUrl?: string;    // personalised .ics subscription URL
 }
 
 export function rsvpConfirmation({
@@ -53,8 +55,10 @@ export function rsvpConfirmation({
   event,
   attending,
   guestsAttending,
+  eventNames,
   dietary,
   updateUrl,
+  calendarUrl,
 }: RSVPConfirmationParams): EmailTemplate {
   const isNYC = event === 'nyc';
   const eventName = isNYC ? 'New York' : 'France';
@@ -63,6 +67,20 @@ export function rsvpConfirmation({
 
   const dietaryRow = dietary
     ? `<tr><td style="padding:8px 0;font-size:15px;"><strong>Dietary notes:</strong> ${escHtml(dietary)}</td></tr>`
+    : '';
+
+  const eventsRows = eventNames && eventNames.length > 0
+    ? `<tr><td style="padding:8px 0;font-size:15px;"><strong>Events:</strong><br/>${
+        eventNames.map((n) => `&bull; ${escHtml(n)}`).join('<br/>')
+      }</td></tr>`
+    : '';
+
+  const calendarRow = calendarUrl
+    ? `<tr><td style="padding-top:20px;font-size:15px;line-height:1.6;">
+        Add to your calendar:
+        <a href="${escHtml(calendarUrl)}" style="color:#1a1a1a;">Subscribe to your personalised calendar feed</a>
+        — stays up to date automatically.
+      </td></tr>`
     : '';
 
   const html = baseHtml(`
@@ -86,16 +104,18 @@ export function rsvpConfirmation({
         </p>
       </td>
     </tr>
-    ${attending && guestsAttending ? `
+    ${attending && (guestsAttending || eventsRows) ? `
     <tr>
       <td style="padding:20px;background:#f9f9f7;margin-bottom:24px;">
         <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
-          <tr><td style="padding:8px 0;font-size:15px;"><strong>Attending:</strong> ${escHtml(guestsAttending)}</td></tr>
+          ${guestsAttending ? `<tr><td style="padding:8px 0;font-size:15px;"><strong>Attending:</strong> ${escHtml(guestsAttending)}</td></tr>` : ''}
+          ${eventsRows}
           ${dietaryRow}
         </table>
       </td>
     </tr>
     ` : ''}
+    ${calendarRow}
     <tr>
       <td style="padding-top:24px;padding-bottom:8px;font-size:15px;line-height:1.6;">
         Need to update your response?
@@ -110,25 +130,25 @@ export function rsvpConfirmation({
     </tr>
   `);
 
-  const text = [
+  const textLines = [
     `Dear ${guestName},`,
     '',
     `We've received your RSVP — you are marked as ${statusWord} for our ${eventName} celebration (${eventDate}).`,
-    attending && guestsAttending ? `\nAttending: ${guestsAttending}` : '',
-    dietary ? `Dietary notes: ${dietary}` : '',
+    ...(attending && guestsAttending ? [`\nAttending: ${guestsAttending}`] : []),
+    ...(eventNames && eventNames.length > 0 ? [`Events:\n${eventNames.map((n) => `  - ${n}`).join('\n')}`] : []),
+    ...(dietary ? [`Dietary notes: ${dietary}`] : []),
     '',
+    ...(calendarUrl ? [`Subscribe to your personalised calendar: ${calendarUrl}`, ''] : []),
     `Need to update your response? Visit: ${updateUrl}`,
     '',
     "We're so excited to celebrate with you.",
     'With love, Sam & Margaux',
-  ]
-    .filter((l) => l !== false)
-    .join('\n');
+  ];
 
   return {
     subject: `RSVP Confirmed — Sam & Margaux's ${eventName} Celebration`,
     html,
-    text,
+    text: textLines.join('\n'),
   };
 }
 
