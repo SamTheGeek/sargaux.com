@@ -77,7 +77,18 @@ A perfect geometric circle, flat color, no texture, no gradient. Often cropped b
 - "Happily ever after" / "To follow" / ceremony language
 - Exclamation marks
 
-### 1.8 System Integrity Checklist
+### 1.8 Print Specifications
+
+Paper:
+- Uncoated warm white stock
+- Minimum 110lb cover
+- Matte finish only
+
+Ink:
+- Matte
+- No gloss coating
+
+### 1.9 System Integrity Checklist
 
 Every new design element must pass:
 
@@ -132,7 +143,12 @@ Two subtle references to the Vignelli system, used sparingly:
 
 **Information band** — a full-width hairline rule above and below key content zones, dividing the page into discrete information panels as subway signage panels are divided. Never more than once per section.
 
-**Skyline block** — solid rectangular silhouette, Dark Moss, 25–35% page height. Used in the footer. No windows, no linework, rectangular geometry only.
+**Skyline block** — abstract NYC skyline as a solid silhouette:
+- Rectangular geometry only — no curves, no detail
+- No windows, no linework
+- Dark Moss color
+- 25–35% page height when used
+- Used in the footer; never as a decorative element elsewhere
 
 ### 2.4 Core Identity Lockup
 
