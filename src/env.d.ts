@@ -17,6 +17,9 @@ declare namespace NodeJS {
     NOTION_EVENT_CATALOG_DB?: string; // Event Catalog data source ID
     NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses data source ID
     CALENDAR_HMAC_SECRET?: string; // Signing secret for personalized calendar tokens (never commit)
+    RESEND_API_KEY?: string; // Resend transactional email API key (never commit)
+    RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
+    ADMIN_SECRET?: string; // Secret for protecting admin endpoints (never commit)
   }
 }
 
@@ -44,6 +47,7 @@ interface ImportMetaEnv {
   readonly FEATURE_NYC_RSVP_ENABLED?: string;
   readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
   readonly FEATURE_REGISTRY_ENABLED?: string;
+  readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
 }
 
 interface ImportMeta {

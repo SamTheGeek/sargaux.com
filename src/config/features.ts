@@ -24,6 +24,7 @@ type FeatureFlags = {
     notionBackend: boolean;
     i18n: boolean;
     contentLabelsRemoved: boolean;
+    emailEnabled: boolean;
   };
   homepage: {
     teaser: boolean;
@@ -61,6 +62,7 @@ const features: FeatureFlags = {
     notionBackend: flag(import.meta.env.FEATURE_GLOBAL_NOTION_BACKEND, false),
     i18n: flag(import.meta.env.FEATURE_GLOBAL_I18N, false),
     contentLabelsRemoved: flag(import.meta.env.FEATURE_GLOBAL_CONTENT_LABELS_REMOVED, false),
+    emailEnabled: flag(import.meta.env.FEATURE_GLOBAL_EMAIL_ENABLED, false),
   },
   homepage: {
     teaser: flag(import.meta.env.FEATURE_HOMEPAGE_TEASER, false),

@@ -8,7 +8,11 @@
 
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
-import { submitRSVP, getLatestRSVP, deleteRSVP } from '../../lib/notion';
+import { submitRSVP, getLatestRSVP, deleteRSVP, fetchAllGuests, updateGuestEmail, getGuestEvents } from '../../lib/notion';
+import { isEnabled } from '../../config/features';
+import { sendEmail } from '../../lib/email';
+import { rsvpConfirmation } from '../../lib/email-templates';
+import { generateToken } from '../../lib/calendar';
 import type { RSVPSubmission } from '../../types/rsvp';
 
 /**
@@ -93,19 +97,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   // Submit to Notion
+  let responseId: string;
   try {
-    const responseId = await submitRSVP(guestId, body);
-    return new Response(
-      JSON.stringify({
-        success: true,
-        responseId,
-        message: 'RSVP submitted successfully',
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    responseId = await submitRSVP(guestId, body);
   } catch (error) {
     console.error('RSVP submission error:', error);
     return new Response(
@@ -119,6 +113,97 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     );
   }
+
+  // Email logic — non-blocking, never fails the RSVP response
+  if (isEnabled('global.emailEnabled')) {
+    const submittedEmail: string | undefined = (body as any).email?.trim() || undefined;
+    const sendConfirmation: boolean = (body as any).sendConfirmation === true;
+
+    // Resolve the best email to use: submitted > on-file
+    let emailToUse: string | undefined = submittedEmail;
+    if (!emailToUse) {
+      try {
+        const guests = await fetchAllGuests();
+        emailToUse = guests.find((g) => g.id === guestId)?.email;
+      } catch (err) {
+        console.error('Failed to fetch guest email for confirmation:', err);
+      }
+    }
+
+    // Save new email back to Notion if guest didn't have one
+    if (submittedEmail) {
+      try {
+        const guests = await fetchAllGuests();
+        const existing = guests.find((g) => g.id === guestId);
+        if (!existing?.email) {
+          await updateGuestEmail(guestId, submittedEmail);
+        }
+      } catch (err) {
+        console.error('Failed to save guest email to Notion:', err);
+      }
+    }
+
+    // Send confirmation if opted in and email is available
+    if (sendConfirmation && emailToUse) {
+      try {
+        const attending = (body.guestsAttending ?? []).some((g: any) => g.attending);
+        const guestsAttendingStr = (body.guestsAttending ?? [])
+          .filter((g: any) => g.attending)
+          .map((g: any) => g.name)
+          .join(', ');
+
+        // Fetch names of the specific events they're attending
+        let eventNames: string[] | undefined;
+        const attendingEventIds = new Set(body.eventsAttending ?? []);
+        if (attendingEventIds.size > 0) {
+          try {
+            const allEvents = await getGuestEvents(guestId);
+            eventNames = allEvents
+              .filter((e) => attendingEventIds.has(e.id))
+              .map((e) => e.name);
+          } catch (err) {
+            console.error('Failed to fetch event names for confirmation email:', err);
+          }
+        }
+
+        // Generate personalised calendar URL (requires CALENDAR_HMAC_SECRET)
+        let calendarUrl: string | undefined;
+        try {
+          const token = generateToken(guestId);
+          calendarUrl = `https://sargaux.com/api/calendar/${token}.ics`;
+        } catch {
+          // CALENDAR_HMAC_SECRET not set — omit calendar link gracefully
+        }
+
+        const updateUrl = `https://sargaux.com/${body.event}/rsvp`;
+        const template = rsvpConfirmation({
+          guestName: auth.guest,
+          event: body.event,
+          attending,
+          guestsAttending: guestsAttendingStr,
+          eventNames,
+          dietary: body.dietary,
+          updateUrl,
+          calendarUrl,
+        });
+        await sendEmail({ to: emailToUse, ...template });
+      } catch (err) {
+        console.error('Failed to send RSVP confirmation email:', err);
+      }
+    }
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      responseId,
+      message: 'RSVP submitted successfully',
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
 };
 
 /**
