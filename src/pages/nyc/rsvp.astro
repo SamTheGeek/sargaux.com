@@ -24,6 +24,8 @@ if (guestId) {
   }
 }
 
+const primaryGuestEmail = party[0]?.email;
+
 const attendingNames = new Set(
   (existingRSVP?.guestsAttending ?? '')
     .split(',')
@@ -202,6 +204,28 @@ const existingSubmittedAt = existingRSVP?.submittedAt
               placeholder="Share your well wishes or anything else we should know"
               rows="4"
             >{existingRSVP?.message ?? ''}</textarea>
+          </section>
+
+          <section class="form-section">
+            <h2>Confirmation Email</h2>
+            {!primaryGuestEmail && (
+              <div class="email-field">
+                <label for="guest-email" class="section-note">Email address <span class="optional-label">(optional)</span></label>
+                <input
+                  type="email"
+                  id="guest-email"
+                  name="email"
+                  class="single-line-input"
+                  placeholder="you@example.com"
+                  autocomplete="email"
+                  data-testid="email-input"
+                />
+              </div>
+            )}
+            <label class="checkbox-label">
+              <input type="checkbox" id="send-confirmation" name="sendConfirmation" data-testid="send-confirmation-checkbox" />
+              <span>Send me an email confirmation</span>
+            </label>
           </section>
 
           <div class="feedback" aria-live="polite">
@@ -503,6 +527,26 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     text-align: center;
   }
 
+  .email-field {
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .optional-label {
+    color: #999;
+    font-size: 0.85rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
   .error-card {
     border: 1px solid #fecaca;
     background: #fff7f7;
@@ -593,6 +637,9 @@ const existingSubmittedAt = existingRSVP?.submittedAt
         .map((input) => input.dataset.eventId)
         .filter(Boolean);
 
+      const emailInput = form.querySelector('input[name="email"]');
+      const sendConfirmationCheckbox = form.querySelector('input[name="sendConfirmation"]');
+
       const payload = {
         event: form.dataset.event,
         guestsAttending,
@@ -602,6 +649,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
         details: {
           songRequest: form.querySelector('input[name="songRequest"]')?.value?.trim() || undefined,
         },
+        email: emailInput?.value?.trim() || undefined,
+        sendConfirmation: sendConfirmationCheckbox?.checked === true,
       };
 
       try {

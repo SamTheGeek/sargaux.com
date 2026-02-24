@@ -171,6 +171,8 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
         eventInvitations = deriveEventInvitations(country);
       }
 
+      const email: string | undefined = props['Guest Email']?.email ?? undefined;
+
       guests.push({
         id: page.id,
         name: fullName,
@@ -178,6 +180,7 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
         eventInvitations,
         isPlusOne,
         relatedGuestIds,
+        email,
       });
     }
 
@@ -194,6 +197,21 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
 export function clearGuestCache(): void {
   guestCache = null;
   guestCachePromise = null;
+}
+
+/**
+ * Write an email address back to a guest's Notion page.
+ * Invalidates the in-memory guest cache so subsequent requests see the update.
+ */
+export async function updateGuestEmail(guestId: string, email: string): Promise<void> {
+  const notion = getClient();
+  await notion.pages.update({
+    page_id: guestId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    properties: { 'Guest Email': { email } } as any,
+  });
+  // Invalidate cache so the next fetchAllGuests() reflects the new email
+  clearGuestCache();
 }
 
 // Event catalog cache — populated once per cold start

@@ -175,4 +175,59 @@ test.describe('RSVP Dynamic Forms', () => {
     expect(capturedPayload.details.transport).toBe('no');
     expect(capturedPayload.details.allergens).toBe('Peanut allergy');
   });
+
+  // ── Email confirmation field tests ──────────────────────────────────────────
+
+  test('NYC form has send-confirmation checkbox unchecked by default', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+    const checkbox = page.locator('[data-testid="send-confirmation-checkbox"]');
+    await expect(checkbox).toBeVisible();
+    await expect(checkbox).not.toBeChecked();
+  });
+
+  test('France form has send-confirmation checkbox unchecked by default', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'france');
+    const checkbox = page.locator('[data-testid="send-confirmation-checkbox"]');
+    await expect(checkbox).toBeVisible();
+    await expect(checkbox).not.toBeChecked();
+  });
+
+  test('NYC payload includes sendConfirmation:false when checkbox unchecked', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    let capturedPayload: any = null;
+    await page.route('**/api/rsvp', async (route) => {
+      capturedPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, responseId: 'test-id' }),
+      });
+    });
+
+    await page.click('button[type="submit"]');
+    await expect(page.locator('#form-success')).toBeVisible();
+
+    expect(capturedPayload.sendConfirmation).toBe(false);
+  });
+
+  test('NYC payload includes sendConfirmation:true when checkbox checked', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    let capturedPayload: any = null;
+    await page.route('**/api/rsvp', async (route) => {
+      capturedPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, responseId: 'test-id' }),
+      });
+    });
+
+    await page.check('[data-testid="send-confirmation-checkbox"]');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('#form-success')).toBeVisible();
+
+    expect(capturedPayload.sendConfirmation).toBe(true);
+  });
 });

@@ -1,0 +1,32 @@
+name: Sync Contacts to Resend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync Notion guests → Resend audiences
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync contacts
+        run: npx tsx scripts/sync-contacts.ts
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

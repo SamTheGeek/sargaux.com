@@ -5,4 +5,5 @@ export interface GuestRecord {
   eventInvitations: ('nyc' | 'france')[]; // which wedding(s)
   isPlusOne: boolean;
   relatedGuestIds: string[]; // Notion IDs of party members
+  email?: string; // Guest email address (optional — may not be on file)
 }
