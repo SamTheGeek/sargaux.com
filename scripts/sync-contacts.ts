@@ -143,6 +143,10 @@ function deriveEventInvitations(country: string | null): ('nyc' | 'france')[] {
   }
 }
 
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ─── Resend helpers ───────────────────────────────────────────────────────────
 
 const resend = new Resend(RESEND_API_KEY);
@@ -223,6 +227,7 @@ async function syncAudience(
       const { firstName, lastName } = parseName(guest.name);
       await upsertContact(audienceId, { email: guest.email!, firstName, lastName });
       upserted++;
+      await sleep(600);
     } catch (err) {
       console.error(`  ✗ Failed to upsert ${guest.email}:`, err);
       failed++;
@@ -265,9 +270,12 @@ async function main() {
   // Ensure audiences exist
   console.log('\nEnsuring Resend audiences exist...');
   const existingAudiences = await listAudiences();
+  const nycAudience = await ensureAudience(AUDIENCE_NAMES.nyc, existingAudiences);
+  await sleep(600);
+  const franceAudience = await ensureAudience(AUDIENCE_NAMES.france, existingAudiences);
   const audiences: Record<'nyc' | 'france', ResendAudience> = {
-    nyc: await ensureAudience(AUDIENCE_NAMES.nyc, existingAudiences),
-    france: await ensureAudience(AUDIENCE_NAMES.france, existingAudiences),
+    nyc: nycAudience,
+    france: franceAudience,
   };
   console.log(`  ✓ NYC Guests:    ${audiences.nyc.id}`);
   console.log(`  ✓ France Guests: ${audiences.france.id}`);
