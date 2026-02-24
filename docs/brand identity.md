@@ -49,14 +49,20 @@ All layouts are built on an **8px base unit**. Every size, margin, padding, and 
 - No italics
 - No decorative weights
 
-### 1.5 Shared Design Rules
+### 1.5 Shared Motif — The Sun Disc
+
+A perfect geometric circle, flat color, no texture, no gradient. Often cropped by the edge of the composition. Never decorative — it is a structural element and the single graphic motif shared across both event identities. Color varies by event (Burnt Amber for NYC, Prussian Blue for France), but the form is identical.
+
+### 1.6 Shared Design Rules
 
 - No pure black. No pure white. No gradients. No ornamentation.
+- No bright red. No pastel tones.
 - Horizontal hairline rules divide sections. Never doubled.
 - Whitespace is structural, not decorative.
 - Every visual element must serve a structural purpose.
+- QR codes must use the event's primary text color. No box background, no reversal, minimum 0.25in clear space.
 
-### 1.6 Copy Guidelines
+### 1.7 Copy Guidelines
 
 **Approved Language**
 
@@ -71,7 +77,7 @@ All layouts are built on an **8px base unit**. Every size, margin, padding, and 
 - "Happily ever after" / "To follow" / ceremony language
 - Exclamation marks
 
-### 1.7 System Integrity Checklist
+### 1.8 System Integrity Checklist
 
 Every new design element must pass:
 
