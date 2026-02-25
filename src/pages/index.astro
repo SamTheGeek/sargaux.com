@@ -3,6 +3,8 @@ import WireframeLayout from '../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../components/ImagePlaceholder.astro';
 import { getAuthenticatedGuest } from '../lib/auth';
 import { isSiteEnabled, isEnabled } from '../config/features';
+import { strings } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
 
 // Only redirect if site is enabled and user is logged in
 if (isSiteEnabled()) {
@@ -12,10 +14,12 @@ if (isSiteEnabled()) {
     return Astro.redirect(redirectPath);
   }
 }
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
 {isSiteEnabled() ? (
-  <WireframeLayout title="Homepage">
+  <WireframeLayout title={t(strings.home.pageTitle)}>
     <main>
       <!-- Hero Section -->
       <section class="hero">
@@ -28,10 +32,10 @@ if (isSiteEnabled()) {
           />
         </div>
         <div class="hero-content">
-          <h1>Chez Sargaux</h1>
-          <p class="tagline">Sam & Margaux</p>
+          <h1>{t(strings.home.heroTitle)}</h1>
+          <p class="tagline">{t(strings.home.tagline)}</p>
           <div class="cta-area">
-            <button class="cta" id="login-trigger">Enter</button>
+            <button class="cta" id="login-trigger">{t(strings.home.ctaEnter)}</button>
           </div>
         </div>
       </section>
@@ -51,23 +55,23 @@ if (isSiteEnabled()) {
       <div class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
         <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
 
-        <h2 id="modal-title">Welcome</h2>
-        <p class="modal-subtitle">Please enter your name to continue</p>
+        <h2 id="modal-title">{t(strings.home.modal.title)}</h2>
+        <p class="modal-subtitle">{t(strings.home.modal.subtitle)}</p>
 
         <form id="login-form">
-          <label for="name" class="visually-hidden">Your name</label>
+          <label for="name" class="visually-hidden">{t(strings.home.modal.nameLabel)}</label>
           <input
             type="text"
             id="name"
             name="name"
-            placeholder="Your name"
+            placeholder={t(strings.home.modal.namePlaceholder)}
             autocomplete="off"
             autocapitalize="words"
             spellcheck="false"
             required
           />
           <div id="error-message" class="error-message" aria-live="polite"></div>
-          <button type="submit" class="submit-btn" id="submit-btn">Continue</button>
+          <button type="submit" class="submit-btn" id="submit-btn">{t(strings.home.modal.submitBtn)}</button>
         </form>
       </div>
     </div>

@@ -1,6 +1,8 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
@@ -34,8 +36,10 @@ const attendingNames = new Set(
 );
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
+const lang = Astro.locals.lang ?? 'en';
+const t = createTranslator(lang);
 const existingSubmittedAt = existingRSVP?.submittedAt
-  ? new Date(existingRSVP.submittedAt).toLocaleString('en-US', {
+  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -45,33 +49,30 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   : null;
 ---
 
-<WireframeLayout title="NYC RSVP">
+<WireframeLayout title={t(strings.nyc.rsvp.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>RSVP</h1>
-    <p class="subtitle">New York · October 11, 2026 <span class="tentative">(Tentative)</span></p>
+    <h1>{t(strings.nyc.rsvp.heading)}</h1>
+    <p class="subtitle">{t(strings.nyc.rsvp.subtitle)} <span class="tentative">{t(strings.nyc.rsvp.subtitleTentative)}</span></p>
 
     <div class="deadline-banner">
-      <p>Please respond by <strong>September 1, 2026</strong></p>
+      <p>{t(strings.nyc.rsvp.deadline)} <strong>{t(strings.nyc.rsvp.deadlineDate)}</strong></p>
     </div>
 
     {!guestId ? (
       <div class="error-card" data-testid="notion-required">
-        <h2>RSVP Unavailable</h2>
-        <p>
-          RSVP submissions require the Notion guest backend. Please log in again once that
-          integration is enabled.
-        </p>
+        <h2>{t(strings.nyc.rsvp.unavailable.heading)}</h2>
+        <p>{t(strings.nyc.rsvp.unavailable.text)}</p>
       </div>
     ) : loadError ? (
       <div class="error-card" data-testid="rsvp-load-error">
-        <h2>Unable to Load RSVP</h2>
+        <h2>{t(strings.nyc.rsvp.loadError.heading)}</h2>
         <p>{loadError}</p>
       </div>
     ) : (
@@ -79,16 +80,16 @@ const existingSubmittedAt = existingRSVP?.submittedAt
         {existingRSVP && (
           <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
             <p>
-              We already have your RSVP. Last saved <strong>{existingSubmittedAt}</strong>.
-              You can update and submit again anytime.
+              {t(strings.nyc.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.
+              {t(strings.nyc.rsvp.existingBanner.suffix)}
             </p>
           </aside>
         )}
 
         <form class="rsvp-form" id="rsvp-form" data-event="nyc">
           <section class="form-section">
-            <h2>Who's Coming?</h2>
-            <p class="section-note">Toggle each guest's attendance and edit names if needed.</p>
+            <h2>{t(strings.nyc.rsvp.form.whosComing.heading)}</h2>
+            <p class="section-note">{t(strings.nyc.rsvp.form.whosComing.note)}</p>
 
             {party.map((partyGuest) => {
               const isAttending =
@@ -111,7 +112,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                       value={partyGuest.name}
                       data-plus-one={partyGuest.isPlusOne ? 'true' : 'false'}
                     />
-                    <span class="guest-status">{isAttending ? 'Attending' : 'Not attending'}</span>
+                    <span class="guest-status">{isAttending ? t(strings.global.attending) : t(strings.global.notAttending)}</span>
                   </div>
                 </div>
               );
@@ -119,10 +120,10 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           </section>
 
           <section class="form-section">
-            <h2>Core Events</h2>
-            <p class="section-note">These events are part of your invitation.</p>
+            <h2>{t(strings.nyc.rsvp.form.coreEvents.heading)}</h2>
+            <p class="section-note">{t(strings.nyc.rsvp.form.coreEvents.note)}</p>
             {coreEvents.length === 0 ? (
-              <p class="placeholder-note">No core events are assigned to this invitation yet.</p>
+              <p class="placeholder-note">{t(strings.nyc.rsvp.form.coreEvents.empty)}</p>
             ) : (
               <div class="event-list">
                 {coreEvents.map((event) => (
@@ -137,7 +138,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                     <span class="checkbox-mark"></span>
                     <div class="event-details">
                       <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || 'Details to come'}</span>
+                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
                   </label>
                 ))}
@@ -146,11 +147,11 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           </section>
 
           <section class="form-section">
-            <h2>Optional Events</h2>
-            <p class="section-note">Choose any extra celebrations you'd like to attend.</p>
+            <h2>{t(strings.nyc.rsvp.form.optionalEvents.heading)}</h2>
+            <p class="section-note">{t(strings.nyc.rsvp.form.optionalEvents.note)}</p>
 
             {optionalEvents.length === 0 ? (
-              <p class="placeholder-note" data-testid="no-optional-events">No optional events are assigned right now.</p>
+              <p class="placeholder-note" data-testid="no-optional-events">{t(strings.nyc.rsvp.form.optionalEvents.empty)}</p>
             ) : (
               <div class="event-list">
                 {optionalEvents.map((event) => (
@@ -165,7 +166,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                     <span class="checkbox-mark"></span>
                     <div class="event-details">
                       <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || 'Details to come'}</span>
+                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
                   </label>
                 ))}
@@ -174,49 +175,49 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           </section>
 
           <section class="form-section">
-            <h2>Dietary Restrictions</h2>
-            <p class="section-note">Let us know about allergies or dietary preferences.</p>
+            <h2>{t(strings.nyc.rsvp.form.dietary.heading)}</h2>
+            <p class="section-note">{t(strings.nyc.rsvp.form.dietary.note)}</p>
             <textarea
               name="dietary"
               class="text-input"
-              placeholder="e.g., Vegetarian, nut allergy, gluten-free"
+              placeholder={t(strings.nyc.rsvp.form.dietary.placeholder)}
               rows="3"
             >{existingRSVP?.dietary ?? ''}</textarea>
           </section>
 
           <section class="form-section">
-            <h2>Song Request</h2>
-            <p class="section-note">What should we play to get you dancing?</p>
+            <h2>{t(strings.nyc.rsvp.form.songRequest.heading)}</h2>
+            <p class="section-note">{t(strings.nyc.rsvp.form.songRequest.note)}</p>
             <input
               type="text"
               name="songRequest"
               class="single-line-input"
-              placeholder="Artist — Song"
+              placeholder={t(strings.nyc.rsvp.form.songRequest.placeholder)}
               value={existingDetails.songRequest ?? ''}
             />
           </section>
 
           <section class="form-section">
-            <h2>Message for Us</h2>
+            <h2>{t(strings.nyc.rsvp.form.message.heading)}</h2>
             <textarea
               name="message"
               class="text-input"
-              placeholder="Share your well wishes or anything else we should know"
+              placeholder={t(strings.nyc.rsvp.form.message.placeholder)}
               rows="4"
             >{existingRSVP?.message ?? ''}</textarea>
           </section>
 
           <section class="form-section">
-            <h2>Confirmation Email</h2>
+            <h2>{t(strings.nyc.rsvp.form.email.heading)}</h2>
             {!primaryGuestEmail && (
               <div class="email-field">
-                <label for="guest-email" class="section-note">Email address <span class="optional-label">(optional)</span></label>
+                <label for="guest-email" class="section-note">{t(strings.nyc.rsvp.form.email.label)} <span class="optional-label">{t(strings.nyc.rsvp.form.email.optional)}</span></label>
                 <input
                   type="email"
                   id="guest-email"
                   name="email"
                   class="single-line-input"
-                  placeholder="you@example.com"
+                  placeholder={t(strings.nyc.rsvp.form.email.placeholder)}
                   autocomplete="email"
                   data-testid="email-input"
                 />
@@ -224,25 +225,25 @@ const existingSubmittedAt = existingRSVP?.submittedAt
             )}
             <label class="checkbox-label">
               <input type="checkbox" id="send-confirmation" name="sendConfirmation" data-testid="send-confirmation-checkbox" />
-              <span>Send me an email confirmation</span>
+              <span>{t(strings.nyc.rsvp.form.email.sendConfirmation)}</span>
             </label>
           </section>
 
           <div class="feedback" aria-live="polite">
-            <p id="form-success" class="success-message" hidden>RSVP submitted successfully.</p>
-            <p id="form-error" class="error-message" hidden>We could not submit your RSVP. Please try again.</p>
+            <p id="form-success" class="success-message" hidden>{t(strings.nyc.rsvp.form.successMsg)}</p>
+            <p id="form-error" class="error-message" hidden>{t(strings.nyc.rsvp.form.errorMsg)}</p>
           </div>
 
-          <button type="submit" class="submit-btn">{existingRSVP ? 'Update RSVP' : 'Submit RSVP'}</button>
+          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}</button>
 
-          <p class="form-note">Signed in as <strong>{guest}</strong>. You can update your response anytime before the deadline.</p>
+          <p class="form-note">{t(strings.nyc.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.nyc.rsvp.form.canUpdate)}</p>
         </form>
       </>
     )}
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <p>{t(strings.global.copyright)}</p>
   </footer>
 </WireframeLayout>
 

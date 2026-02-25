@@ -1,9 +1,13 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../components/ImagePlaceholder.astro';
+import { strings } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="Registry">
+<WireframeLayout title={t(strings.registry.pageTitle)}>
   <header>
     <nav class="main-nav">
       <a href="/" class="logo">Chez Sargaux</a>
@@ -26,7 +30,7 @@ import ImagePlaceholder from '../components/ImagePlaceholder.astro';
     </section>
 
     <section class="registry-intro">
-      <h1>Registry</h1>
+      <h1>{t(strings.registry.heading)}</h1>
       <div class="content-box">
         <h3>Intro Message</h3>
         <p>[Personalized message from Sam & Margaux about gifts]</p>

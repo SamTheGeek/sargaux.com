@@ -3,6 +3,8 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -11,22 +13,23 @@ const guestId = Astro.locals.guestId;
 const calendarToken = (features.france.calendarSubscribe && guestId)
   ? generateToken(guestId)
   : null;
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="France Event" description="France Wedding - May 2027">
+<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027">
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
       <div class="nav-right">
         {showEventToggle && (
           <div class="content-box event-toggle">
             <h3>Event Toggle (if invited to both)</h3>
-            <a href="/nyc" class="toggle-item">NYC</a>
+            <a href="/nyc" class="toggle-item">{t(strings.global.toggle.nyc)}</a>
             <span class="toggle-divider">|</span>
-            <span class="toggle-item active">France</span>
+            <span class="toggle-item active">{t(strings.global.toggle.france)}</span>
           </div>
         )}
-        <a href="/france/rsvp" class="rsvp-btn">RSVP</a>
+        <a href="/france/rsvp" class="rsvp-btn">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
@@ -41,9 +44,9 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
         aspectRatio="16/9"
       />
       <div class="hero-overlay">
-        <h1>France</h1>
-        <p class="date">May 28–30, 2027</p>
-        <p class="event-type">Weekend Celebration at Village De Sully</p>
+        <h1>{t(strings.france.heroTitle)}</h1>
+        <p class="date">{t(strings.france.heroDate)}</p>
+        <p class="event-type">{t(strings.france.heroEventType)}</p>
       </div>
     </section>
 
@@ -51,21 +54,21 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
     <section class="quick-info">
       <div class="info-cards">
         <div class="content-box info-card">
-          <h3>When</h3>
-          <p><strong>Friday, May 28</strong> – <strong>Sunday, May 30, 2027</strong></p>
-          <p>Full weekend celebration</p>
+          <h3>{t(strings.france.when.heading)}</h3>
+          <p>{t(strings.france.when.dates)}</p>
+          <p>{t(strings.france.when.desc)}</p>
         </div>
         <div class="content-box info-card">
-          <h3>Where</h3>
-          <p><strong>Village De Sully</strong></p>
-          <p>Ile-de-France, near Paris</p>
-          <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">View on Map ↗</a>
+          <h3>{t(strings.france.where.heading)}</h3>
+          <p><strong>{t(strings.france.where.venue)}</strong></p>
+          <p>{t(strings.france.where.location)}</p>
+          <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">{t(strings.france.where.mapLink)}</a>
         </div>
         <div class="content-box info-card">
-          <h3>Accommodation</h3>
-          <p>Stay at the village</p>
-          <p><strong>€75/night</strong> (breakfast included)</p>
-          <p class="note"><em>Reserve through RSVP</em></p>
+          <h3>{t(strings.france.accommodation.heading)}</h3>
+          <p>{t(strings.france.accommodation.stayAtVillage)}</p>
+          <p><strong>{t(strings.france.accommodation.price)}</strong></p>
+          <p class="note"><em>{t(strings.france.accommodation.reserveNote)}</em></p>
         </div>
       </div>
     </section>
@@ -74,32 +77,32 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
     <section class="weekend-overview">
       <div class="day-cards">
         <div class="content-box day-card">
-          <h3>Friday</h3>
+          <h3>{t(strings.france.weekend.friday.day)}</h3>
           <div class="day-content">
-            <p class="time">Evening</p>
-            <p><strong>Welcome Dinner</strong></p>
-            <p class="desc">Casual gathering as guests arrive</p>
+            <p class="time">{t(strings.france.weekend.friday.timeEvening)}</p>
+            <p><strong>{t(strings.france.weekend.friday.welcomeDinner)}</strong></p>
+            <p class="desc">{t(strings.france.weekend.friday.welcomeDesc)}</p>
           </div>
         </div>
         <div class="content-box day-card highlight">
-          <h3>Saturday</h3>
+          <h3>{t(strings.france.weekend.saturday.day)}</h3>
           <div class="day-content">
-            <p class="time">Morning</p>
-            <p>Breakfast for overnight guests</p>
-            <p class="time">Afternoon</p>
-            <p><strong>Ceremony</strong></p>
-            <p><strong>Cocktail Hour</strong></p>
-            <p class="time">Evening</p>
-            <p><strong>Reception & Dinner</strong></p>
+            <p class="time">{t(strings.france.weekend.saturday.timeMorning)}</p>
+            <p>{t(strings.france.weekend.saturday.breakfast)}</p>
+            <p class="time">{t(strings.france.weekend.saturday.timeAfternoon)}</p>
+            <p><strong>{t(strings.france.weekend.saturday.ceremony)}</strong></p>
+            <p><strong>{t(strings.france.weekend.saturday.cocktail)}</strong></p>
+            <p class="time">{t(strings.france.weekend.saturday.timeEvening)}</p>
+            <p><strong>{t(strings.france.weekend.saturday.reception)}</strong></p>
           </div>
         </div>
         <div class="content-box day-card">
-          <h3>Sunday</h3>
+          <h3>{t(strings.france.weekend.sunday.day)}</h3>
           <div class="day-content">
-            <p class="time">Morning</p>
-            <p>Breakfast for overnight guests</p>
-            <p class="time">Midday</p>
-            <p><strong>Farewell Brunch</strong></p>
+            <p class="time">{t(strings.france.weekend.sunday.timeMorning)}</p>
+            <p>{t(strings.france.weekend.sunday.breakfast)}</p>
+            <p class="time">{t(strings.france.weekend.sunday.timeMidday)}</p>
+            <p><strong>{t(strings.france.weekend.sunday.farewellBrunch)}</strong></p>
           </div>
         </div>
       </div>
@@ -107,29 +110,29 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
 
     <!-- Location Map -->
     <section class="location-map">
-      <h2>The Location</h2>
+      <h2>{t(strings.france.location.heading)}</h2>
       <div class="map-placeholder">
-        <p class="placeholder-note">Interactive map showing Village de Sully and Paris will be added here</p>
-        <p class="location-context">Village de Sully is located in the Ile-de-France region, approximately 60km west of Paris.</p>
+        <p class="placeholder-note">{t(strings.france.location.mapPlaceholder)}</p>
+        <p class="location-context">{t(strings.france.location.context)}</p>
       </div>
     </section>
 
     <!-- Calendar Subscribe (Prominent) -->
     <section class="calendar-subscribe">
       <div class="calendar-content">
-        <h2>Save the Dates</h2>
-        <p>Add the full weekend to your calendar.</p>
+        <h2>{t(strings.france.calendar.heading)}</h2>
+        <p>{t(strings.france.calendar.subtext)}</p>
         {calendarToken ? (
           <a
             href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
             class="calendar-btn-prominent"
           >
-            Add to Calendar
+            {t(strings.france.calendar.addBtn)}
           </a>
         ) : (
           <>
-            <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
-            <p class="calendar-note">Personalized calendar link available after RSVP</p>
+            <button class="calendar-btn-prominent" disabled>{t(strings.france.calendar.addBtn)}</button>
+            <p class="calendar-note">{t(strings.france.calendar.unavailableNote)}</p>
           </>
         )}
       </div>
@@ -140,23 +143,23 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
       <nav class="event-nav" aria-label="Event sections">
         <a href="/france/schedule" class="nav-card">
           <span class="nav-icon">📅</span>
-          <span class="nav-title">Schedule</span>
-          <span class="nav-desc">Full weekend timeline</span>
+          <span class="nav-title">{t(strings.france.nav.schedule.title)}</span>
+          <span class="nav-desc">{t(strings.france.nav.schedule.desc)}</span>
         </a>
         <a href="/france/details" class="nav-card">
           <span class="nav-icon">🏰</span>
-          <span class="nav-title">The Venue</span>
-          <span class="nav-desc">Village De Sully & grounds</span>
+          <span class="nav-title">{t(strings.france.nav.venue.title)}</span>
+          <span class="nav-desc">{t(strings.france.nav.venue.desc)}</span>
         </a>
         <a href="/france/travel" class="nav-card">
           <span class="nav-icon">✈️</span>
-          <span class="nav-title">Travel</span>
-          <span class="nav-desc">Getting there & around</span>
+          <span class="nav-title">{t(strings.france.nav.travel.title)}</span>
+          <span class="nav-desc">{t(strings.france.nav.travel.desc)}</span>
         </a>
         <a href="/france/rsvp" class="nav-card highlight">
           <span class="nav-icon">💌</span>
-          <span class="nav-title">RSVP</span>
-          <span class="nav-desc">Confirm & book accommodation</span>
+          <span class="nav-title">{t(strings.france.nav.rsvp.title)}</span>
+          <span class="nav-desc">{t(strings.france.nav.rsvp.desc)}</span>
         </a>
       </nav>
     </section>
@@ -189,13 +192,13 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
 
   <footer>
     <nav class="footer-nav">
-      <a href="/registry">Registry</a>
+      <a href="/registry">{t(strings.global.registry)}</a>
       <span>·</span>
       <span class="guest-name">{guest}</span>
       <span>·</span>
-      <a href="/api/logout">Logout</a>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <p>&copy; 2026 Sam Gross</p>
+    <p>{t(strings.global.copyright)}</p>
   </footer>
 </WireframeLayout>
 

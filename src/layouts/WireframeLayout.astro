@@ -5,10 +5,11 @@ interface Props {
 }
 
 const { title, description = 'Wedding website for Sam & Margaux' } = Astro.props;
+const lang = Astro.locals.lang ?? 'en';
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" media="(prefers-color-scheme: light)" />
