@@ -5,6 +5,7 @@ import { getAuthenticatedGuest } from '../lib/auth';
 import { isSiteEnabled, isEnabled } from '../config/features';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
+import LangSwitcher from '../components/LangSwitcher.astro';
 
 // Only redirect if site is enabled and user is logged in
 if (isSiteEnabled()) {
@@ -77,7 +78,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </div>
 
     <footer>
-      <p>&copy; 2026 Sam Gross</p>
+      <div class="footer-row">
+        <p>&copy; 2026 Sam Gross</p>
+        <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+      </div>
     </footer>
 
 
@@ -286,15 +290,22 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     /* Footer */
     footer {
       padding: 2rem;
-      text-align: center;
       border-top: 1px solid #e5e5e5;
       content-visibility: auto;
       contain-intrinsic-size: 120px;
     }
 
-    footer p {
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.625rem;
+    }
+
+    .footer-row p {
       font-size: 0.875rem;
       color: #666;
+      margin: 0;
     }
 
     @media (max-width: 768px) {

@@ -5,6 +5,7 @@ import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -149,7 +150,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <span>·</span>
       <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <p>{t(strings.global.copyright)}</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -472,9 +476,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin: 0 0.5rem;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 
   @media (max-width: 768px) {

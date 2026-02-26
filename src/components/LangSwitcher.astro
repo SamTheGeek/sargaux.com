@@ -1,0 +1,67 @@
+---
+interface Props {
+  lang: string;
+}
+
+const { lang } = Astro.props;
+---
+
+<div class="lang-switcher" aria-label="Language">
+  <a
+    href="?lang=en"
+    class:list={['flag-btn', { active: lang === 'en' }]}
+    title="English"
+    aria-label="Switch to English"
+    aria-current={lang === 'en' ? 'true' : undefined}
+  >🇺🇸</a>
+  <a
+    href="?lang=fr"
+    class:list={['flag-btn', { active: lang === 'fr' }]}
+    title="Français"
+    aria-label="Passer en français"
+    aria-current={lang === 'fr' ? 'true' : undefined}
+  >🇫🇷</a>
+</div>
+
+<script>
+  // Preserve the current path when switching languages
+  document.querySelectorAll<HTMLAnchorElement>('.lang-switcher .flag-btn').forEach(link => {
+    const targetLang = new URL(link.href).searchParams.get('lang');
+    const current = new URL(window.location.href);
+    current.searchParams.set('lang', targetLang!);
+    link.href = current.toString();
+  });
+</script>
+
+<style>
+  .lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .flag-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: 50%;
+    font-size: 1rem;
+    line-height: 1;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+    opacity: 0.35;
+    transition: opacity 0.15s, border-color 0.15s;
+    cursor: pointer;
+  }
+
+  .flag-btn.active {
+    opacity: 1;
+    border-color: #d0d0d0;
+  }
+
+  .flag-btn:not(.active):hover {
+    opacity: 0.7;
+  }
+</style>

@@ -3,6 +3,7 @@ import WireframeLayout from '../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../components/ImagePlaceholder.astro';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
+import LangSwitcher from '../components/LangSwitcher.astro';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
@@ -90,7 +91,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -229,12 +233,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
     margin-top: 2rem;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
   }
