@@ -25,6 +25,7 @@
   FEATURE_NYC_RSVP_ENABLED = "true"
   FEATURE_FRANCE_RSVP_ENABLED = "true"
   FEATURE_GLOBAL_EMAIL_ENABLED = "true"
+  FEATURE_GLOBAL_I18N = "true"
 
 # Production keeps defaults from src/config/features.ts
 # Override specific flags in Netlify Dashboard when ready to launch
