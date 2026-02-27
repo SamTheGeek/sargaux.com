@@ -57,8 +57,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <div class="content-box info-card">
           <h3>{t(strings.nyc.when.heading)}</h3>
           <p><strong>{t(strings.nyc.when.date)}</strong></p>
-          <p>{t(strings.nyc.when.weekend)}</p>
-          <p class="note"><em>{t(strings.nyc.when.note)}</em></p>
+          {t(strings.nyc.when.weekend) && <p>{t(strings.nyc.when.weekend)}</p>}
+          {t(strings.nyc.when.note) && <p class="note"><em>{t(strings.nyc.when.note)}</em></p>}
         </div>
         <div class="content-box info-card">
           <h3>{t(strings.nyc.where.heading)}</h3>

@@ -55,9 +55,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           />
           <h3>{t(strings.nyc.details.venues.dinner.title)}</h3>
           <p>{t(strings.nyc.details.venues.dinner.name)}</p>
-          <div class="map-placeholder">
-            <!-- Google Maps Static API placeholder -->
-            <p class="placeholder-note">{t(strings.nyc.details.venues.dinner.mapPlaceholder)}</p>
+          <p class="venue-address">{t(strings.nyc.details.venues.dinner.address)}</p>
+          <div class="map-embed">
+            <iframe
+              src="https://maps.google.com/maps?q=80+Wythe+Ave+Brooklyn+NY+11249&output=embed"
+              width="100%"
+              height="200"
+              style="border:0;"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Bar Blondeau at the Wythe Hotel"
+            ></iframe>
           </div>
         </div>
         <div class="venue-card">
@@ -228,6 +236,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   .venue-card > p {
     margin: 0 1rem 1rem;
     color: #666;
+  }
+
+  .venue-address {
+    margin: 0 1rem 0.75rem;
+    font-size: 0.875rem;
+    color: #888;
+  }
+
+  .map-embed {
+    margin: 0 1rem 1rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
   }
 
   .map-placeholder {

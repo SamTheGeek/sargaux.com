@@ -58,13 +58,13 @@ export const strings = {
     pageTitle:  s('Homepage', 'Accueil'),
     heroTitle:  s('Chez Sargaux', 'Chez Sargaux'),
     tagline:    s('Sam & Margaux', 'Sam & Margaux'),
-    ctaEnter:   s('Enter', 'Entrer'),
+    ctaEnter:   s('Entrée', 'Entrée'),
     modal: {
       title:        s('Welcome', 'Bienvenue'),
       subtitle:     s('Please enter your name to continue', 'Veuillez entrer votre nom pour continuer'),
       nameLabel:    s('Your name', 'Votre nom'),
-      namePlaceholder: s('Your name', 'Votre nom'),
-      submitBtn:    s('Continue', 'Continuer'),
+      namePlaceholder: s('Sam Gross', 'Margaux Ancel'),
+      submitBtn:    s('Continuer', 'Continuer'),
       checkingBtn:  s('Checking...', 'Vérification...'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
@@ -79,17 +79,17 @@ export const strings = {
     pageTitle:       s('NYC Event', 'Événement New York'),
     heroTitle:       s('New York', 'New York'),
     heroDate:        s('October 11, 2026', '11 octobre 2026'),
-    heroDateTentative: s('(Tentative)', '(Provisoire)'),
+    heroDateTentative: s('', ''),
     heroEventType:   s('Dinner & Dancing', 'Dîner & Dancing'),
     when: {
       heading:  s('When', 'Quand'),
       date:     s('Sunday, October 11, 2026', 'Dimanche 11 octobre 2026'),
-      weekend:  s('Columbus Day Weekend', 'Week-end Columbus Day'),
-      note:     s('Note: Date may shift to Sat 10th or later weekend', 'Note : La date pourrait changer au sam. 10 ou un week-end ultérieur'),
+      weekend:  s('', ''),
+      note:     s('', ''),
     },
     where: {
       heading:    s('Where', 'Où'),
-      dinner:     s('Dinner Venue TBD', 'Lieu du dîner à confirmer'),
+      dinner:     s('Bar Blondeau', 'Bar Blondeau'),
       dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:  s('followed by', 'suivi de'),
       dancing:    s('Dancing Venue TBD', 'Lieu du dancing à confirmer'),
@@ -132,7 +132,7 @@ export const strings = {
       schedule: {
         heading: s('Schedule', 'Programme'),
         dinner: {
-          time:  s('6:00 PM', '18h00'),
+          time:  s('5:00 PM', '17h00'),
           title: s('Cocktails & Dinner', 'Cocktail & Dîner'),
           desc:  s('Join us for an evening of celebration', 'Rejoignez-nous pour une soirée de célébration'),
         },
@@ -146,7 +146,8 @@ export const strings = {
         heading: s('The Venues', 'Les Lieux'),
         dinner: {
           title:          s('Dinner', 'Dîner'),
-          name:           s('Venue name TBD', 'Lieu à confirmer'),
+          name:           s('Bar Blondeau at the Wythe Hotel', 'Bar Blondeau au Wythe Hotel'),
+          address:        s('80 Wythe Ave, 6th Floor · Brooklyn, New York 11249', '80 Wythe Ave, 6e étage · Brooklyn, New York 11249'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
         dancing: {
@@ -226,7 +227,7 @@ export const strings = {
       },
       whileHere: {
         heading: s("While You're Here", 'À ne pas manquer'),
-        intro:   s("Columbus Day Weekend is a great time to explore NYC's world-class museums and exhibitions:", "Le week-end Columbus Day est idéal pour découvrir les musées et expositions de classe mondiale de New York :"),
+        intro:   s("October is a wonderful time to explore NYC's world-class museums and exhibitions:", "Octobre est une période idéale pour découvrir les musées et expositions de classe mondiale de New York :"),
         museums: {
           heading:       s('Museums', 'Musées'),
           met:           s('The Met — Fifth Avenue, suggested donation admission', 'Le Met — Cinquième Avenue, entrée aux dons suggérés'),
@@ -254,7 +255,7 @@ export const strings = {
       pageTitle:         s('NYC RSVP', 'RSVP New York'),
       heading:           s('RSVP', 'RSVP'),
       subtitle:          s('New York · October 11, 2026', 'New York · 11 octobre 2026'),
-      subtitleTentative: s('(Tentative)', '(Provisoire)'),
+      subtitleTentative: s('', ''),
       deadline:          s('Please respond by', 'Merci de répondre avant le'),
       deadlineDate:      s('September 1, 2026', '1er septembre 2026'),
       unavailable: {
