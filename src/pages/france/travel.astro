@@ -1,90 +1,95 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="France Travel">
+<WireframeLayout title={t(strings.france.travel.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">&larr; Back to France</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>Travel</h1>
-    <p class="subtitle">Getting to Village De Sully</p>
+    <h1>{t(strings.france.travel.heading)}</h1>
+    <p class="subtitle">{t(strings.france.travel.subtitle)}</p>
 
     <section class="travel-sections">
       <!-- Getting to France (will be conditionally hidden for French guests via i18n/Notion) -->
       <div class="travel-card">
-        <h2>Getting to France</h2>
-        <p class="section-note">For guests traveling from abroad.</p>
+        <h2>{t(strings.france.travel.toFrance.heading)}</h2>
+        <p class="section-note">{t(strings.france.travel.toFrance.note)}</p>
 
-        <h3>By Air</h3>
-        <p>Paris has two major international airports:</p>
+        <h3>{t(strings.france.travel.toFrance.air.heading)}</h3>
+        <p>{t(strings.france.travel.toFrance.air.intro)}</p>
         <ul>
-          <li><strong>Paris CDG (Charles de Gaulle)</strong> — Most international flights arrive here. Well connected to central Paris via RER B train (~35 min).</li>
-          <li><strong>Paris Orly</strong> — Closer to the city center, serves European and some international flights. Orlyval + RER B or Tram T7 to reach Paris.</li>
+          <li>{t(strings.france.travel.toFrance.air.cdg)}</li>
+          <li>{t(strings.france.travel.toFrance.air.orly)}</li>
         </ul>
 
-        <h3>By Train (Eurostar)</h3>
-        <p>From London, the Eurostar runs to Paris Gare du Nord in ~2h15. Book early for the best fares.</p>
+        <h3>{t(strings.france.travel.toFrance.eurostar.heading)}</h3>
+        <p>{t(strings.france.travel.toFrance.eurostar.text)}</p>
       </div>
 
       <!-- Getting to the Venue from Paris (shown to everyone) -->
       <div class="travel-card">
-        <h2>Getting to the Venue from Paris</h2>
-        <p>Village De Sully is in the Ile-de-France region, approximately 60km west of Paris.</p>
+        <h2>{t(strings.france.travel.toVenue.heading)}</h2>
+        <p>{t(strings.france.travel.toVenue.intro)}</p>
 
-        <h3>By Train</h3>
+        <h3>{t(strings.france.travel.toVenue.train.heading)}</h3>
         <ul>
-          <li>Take a <strong>Transilien train (Line J or N)</strong> from Paris Saint-Lazare to <strong>Mantes-la-Jolie</strong> station (~45 min)</li>
-          <li>From Mantes-la-Jolie, the venue is a short drive (~15 min)</li>
+          <li>{t(strings.france.travel.toVenue.train.step1)}</li>
+          <li>{t(strings.france.travel.toVenue.train.step2)}</li>
         </ul>
-        <p class="transport-note">Ubers are available around Mantes-la-Jolie station. Taxis are right in front of the station.</p>
+        <p class="transport-note">{t(strings.france.travel.toVenue.train.note)}</p>
 
-        <h3>By Car</h3>
-        <p>From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.</p>
-        <p class="placeholder-note">Detailed driving directions will be provided closer to the event.</p>
+        <h3>{t(strings.france.travel.toVenue.car.heading)}</h3>
+        <p>{t(strings.france.travel.toVenue.car.text)}</p>
+        <p class="placeholder-note">{t(strings.france.travel.toVenue.car.placeholder)}</p>
       </div>
 
       <!-- Extending Your Trip -->
       <div class="travel-card">
-        <h2>Extending Your Trip</h2>
-        <p>If you're coming from abroad, consider spending extra time exploring:</p>
+        <h2>{t(strings.france.travel.extending.heading)}</h2>
+        <p>{t(strings.france.travel.extending.intro)}</p>
         <ul>
-          <li><strong>Paris</strong> — Arrive a few days early or stay after the weekend</li>
-          <li><strong>Versailles</strong> — Just 30 minutes from the venue, a must-see</li>
-          <li><strong>Giverny</strong> — Monet's gardens, nearby in the Seine valley</li>
-          <li><strong>Normandy</strong> — D-Day beaches and charming coastal towns, ~2h drive</li>
+          <li>{t(strings.france.travel.extending.paris)}</li>
+          <li>{t(strings.france.travel.extending.versailles)}</li>
+          <li>{t(strings.france.travel.extending.giverny)}</li>
+          <li>{t(strings.france.travel.extending.normandy)}</li>
         </ul>
       </div>
 
       <!-- Practical Info -->
       <div class="travel-card">
-        <h2>Practical Info</h2>
-        <p class="date-ref">For the weekend of May 28–30, 2027:</p>
+        <h2>{t(strings.france.travel.practical.heading)}</h2>
+        <p class="date-ref">{t(strings.france.travel.practical.dateRef)}</p>
 
         <div class="info-grid">
           <div class="info-item">
-            <h3>Time Zone</h3>
-            <p><strong>CEST (UTC+2)</strong></p>
-            <p>6 hours ahead of New York</p>
+            <h3>{t(strings.france.travel.practical.timezone.heading)}</h3>
+            <p><strong>{t(strings.france.travel.practical.timezone.value)}</strong></p>
+            <p>{t(strings.france.travel.practical.timezone.note)}</p>
           </div>
           <div class="info-item">
-            <h3>Currency</h3>
-            <p><strong>Euro (€)</strong></p>
-            <p>Cards widely accepted; some small shops prefer cash</p>
+            <h3>{t(strings.france.travel.practical.currency.heading)}</h3>
+            <p><strong>{t(strings.france.travel.practical.currency.value)}</strong></p>
+            <p>{t(strings.france.travel.practical.currency.note)}</p>
           </div>
           <div class="info-item">
-            <h3>Language</h3>
-            <p><strong>French</strong></p>
-            <p>English understood in Paris and tourist areas</p>
+            <h3>{t(strings.france.travel.practical.language.heading)}</h3>
+            <p><strong>{t(strings.france.travel.practical.language.value)}</strong></p>
+            <p>{t(strings.france.travel.practical.language.note)}</p>
           </div>
           <div class="info-item">
-            <h3>Weather</h3>
-            <p><strong>Late May</strong></p>
-            <p>Typically 15–22°C (60–72°F), pleasant and sunny. Light layers recommended for evenings.</p>
+            <h3>{t(strings.france.travel.practical.weather.heading)}</h3>
+            <p><strong>{t(strings.france.travel.practical.weather.value)}</strong></p>
+            <p>{t(strings.france.travel.practical.weather.note)}</p>
           </div>
         </div>
       </div>
@@ -92,7 +97,10 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -254,13 +262,20 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   /* Footer */
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 
   @media (max-width: 480px) {

@@ -1,56 +1,61 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="France Schedule">
+<WireframeLayout title={t(strings.france.schedule.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">&larr; Back to France</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>Weekend Schedule</h1>
-    <p class="subtitle">May 28–30, 2027</p>
+    <h1>{t(strings.france.schedule.heading)}</h1>
+    <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
 
     <!-- Check-in/Check-out Info -->
     <div class="stay-info">
       <div class="stay-time">
-        <span class="stay-label">Check-in</span>
-        <span class="stay-value">Friday, 4:00 PM</span>
+        <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
+        <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
       </div>
       <div class="stay-divider"></div>
       <div class="stay-time">
-        <span class="stay-label">Check-out</span>
-        <span class="stay-value">Sunday, 4:00 PM</span>
+        <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
+        <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
       </div>
     </div>
 
     <!-- Calendar Subscribe -->
     <section class="calendar-subscribe">
-      <button class="calendar-btn" disabled>Add Weekend to Calendar</button>
-      <p class="calendar-note">Personalized calendar with your RSVP'd events</p>
+      <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
+      <p class="calendar-note">{t(strings.france.schedule.calendarNote)}</p>
     </section>
 
     <section class="days">
       <!-- Friday -->
       <div class="day-section">
-        <h2>Friday, May 28</h2>
+        <h2>{t(strings.france.schedule.friday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">4:00 PM</span>
+            <span class="time">{t(strings.france.schedule.friday.checkin.time)}</span>
             <div class="event">
-              <h4>Check-in Opens</h4>
-              <p>Settle into your accommodations at the village</p>
+              <h4>{t(strings.france.schedule.friday.checkin.title)}</h4>
+              <p>{t(strings.france.schedule.friday.checkin.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">7:00 PM</span>
+            <span class="time">{t(strings.france.schedule.friday.dinner.time)}</span>
             <div class="event">
-              <h4>Welcome Dinner</h4>
-              <p class="location">Village De Sully</p>
-              <p>Casual gathering to kick off the weekend</p>
+              <h4>{t(strings.france.schedule.friday.dinner.title)}</h4>
+              <p class="location">{t(strings.france.schedule.friday.dinner.location)}</p>
+              <p>{t(strings.france.schedule.friday.dinner.desc)}</p>
             </div>
           </div>
         </div>
@@ -58,42 +63,42 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
       <!-- Saturday -->
       <div class="day-section highlight">
-        <h2>Saturday, May 29</h2>
-        <p class="day-note">Main Event Day</p>
+        <h2>{t(strings.france.schedule.saturday.heading)}</h2>
+        <p class="day-note">{t(strings.france.schedule.saturday.dayNote)}</p>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">Morning</span>
+            <span class="time">{t(strings.france.schedule.saturday.breakfast.time)}</span>
             <div class="event">
-              <h4>Breakfast</h4>
-              <p>Included for overnight guests</p>
+              <h4>{t(strings.france.schedule.saturday.breakfast.title)}</h4>
+              <p>{t(strings.france.schedule.saturday.breakfast.desc)}</p>
             </div>
           </div>
           <div class="timeline-item optional">
-            <span class="time">Late Morning</span>
+            <span class="time">{t(strings.france.schedule.saturday.excursions.time)}</span>
             <div class="event">
-              <h4>Optional Excursions</h4>
-              <p class="placeholder-note">Details TBD — possible activities in the area</p>
+              <h4>{t(strings.france.schedule.saturday.excursions.title)}</h4>
+              <p class="placeholder-note">{t(strings.france.schedule.saturday.excursions.placeholder)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">Afternoon</span>
+            <span class="time">{t(strings.france.schedule.saturday.ceremony.time)}</span>
             <div class="event">
-              <h4>Ceremony</h4>
-              <p class="location">On the grounds</p>
+              <h4>{t(strings.france.schedule.saturday.ceremony.title)}</h4>
+              <p class="location">{t(strings.france.schedule.saturday.ceremony.location)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">Following</span>
+            <span class="time">{t(strings.france.schedule.saturday.cocktail.time)}</span>
             <div class="event">
-              <h4>Cocktail Hour</h4>
-              <p class="location">On the grounds</p>
+              <h4>{t(strings.france.schedule.saturday.cocktail.title)}</h4>
+              <p class="location">{t(strings.france.schedule.saturday.cocktail.location)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">Evening</span>
+            <span class="time">{t(strings.france.schedule.saturday.reception.time)}</span>
             <div class="event">
-              <h4>Reception & Dinner</h4>
-              <p>Dinner, toasts, and dancing into the night</p>
+              <h4>{t(strings.france.schedule.saturday.reception.title)}</h4>
+              <p>{t(strings.france.schedule.saturday.reception.desc)}</p>
             </div>
           </div>
         </div>
@@ -101,28 +106,28 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
       <!-- Sunday -->
       <div class="day-section">
-        <h2>Sunday, May 30</h2>
+        <h2>{t(strings.france.schedule.sunday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">Morning</span>
+            <span class="time">{t(strings.france.schedule.sunday.breakfast.time)}</span>
             <div class="event">
-              <h4>Breakfast</h4>
-              <p>Included for overnight guests</p>
+              <h4>{t(strings.france.schedule.sunday.breakfast.title)}</h4>
+              <p>{t(strings.france.schedule.sunday.breakfast.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">11:00 AM</span>
+            <span class="time">{t(strings.france.schedule.sunday.brunch.time)}</span>
             <div class="event">
-              <h4>Farewell Brunch</h4>
-              <p class="location">Village De Sully</p>
-              <p>Final gathering before departures</p>
+              <h4>{t(strings.france.schedule.sunday.brunch.title)}</h4>
+              <p class="location">{t(strings.france.schedule.sunday.brunch.location)}</p>
+              <p>{t(strings.france.schedule.sunday.brunch.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">4:00 PM</span>
+            <span class="time">{t(strings.france.schedule.sunday.checkout.time)}</span>
             <div class="event">
-              <h4>Check-out</h4>
-              <p>Please vacate rooms by this time</p>
+              <h4>{t(strings.france.schedule.sunday.checkout.title)}</h4>
+              <p>{t(strings.france.schedule.sunday.checkout.desc)}</p>
             </div>
           </div>
         </div>
@@ -131,7 +136,10 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -341,13 +349,20 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
   /* Footer */
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 
   @media (max-width: 480px) {

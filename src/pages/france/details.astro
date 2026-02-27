@@ -1,19 +1,24 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="France Details">
+<WireframeLayout title={t(strings.france.details.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/france" class="back-link">&larr; Back to France</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>The Venue</h1>
-    <p class="subtitle">Village De Sully</p>
+    <h1>{t(strings.france.details.heading)}</h1>
+    <p class="subtitle">{t(strings.france.details.subtitle)}</p>
 
     <section class="hero-venue">
       <ImagePlaceholder
@@ -25,18 +30,18 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
     </section>
 
     <section class="venue-info">
-      <h2>About the Venue</h2>
-      <p><strong>Village De Sully</strong></p>
-      <p>Ile-de-France, approximately 60km west of Paris</p>
+      <h2>{t(strings.france.details.about.heading)}</h2>
+      <p><strong>{t(strings.france.details.about.name)}</strong></p>
+      <p>{t(strings.france.details.about.location)}</p>
       <div class="venue-links">
-        <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank" class="venue-link">View on Google Maps &nearr;</a>
-        <a href="https://www.groupeamadeus.com/le-village-de-sully" target="_blank" class="venue-link">Venue Website &nearr;</a>
+        <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank" class="venue-link">{t(strings.france.details.about.mapLink)}</a>
+        <a href="https://www.groupeamadeus.com/le-village-de-sully" target="_blank" class="venue-link">{t(strings.france.details.about.websiteLink)}</a>
       </div>
-      <p class="venue-desc">A charming village property with beautiful grounds, perfect for a weekend celebration with family and friends.</p>
+      <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
     </section>
 
     <section class="venue-spaces">
-      <h2>The Spaces</h2>
+      <h2>{t(strings.france.details.spaces.heading)}</h2>
       <div class="spaces-grid">
         <div class="space-card">
           <ImagePlaceholder
@@ -45,8 +50,8 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
             description="Village grounds, gardens, outdoor gathering spaces"
             aspectRatio="4/3"
           />
-          <h3>The Grounds</h3>
-          <p>Beautiful gardens and outdoor spaces for gathering throughout the weekend.</p>
+          <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
+          <p>{t(strings.france.details.spaces.grounds.desc)}</p>
         </div>
         <div class="space-card">
           <ImagePlaceholder
@@ -55,8 +60,8 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
             description="Ceremony location — outdoor setting on the property"
             aspectRatio="4/3"
           />
-          <h3>Ceremony Space</h3>
-          <p>An outdoor ceremony surrounded by nature on the village grounds.</p>
+          <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
+          <p>{t(strings.france.details.spaces.ceremony.desc)}</p>
         </div>
         <div class="space-card">
           <ImagePlaceholder
@@ -65,54 +70,57 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
             description="Guest accommodations at the village"
             aspectRatio="4/3"
           />
-          <h3>Accommodations</h3>
-          <p>Comfortable guest rooms within the village property.</p>
+          <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
+          <p>{t(strings.france.details.spaces.accommodation.desc)}</p>
         </div>
       </div>
     </section>
 
     <section class="accommodation-details">
-      <h2>Staying at the Village</h2>
+      <h2>{t(strings.france.details.staying.heading)}</h2>
 
       <div class="recommendation-banner">
-        <strong>We strongly recommend staying on-site.</strong>
-        <p>The village is in a rural area with very limited nearby hotel options. Staying on-site means you can fully enjoy the weekend without worrying about transportation.</p>
+        <strong>{t(strings.france.details.staying.recommendation)}</strong>
+        <p>{t(strings.france.details.staying.recommendationNote)}</p>
       </div>
 
       <div class="accommodation-info">
-        <h3>Room Details</h3>
+        <h3>{t(strings.france.details.staying.roomDetails.heading)}</h3>
         <ul>
-          <li><strong>€75 per person, per night</strong></li>
-          <li>Breakfast included each morning</li>
-          <li>Check-in: Friday, 4:00 PM</li>
-          <li>Check-out: Sunday, 4:00 PM</li>
+          <li><strong>{t(strings.france.details.staying.roomDetails.price)}</strong></li>
+          <li>{t(strings.france.details.staying.roomDetails.breakfast)}</li>
+          <li>{t(strings.france.details.staying.roomDetails.checkin)}</li>
+          <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
         </ul>
-        <p class="booking-note">Reserve your room through the RSVP form. We'll confirm your booking closer to the event.</p>
+        <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
       </div>
     </section>
 
     <section class="dress-code">
-      <h2>Dress Code</h2>
+      <h2>{t(strings.france.details.dressCode.heading)}</h2>
       <div class="dress-events">
         <div class="dress-event">
-          <h3>Friday Welcome Dinner</h3>
-          <p>Smart Casual</p>
+          <h3>{t(strings.france.details.dressCode.friday.event)}</h3>
+          <p>{t(strings.france.details.dressCode.friday.code)}</p>
         </div>
         <div class="dress-event highlight">
-          <h3>Saturday Ceremony & Reception</h3>
-          <p>Garden Party Attire</p>
-          <p class="dress-note">The ceremony is outdoors — comfortable shoes recommended for grass and garden paths.</p>
+          <h3>{t(strings.france.details.dressCode.saturday.event)}</h3>
+          <p>{t(strings.france.details.dressCode.saturday.code)}</p>
+          <p class="dress-note">{t(strings.france.details.dressCode.saturday.note)}</p>
         </div>
         <div class="dress-event">
-          <h3>Sunday Brunch</h3>
-          <p>Casual</p>
+          <h3>{t(strings.france.details.dressCode.sunday.event)}</h3>
+          <p>{t(strings.france.details.dressCode.sunday.code)}</p>
         </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -354,12 +362,19 @@ import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
   /* Footer */
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 </style>

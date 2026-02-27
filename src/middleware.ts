@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest } from './lib/auth';
-import { isSiteEnabled } from './config/features';
+import { isSiteEnabled, features } from './config/features';
+import type { Lang } from './content/strings';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
@@ -18,6 +19,25 @@ const PUBLIC_ROUTES = [
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
+
+  // Language detection (runs for all routes, gated by i18n feature flag)
+  if (features.global.i18n) {
+    const langParam = context.url.searchParams.get('lang');
+    if (langParam === 'fr' || langParam === 'en') {
+      context.locals.lang = langParam as Lang;
+      context.cookies.set('sargaux_lang', langParam, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        httpOnly: false,
+        sameSite: 'lax',
+      });
+    } else {
+      const cookieLang = context.cookies.get('sargaux_lang')?.value;
+      context.locals.lang = (cookieLang === 'fr' ? 'fr' : 'en') as Lang;
+    }
+  } else {
+    context.locals.lang = 'en';
+  }
 
   // Master switch: if site not enabled, only allow homepage and static assets
   if (!isSiteEnabled()) {

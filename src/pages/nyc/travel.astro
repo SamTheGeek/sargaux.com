@@ -1,106 +1,114 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="NYC Travel">
+<WireframeLayout title={t(strings.nyc.travel.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>Travel</h1>
-    <p class="subtitle">Getting to and around NYC</p>
+    <h1>{t(strings.nyc.travel.heading)}</h1>
+    <p class="subtitle">{t(strings.nyc.travel.subtitle)}</p>
 
     <section class="travel-sections">
       <!-- Hotels -->
       <div class="travel-card">
-        <h2>Hotels</h2>
-        <p>Suggested accommodations near the venues:</p>
+        <h2>{t(strings.nyc.travel.hotels.heading)}</h2>
+        <p>{t(strings.nyc.travel.hotels.intro)}</p>
         <ul>
-          <li><strong>Hotel TBD</strong> — Near dinner venue</li>
-          <li><strong>Hotel TBD</strong> — Near dancing venue</li>
-          <li><strong>Budget Option TBD</strong> — Nearby neighborhood</li>
+          <li>{t(strings.nyc.travel.hotels.hotel1)}</li>
+          <li>{t(strings.nyc.travel.hotels.hotel2)}</li>
+          <li>{t(strings.nyc.travel.hotels.hotel3)}</li>
         </ul>
-        <p class="placeholder-note">Room block details coming soon</p>
+        <p class="placeholder-note">{t(strings.nyc.travel.hotels.roomBlock)}</p>
       </div>
 
       <!-- Getting There -->
       <div class="travel-card">
-        <h2>Getting There</h2>
+        <h2>{t(strings.nyc.travel.gettingThere.heading)}</h2>
 
-        <h3>By Air</h3>
+        <h3>{t(strings.nyc.travel.gettingThere.air.heading)}</h3>
         <ul>
-          <li><strong>JFK</strong> — AirTrain + subway, ~60-75 min to Manhattan</li>
-          <li><strong>LGA</strong> — Taxi/rideshare or Q70 bus + subway, ~30-45 min</li>
-          <li><strong>EWR</strong> — AirTrain + NJ Transit to Penn Station, ~45-60 min</li>
+          <li>{t(strings.nyc.travel.gettingThere.air.jfk)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.air.lga)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.air.ewr)}</li>
         </ul>
 
-        <h3>By Train</h3>
-        <p>Amtrak arrives at Penn Station (Midtown) or Moynihan Train Hall.</p>
+        <h3>{t(strings.nyc.travel.gettingThere.train.heading)}</h3>
+        <p>{t(strings.nyc.travel.gettingThere.train.text)}</p>
 
-        <h3>By Bus</h3>
-        <p>Multiple bus services arrive at Port Authority Bus Terminal (42nd St):</p>
+        <h3>{t(strings.nyc.travel.gettingThere.bus.heading)}</h3>
+        <p>{t(strings.nyc.travel.gettingThere.bus.intro)}</p>
         <ul>
-          <li><strong>Greyhound</strong> — Major cities nationwide</li>
-          <li><strong>FlixBus</strong> — Budget option, East Coast cities</li>
-          <li><strong>Megabus</strong> — Budget option, often stops at 34th St</li>
+          <li>{t(strings.nyc.travel.gettingThere.bus.greyhound)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.bus.flixbus)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.bus.megabus)}</li>
         </ul>
       </div>
 
       <!-- Getting Around -->
       <div class="travel-card">
-        <h2>Getting Around</h2>
+        <h2>{t(strings.nyc.travel.gettingAround.heading)}</h2>
 
-        <h3>MTA Subway</h3>
-        <p>New York's subway runs 24/7 and is the fastest way to get around Manhattan.</p>
+        <h3>{t(strings.nyc.travel.gettingAround.subway.heading)}</h3>
+        <p>{t(strings.nyc.travel.gettingAround.subway.intro)}</p>
         <ul>
-          <li>Single ride: $2.90 (tap contactless or use OMNY)</li>
-          <li>Download the <strong>MTA app</strong> for real-time arrivals</li>
-          <li>Google Maps and Apple Maps have excellent subway directions</li>
+          <li>{t(strings.nyc.travel.gettingAround.subway.fare)}</li>
+          <li>{t(strings.nyc.travel.gettingAround.subway.app)}</li>
+          <li>{t(strings.nyc.travel.gettingAround.subway.maps)}</li>
         </ul>
-        <p class="placeholder-note">Nearest subway stations to venues TBD</p>
+        <p class="placeholder-note">{t(strings.nyc.travel.gettingAround.subway.placeholder)}</p>
 
-        <h3>Rideshare & Taxi</h3>
+        <h3>{t(strings.nyc.travel.gettingAround.rideshare.heading)}</h3>
         <ul>
-          <li>Uber and Lyft widely available</li>
-          <li>Yellow cabs can be hailed on the street</li>
-          <li>Expect 20-40 min travel times depending on traffic</li>
+          <li>{t(strings.nyc.travel.gettingAround.rideshare.uber)}</li>
+          <li>{t(strings.nyc.travel.gettingAround.rideshare.cabs)}</li>
+          <li>{t(strings.nyc.travel.gettingAround.rideshare.time)}</li>
         </ul>
       </div>
 
       <!-- While You're Here -->
       <div class="travel-card">
-        <h2>While You're Here</h2>
-        <p>Columbus Day Weekend is a great time to explore NYC's world-class museums and exhibitions:</p>
+        <h2>{t(strings.nyc.travel.whileHere.heading)}</h2>
+        <p>{t(strings.nyc.travel.whileHere.intro)}</p>
 
-        <h3>Museums</h3>
+        <h3>{t(strings.nyc.travel.whileHere.museums.heading)}</h3>
         <ul>
-          <li><strong>The Met</strong> — Fifth Avenue, suggested donation admission</li>
-          <li><strong>MoMA</strong> — Midtown, modern & contemporary art</li>
-          <li><strong>Whitney</strong> — Meatpacking District, American art</li>
-          <li><strong>Natural History</strong> — Upper West Side, great for all ages</li>
-          <li><strong>Guggenheim</strong> — Upper East Side, iconic architecture</li>
+          <li>{t(strings.nyc.travel.whileHere.museums.met)}</li>
+          <li>{t(strings.nyc.travel.whileHere.museums.moma)}</li>
+          <li>{t(strings.nyc.travel.whileHere.museums.whitney)}</li>
+          <li>{t(strings.nyc.travel.whileHere.museums.naturalHistory)}</li>
+          <li>{t(strings.nyc.travel.whileHere.museums.guggenheim)}</li>
         </ul>
 
-        <h3>Exhibitions & Experiences</h3>
-        <p class="placeholder-note">Current exhibitions for October 2026 TBD — check museum websites closer to date</p>
+        <h3>{t(strings.nyc.travel.whileHere.exhibitions.heading)}</h3>
+        <p class="placeholder-note">{t(strings.nyc.travel.whileHere.exhibitions.placeholder)}</p>
 
-        <h3>Neighborhoods to Explore</h3>
+        <h3>{t(strings.nyc.travel.whileHere.neighborhoods.heading)}</h3>
         <ul>
-          <li><strong>West Village</strong> — Charming streets, cafes, boutiques</li>
-          <li><strong>SoHo</strong> — Shopping, galleries, cast-iron architecture</li>
-          <li><strong>High Line</strong> — Elevated park, great for a walk</li>
-          <li><strong>Central Park</strong> — Fall foliage should be beautiful</li>
+          <li>{t(strings.nyc.travel.whileHere.neighborhoods.westVillage)}</li>
+          <li>{t(strings.nyc.travel.whileHere.neighborhoods.soho)}</li>
+          <li>{t(strings.nyc.travel.whileHere.neighborhoods.highLine)}</li>
+          <li>{t(strings.nyc.travel.whileHere.neighborhoods.centralPark)}</li>
         </ul>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -209,12 +217,19 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 </style>

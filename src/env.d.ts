@@ -6,6 +6,7 @@ declare namespace App {
     guest?: string;
     guestId?: string; // Notion page ID (when notionBackend is enabled)
     eventInvitations?: ('nyc' | 'france')[];
+    lang?: import('./content/strings').Lang;
   }
 }
 

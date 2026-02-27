@@ -1,38 +1,42 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
 
 const guest = Astro.locals.guest;
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="NYC Details">
+<WireframeLayout title={t(strings.nyc.details.pageTitle)}>
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <a href="/nyc" class="back-link">&larr; Back to NYC</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>The Evening</h1>
-    <p class="subtitle">October 11, 2026 <span class="tentative">(Tentative)</span></p>
+    <h1>{t(strings.nyc.details.heroTitle)}</h1>
+    <p class="subtitle">{t(strings.nyc.details.subtitle)} <span class="tentative">{t(strings.nyc.heroDateTentative)}</span></p>
 
     <!-- Schedule Timeline -->
     <section class="schedule">
-      <h2>Schedule</h2>
+      <h2>{t(strings.nyc.details.schedule.heading)}</h2>
       <div class="timeline">
         <div class="timeline-item">
-          <span class="time">6:00 PM</span>
+          <span class="time">{t(strings.nyc.details.schedule.dinner.time)}</span>
           <div class="event">
-            <h4>Cocktails & Dinner</h4>
-            <p>Join us for an evening of celebration</p>
+            <h4>{t(strings.nyc.details.schedule.dinner.title)}</h4>
+            <p>{t(strings.nyc.details.schedule.dinner.desc)}</p>
           </div>
         </div>
         <div class="timeline-item">
-          <span class="time">9:00 PM</span>
+          <span class="time">{t(strings.nyc.details.schedule.dancing.time)}</span>
           <div class="event">
-            <h4>Dancing</h4>
-            <p>Continue the celebration at our second venue</p>
+            <h4>{t(strings.nyc.details.schedule.dancing.title)}</h4>
+            <p>{t(strings.nyc.details.schedule.dancing.desc)}</p>
           </div>
         </div>
       </div>
@@ -40,7 +44,7 @@ const guest = Astro.locals.guest;
 
     <!-- Venues - Responsive horizontal/vertical -->
     <section class="venues">
-      <h2>The Venues</h2>
+      <h2>{t(strings.nyc.details.venues.heading)}</h2>
       <div class="venue-grid">
         <div class="venue-card">
           <ImagePlaceholder
@@ -49,11 +53,11 @@ const guest = Astro.locals.guest;
             description="Dinner venue interior"
             aspectRatio="4/3"
           />
-          <h3>Dinner</h3>
-          <p>Venue name TBD</p>
+          <h3>{t(strings.nyc.details.venues.dinner.title)}</h3>
+          <p>{t(strings.nyc.details.venues.dinner.name)}</p>
           <div class="map-placeholder">
             <!-- Google Maps Static API placeholder -->
-            <p class="placeholder-note">Map will be added here</p>
+            <p class="placeholder-note">{t(strings.nyc.details.venues.dinner.mapPlaceholder)}</p>
           </div>
         </div>
         <div class="venue-card">
@@ -63,10 +67,10 @@ const guest = Astro.locals.guest;
             description="Dancing venue"
             aspectRatio="4/3"
           />
-          <h3>Dancing</h3>
-          <p>Venue name TBD</p>
+          <h3>{t(strings.nyc.details.venues.dancing.title)}</h3>
+          <p>{t(strings.nyc.details.venues.dancing.name)}</p>
           <div class="map-placeholder">
-            <p class="placeholder-note">Map will be added here</p>
+            <p class="placeholder-note">{t(strings.nyc.details.venues.dancing.mapPlaceholder)}</p>
           </div>
         </div>
       </div>
@@ -74,27 +78,30 @@ const guest = Astro.locals.guest;
 
     <!-- What to Expect -->
     <section class="what-to-expect">
-      <h2>What to Expect</h2>
-      <p>The evening will begin with cocktails and a non-seated dinner at our first venue. Later, we'll move to a second location for dancing and continued celebration.</p>
+      <h2>{t(strings.nyc.details.whatToExpect.heading)}</h2>
+      <p>{t(strings.nyc.details.whatToExpect.text)}</p>
     </section>
 
     <!-- Dress Code -->
     <section class="dress-code">
-      <h2>Dress Code</h2>
-      <p><strong>Festive Attire</strong></p>
-      <p>Think jackets but no tie required. The couple will be in suits.</p>
+      <h2>{t(strings.nyc.details.dressCode.heading)}</h2>
+      <p><strong>{t(strings.nyc.details.dressCode.value)}</strong></p>
+      <p>{t(strings.nyc.details.dressCode.note)}</p>
     </section>
 
     <!-- Calendar Subscribe -->
     <section class="calendar-section">
-      <h2>Add to Calendar</h2>
-      <button class="calendar-btn" disabled>Subscribe to Calendar</button>
-      <p class="placeholder-note">Personalized calendar link based on your RSVP</p>
+      <h2>{t(strings.nyc.details.calendar.heading)}</h2>
+      <button class="calendar-btn" disabled>{t(strings.nyc.details.calendar.btn)}</button>
+      <p class="placeholder-note">{t(strings.nyc.details.calendar.note)}</p>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -280,12 +287,19 @@ const guest = Astro.locals.guest;
   /* Footer */
   footer {
     padding: 2rem;
-    text-align: center;
     border-top: 1px solid #e5e5e5;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 </style>

@@ -3,6 +3,9 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -11,22 +14,23 @@ const guestId = Astro.locals.guestId;
 const calendarToken = (features.nyc.calendarSubscribe && guestId)
   ? generateToken(guestId)
   : null;
+const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title="NYC Event" description="NYC Wedding - October 2026">
+<WireframeLayout title={t(strings.nyc.pageTitle)} description="NYC Wedding - October 2026">
   <header>
     <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
+      <a href="/" class="logo">{t(strings.global.siteName)}</a>
       <div class="nav-right">
         {showEventToggle && (
           <div class="content-box event-toggle">
             <h3>Event Toggle (if invited to both)</h3>
-            <span class="toggle-item active">NYC</span>
+            <span class="toggle-item active">{t(strings.global.toggle.nyc)}</span>
             <span class="toggle-divider">|</span>
-            <a href="/france" class="toggle-item">France</a>
+            <a href="/france" class="toggle-item">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="rsvp-btn">RSVP</a>
+        <a href="/nyc/rsvp" class="rsvp-btn">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
@@ -41,9 +45,9 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
         aspectRatio="16/9"
       />
       <div class="hero-overlay">
-        <h1>New York</h1>
-        <p class="date">October 11, 2026 <span class="tentative">(Tentative)</span></p>
-        <p class="event-type">Dinner & Dancing</p>
+        <h1>{t(strings.nyc.heroTitle)}</h1>
+        <p class="date">{t(strings.nyc.heroDate)} <span class="tentative">{t(strings.nyc.heroDateTentative)}</span></p>
+        <p class="event-type">{t(strings.nyc.heroEventType)}</p>
       </div>
     </section>
 
@@ -51,22 +55,22 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
     <section class="quick-info">
       <div class="info-cards">
         <div class="content-box info-card">
-          <h3>When</h3>
-          <p><strong>Sunday, October 11, 2026</strong></p>
-          <p>Columbus Day Weekend</p>
-          <p class="note"><em>Note: Date may shift to Sat 10th or later weekend</em></p>
+          <h3>{t(strings.nyc.when.heading)}</h3>
+          <p><strong>{t(strings.nyc.when.date)}</strong></p>
+          <p>{t(strings.nyc.when.weekend)}</p>
+          <p class="note"><em>{t(strings.nyc.when.note)}</em></p>
         </div>
         <div class="content-box info-card">
-          <h3>Where</h3>
-          <p><strong>Dinner Venue TBD</strong></p>
-          <p>Cocktails & Dinner</p>
-          <p class="separator">followed by</p>
-          <p><strong>Dancing Venue TBD</strong></p>
+          <h3>{t(strings.nyc.where.heading)}</h3>
+          <p><strong>{t(strings.nyc.where.dinner)}</strong></p>
+          <p>{t(strings.nyc.where.dinnerType)}</p>
+          <p class="separator">{t(strings.nyc.where.separator)}</p>
+          <p><strong>{t(strings.nyc.where.dancing)}</strong></p>
         </div>
         <div class="content-box info-card">
-          <h3>Dress Code</h3>
-          <p><strong>Festive Attire</strong></p>
-          <p class="dress-note">Think jackets but no tie required.</p>
+          <h3>{t(strings.nyc.dressCode.heading)}</h3>
+          <p><strong>{t(strings.nyc.dressCode.value)}</strong></p>
+          <p class="dress-note">{t(strings.nyc.dressCode.note)}</p>
         </div>
       </div>
     </section>
@@ -74,19 +78,19 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
     <!-- Calendar Subscribe (Prominent) -->
     <section class="calendar-subscribe">
       <div class="calendar-content">
-        <h2>Save the Date</h2>
-        <p>Add our event to your calendar so you don't miss a thing.</p>
+        <h2>{t(strings.nyc.calendar.heading)}</h2>
+        <p>{t(strings.nyc.calendar.subtext)}</p>
         {calendarToken ? (
           <a
             href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
             class="calendar-btn-prominent"
           >
-            Add to Calendar
+            {t(strings.nyc.calendar.addBtn)}
           </a>
         ) : (
           <>
-            <button class="calendar-btn-prominent" disabled>Add to Calendar</button>
-            <p class="calendar-note">Personalized calendar link available after RSVP</p>
+            <button class="calendar-btn-prominent" disabled>{t(strings.nyc.calendar.addBtn)}</button>
+            <p class="calendar-note">{t(strings.nyc.calendar.unavailableNote)}</p>
           </>
         )}
       </div>
@@ -97,18 +101,18 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
       <nav class="event-nav" aria-label="Event sections">
         <a href="/nyc/details" class="nav-card">
           <span class="nav-icon">📍</span>
-          <span class="nav-title">Details</span>
-          <span class="nav-desc">Venues & what to expect</span>
+          <span class="nav-title">{t(strings.nyc.nav.details.title)}</span>
+          <span class="nav-desc">{t(strings.nyc.nav.details.desc)}</span>
         </a>
         <a href="/nyc/travel" class="nav-card">
           <span class="nav-icon">✈️</span>
-          <span class="nav-title">Travel</span>
-          <span class="nav-desc">Hotels & getting around</span>
+          <span class="nav-title">{t(strings.nyc.nav.travel.title)}</span>
+          <span class="nav-desc">{t(strings.nyc.nav.travel.desc)}</span>
         </a>
         <a href="/nyc/rsvp" class="nav-card highlight">
           <span class="nav-icon">💌</span>
-          <span class="nav-title">RSVP</span>
-          <span class="nav-desc">Let us know you're coming</span>
+          <span class="nav-title">{t(strings.nyc.nav.rsvp.title)}</span>
+          <span class="nav-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
         </a>
       </nav>
     </section>
@@ -133,20 +137,23 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
 
     <!-- Optional Weekend Events -->
     <section class="optional-events">
-      <h2>More to Explore</h2>
-      <p class="placeholder-note">Optional events throughout the weekend will be listed here once confirmed.</p>
+      <h2>{t(strings.nyc.optional.heading)}</h2>
+      <p class="placeholder-note">{t(strings.nyc.optional.placeholder)}</p>
     </section>
   </main>
 
   <footer>
     <nav class="footer-nav">
-      <a href="/registry">Registry</a>
+      <a href="/registry">{t(strings.global.registry)}</a>
       <span>·</span>
       <span class="guest-name">{guest}</span>
       <span>·</span>
-      <a href="/api/logout">Logout</a>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <p>&copy; 2026 Sam Gross</p>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
   </footer>
 </WireframeLayout>
 
@@ -469,9 +476,17 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
     margin: 0 0.5rem;
   }
 
-  footer p {
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
     font-size: 0.875rem;
     color: #888;
+    margin: 0;
   }
 
   @media (max-width: 768px) {
