@@ -27,7 +27,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <ul>
           <li>{t(strings.nyc.travel.hotels.hotel1)}</li>
           <li>{t(strings.nyc.travel.hotels.hotel2)}</li>
-          <li>{t(strings.nyc.travel.hotels.hotel3)}</li>
         </ul>
         <p class="placeholder-note">{t(strings.nyc.travel.hotels.roomBlock)}</p>
       </div>
@@ -49,9 +48,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <h3>{t(strings.nyc.travel.gettingThere.bus.heading)}</h3>
         <p>{t(strings.nyc.travel.gettingThere.bus.intro)}</p>
         <ul>
-          <li>{t(strings.nyc.travel.gettingThere.bus.greyhound)}</li>
-          <li>{t(strings.nyc.travel.gettingThere.bus.flixbus)}</li>
-          <li>{t(strings.nyc.travel.gettingThere.bus.megabus)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.bus.vamoose)}</li>
+          <li>{t(strings.nyc.travel.gettingThere.bus.tripper)}</li>
         </ul>
       </div>
 
@@ -63,17 +61,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <p>{t(strings.nyc.travel.gettingAround.subway.intro)}</p>
         <ul>
           <li>{t(strings.nyc.travel.gettingAround.subway.fare)}</li>
-          <li>{t(strings.nyc.travel.gettingAround.subway.app)}</li>
           <li>{t(strings.nyc.travel.gettingAround.subway.maps)}</li>
         </ul>
-        <p class="placeholder-note">{t(strings.nyc.travel.gettingAround.subway.placeholder)}</p>
 
-        <h3>{t(strings.nyc.travel.gettingAround.rideshare.heading)}</h3>
-        <ul>
-          <li>{t(strings.nyc.travel.gettingAround.rideshare.uber)}</li>
-          <li>{t(strings.nyc.travel.gettingAround.rideshare.cabs)}</li>
-          <li>{t(strings.nyc.travel.gettingAround.rideshare.time)}</li>
-        </ul>
+        <h3>{t(strings.nyc.travel.gettingAround.parking.heading)}</h3>
+        <p>{t(strings.nyc.travel.gettingAround.parking.text)}</p>
       </div>
 
       <!-- While You're Here -->
@@ -93,13 +85,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <h3>{t(strings.nyc.travel.whileHere.exhibitions.heading)}</h3>
         <p class="placeholder-note">{t(strings.nyc.travel.whileHere.exhibitions.placeholder)}</p>
 
-        <h3>{t(strings.nyc.travel.whileHere.neighborhoods.heading)}</h3>
-        <ul>
-          <li>{t(strings.nyc.travel.whileHere.neighborhoods.westVillage)}</li>
-          <li>{t(strings.nyc.travel.whileHere.neighborhoods.soho)}</li>
-          <li>{t(strings.nyc.travel.whileHere.neighborhoods.highLine)}</li>
-          <li>{t(strings.nyc.travel.whileHere.neighborhoods.centralPark)}</li>
-        </ul>
       </div>
     </section>
   </main>
