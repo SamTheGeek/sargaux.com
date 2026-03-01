@@ -58,13 +58,13 @@ export const strings = {
     pageTitle:  s('Homepage', 'Accueil'),
     heroTitle:  s('Chez Sargaux', 'Chez Sargaux'),
     tagline:    s('Sam & Margaux', 'Sam & Margaux'),
-    ctaEnter:   s('Enter', 'Entrer'),
+    ctaEnter:   s('Entrée', 'Entrée'),
     modal: {
       title:        s('Welcome', 'Bienvenue'),
       subtitle:     s('Please enter your name to continue', 'Veuillez entrer votre nom pour continuer'),
       nameLabel:    s('Your name', 'Votre nom'),
-      namePlaceholder: s('Your name', 'Votre nom'),
-      submitBtn:    s('Continue', 'Continuer'),
+      namePlaceholder: s('Sam Gross', 'Margaux Ancel'),
+      submitBtn:    s('Continuer', 'Continuer'),
       checkingBtn:  s('Checking...', 'Vérification...'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
@@ -79,17 +79,17 @@ export const strings = {
     pageTitle:       s('NYC Event', 'Événement New York'),
     heroTitle:       s('New York', 'New York'),
     heroDate:        s('October 11, 2026', '11 octobre 2026'),
-    heroDateTentative: s('(Tentative)', '(Provisoire)'),
+    heroDateTentative: s('', ''),
     heroEventType:   s('Dinner & Dancing', 'Dîner & Dancing'),
     when: {
       heading:  s('When', 'Quand'),
       date:     s('Sunday, October 11, 2026', 'Dimanche 11 octobre 2026'),
-      weekend:  s('Columbus Day Weekend', 'Week-end Columbus Day'),
-      note:     s('Note: Date may shift to Sat 10th or later weekend', 'Note : La date pourrait changer au sam. 10 ou un week-end ultérieur'),
+      weekend:  s('', ''),
+      note:     s('', ''),
     },
     where: {
       heading:    s('Where', 'Où'),
-      dinner:     s('Dinner Venue TBD', 'Lieu du dîner à confirmer'),
+      dinner:     s('Bar Blondeau', 'Bar Blondeau'),
       dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:  s('followed by', 'suivi de'),
       dancing:    s('Dancing Venue TBD', 'Lieu du dancing à confirmer'),
@@ -101,9 +101,9 @@ export const strings = {
     },
     calendar: {
       heading:         s('Save the Date', 'Notez la date'),
-      subtext:         s("Add our event to your calendar so you don't miss a thing.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
+      subtext:         s("Add the events to your calendar app.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
       addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
-      unavailableNote: s('Personalized calendar link available after RSVP', 'Lien de calendrier personnalisé disponible après votre RSVP'),
+      unavailableNote: s('Your personalized calendar link will be available after you RSVP.', 'Lien de calendrier personnalisé disponible après votre RSVP'),
     },
     nav: {
       details: {
@@ -127,38 +127,39 @@ export const strings = {
     // /nyc/details
     details: {
       pageTitle:  s('NYC Details', 'Détails New York'),
-      heroTitle:  s('The Evening', 'La Soirée'),
+      heroTitle:  s('La Soirée', 'La Soirée'),
       subtitle:   s('October 11, 2026', '11 octobre 2026'),
       schedule: {
         heading: s('Schedule', 'Programme'),
         dinner: {
-          time:  s('6:00 PM', '18h00'),
+          time:  s('5:00 PM', '17h00'),
           title: s('Cocktails & Dinner', 'Cocktail & Dîner'),
           desc:  s('Join us for an evening of celebration', 'Rejoignez-nous pour une soirée de célébration'),
         },
         dancing: {
           time:  s('9:00 PM', '21h00'),
           title: s('Dancing', 'Dancing'),
-          desc:  s('Continue the celebration at our second venue', 'Continuez la fête dans notre second lieu'),
+          desc:  s('Continue the celebration with us later in the evening', 'Continuez la fête dans notre second lieu'),
         },
       },
       venues: {
         heading: s('The Venues', 'Les Lieux'),
         dinner: {
           title:          s('Dinner', 'Dîner'),
-          name:           s('Venue name TBD', 'Lieu à confirmer'),
+          name:           s('Bar Blondeau at the Wythe Hotel', 'Bar Blondeau au Wythe Hotel'),
+          address:        s('80 Wythe Ave, 6th Floor · Brooklyn, New York 11249', '80 Wythe Ave, 6e étage · Brooklyn, New York 11249'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
         dancing: {
           title:          s('Dancing', 'Dancing'),
-          name:           s('Venue name TBD', 'Lieu à confirmer'),
+          name:           s('Venue TBD', 'Lieu à confirmer'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
       },
       whatToExpect: {
         heading: s('What to Expect', 'Programme de la soirée'),
         text:    s(
-          "The evening will begin with cocktails and a non-seated dinner at our first venue. Later, we'll move to a second location for dancing and continued celebration.",
+          "The evening will begin with dinner and cocktails at Bar Blondeau. Later, we'll move to a second location for dancing and continued celebration.",
           "La soirée commencera par un cocktail et un dîner debout dans notre premier lieu. Ensuite, nous nous retrouverons dans un second endroit pour danser et continuer la fête.",
         ),
       },
@@ -182,7 +183,7 @@ export const strings = {
       hotels: {
         heading:    s('Hotels', 'Hôtels'),
         intro:      s('Suggested accommodations near the venues:', 'Hébergements suggérés à proximité des lieux :'),
-        hotel1:     s('Hotel TBD — Near dinner venue', 'Hôtel à confirmer — Près du lieu du dîner'),
+        hotel1:     s('Wythe Hotel — We have a limited number of rooms available at a special rate for our guests.', 'Hôtel à confirmer — Près du lieu du dîner'),
         hotel2:     s('Hotel TBD — Near dancing venue', 'Hôtel à confirmer — Près du lieu du dancing'),
         hotel3:     s('Budget Option TBD — Nearby neighborhood', 'Option économique à confirmer — Quartier proche'),
         roomBlock:  s('Room block details coming soon', 'Détails du bloc de chambres à venir'),
@@ -197,36 +198,31 @@ export const strings = {
         },
         train: {
           heading: s('By Train', 'En train'),
-          text:    s('Amtrak arrives at Penn Station (Midtown) or Moynihan Train Hall.', 'Amtrak arrive à Penn Station (Midtown) ou Moynihan Train Hall.'),
+          text:    s('Amtrak arrives at Penn Station.', 'Amtrak arrive à Penn Station.'),
         },
         bus: {
           heading:  s('By Bus', 'En bus'),
-          intro:    s('Multiple bus services arrive at Port Authority Bus Terminal (42nd St):', 'Plusieurs services de bus arrivent au Port Authority Bus Terminal (42e rue) :'),
-          greyhound: s('Greyhound — Major cities nationwide', 'Greyhound — Grandes villes du pays'),
-          flixbus:   s("FlixBus — Budget option, East Coast cities", 'FlixBus — Option économique, villes de la côte Est'),
-          megabus:   s("Megabus — Budget option, often stops at 34th St", "Megabus — Option économique, s'arrête souvent au 34e rue"),
+          intro:    s('Multiple bus services arrive near Penn Station:', 'Plusieurs services de bus arrivent au Port Authority Bus Terminal (42e rue) :'),
+          vamoose:   s('Vamoose — Direct service from DC and Northern Virginia', 'Vamoose — Service direct depuis DC et la Virginie du Nord'),
+          tripper:   s('Tripper — Service from Washington DC', 'Tripper — Service depuis Washington DC'),
         },
       },
       gettingAround: {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
-          heading:     s('MTA Subway', 'Métro MTA'),
-          intro:       s("New York's subway runs 24/7 and is the fastest way to get around Manhattan.", "Le métro new-yorkais fonctionne 24h/24 et est le moyen le plus rapide de se déplacer à Manhattan."),
-          fare:        s('Single ride: $2.90 (tap contactless or use OMNY)', 'Trajet simple : 2,90 $ (sans contact ou OMNY)'),
-          app:         s('Download the MTA app for real-time arrivals', "Téléchargez l'appli MTA pour les horaires en temps réel"),
-          maps:        s('Google Maps and Apple Maps have excellent subway directions', 'Google Maps et Apple Plans proposent d\'excellents itinéraires en métro'),
-          placeholder: s('Nearest subway stations to venues TBD', 'Stations de métro les plus proches des lieux à confirmer'),
+          heading: s('By Subway', 'En métro'),
+          intro:   s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue — à 5 minutes à pied du lieu."),
+          fare:    s('Single ride: $3 (set up Express Transit on your phone ahead of time)', "Trajet simple : 3 $ (configurez le transit express sur votre téléphone à l'avance)"),
+          maps:    s('Google Maps and Apple Maps have great subway directions', "Google Maps et Apple Plans proposent d'excellents itinéraires en métro"),
         },
-        rideshare: {
-          heading: s('Rideshare & Taxi', 'VTC & Taxi'),
-          uber:    s('Uber and Lyft widely available', 'Uber et Lyft très disponibles'),
-          cabs:    s('Yellow cabs can be hailed on the street', 'Les taxis jaunes peuvent être hélés dans la rue'),
-          time:    s('Expect 20-40 min travel times depending on traffic', 'Comptez 20-40 min selon la circulation'),
+        parking: {
+          heading: s('Parking', 'Parking'),
+          text:    s('Parking is available one block away at 25 Kent.', "Un parking est disponible à un pâté de maisons au 25 Kent Ave."),
         },
       },
       whileHere: {
         heading: s("While You're Here", 'À ne pas manquer'),
-        intro:   s("Columbus Day Weekend is a great time to explore NYC's world-class museums and exhibitions:", "Le week-end Columbus Day est idéal pour découvrir les musées et expositions de classe mondiale de New York :"),
+        intro:   s("October is a wonderful time to explore NYC's world-class museums and exhibitions:", "Octobre est une période idéale pour découvrir les musées et expositions de classe mondiale de New York :"),
         museums: {
           heading:       s('Museums', 'Musées'),
           met:           s('The Met — Fifth Avenue, suggested donation admission', 'Le Met — Cinquième Avenue, entrée aux dons suggérés'),
@@ -239,13 +235,6 @@ export const strings = {
           heading:     s('Exhibitions & Experiences', 'Expositions & Expériences'),
           placeholder: s("Current exhibitions for October 2026 TBD — check museum websites closer to date", "Expositions en octobre 2026 à confirmer — consultez les sites des musées à l'approche de la date"),
         },
-        neighborhoods: {
-          heading:     s('Neighborhoods to Explore', 'Quartiers à explorer'),
-          westVillage:  s('West Village — Charming streets, cafes, boutiques', 'West Village — Rues charmantes, cafés, boutiques'),
-          soho:         s('SoHo — Shopping, galleries, cast-iron architecture', 'SoHo — Shopping, galeries, architecture en fonte'),
-          highLine:     s('High Line — Elevated park, great for a walk', 'High Line — Parc surélevé, idéal pour une promenade'),
-          centralPark:  s('Central Park — Fall foliage should be beautiful', 'Central Park — Le feuillage automnal sera magnifique'),
-        },
       },
     },
 
@@ -254,7 +243,7 @@ export const strings = {
       pageTitle:         s('NYC RSVP', 'RSVP New York'),
       heading:           s('RSVP', 'RSVP'),
       subtitle:          s('New York · October 11, 2026', 'New York · 11 octobre 2026'),
-      subtitleTentative: s('(Tentative)', '(Provisoire)'),
+      subtitleTentative: s('', ''),
       deadline:          s('Please respond by', 'Merci de répondre avant le'),
       deadlineDate:      s('September 1, 2026', '1er septembre 2026'),
       unavailable: {
@@ -394,7 +383,7 @@ export const strings = {
       },
       rsvp: {
         title: s('RSVP', 'RSVP'),
-        desc:  s('Confirm & book accommodation', "Confirmer & réserver l'hébergement"),
+        desc:  s('Confirm & request accommodation', "Confirmer & réserver l'hébergement"),
       },
     },
 
@@ -425,7 +414,7 @@ export const strings = {
       },
       saturday: {
         heading: s('Saturday, May 29', 'Samedi 29 mai'),
-        dayNote: s('Main Event Day', 'Jour principal'),
+        dayNote: s('Event Day', 'Jour principal'),
         breakfast: {
           time:  s('Morning', 'Matin'),
           title: s('Breakfast', 'Petit-déjeuner'),
@@ -434,7 +423,7 @@ export const strings = {
         excursions: {
           time:        s('Late Morning', 'Fin de matinée'),
           title:       s('Optional Excursions', 'Excursions optionnelles'),
-          placeholder: s('Details TBD — possible activities in the area', 'Détails à confirmer — activités possibles dans la région'),
+          placeholder: s('Details TBD', 'Détails à confirmer'),
         },
         ceremony: {
           time:     s('Afternoon', 'Après-midi'),
@@ -595,14 +584,6 @@ export const strings = {
           text:        s('From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.', "Depuis le centre de Paris : ~1 heure via l'autoroute A13. Parking gratuit disponible au village."),
           placeholder: s('Detailed driving directions will be provided closer to the event.', "Des instructions détaillées seront fournies à l'approche de l'événement."),
         },
-      },
-      extending: {
-        heading:  s('Extending Your Trip', 'Prolonger votre séjour'),
-        intro:    s("If you're coming from abroad, consider spending extra time exploring:", "Si vous venez de l'étranger, pensez à prolonger votre séjour pour explorer :"),
-        paris:    s('Paris — Arrive a few days early or stay after the weekend', 'Paris — Arrivez quelques jours avant ou restez après le week-end'),
-        versailles: s('Versailles — Just 30 minutes from the venue, a must-see', 'Versailles — À seulement 30 minutes du lieu, un incontournable'),
-        giverny:  s("Giverny — Monet's gardens, nearby in the Seine valley", "Giverny — Les jardins de Monet, à proximité dans la vallée de la Seine"),
-        normandy: s('Normandy — D-Day beaches and charming coastal towns, ~2h drive', 'Normandie — Plages du Débarquement et charmantes villes côtières, ~2h en voiture'),
       },
       practical: {
         heading: s('Practical Info', 'Informations pratiques'),
