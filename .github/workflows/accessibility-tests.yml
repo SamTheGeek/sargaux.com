@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload test results
         if: steps.filter.outputs.docs_only != 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: accessibility-test-report
           path: playwright-report/
@@ -90,7 +90,7 @@ jobs:
 
       - name: Upload test traces
         if: steps.filter.outputs.docs_only != 'true' && failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: accessibility-test-traces
           path: test-results/
