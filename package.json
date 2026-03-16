@@ -22,7 +22,7 @@
     "resend": "^6.9.3"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6",
+    "@astrojs/check": "^0.9.7",
     "@axe-core/playwright": "^4.11.0",
     "@playwright/test": "^1.58.2",
     "axe-core": "^4.11.1",
