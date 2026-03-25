@@ -17,20 +17,19 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027">
-  <header>
-    <nav class="main-nav">
-      <a href="/" class="logo">{t(strings.global.siteName)}</a>
-      <div class="nav-right">
+<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027" event="france">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
         {showEventToggle && (
-          <div class="content-box event-toggle">
-            <h3>Event Toggle (if invited to both)</h3>
-            <a href="/nyc" class="toggle-item">{t(strings.global.toggle.nyc)}</a>
-            <span class="toggle-divider">|</span>
-            <span class="toggle-item active">{t(strings.global.toggle.france)}</span>
+          <div class="event-toggle">
+            <a href="/nyc">{t(strings.global.toggle.nyc)}</a>
+            <span class="divider">|</span>
+            <span class="active">{t(strings.global.toggle.france)}</span>
           </div>
         )}
-        <a href="/france/rsvp" class="rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        <a href="/france/rsvp" class="btn btn-primary rsvp-btn">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
@@ -143,22 +142,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     <section class="nav-cards">
       <nav class="event-nav" aria-label="Event sections">
         <a href="/france/schedule" class="nav-card">
-          <span class="nav-icon">📅</span>
           <span class="nav-title">{t(strings.france.nav.schedule.title)}</span>
           <span class="nav-desc">{t(strings.france.nav.schedule.desc)}</span>
         </a>
         <a href="/france/details" class="nav-card">
-          <span class="nav-icon">🏰</span>
           <span class="nav-title">{t(strings.france.nav.venue.title)}</span>
           <span class="nav-desc">{t(strings.france.nav.venue.desc)}</span>
         </a>
         <a href="/france/travel" class="nav-card">
-          <span class="nav-icon">✈️</span>
           <span class="nav-title">{t(strings.france.nav.travel.title)}</span>
           <span class="nav-desc">{t(strings.france.nav.travel.desc)}</span>
         </a>
         <a href="/france/rsvp" class="nav-card highlight">
-          <span class="nav-icon">💌</span>
           <span class="nav-title">{t(strings.france.nav.rsvp.title)}</span>
           <span class="nav-desc">{t(strings.france.nav.rsvp.desc)}</span>
         </a>
@@ -191,167 +186,85 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   </main>
 
-  <footer>
-    <nav class="footer-nav">
+  <footer class="site-footer">
+    <nav>
       <a href="/registry">{t(strings.global.registry)}</a>
-      <span>·</span>
+      <span> · </span>
       <span class="guest-name">{guest}</span>
-      <span>·</span>
+      <span> · </span>
       <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
+    <div class="footer-meta">
+      <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
 </WireframeLayout>
 
 <style>
-  /* Header */
-  header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: white;
-    border-bottom: 1px solid #e5e5e5;
-  }
-
-  .main-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .logo {
-    font-size: 1.25rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    color: #1a1a1a;
-  }
-
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  .event-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem !important;
-  }
-
-  .event-toggle h3 {
-    display: none;
-  }
-
-  .toggle-item {
-    text-decoration: none;
-    color: #888;
-    padding: 0.25rem 0.5rem;
-  }
-
-  .toggle-item.active {
-    color: #1a1a1a;
-    font-weight: 600;
-  }
-
-  .toggle-divider {
-    color: #ccc;
-  }
-
-  .rsvp-btn {
-    display: inline-block;
-    padding: 0.5rem 1.25rem;
-    background: #1a1a1a;
-    color: white;
-    text-decoration: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.025em;
-  }
-
-  .rsvp-btn:hover {
-    background: #333;
-  }
-
   /* Hero */
   .hero {
     position: relative;
   }
 
   .hero-overlay {
-    padding: 3rem 2rem;
+    padding: var(--space-xl) var(--page-margin);
     text-align: center;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.9), white);
-  }
-
-  h1 {
-    font-size: 3rem;
-    font-weight: 300;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
   }
 
   .date {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--space-xs);
   }
 
   .event-type {
-    font-size: 1.125rem;
-    color: #666;
+    font-size: var(--font-size-body);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
   }
 
   /* Quick Info */
   .quick-info {
-    padding: 2rem;
-    max-width: 1000px;
+    padding: var(--space-lg) var(--page-margin);
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
 
   .info-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 
   .info-card p {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-xs);
   }
 
   .info-card .note {
-    font-size: 0.75rem;
-    color: #f59e0b;
-    font-style: italic;
-    margin-top: 0.5rem;
+    font-size: var(--font-size-caption);
+    color: var(--color-accent);
+    margin-top: var(--space-xs);
   }
 
   .map-link {
-    font-size: 0.875rem;
-    color: #666;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
   }
 
   /* Weekend Overview */
   .weekend-overview {
-    padding: 2rem;
-    max-width: 1000px;
+    padding: var(--space-lg) var(--page-margin);
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
 
   .day-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 0.5rem;
+    gap: var(--space-md);
   }
 
   .day-card {
@@ -359,21 +272,21 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .day-card.highlight {
-    border-color: #1a1a1a;
+    border-color: var(--color-text);
     border-width: 2px;
   }
 
   .day-content {
-    margin-top: 0.5rem;
+    margin-top: var(--space-xs);
   }
 
   .day-content .time {
-    font-size: 0.75rem;
+    font-size: var(--font-size-caption);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #888;
-    margin-top: 1rem;
-    margin-bottom: 0.25rem;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-text-muted);
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-xs);
   }
 
   .day-content .time:first-child {
@@ -381,220 +294,162 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .day-content p {
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--space-xs);
   }
 
   .day-content .desc {
-    font-size: 0.875rem;
-    color: #666;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
   }
 
   /* Location Map */
   .location-map {
-    padding: 2rem;
+    padding: var(--space-lg) var(--page-margin);
     max-width: 800px;
     margin: 0 auto;
   }
 
   .location-map h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-sm);
     text-align: center;
   }
 
   .map-placeholder {
-    background: #f5f5f5;
-    border: 1px dashed #ccc;
-    border-radius: 0.5rem;
-    padding: 3rem 2rem;
+    background: var(--color-bg);
+    border: 1px dashed var(--color-border);
+    padding: var(--space-xl) var(--space-lg);
     text-align: center;
   }
 
   .placeholder-note {
-    font-size: 0.875rem;
-    color: #666;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
     font-style: italic;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-sm);
   }
 
   .location-context {
-    font-size: 0.9375rem;
-    color: #444;
+    font-size: var(--font-size-body);
+    color: var(--color-text-muted);
   }
 
-  /* Calendar Subscribe (Prominent) */
+  /* Calendar Subscribe */
   .calendar-subscribe {
-    padding: 2rem;
-    max-width: 600px;
+    padding: var(--space-lg) var(--page-margin);
+    max-width: 640px;
     margin: 0 auto;
     text-align: center;
   }
 
   .calendar-content {
-    background: #f9f9f9;
-    border-radius: 0.75rem;
-    padding: 2rem;
-  }
-
-  .calendar-content h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 0.5rem;
+    padding: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .calendar-content > p {
-    color: #666;
-    margin-bottom: 1.5rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
   }
 
   .calendar-btn-prominent {
-    padding: 0.875rem 2rem;
-    font-size: 1rem;
-    background: #1a1a1a;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    margin-bottom: 0.75rem;
-  }
-
-  .calendar-btn-prominent:hover:not(:disabled) {
-    background: #333;
-  }
-
-  .calendar-btn-prominent:disabled {
-    background: #888;
-    cursor: not-allowed;
+    display: inline-block;
+    text-decoration: none;
   }
 
   .calendar-note {
-    font-size: 0.875rem;
-    color: #888;
-    font-style: italic;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
   }
 
   /* Navigation Cards */
   .nav-cards {
-    padding: 2rem;
-    max-width: 1000px;
+    padding: var(--space-lg) var(--page-margin);
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
 
   .event-nav {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem;
+    gap: var(--space-sm);
   }
 
   .nav-card {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 1.5rem;
+    padding: var(--space-md);
     text-decoration: none;
-    color: #1a1a1a;
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    transition: border-color 0.15s;
     text-align: center;
   }
 
   .nav-card:hover {
-    border-color: #1a1a1a;
-    background: #fafafa;
+    border-color: var(--color-text);
+    color: var(--color-text);
   }
 
   .nav-card.highlight {
-    border-color: #1a1a1a;
+    border-color: var(--color-text);
     border-width: 2px;
   }
 
-  .nav-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
   .nav-title {
+    font-size: var(--font-size-caption);
     font-weight: 600;
-    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    margin-bottom: var(--space-xs);
   }
 
   .nav-desc {
-    font-size: 0.875rem;
-    color: #666;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
   }
 
   /* Venue Preview */
   .venue-preview {
-    padding: 2rem;
-    max-width: 1000px;
+    padding: var(--space-lg) var(--page-margin);
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
 
   .venue-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 0.5rem;
+    gap: var(--space-md);
+  }
+
+  /* RSVP button in nav */
+  .rsvp-btn {
+    padding: 8px 24px;
+    font-size: var(--font-size-caption);
   }
 
   /* Footer */
-  footer {
-    padding: 2rem;
-    text-align: center;
-    border-top: 1px solid #e5e5e5;
-    margin-top: 2rem;
-  }
-
-  .footer-nav {
-    margin-bottom: 1rem;
-  }
-
-  .footer-nav a,
-  .footer-nav .guest-name {
-    color: #666;
-    text-decoration: none;
-  }
-
-  .footer-nav a:hover {
-    color: #1a1a1a;
-  }
-
-  .footer-nav span {
-    color: #ccc;
-    margin: 0 0.5rem;
-  }
-
-  .footer-row {
+  .footer-meta {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: #888;
-    margin: 0;
+    gap: 8px;
+    margin-top: var(--space-xs);
   }
 
   @media (max-width: 768px) {
-    h1 {
-      font-size: 2rem;
+    .hero-overlay {
+      padding: var(--space-lg) var(--page-margin-mobile);
     }
 
-    .date {
-      font-size: 1.25rem;
-    }
-
-    .main-nav {
+    .site-nav {
       flex-direction: column;
       text-align: center;
+      gap: var(--space-sm);
     }
 
-    .nav-right {
+    .nav-actions {
       flex-direction: column;
     }
   }

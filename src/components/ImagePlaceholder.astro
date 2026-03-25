@@ -26,9 +26,8 @@ const filename = folder ? `${folder}/${name}` : name;
 
 <style>
   .image-placeholder {
-    background: #f5f5f5;
-    border: 2px dashed #ccc;
-    border-radius: 0.5rem;
+    background: var(--color-bg);
+    border: 2px dashed var(--color-border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,15 +52,14 @@ const filename = folder ? `${folder}/${name}` : name;
   .placeholder-name {
     font-family: monospace;
     font-size: 0.875rem;
-    color: #666;
-    background: #e5e5e5;
+    color: var(--color-surface-text);
+    background: var(--color-surface);
     padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
   }
 
   .placeholder-description {
     font-size: 0.875rem;
-    color: #555; /* WCAG AA compliant contrast */
+    color: var(--color-text-muted); /* WCAG AA compliant contrast */
     line-height: 1.4;
   }
 </style>
