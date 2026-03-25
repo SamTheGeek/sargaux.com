@@ -51,7 +51,7 @@ All layouts are built on an **8px base unit**. Every size, margin, padding, and 
 
 ### 1.5 Shared Motif — The Sun Disc
 
-A perfect geometric circle, flat color, no texture, no gradient. Often cropped by the edge of the composition. Never decorative — it is a structural element and the single graphic motif shared across both event identities. Color varies by event (Burnt Amber for NYC, Prussian Blue for France), but the form is identical.
+A perfect geometric circle, flat color, no texture, no gradient. Often cropped by the edge of the composition. Never decorative — it is a structural element and the single graphic motif shared across both event identities. Always Burnt Amber (#D96A1E) — it represents both the sun and the subway, and is the connective thread between events. The form and color are identical across both identities.
 
 ### 1.6 Shared Design Rules
 
@@ -196,11 +196,11 @@ All headings: ALL CAPS. Body: sentence case.
 | Name | Hex | Role |
 |------|-----|------|
 | Warm Cream | #F1ECE3 | Background — same as NYC |
-| Prussian Blue | #1B3A6B | Primary text, headings — replaces Dark Moss |
-| Burnt Amber | #D96A1E | Accent — TGV livery |
-| Dark Moss | #2F3F36 | Secondary text, borders |
+| Prussian Blue | #1B3A6B | Primary text, headings |
+| Burnt Amber | #D96A1E | Accent — TGV livery, sun disc |
+| Dark Moss | #2F3F36 | Tertiary — used sparingly where a green accent is appropriate |
 
-The swap from Dark Moss to Prussian Blue as the primary text color is the visual signal of France. It evokes ocean liner hulls, railway night skies, and the deep blues of PLM/SNCF poster printing.
+The swap from Dark Moss to Prussian Blue as the primary text color is the visual signal of France. It evokes ocean liner hulls, railway night skies, and the deep blues of PLM/SNCF poster printing. Dark Moss is demoted to a tertiary role — it may appear in small accents but should not compete with Prussian Blue for dominance.
 
 ### 3.3 Motifs
 
@@ -214,6 +214,43 @@ The swap from Dark Moss to Prussian Blue as the primary text color is the visual
 VILLAGE DE SULLY
 MAY 28–30, 2027
 ```
+
+---
+
+## Part 4: Derived System Colors
+
+These colors are derived from the core palette for use in the digital design system (CSS tokens). They are not new brand colors — each is a tint or shade of an existing core color, documented here with its derivation logic. Subject to refinement based on testing and feedback.
+
+### 4.1 Derivation Rules
+
+- **Surface (cards):** Inverted — use the event's primary text color as card background, Warm Cream as card text. In dark mode, lighten the dark background by ~8% to create card distinction without bright rectangles.
+- **Border:** Same as primary text color in light mode (hairline rules per brand). In dark mode, lighten the background by ~12% for subtle separation.
+- **Muted text:** In light mode, use the secondary brand color. In dark mode, desaturate and lighten the primary text color to ~60% perceived brightness.
+- **Dark mode background:** Darken the event's primary text color significantly (~85% darker) to create a deep, tinted background — never neutral gray.
+
+### 4.2 NYC System Colors
+
+| Token | Light | Dark | Derivation |
+|-------|-------|------|------------|
+| Background | #F1ECE3 | #1A2420 | Core cream / Dark Moss darkened 85% |
+| Text | #2F3F36 | #F1ECE3 | Core Dark Moss / inverted to cream |
+| Text muted | #3A2E26 | #8A9484 | Core Espresso / Dark Moss at 60% brightness |
+| Accent | #D96A1E | #D96A1E | Burnt Amber — constant |
+| Surface | #2F3F36 | #243530 | Dark Moss / dark bg lightened 8% |
+| Surface text | #F1ECE3 | #F1ECE3 | Always cream on inverted surfaces |
+| Border | #2F3F36 | #2E3E35 | Dark Moss / dark bg lightened 12% |
+
+### 4.3 France System Colors
+
+| Token | Light | Dark | Derivation |
+|-------|-------|------|------------|
+| Background | #F1ECE3 | #0F1A2E | Core cream / Prussian Blue darkened 85% |
+| Text | #1B3A6B | #F1ECE3 | Core Prussian Blue / inverted to cream |
+| Text muted | #2F3F36 | #7B8FAA | Core Dark Moss (tertiary) / Prussian Blue at 60% brightness |
+| Accent | #D96A1E | #D96A1E | Burnt Amber — constant |
+| Surface | #1B3A6B | #162040 | Prussian Blue / dark bg lightened 8% |
+| Surface text | #F1ECE3 | #F1ECE3 | Always cream on inverted surfaces |
+| Border | #1B3A6B | #1A2844 | Prussian Blue / dark bg lightened 12% |
 
 ---
 
