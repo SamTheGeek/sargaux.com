@@ -22,7 +22,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 {isSiteEnabled() ? (
   <WireframeLayout title={t(strings.home.pageTitle)}>
     <main>
-      <!-- Hero Section -->
       <section class="hero">
         <div class="hero-image">
           <ImagePlaceholder
@@ -34,19 +33,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </div>
         <div class="hero-content">
           <h1>{t(strings.home.heroTitle)}</h1>
+          <hr class="section-rule" />
           <p class="tagline">{t(strings.home.tagline)}</p>
           <div class="cta-area">
-            <button class="cta" id="login-trigger">{t(strings.home.ctaEnter)}</button>
+            <button class="btn btn-outline" id="login-trigger">{t(strings.home.ctaEnter)}</button>
           </div>
         </div>
       </section>
 
-      <!-- Teaser Section (feature flagged) -->
       {isEnabled('homepage.teaser') && (
         <section class="teaser">
-          <div class="teaser-content">
-            <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
-          </div>
+          <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
         </section>
       )}
     </main>
@@ -72,14 +69,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             required
           />
           <div id="error-message" class="error-message" aria-live="polite"></div>
-          <button type="submit" class="submit-btn" id="submit-btn">{t(strings.home.modal.submitBtn)}</button>
+          <button type="submit" class="btn btn-primary submit-btn" id="submit-btn">{t(strings.home.modal.submitBtn)}</button>
         </form>
       </div>
     </div>
 
-    <footer>
+    <footer class="site-footer">
       <div class="footer-row">
-        <p>&copy; 2026 Sam Gross</p>
+        <p class="copyright">&copy; 2026 Sam Gross</p>
         <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
       </div>
     </footer>
@@ -90,7 +87,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       flex: 1;
     }
 
-    /* Hero Section */
     .hero {
       display: flex;
       flex-direction: column;
@@ -101,62 +97,41 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     .hero-content {
-      padding: 3rem 2rem;
+      padding: var(--space-xl) var(--page-margin);
       text-align: center;
+      max-width: var(--content-max-width);
+      margin: 0 auto;
+      width: 100%;
     }
 
-    h1 {
-      font-size: 3.5rem;
-      font-weight: 300;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
+    .hero-content .section-rule {
+      max-width: 120px;
+      margin: var(--space-md) auto;
     }
 
     .tagline {
-      font-size: 1.5rem;
-      color: #666;
-      margin-bottom: 2rem;
+      font-size: var(--font-size-h3);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-lg);
     }
 
     .cta-area {
-      margin-top: 1rem;
+      margin-top: var(--space-sm);
     }
 
-    .cta {
-      display: inline-block;
-      padding: 1rem 2.5rem;
-      font-size: 1rem;
-      color: #1a1a1a;
-      background: transparent;
-      border: 2px solid #1a1a1a;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .cta:hover {
-      background: #1a1a1a;
-      color: white;
-    }
-
-    /* Teaser Section */
+    /* Teaser */
     .teaser {
-      padding: 3rem 2rem;
-      max-width: 600px;
+      padding: var(--space-xl) var(--page-margin);
+      max-width: 640px;
       margin: 0 auto;
       text-align: center;
       content-visibility: auto;
-      contain-intrinsic-size: 300px;
-    }
-
-    .teaser-content {
-      padding: 2rem;
+      contain-intrinsic-size: 200px;
     }
 
     .teaser-text {
-      font-size: 1.125rem;
+      color: var(--color-text-muted);
       line-height: 1.8;
-      color: #444;
     }
 
     /* Modal */
@@ -168,7 +143,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       align-items: center;
       justify-content: center;
       z-index: 1001;
-      padding: 1rem;
+      padding: var(--space-sm);
       opacity: 1;
       transition: opacity 0.2s;
     }
@@ -179,9 +154,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     .modal {
-      background: white;
-      border-radius: 0.75rem;
-      padding: 2rem;
+      background: var(--color-bg);
+      padding: var(--space-lg);
       max-width: 400px;
       width: 100%;
       position: relative;
@@ -195,45 +169,40 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     .modal-close {
       position: absolute;
-      top: 1rem;
-      right: 1rem;
+      top: var(--space-sm);
+      right: var(--space-sm);
       background: none;
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
-      color: #888;
-      width: 2rem;
-      height: 2rem;
+      color: var(--color-text-muted);
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
     }
 
     .modal-close:hover {
-      background: #f5f5f5;
-      color: #1a1a1a;
+      color: var(--color-text);
     }
 
     .modal h2 {
-      font-size: 1.75rem;
-      font-weight: 300;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
+      margin-bottom: var(--space-xs);
       text-align: center;
     }
 
     .modal-subtitle {
-      color: #666;
+      color: var(--color-text-muted);
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--space-md);
       font-size: 0.9375rem;
     }
 
     form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 12px;
     }
 
     .visually-hidden {
@@ -248,73 +217,39 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       border: 0;
     }
 
-    input {
-      padding: 0.875rem 1rem;
-      font-size: 1rem;
-      border: 1px solid #e5e5e5;
-      border-radius: 0.5rem;
+    form input {
       text-align: center;
     }
 
-    input:focus {
-      outline: none;
-      border-color: #1a1a1a;
-    }
-
     .error-message {
-      color: #dc2626;
+      color: var(--color-error);
       font-size: 0.875rem;
       text-align: center;
       min-height: 1.25rem;
     }
 
     .submit-btn {
-      padding: 0.875rem 1rem;
-      font-size: 1rem;
-      background: #1a1a1a;
-      color: white;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-    }
-
-    .submit-btn:hover:not(:disabled) {
-      background: #333;
+      width: 100%;
     }
 
     .submit-btn:disabled {
-      background: #888;
       cursor: not-allowed;
-    }
-
-    /* Footer */
-    footer {
-      padding: 2rem;
-      border-top: 1px solid #e5e5e5;
-      content-visibility: auto;
-      contain-intrinsic-size: 120px;
     }
 
     .footer-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.625rem;
-    }
-
-    .footer-row p {
-      font-size: 0.875rem;
-      color: #666;
-      margin: 0;
+      gap: 8px;
     }
 
     @media (max-width: 768px) {
-      h1 {
-        font-size: 2.5rem;
+      .hero-content {
+        padding: var(--space-lg) var(--page-margin-mobile);
       }
 
       .tagline {
-        font-size: 1.25rem;
+        font-size: var(--font-size-body);
       }
     }
     </style>
@@ -416,6 +351,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <html lang="en">
     <head>
       <meta charset="utf-8" />
+      <meta name="color-scheme" content="light dark" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" media="(prefers-color-scheme: light)" />
       <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
       <meta name="viewport" content="width=device-width" />
@@ -434,12 +370,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-    body { display: flex; flex-direction: column; background-color: #ffffff; color: #1a1a1a; }
+    html, body { height: 100%; font-family: var(--font-body); }
+    body { display: flex; flex-direction: column; background-color: var(--color-bg); color: var(--color-text); }
     main { flex: 1; display: flex; align-items: center; justify-content: center; }
-    h1 { font-size: 3rem; font-weight: 300; letter-spacing: 0.05em; }
+    h1 { font-size: 3rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
     footer { padding: 2rem; text-align: center; }
-    footer p { font-size: 0.875rem; color: #666; }
+    footer p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); }
     @media (max-width: 768px) { h1 { font-size: 2rem; } }
   </style>
 )}

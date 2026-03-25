@@ -7,10 +7,10 @@ import LangSwitcher from '../../components/LangSwitcher.astro';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.travel.pageTitle)}>
-  <header>
-    <nav class="main-nav">
-      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+<WireframeLayout title={t(strings.france.travel.pageTitle)} event="france">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
       <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
     </nav>
   </header>
@@ -95,37 +95,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
 <style>
   header {
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .main-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .logo {
-    font-size: 1.25rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    color: #1a1a1a;
-  }
-
-  .back-link {
-    font-size: 0.875rem;
-    color: #666;
-    text-decoration: none;
-  }
-
-  .back-link:hover {
-    color: #1a1a1a;
-  }
-
-  main {
+main {
     flex: 1;
     padding: 3rem 2rem;
     max-width: 900px;
@@ -140,7 +113,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .subtitle {
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: 3rem;
   }
 
@@ -151,8 +124,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .travel-card {
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
     padding: 1.5rem;
   }
 
@@ -161,14 +133,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 400;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .travel-card h3 {
     font-size: 1.125rem;
     font-weight: 500;
     margin: 1.5rem 0 0.75rem;
-    color: #1a1a1a;
+    color: var(--color-text);
   }
 
   .travel-card h3:first-of-type {
@@ -192,29 +164,28 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .section-note {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--color-text-muted);
     font-style: italic;
     margin-bottom: 1rem;
   }
 
   .transport-note {
     font-size: 0.9375rem;
-    color: #444;
-    background: #f9f9f9;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
     padding: 0.75rem 1rem;
-    border-radius: 0.25rem;
     margin: 0.75rem 0;
   }
 
   .placeholder-note {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--color-text-muted);
     font-style: italic;
   }
 
   .date-ref {
     font-size: 0.9375rem;
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: 1.5rem;
   }
 
@@ -225,8 +196,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .info-item {
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
     padding: 1rem;
   }
 
@@ -234,7 +204,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #888;
+    color: var(--color-text-muted);
     margin: 0 0 0.5rem;
   }
 
@@ -245,13 +215,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .info-item p:last-child {
     font-size: 0.8125rem;
-    color: #666;
+    color: var(--color-text-muted);
   }
 
   /* Footer */
   footer {
     padding: 2rem;
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid var(--color-border);
   }
 
   .footer-row {
@@ -263,7 +233,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .footer-row p {
     font-size: 0.875rem;
-    color: #888;
+    color: var(--color-text-muted);
     margin: 0;
   }
 

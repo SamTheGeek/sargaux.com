@@ -9,10 +9,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
 <WireframeLayout title={t(strings.registry.pageTitle)}>
-  <header>
-    <nav class="main-nav">
-      <a href="/" class="logo">Chez Sargaux</a>
-      <div class="nav-links">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
         <a href="/nyc">NYC</a>
         <span>·</span>
         <a href="/france">France</a>
@@ -100,47 +100,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
 <style>
   header {
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .main-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .logo {
-    font-size: 1.25rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    color: #1a1a1a;
-  }
-
-  .nav-links {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .nav-links a {
-    color: #666;
-    text-decoration: none;
-    font-size: 0.875rem;
-  }
-
-  .nav-links a:hover {
-    color: #1a1a1a;
-  }
-
-  .nav-links span {
-    color: #ccc;
-  }
-
-  main {
+main {
     flex: 1;
   }
 
@@ -185,18 +148,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .registry-card .desc {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--color-text-muted);
   }
 
   .registry-link {
     display: inline-block;
     margin-top: 1rem;
-    color: #1a1a1a;
+    color: var(--color-text);
     font-weight: 500;
   }
 
   .registry-card em {
-    color: #f59e0b;
+    color: var(--color-accent);
   }
 
   .open-question,
@@ -207,8 +170,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .content-box.highlight {
-    background: #fef3c7;
-    border-color: #f59e0b;
+    background: var(--color-info-bg);
+    border-color: var(--color-accent);
   }
 
   .content-box ul {
@@ -221,19 +184,19 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .content-box em {
-    color: #f59e0b;
+    color: var(--color-accent);
   }
 
   .note {
     font-size: 0.875rem;
-    color: #92400e;
+    color: var(--color-text-muted);
     font-weight: 500;
     margin-top: 1rem;
   }
 
   footer {
     padding: 2rem;
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid var(--color-border);
     margin-top: 2rem;
   }
 
@@ -246,6 +209,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .footer-row p {
     font-size: 0.875rem;
-    color: #888;
+    color: var(--color-text-muted);
   }
 </style>
