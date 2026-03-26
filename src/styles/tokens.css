@@ -11,6 +11,54 @@
 /* === Fonts === */
 
 @font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTBook.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTDemi.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Peignot';
   src: url('/fonts/Peignot 400.ttf') format('truetype');
   font-weight: 400;
@@ -54,7 +102,7 @@
   --color-border: var(--color-dark-moss);
 
   /* Typography */
-  --font-display: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --font-display: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-body: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-size-hero: 64px;
   --font-size-h2: 32px;
@@ -108,6 +156,7 @@
   --color-border: var(--color-prussian-blue);
 
   --font-display: 'Peignot', 'Georgia', serif;
+  --font-body: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
 }
 
 /* France typography weights per brand spec */
