@@ -66,7 +66,7 @@ test.describe('RSVP Dynamic Forms', () => {
     await expect(status).not.toHaveText(initialStatus ?? '');
   });
 
-  test('NYC submit sends expected payload and shows success message', async ({ page }) => {
+  test('NYC submit sends expected payload and redirects to the event page', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
 
     let capturedPayload: any = null;
@@ -82,9 +82,10 @@ test.describe('RSVP Dynamic Forms', () => {
     await page.fill('textarea[name="dietary"]', 'Vegetarian');
     await page.fill('input[name="songRequest"]', 'Dancing Queen - ABBA');
     await page.fill('textarea[name="message"]', 'Excited to celebrate!');
-    await page.click('button[type="submit"]');
-
-    await expect(page.locator('#form-success')).toBeVisible();
+    await Promise.all([
+      page.waitForURL('/nyc'),
+      page.click('button[type="submit"]'),
+    ]);
 
     expect(capturedPayload).toBeTruthy();
     expect(capturedPayload.event).toBe('nyc');
@@ -147,7 +148,7 @@ test.describe('RSVP Dynamic Forms', () => {
     await expect(page.locator('select[name="transport"]')).toHaveValue('no');
   });
 
-  test('France form submits France-specific details', async ({ page }) => {
+  test('France form submits France-specific details and redirects to the event page', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'france');
 
     let capturedPayload: any = null;
@@ -164,9 +165,10 @@ test.describe('RSVP Dynamic Forms', () => {
     await page.selectOption('select[name="accommodation"]', 'yes');
     await page.selectOption('select[name="transport"]', 'no');
     await page.fill('textarea[name="message"]', 'Merci!');
-    await page.click('button[type="submit"]');
-
-    await expect(page.locator('#form-success')).toBeVisible();
+    await Promise.all([
+      page.waitForURL('/france'),
+      page.click('button[type="submit"]'),
+    ]);
 
     expect(capturedPayload).toBeTruthy();
     expect(capturedPayload.event).toBe('france');
@@ -205,8 +207,10 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
-    await page.click('button[type="submit"]');
-    await expect(page.locator('#form-success')).toBeVisible();
+    await Promise.all([
+      page.waitForURL('/nyc'),
+      page.click('button[type="submit"]'),
+    ]);
 
     expect(capturedPayload.sendConfirmation).toBe(false);
   });
@@ -225,8 +229,10 @@ test.describe('RSVP Dynamic Forms', () => {
     });
 
     await page.check('[data-testid="send-confirmation-checkbox"]');
-    await page.click('button[type="submit"]');
-    await expect(page.locator('#form-success')).toBeVisible();
+    await Promise.all([
+      page.waitForURL('/nyc'),
+      page.click('button[type="submit"]'),
+    ]);
 
     expect(capturedPayload.sendConfirmation).toBe(true);
   });

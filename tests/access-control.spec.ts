@@ -26,7 +26,7 @@ async function setSessionCookie(
     {
       name: 'sargaux_auth',
       value,
-      url: 'http://localhost:1213',
+      url: 'http://127.0.0.1:1213',
       httpOnly: true,
       sameSite: 'Lax',
     },
