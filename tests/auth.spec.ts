@@ -151,6 +151,7 @@ test.describe('Authentication', () => {
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.guest).toBe('Sam Gross');
+    expect(response.body.redirectPath).toBe('/nyc');
   });
 
   test('login API returns 401 for unknown guest', async ({ page }) => {

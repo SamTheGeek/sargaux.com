@@ -1,7 +1,10 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
+import faviconLight from '../assets/common/favicon.svg?url';
+import faviconDark from '../assets/common/favicon-dark.svg?url';
 import { getAuthenticatedGuest } from '../lib/auth';
 import { isSiteEnabled } from '../config/features';
+import { getPrimaryEventRoute } from '../lib/event-routing';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import LangSwitcher from '../components/LangSwitcher.astro';
@@ -10,7 +13,7 @@ import LangSwitcher from '../components/LangSwitcher.astro';
 if (isSiteEnabled()) {
   const authGuest = getAuthenticatedGuest(Astro.cookies);
   if (authGuest) {
-    const redirectPath = authGuest.eventInvitations.includes('nyc') ? '/nyc' : '/france';
+    const redirectPath = getPrimaryEventRoute(authGuest.eventInvitations);
     return Astro.redirect(redirectPath);
   }
 }
@@ -26,7 +29,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
   <WireframeLayout title={t(strings.home.pageTitle)}>
     <main class="landing-shell">
       <section class="landing-hero">
-        <div class="hero-disc" aria-hidden="true"></div>
+        <div class="hero-disc" aria-hidden="true" transition:name="event-disc"></div>
         <div class="hero-grid page-content">
           <div class="hero-copy">
             <p class="eyebrow">Vous êtes les bienvenus</p>
@@ -42,7 +45,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
                 <button type="button" class="btn btn-primary login-trigger-panel" id="login-trigger">
                   {t(strings.home.ctaEnter)}
                 </button>
-                <div class="inline-name-shell" aria-hidden="true">
+                <div class="inline-name-shell">
                   <input
                     type="text"
                     id="name"
@@ -216,9 +219,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
       .inline-name-shell {
         position: absolute;
         inset: 0;
-        opacity: 0;
-        pointer-events: none;
-        display: flex;
+        display: none;
         align-items: center;
       }
 
@@ -276,8 +277,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
       }
 
       .inline-entry-control.is-active .inline-name-shell {
-        opacity: 1;
-        pointer-events: auto;
+        display: flex;
       }
 
       .inline-submit-btn {
@@ -437,6 +437,15 @@ const submitLabel = t(strings.home.modal.submitBtn);
       }
     };
 
+    const navigateWithTransition = (href) => {
+      const redirectLink = document.createElement('a');
+      redirectLink.href = href;
+      redirectLink.hidden = true;
+      document.body.appendChild(redirectLink);
+      redirectLink.click();
+      redirectLink.remove();
+    };
+
     trigger?.addEventListener('click', () => {
       activateInlineForm();
       if (errorMessage) errorMessage.textContent = '';
@@ -481,7 +490,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
         const data = await response.json();
 
         if (response.ok) {
-          window.location.href = data.redirectPath || '/nyc';
+          navigateWithTransition(data.redirectPath || '/nyc');
         } else {
           showError(data.error || defaultError);
           resetSubmitState();
@@ -497,8 +506,8 @@ const submitLabel = t(strings.home.modal.submitBtn);
     <head>
       <meta charset="utf-8" />
       <meta name="color-scheme" content="light dark" />
-      <link rel="icon" type="image/svg+xml" href="/favicon.svg" media="(prefers-color-scheme: light)" />
-      <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+      <link rel="icon" type="image/svg+xml" href={faviconLight} media="(prefers-color-scheme: light)" />
+      <link rel="icon" type="image/svg+xml" href={faviconDark} media="(prefers-color-scheme: dark)" />
       <meta name="viewport" content="width=device-width" />
       <meta name="generator" content={Astro.generator} />
       <title>Chez Sargaux</title>

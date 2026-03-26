@@ -68,7 +68,7 @@
 
 @font-face {
   font-family: 'Peignot';
-  src: url('/fonts/peignot-demi.ttf') format('truetype');
+  src: url('/fonts/peignot-bold.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;

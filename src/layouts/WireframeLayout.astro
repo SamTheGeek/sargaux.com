@@ -1,4 +1,8 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+import faviconLight from '../assets/common/favicon.svg?url';
+import faviconDark from '../assets/common/favicon-dark.svg?url';
+
 interface Props {
   title: string;
   description?: string;
@@ -14,26 +18,24 @@ const lang = Astro.locals.lang ?? 'en';
   <head>
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href={faviconLight} media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href={faviconDark} media="(prefers-color-scheme: dark)" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="generator" content={Astro.generator} />
     {(event === 'nyc' || !event) && (
       <>
-        <link rel="preload" href="/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf" as="font" type="font/ttf" crossorigin />
         <link rel="preload" href="/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf" as="font" type="font/ttf" crossorigin />
       </>
     )}
     {event === 'france' && (
       <>
         <link rel="preload" href="/fonts/peignot-bold.otf" as="font" type="font/otf" crossorigin />
-        <link rel="preload" href="/fonts/peignot-demi.ttf" as="font" type="font/ttf" crossorigin />
-        <link rel="preload" href="/fonts/futura/FuturaPTBook.otf" as="font" type="font/otf" crossorigin />
         <link rel="preload" href="/fonts/futura/FuturaPTMedium.otf" as="font" type="font/otf" crossorigin />
       </>
     )}
+    <ClientRouter />
     <title>{title} | Chez Sargaux</title>
   </head>
   <body>

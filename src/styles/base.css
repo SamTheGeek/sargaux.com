@@ -145,15 +145,25 @@ a:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
+::view-transition-group(site-header) {
+  z-index: 120;
+}
+
+::view-transition-group(event-disc) {
+  z-index: 20;
+}
+
 .site-nav {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
   align-items: center;
   height: 56px;
   padding: 0 var(--page-margin);
 }
 
 .site-logo {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-display);
   font-size: var(--font-size-h3);
   font-weight: 500;
@@ -176,20 +186,23 @@ a:hover {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  justify-self: end;
 }
 
 @media (max-width: 768px) {
   .site-nav {
-    /* Remove fixed height so the nav grows naturally when "Chez Sargaux" wraps */
+    grid-template-columns: minmax(0, 1fr) max-content;
     height: auto;
     min-height: 48px;
     padding: 10px var(--page-margin-mobile);
-    /* Keep both sides vertically centered relative to each other */
     align-items: center;
   }
 
+  .site-logo {
+    min-width: 0;
+  }
+
   .nav-actions {
-    /* Pull toggle and RSVP button tighter together on narrow screens */
     gap: var(--space-xs);
   }
 }
@@ -251,29 +264,44 @@ a:hover {
 /* === Event Toggle === */
 
 .event-toggle {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--event-toggle-nyc-width, 2.75rem) 0.75rem var(--event-toggle-france-width, 4.25rem);
   align-items: center;
-  gap: 4px;
+  justify-items: center;
   font-size: var(--font-size-caption);
   font-weight: 600; /* constant weight on both states — prevents reflow/jiggling on page switch */
   text-transform: uppercase;
   letter-spacing: var(--tracking-caption);
 }
 
-.event-toggle a {
+.event-toggle a,
+.event-toggle .active {
   text-decoration: none;
-  color: var(--color-text-muted);
-  padding: 4px 4px;
+  width: 100%;
+  padding: 4px 0;
+  text-align: center;
 }
 
-.event-toggle .active {
-  color: var(--color-text);
-  padding: 4px 4px;
+.event-toggle a {
+  color: var(--color-text-muted);
 }
 
 .event-toggle .divider {
   color: var(--color-border);
+  width: 100%;
   padding: 4px 0;
+  text-align: center;
+}
+
+.event-toggle .active {
+  color: var(--color-text);
+}
+
+.site-nav .btn,
+.site-nav .nyc-rsvp-btn,
+.site-nav .rsvp-btn {
+  min-width: 88px;
+  justify-content: center;
 }
 
 /* === Form Elements === */

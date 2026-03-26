@@ -5,6 +5,8 @@ import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import skylineFill from '../../assets/nyc/skyline-fill.svg?url';
+import skylineOutline from '../../assets/nyc/skyline.svg?url';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -34,21 +36,21 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   -->
 
   <!-- Fixed amber disc, right side, z:2 -->
-  <div class="nyc-disc" aria-hidden="true"></div>
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
 
   <!-- Sticky header, z:100 via base.css -->
-  <header class="site-header nyc-header">
+  <header class="site-header nyc-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
       <div class="nav-actions">
         {showEventToggle && (
-          <div class="event-toggle">
-            <span class="active">{t(strings.global.toggle.nyc)}</span>
+          <div class="event-toggle" transition:name="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
             <span class="divider">|</span>
-            <a href="/france">{t(strings.global.toggle.france)}</a>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
@@ -75,8 +77,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
   -->
   <div class="nyc-skyline-wrap" aria-hidden="true">
-    <img class="nyc-skyline-img nyc-skyline-fill" src="/images/nyc/skyline-fill.svg" alt="">
-    <img class="nyc-skyline-img nyc-skyline-outline" src="/images/nyc/skyline.svg" alt="">
+    <img class="nyc-skyline-img nyc-skyline-fill" src={skylineFill} alt="">
+    <img class="nyc-skyline-img nyc-skyline-outline" src={skylineOutline} alt="">
   </div>
 
   <!-- ═══════════════════════════════════
@@ -107,7 +109,34 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="nyc-info-val">{t(strings.nyc.dressCode.value)}</span>
         </div>
       </div>
-      <a href="/nyc/rsvp" class="nyc-moss-btn">{t(strings.global.rsvpBtn)}</a>
+    </div>
+  </section>
+
+  <div class="nyc-moss nyc-calendar-band">{t(strings.nyc.calendar.heading)}</div>
+
+  <section class="nyc-moss nyc-calendar">
+    <div class="page-content nyc-calendar-inner">
+      <div class="nyc-calendar-copy">
+        <p class="nyc-calendar-label">{t(strings.nyc.calendar.heading)}</p>
+        <p class="nyc-calendar-text">{t(strings.nyc.calendar.subtext)}</p>
+      </div>
+      <div class="nyc-calendar-actions">
+        {calendarToken ? (
+          <a
+            href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+            class="nyc-calendar-btn calendar-btn-prominent"
+          >
+            {t(strings.nyc.calendar.addBtn)}
+          </a>
+        ) : (
+          <>
+            <button class="nyc-calendar-btn calendar-btn-prominent" disabled>
+              {t(strings.nyc.calendar.addBtn)}
+            </button>
+            <p class="nyc-calendar-note">{t(strings.nyc.calendar.unavailableNote)}</p>
+          </>
+        )}
+      </div>
     </div>
   </section>
 
@@ -123,6 +152,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <a href="/nyc/travel" class="nyc-strip-link">
         <span class="nyc-strip-title">{t(strings.nyc.nav.travel.title)}</span>
         <span class="nyc-strip-desc">{t(strings.nyc.nav.travel.desc)}</span>
+        <span class="nyc-strip-arrow">→</span>
+      </a>
+      <a href="/couple" class="nyc-strip-link">
+        <span class="nyc-strip-title">{t(strings.nyc.nav.couple.title)}</span>
+        <span class="nyc-strip-desc">{t(strings.nyc.nav.couple.desc)}</span>
         <span class="nyc-strip-arrow">→</span>
       </a>
       <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta">
@@ -313,7 +347,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   /* .nyc-info-inner uses page-content class for centering — no override needed */
 
   html[data-event="nyc"] .nyc-info-table {
-    margin-bottom: 48px;
+    margin-bottom: 0;
   }
 
   html[data-event="nyc"] .nyc-info-row {
@@ -347,25 +381,97 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin-top: 4px;
   }
 
-  html[data-event="nyc"] .nyc-moss-btn {
-    display: inline-block;
-    padding: 12px 32px;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    background: #F1ECE3;
-    color: #2F3F36;
-    transition: opacity 0.15s;
-    cursor: pointer;
-    border: none;
+  html[data-event="nyc"] .nyc-calendar {
+    padding: 32px 0 24px;
   }
 
-  html[data-event="nyc"] .nyc-moss-btn:hover {
+  html[data-event="nyc"] .nyc-calendar-band {
+    padding: 16px 64px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #F1ECE3 !important;
+    color: #2F3F36 !important;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 32px;
+    align-items: end;
+    padding-top: 8px;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-copy {
+    max-width: 420px;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-label {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(241, 236, 227, 0.45);
+  }
+
+  html[data-event="nyc"] .nyc-calendar-text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #F1ECE3;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-btn,
+  html[data-event="nyc"] .nyc-calendar-actions .calendar-btn-prominent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 32px;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    background: #D96A1E;
+    color: #F1ECE3;
+    font-style: normal;
+    line-height: 1;
+    border: none;
+    transition: opacity 0.15s;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-btn:hover,
+  html[data-event="nyc"] .nyc-calendar-actions .calendar-btn-prominent:hover {
     opacity: 0.85;
-    color: #2F3F36;
+    color: #F1ECE3;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-btn:disabled,
+  html[data-event="nyc"] .nyc-calendar-actions .calendar-btn-prominent:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  html[data-event="nyc"] .nyc-calendar-note {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(241, 236, 227, 0.45);
+    max-width: 260px;
   }
 
   html[data-event="nyc"] .nyc-explore-band {
@@ -509,23 +615,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     /* Explore band: minimal — recedes into dark, faint label only */
+    html[data-event="nyc"] .nyc-calendar-band,
     html[data-event="nyc"] .nyc-explore-band {
       background: #1A2420 !important;
       color: rgba(241, 236, 227, 0.28) !important;
       border-top: 1px solid rgba(241, 236, 227, 0.06);
       border-bottom: 1px solid rgba(241, 236, 227, 0.06);
-    }
-
-    /* Moss button: amber accent in dark mode too */
-    html[data-event="nyc"] .nyc-moss-btn {
-      background: #D96A1E !important;
-      color: #F1ECE3 !important;
-    }
-
-    html[data-event="nyc"] .nyc-moss-btn:hover {
-      opacity: 0.85;
-      background: #D96A1E !important;
-      color: #F1ECE3 !important;
     }
 
     /* Table rows: softer borders */
@@ -568,10 +663,29 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       height: 50vh;
     }
 
+    html[data-event="nyc"] .nyc-calendar-inner {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    html[data-event="nyc"] .nyc-calendar-actions {
+      align-items: stretch;
+    }
+
+    html[data-event="nyc"] .nyc-calendar-btn {
+      width: 100%;
+    }
+
+    html[data-event="nyc"] .nyc-calendar-note {
+      max-width: none;
+    }
+
     html[data-event="nyc"] .nyc-skyline-wrap {
       height: clamp(180px, 40vw, 320px);
     }
 
+    html[data-event="nyc"] .nyc-calendar-band,
     html[data-event="nyc"] .nyc-explore-band {
       padding-left: 24px;
       padding-right: 24px;
