@@ -57,8 +57,9 @@ const submitLabel = t(strings.home.modal.submitBtn);
                     spellcheck="false"
                     required
                   />
+                  <span class="inline-progress-label" aria-hidden="true">{checkingLabel}</span>
                   <button type="submit" class="inline-submit-btn" id="inline-submit" aria-label="Submit name">
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true" id="inline-submit-symbol">→</span>
                   </button>
                 </div>
               </div>
@@ -221,6 +222,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
         inset: 0;
         display: none;
         align-items: center;
+        overflow: hidden;
       }
 
       .login-trigger-panel,
@@ -252,6 +254,10 @@ const submitLabel = t(strings.home.modal.submitBtn);
       input.inline-name-input {
         padding-left: 64px;
         padding-right: 64px;
+        transition:
+          color 140ms ease,
+          -webkit-text-fill-color 140ms ease,
+          opacity 140ms ease;
       }
 
       input.inline-name-input::placeholder {
@@ -280,6 +286,38 @@ const submitLabel = t(strings.home.modal.submitBtn);
         display: flex;
       }
 
+      .inline-entry-control.is-loading input.inline-name-input {
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        cursor: progress;
+      }
+
+      .inline-entry-control.is-loading input.inline-name-input::placeholder {
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .inline-progress-label {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 64px;
+        color: rgba(241, 236, 227, 0.82);
+        font-size: 0.75rem;
+        letter-spacing: var(--tracking-caption);
+        text-transform: uppercase;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 140ms ease;
+        z-index: 1;
+      }
+
+      .inline-entry-control.is-loading .inline-progress-label {
+        opacity: 1;
+      }
+
       .inline-submit-btn {
         position: absolute;
         right: 18px;
@@ -294,6 +332,11 @@ const submitLabel = t(strings.home.modal.submitBtn);
         font-size: 1.35rem;
         line-height: 1;
         cursor: pointer;
+        z-index: 2;
+      }
+
+      .inline-entry-control.is-loading .inline-submit-btn {
+        cursor: progress;
       }
 
       .inline-submit-btn:hover {
@@ -403,103 +446,144 @@ const submitLabel = t(strings.home.modal.submitBtn);
     </style>
   </WireframeLayout>
 
-  <script is:inline define:vars={{ emptyError, defaultError, checkingLabel, submitLabel }}>
-    const form = document.getElementById('login-form');
-    const entryControl = document.getElementById('inline-entry-control');
-    const trigger = document.getElementById('login-trigger');
-    const nameInput = document.getElementById('name');
-    const errorMessage = document.getElementById('error-message');
-    const submitBtn = document.getElementById('submit-btn');
-    const activateInlineForm = () => {
-      entryControl?.classList.add('is-active');
-      requestAnimationFrame(() => {
-        nameInput?.focus();
-        const length = nameInput?.value.length ?? 0;
-        nameInput?.setSelectionRange(length, length);
-      });
-    };
+  <script is:inline data-astro-rerun define:vars={{ emptyError, defaultError, checkingLabel, submitLabel }}>
+    (() => {
+      window.__homeLoginController?.abort?.();
 
-    const collapseInlineForm = () => {
-      if ((nameInput?.value ?? '').trim()) return;
-      entryControl?.classList.remove('is-active');
-    };
+      const controller = new AbortController();
+      window.__homeLoginController = controller;
 
-    const showError = (message) => {
-      if (errorMessage) {
-        errorMessage.textContent = message;
-      }
-    };
+      const { signal } = controller;
+      const form = document.getElementById('login-form');
+      const entryControl = document.getElementById('inline-entry-control');
+      const trigger = document.getElementById('login-trigger');
+      const nameInput = document.getElementById('name');
+      const errorMessage = document.getElementById('error-message');
+      const submitBtn = document.getElementById('submit-btn');
+      const inlineSubmit = document.getElementById('inline-submit');
+      const inlineSubmitSymbol = document.getElementById('inline-submit-symbol');
 
-    const resetSubmitState = () => {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = submitLabel;
-      }
-    };
-
-    const navigateWithTransition = (href) => {
-      const redirectLink = document.createElement('a');
-      redirectLink.href = href;
-      redirectLink.hidden = true;
-      document.body.appendChild(redirectLink);
-      redirectLink.click();
-      redirectLink.remove();
-    };
-
-    trigger?.addEventListener('click', () => {
-      activateInlineForm();
-      if (errorMessage) errorMessage.textContent = '';
-    });
-
-    nameInput?.addEventListener('blur', () => {
-      window.setTimeout(() => {
-        collapseInlineForm();
-      }, 0);
-    });
-
-    document.addEventListener('pointerdown', (event) => {
-      if (!entryControl?.contains(event.target)) {
-        collapseInlineForm();
-      }
-    });
-
-    form?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const name = nameInput?.value.trim() ?? '';
-      if (!name) {
-        showError(emptyError);
-        activateInlineForm();
+      if (!form || !entryControl || !trigger || !nameInput || !errorMessage || !submitBtn || !inlineSubmit) {
         return;
       }
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = checkingLabel;
-      }
+      let isSubmitting = false;
 
-      try {
-        const formData = new FormData();
-        formData.append('name', name);
-
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          body: formData,
+      const activateInlineForm = () => {
+        if (isSubmitting) return;
+        entryControl.classList.add('is-active');
+        requestAnimationFrame(() => {
+          nameInput.focus();
+          const length = nameInput.value.length ?? 0;
+          nameInput.setSelectionRange(length, length);
         });
+      };
 
-        const data = await response.json();
+      const collapseInlineForm = () => {
+        if (isSubmitting || nameInput.value.trim()) return;
+        entryControl.classList.remove('is-active');
+      };
 
-        if (response.ok) {
-          navigateWithTransition(data.redirectPath || '/nyc');
-        } else {
-          showError(data.error || defaultError);
-          resetSubmitState();
+      const showError = (message) => {
+        errorMessage.textContent = message;
+      };
+
+      const setSubmitState = (submitting) => {
+        isSubmitting = submitting;
+        entryControl.classList.toggle('is-loading', submitting);
+        form.setAttribute('aria-busy', submitting ? 'true' : 'false');
+        nameInput.disabled = submitting;
+        inlineSubmit.disabled = submitting;
+        submitBtn.disabled = submitting;
+        submitBtn.textContent = submitting ? checkingLabel : submitLabel;
+
+        if (inlineSubmitSymbol) {
+          inlineSubmitSymbol.textContent = submitting ? '…' : '→';
         }
-      } catch (error) {
-        showError(defaultError);
-        resetSubmitState();
-      }
-    });
+
+        inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
+      };
+
+      const navigateWithTransition = (href) => {
+        const redirectLink = document.createElement('a');
+        redirectLink.href = href;
+        redirectLink.hidden = true;
+        document.body.appendChild(redirectLink);
+        redirectLink.click();
+        redirectLink.remove();
+      };
+
+      trigger.addEventListener('click', () => {
+        showError('');
+        activateInlineForm();
+      }, { signal });
+
+      nameInput.addEventListener('input', () => {
+        if (errorMessage.textContent) {
+          showError('');
+        }
+      }, { signal });
+
+      nameInput.addEventListener('blur', () => {
+        window.setTimeout(() => {
+          collapseInlineForm();
+        }, 0);
+      }, { signal });
+
+      document.addEventListener('pointerdown', (event) => {
+        if (!entryControl.contains(event.target)) {
+          collapseInlineForm();
+        }
+      }, { signal });
+
+      document.addEventListener('astro:before-swap', () => {
+        controller.abort();
+      }, { once: true, signal });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (isSubmitting) return;
+
+        const name = nameInput.value.trim();
+        if (!name) {
+          showError(emptyError);
+          activateInlineForm();
+          return;
+        }
+
+        showError('');
+        setSubmitState(true);
+
+        let shouldResetState = true;
+
+        try {
+          const formData = new FormData();
+          formData.append('name', name);
+
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            shouldResetState = false;
+            navigateWithTransition(data.redirectPath || '/nyc');
+            return;
+          }
+
+          showError(data.error || defaultError);
+        } catch (error) {
+          showError(defaultError);
+        } finally {
+          if (shouldResetState && !signal.aborted) {
+            setSubmitState(false);
+            activateInlineForm();
+          }
+        }
+      }, { signal });
+    })();
   </script>
 ) : (
   <html lang="en">

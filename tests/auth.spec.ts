@@ -47,7 +47,7 @@ test.describe('Authentication', () => {
     await page.press('#name', 'Enter');
 
     const errorMessage = page.locator('#error-message');
-    await expect(errorMessage).toContainText("Please enter your name as it appears on your invitation");
+    await expect(errorMessage).toContainText('Name not found, it must match exactly.');
     await expect(page).toHaveURL('/');
   });
 
@@ -68,6 +68,46 @@ test.describe('Authentication', () => {
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
     await page.click('#inline-submit');
+
+    await expect(page).toHaveURL('/nyc');
+  });
+
+  test('should show loading state while login is in progress', async ({ page }) => {
+    let resolveLogin: (() => void) | undefined;
+    const loginResponseReady = new Promise<void>((resolve) => {
+      resolveLogin = resolve;
+    });
+    const authCookieValue = Buffer.from(
+      JSON.stringify({
+        guest: 'Sam Gross',
+        eventInvitations: ['nyc'],
+        created: Date.now(),
+      })
+    ).toString('base64url');
+
+    await page.route('**/api/login', async (route) => {
+      await loginResponseReady;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Set-Cookie': `sargaux_auth=${authCookieValue}; Path=/; HttpOnly; SameSite=Lax`,
+        },
+        body: JSON.stringify({ success: true, guest: 'Sam Gross', redirectPath: '/nyc' }),
+      });
+    });
+
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.press('#name', 'Enter');
+
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-loading/);
+    await expect(page.locator('#inline-submit')).toBeDisabled();
+    await expect(page.locator('#name')).toBeDisabled();
+    await expect(page.locator('.inline-progress-label')).toContainText('Checking...');
+
+    resolveLogin?.();
 
     await expect(page).toHaveURL('/nyc');
   });
@@ -119,8 +159,12 @@ test.describe('Authentication', () => {
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
-    await page.goto('/api/logout');
+    await page.click('a[href="/api/logout"]');
     await expect(page).toHaveURL('/');
+
+    await page.click('#login-trigger');
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-active/);
+    await expect(page.locator('#name')).toBeFocused();
 
     await page.goto('/nyc');
     await expect(page).toHaveURL('/');
@@ -165,7 +209,7 @@ test.describe('Authentication', () => {
     });
 
     expect(response.status).toBe(401);
-    expect(response.body.error).toContain('your name as it appears on your invitation');
+    expect(response.body.error).toContain('Name not found, it must match exactly.');
   });
 
   test('login API returns 400 for empty name', async ({ page }) => {

@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!guestName) {
     return new Response(
       JSON.stringify({
-        error: 'Please enter your name as it appears on your invitation.',
+        error: 'Name not found, it must match exactly.',
       }),
       {
         status: 401,
