@@ -29,7 +29,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
         <div class="hero-disc" aria-hidden="true"></div>
         <div class="hero-grid page-content">
           <div class="hero-copy">
-            <p class="eyebrow">Vous êtes les bienvenus à</p>
+            <p class="eyebrow">Vous êtes les bienvenus</p>
             <h1>{t(strings.home.heroTitle)}</h1>
             <p class="hero-subtitle">{t(strings.home.tagline)}</p>
             <hr class="section-rule hero-rule" />
@@ -54,6 +54,9 @@ const submitLabel = t(strings.home.modal.submitBtn);
                     spellcheck="false"
                     required
                   />
+                  <button type="submit" class="inline-submit-btn" id="inline-submit" aria-label="Submit name">
+                    <span aria-hidden="true">→</span>
+                  </button>
                 </div>
               </div>
               <button type="submit" class="visually-hidden" id="submit-btn">
@@ -61,8 +64,10 @@ const submitLabel = t(strings.home.modal.submitBtn);
               </button>
               <div id="error-message" class="error-message" aria-live="polite"></div>
             </form>
-            <p class="panel-intro" id="login-panel-title">Please enter your name</p>
-            <p class="panel-copy">As it appears on your invitation.</p>
+            <div class="panel-text" id="login-panel-title">
+              <span class="panel-intro">{t(strings.home.inline.prompt)}</span>
+              <span class="panel-copy">{t(strings.home.inline.note)}</span>
+            </div>
           </aside>
         </div>
       </section>
@@ -158,9 +163,16 @@ const submitLabel = t(strings.home.modal.submitBtn);
         width: min(100%, 420px);
         padding: 0;
         display: grid;
-        gap: var(--space-sm);
+        gap: 10px;
         justify-items: center;
         text-align: center;
+      }
+
+      .panel-text {
+        display: grid;
+        gap: 4px;
+        justify-items: center;
+        width: min(100%, 388px);
       }
 
       .panel-intro {
@@ -169,14 +181,18 @@ const submitLabel = t(strings.home.modal.submitBtn);
         line-height: 1.2;
         text-transform: uppercase;
         letter-spacing: var(--tracking-h3);
+        display: block;
+        width: min(100%, 372px);
       }
 
       .panel-copy {
         color: var(--color-text-muted);
-        max-width: 28ch;
         text-transform: uppercase;
         letter-spacing: var(--tracking-caption);
         font-size: var(--font-size-caption);
+        line-height: 1.35;
+        display: block;
+        width: min(100%, 360px);
       }
 
       .login-trigger-panel {
@@ -202,6 +218,8 @@ const submitLabel = t(strings.home.modal.submitBtn);
         inset: 0;
         opacity: 0;
         pointer-events: none;
+        display: flex;
+        align-items: center;
       }
 
       .login-trigger-panel,
@@ -230,6 +248,11 @@ const submitLabel = t(strings.home.modal.submitBtn);
         cursor: pointer;
       }
 
+      input.inline-name-input {
+        padding-left: 64px;
+        padding-right: 64px;
+      }
+
       input.inline-name-input::placeholder {
         color: rgba(241, 236, 227, 0.68);
         -webkit-text-fill-color: rgba(241, 236, 227, 0.68);
@@ -255,6 +278,30 @@ const submitLabel = t(strings.home.modal.submitBtn);
       .inline-entry-control.is-active .inline-name-shell {
         opacity: 1;
         pointer-events: auto;
+      }
+
+      .inline-submit-btn {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: var(--color-accent);
+        padding: 0;
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .inline-submit-btn:hover {
+        opacity: 0.8;
+      }
+
+      .inline-submit-btn:focus {
+        outline: none;
       }
 
       .visually-hidden {
@@ -349,8 +396,8 @@ const submitLabel = t(strings.home.modal.submitBtn);
           white-space: normal;
         }
 
-        .panel-copy {
-          max-width: none;
+        .panel-text {
+          width: min(100%, 360px);
         }
       }
     </style>

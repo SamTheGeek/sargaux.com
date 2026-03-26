@@ -16,6 +16,16 @@ test.describe('Authentication', () => {
     await expect(nameInput).toBeFocused();
   });
 
+  test('should switch homepage language to French from the footer switcher', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByLabel('Passer en français').click();
+
+    await expect(page).toHaveURL(/lang=fr/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(page.locator('.panel-intro')).toContainText('Veuillez entrer votre nom');
+  });
+
   test('should collapse inline name input when clicking outside with no text entered', async ({ page }) => {
     await page.goto('/');
 
@@ -50,6 +60,16 @@ test.describe('Authentication', () => {
 
     await expect(page).toHaveURL('/nyc');
     await expect(page.locator('.guest-name')).toContainText('Sam Gross');
+  });
+
+  test('should submit login when clicking inline arrow button', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.click('#inline-submit');
+
+    await expect(page).toHaveURL('/nyc');
   });
 
   test('should login with case-insensitive name', async ({ page }) => {
