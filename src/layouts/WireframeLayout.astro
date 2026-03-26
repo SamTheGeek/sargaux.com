@@ -36,6 +36,39 @@ const lang = Astro.locals.lang ?? 'en';
       </>
     )}
     <ClientRouter />
+    <script>
+      if (!window.__sargauxLangTransitionSetup) {
+        window.__sargauxLangTransitionSetup = true;
+
+        const normalizeSearch = (url) => {
+          const params = [...url.searchParams.entries()]
+            .filter(([key]) => key !== 'lang')
+            .sort(([aKey, aValue], [bKey, bValue]) => {
+              if (aKey === bKey) return aValue.localeCompare(bValue);
+              return aKey.localeCompare(bKey);
+            });
+
+          return new URLSearchParams(params).toString();
+        };
+
+        const isLanguageOnlyNavigation = (from, to) => {
+          if (from.origin !== to.origin) return false;
+          if (from.pathname !== to.pathname) return false;
+          if (from.hash !== to.hash) return false;
+
+          const fromLang = from.searchParams.get('lang') ?? 'en';
+          const toLang = to.searchParams.get('lang') ?? 'en';
+          if (fromLang === toLang) return false;
+
+          return normalizeSearch(from) === normalizeSearch(to);
+        };
+
+        document.addEventListener('astro:before-swap', (event) => {
+          if (!isLanguageOnlyNavigation(event.from, event.to)) return;
+          event.viewTransition.skipTransition();
+        });
+      }
+    </script>
     <title>{title} | Chez Sargaux</title>
   </head>
   <body>

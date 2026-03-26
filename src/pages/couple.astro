@@ -27,10 +27,10 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 
   <main class="couple-shell">
     <section class="couple-hero">
-      <div class="couple-disc couple-disc--amber" aria-hidden="true"></div>
-      <div class="couple-disc couple-disc--blue" aria-hidden="true"></div>
-      <div class="couple-ribbon couple-ribbon--moss" aria-hidden="true"></div>
-      <div class="couple-ribbon couple-ribbon--espresso" aria-hidden="true"></div>
+      <div class="couple-disc couple-disc--amber" aria-hidden="true" transition:name="event-disc" transition:persist="couple-disc-amber"></div>
+      <div class="couple-disc couple-disc--blue" aria-hidden="true" transition:persist="couple-disc-blue"></div>
+      <div class="couple-ribbon couple-ribbon--moss" aria-hidden="true" transition:persist="couple-ribbon-moss"></div>
+      <div class="couple-ribbon couple-ribbon--espresso" aria-hidden="true" transition:persist="couple-ribbon-espresso"></div>
 
       <div class="couple-grid page-content">
         <div class="couple-copy">
@@ -47,7 +47,7 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
                 <span class="photo-label" id="couple-panel-title">{t(strings.couple.photoLabel)}</span>
                 <span class="photo-label photo-label--muted">Chez Sargaux</span>
               </div>
-              <figure class="couple-photo-frame">
+              <figure class="couple-photo-frame" transition:persist="couple-photo-frame">
                 <img src="/images/couple/photo_1.jpeg" alt="Sam and Margaux together" class="couple-photo" />
               </figure>
               <p class="photo-caption">{t(strings.couple.photoCaption)}</p>

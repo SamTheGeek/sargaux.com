@@ -14,6 +14,7 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
 <div class="lang-switcher" aria-label="Language">
   <a
     href={enUrl.pathname + enUrl.search}
+    data-astro-history="replace"
     class:list={['flag-btn', 'flag-btn-us', { active: lang === 'en' }]}
     title="English"
     aria-label="Switch to English"
@@ -30,6 +31,7 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
   </a>
   <a
     href={frUrl.pathname + frUrl.search}
+    data-astro-history="replace"
     class:list={['flag-btn', 'flag-btn-fr', { active: lang === 'fr' }]}
     title="Français"
     aria-label="Passer en français"

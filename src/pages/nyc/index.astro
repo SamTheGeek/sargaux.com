@@ -36,7 +36,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   -->
 
   <!-- Fixed amber disc, right side, z:2 -->
-  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc" transition:persist="nyc-hero-disc"></div>
 
   <!-- Sticky header, z:100 via base.css -->
   <header class="site-header nyc-header" transition:name="site-header">
@@ -76,7 +76,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     outline PNG, then feColorMatrix colours everything to exact #2F3F36.
     -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
   -->
-  <div class="nyc-skyline-wrap" aria-hidden="true">
+  <div class="nyc-skyline-wrap" aria-hidden="true" transition:persist="nyc-skyline">
     <img class="nyc-skyline-img nyc-skyline-fill" src={skylineFill} alt="">
     <img class="nyc-skyline-img nyc-skyline-outline" src={skylineOutline} alt="">
   </div>

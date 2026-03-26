@@ -43,7 +43,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <p class="event-dates">{t(strings.france.heroDate)}</p>
         <p class="event-type">Margaux Marie Ancel please tell me what to put here</p>
       </div>
-      <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc"></div>
+      <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc" transition:persist="france-hero-disc"></div>
     </section>
 
     <!-- Band: Programme of Events -->

@@ -18,12 +18,16 @@ test.describe('Authentication', () => {
 
   test('should switch homepage language to French from the footer switcher', async ({ page }) => {
     await page.goto('/');
+    await page.locator('.hero-disc').evaluate((element) => {
+      element.setAttribute('data-persist-probe', 'home-disc');
+    });
 
     await page.getByLabel('Passer en français').click();
 
     await expect(page).toHaveURL(/lang=fr/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('.panel-intro')).toContainText('Veuillez entrer votre nom');
+    await expect(page.locator('.hero-disc')).toHaveAttribute('data-persist-probe', 'home-disc');
   });
 
   test('should collapse inline name input when clicking outside with no text entered', async ({ page }) => {
