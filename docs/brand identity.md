@@ -254,6 +254,63 @@ These colors are derived from the core palette for use in the digital design sys
 
 ---
 
+## Part 5: Design Inspiration Reference
+
+These sites were reviewed as design references. Notes capture what is relevant to sargaux.com — not to copy, but to understand the design language.
+
+### 5.1 Key Patterns Across All References
+
+Every reference site shares one trait: **no bordered content boxes as the primary layout unit.** Content is organized by whitespace, full-width bands, hairline rules, scale contrast, and color fields — not rectangles with borders. This is the single biggest gap between the current site and where it needs to go.
+
+Other shared patterns:
+- **Large type as the primary visual element** — not headers above content boxes, but type *that is* the content
+- **Full-width sections** that bleed edge-to-edge, separated by color shifts, hairlines, or vertical space
+- **Horizontal motion** — content often reads across the page before down it
+- **Personality through scale contrast** — a 64px heading next to 12px caption text creates visual drama
+- **No visual clichés** — no rounded corners, no drop shadows, no gradients, no icon-in-a-box patterns
+
+### 5.2 Site-by-Site Notes
+
+**Jones Bar-B-Q (jonesbbqkc.com)**
+Most relevant to NYC. Full-width sections in alternating widths, editorial bold headlines as visual anchors, generous whitespace between bands, no cards or boxes. Animated marquee text creates kinetic energy without decoration. Bold and statement-driven, not text-heavy.
+
+**Jus Jus Verjus (jusjus.saladforpresident.com)**
+Most relevant to France. Refined minimalism meets illustration warmth. Horizontal rules as section dividers (not boxes), alternating text/image layouts, high-contrast type on white. The art-meets-product narrative style is close to the travel poster spirit we want.
+
+**Thirsty Dumpling (thirstydumpling.com)**
+Good reference for sub-page information structure: numbered steps without boxes, substantial whitespace between sections, punchy short copy. Information flows as a vertical narrative, not a grid of cards.
+
+**Mack & Pouya (mackpouya.webflow.io)**
+Reference for the event landing page hero: full-screen, immersive, hero-first. Horizontal scroll and layered depth. Shows how photo + large type can work together with no boxes.
+
+**byMarkLange (bymarklange.com)**
+Reference for asymmetric, layered composition. Elements don't have to stack — they can overlap, float, and rotate. Useful for thinking about the France poster-style layout where the destination header and the sun disc can be placed with intention rather than stacked.
+
+**diana.lu, yelena-sophia.webflow.io**
+Reference for portfolio-style editorial whitespace and text-as-navigation. Sections introduced by plain text with no containers.
+
+**Johnny Harris (johnnyharris.ch)**
+Reference for editorial journalist aesthetic — structured but not boxed, credibility through hierarchy not decoration.
+
+### 5.3 Implications for This Site
+
+**What must change:**
+- All `.content-box`, `.travel-card`, `.info-card`, `.day-card`, `.timeline-item` bordered containers must go
+- Sub-page content should live in full-width bands separated by `<hr class="section-rule">` hairlines
+- The 64px h1 with ALL CAPS tracking must dominate, not be overridden to 2.5rem/font-weight:300
+- The sun disc (§1.5) must be a rendered CSS circle on event landing pages, not a concept
+
+**NYC page structure should feel like:**
+A subway information panel. Fixed-width columns with clear labels. Information presented in rows, not boxes. Station disc (●) as a bullet for key facts. Hairlines divide zones.
+
+**France page structure should feel like:**
+A vintage travel poster rendered as a webpage. Peignot destination header at full scale. Content cascades below in a clear typographic hierarchy. Route arc motif appears once. No boxes — information sits openly on the cream field.
+
+**Interior pages (schedule, details, travel):**
+Content flows as a single-column editorial narrative. For schedule/timeline: train-timetable layout — time left-aligned, event name large, location small below — not timeline boxes. For travel: clear section headers with open body text below, no travel-card containers.
+
+---
+
 ## Revision Notes
 
 This document is a working draft. Sections 2 and 3 are provisional pending the Phase 0 design discovery conversation (see `docs/plans/2026-02-15-design-sprint.md`). Font licensing, final color values, and motif refinements will be confirmed during the design sprint.

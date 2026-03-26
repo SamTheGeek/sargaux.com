@@ -12,6 +12,7 @@ h1, h2, h3 {
   text-transform: uppercase;
   font-style: normal;
   line-height: var(--line-height-heading);
+  text-wrap: balance;
 }
 
 h1 {
@@ -35,6 +36,7 @@ h3 {
 p {
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
+  text-wrap: pretty;
 }
 
 strong {
@@ -275,6 +277,70 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--color-text);
+}
+
+/* === Sun Disc system ===
+ * The disc motif (burnt amber circle) appears at multiple scales:
+ *   - .sun-disc-large: hero sections (~300–500px)
+ *   - .disc-list li::before: inline bullet (~10px)
+ * Same shape, same color, dramatically different scale — Saul Bass principle.
+ */
+
+.sun-disc-large {
+  background: var(--color-accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Disc as list bullet */
+.disc-list {
+  list-style: none;
+  padding: 0;
+}
+
+.disc-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.disc-list li:last-child {
+  border-bottom: none;
+}
+
+.disc-list li::before {
+  content: '';
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  margin-top: 5px;
+}
+
+/* === Band Headers ===
+ * Full-width section dividers — Prussian blue (France) or Dark Moss (NYC)
+ * surface color with cream text. Acts like a chapter marker.
+ */
+
+.band-header {
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-surface-text);
+  padding: 16px var(--page-margin);
+  font-family: var(--font-display);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-heading);
+}
+
+@media (max-width: 768px) {
+  .band-header {
+    padding: 16px var(--page-margin-mobile);
+  }
 }
 
 /* === Caption / Label text === */

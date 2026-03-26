@@ -1,6 +1,5 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
@@ -18,7 +17,27 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
 <WireframeLayout title={t(strings.nyc.pageTitle)} description="NYC Wedding - October 2026" event="nyc">
-  <header class="site-header">
+
+  <!--
+    Z-index stack (all in ROOT context — nothing creates an intermediate SC):
+
+      body bg  #F1ECE3  cream
+      z:1      hero text   position:fixed, top-left
+      z:2      sun disc    position:fixed, right
+      z:3      skyline     position:relative, in normal flow, scrolls over text
+      z:4      moss sections  solid #2F3F36, cover disc + text as you scroll past
+
+    Skyline colouring:
+      Vector SVG (skyline-fill.svg) with <path fill="#2F3F36"> — rendered as
+      a plain <img> anchored bottom-left. No mask or filter needed.
+      Transparent sky above buildings is invisible against the cream body.
+  -->
+
+  <!-- Fixed amber disc, right side, z:2 -->
+  <div class="nyc-disc" aria-hidden="true"></div>
+
+  <!-- Sticky header, z:100 via base.css -->
+  <header class="site-header nyc-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
       <div class="nav-actions">
@@ -29,116 +48,88 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             <a href="/france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn btn-primary rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
 
-  <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <ImagePlaceholder
-        name="nyc-hero"
-        folder="nyc"
-        description="NYC skyline at dusk, or the venue exterior if available. Sets the urban, elegant tone."
-        aspectRatio="16/9"
-      />
-      <div class="hero-overlay">
-        <h1>{t(strings.nyc.heroTitle)}</h1>
-        <p class="date">{t(strings.nyc.heroDate)} <span class="tentative">{t(strings.nyc.heroDateTentative)}</span></p>
-        <p class="event-type">{t(strings.nyc.heroEventType)}</p>
-      </div>
-    </section>
+  <!-- Fixed hero text, z:1 — stays put while skyline scrolls over it -->
+  <div class="nyc-hero-text">
+    <h1>New York<br>With Love</h1>
+    <p class="nyc-date">{t(strings.nyc.heroDate)}</p>
+    <hr class="nyc-rule">
+    <p class="nyc-venue">{t(strings.nyc.where.dinner)} · Brooklyn</p>
+  </div>
 
-    <!-- Quick Info Section -->
-    <section class="quick-info">
-      <div class="info-cards">
-        <div class="content-box info-card">
-          <h3>{t(strings.nyc.when.heading)}</h3>
-          <p><strong>{t(strings.nyc.when.date)}</strong></p>
-          {t(strings.nyc.when.weekend) && <p>{t(strings.nyc.when.weekend)}</p>}
-          {t(strings.nyc.when.note) && <p class="note"><em>{t(strings.nyc.when.note)}</em></p>}
+  <!--
+    Spacer: transparent, in normal flow.
+    Gives the page scroll depth so the skyline starts below the hero text.
+    Approx: header height + enough room to read the heading before skyline intrudes.
+  -->
+  <div class="nyc-spacer" aria-hidden="true"></div>
+
+  <!--
+    Skyline: in normal flow, z:3, scrolls up over fixed text.
+    Inline SVG uses feMorphology dilate to fill building interiors from the
+    outline PNG, then feColorMatrix colours everything to exact #2F3F36.
+    -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
+  -->
+  <div class="nyc-skyline-wrap" aria-hidden="true">
+    <img class="nyc-skyline-img" src="/images/nyc/skyline-fill.svg" alt="">
+  </div>
+
+  <!-- ═══════════════════════════════════
+       Moss zone — z:4, solid bg covers
+       fixed disc and text as you scroll
+       ═══════════════════════════════════ -->
+
+  <section class="nyc-moss nyc-info">
+    <div class="nyc-info-inner page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.when.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.when.date)}</span>
         </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.nyc.where.heading)}</h3>
-          <p><strong>{t(strings.nyc.where.dinner)}</strong></p>
-          <p>{t(strings.nyc.where.dinnerType)}</p>
-          <p class="separator">{t(strings.nyc.where.separator)}</p>
-          <p><strong>{t(strings.nyc.where.dancing)}</strong></p>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.where.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.where.dinner)}<br>
+            80 Wythe Ave, 6th Floor · Brooklyn, NY<br>
+            <span class="nyc-info-secondary">{t(strings.nyc.where.separator)} {t(strings.nyc.where.dancing)}</span>
+          </span>
         </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.nyc.dressCode.heading)}</h3>
-          <p><strong>{t(strings.nyc.dressCode.value)}</strong></p>
-          <p class="dress-note">{t(strings.nyc.dressCode.note)}</p>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.dressCode.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.dressCode.value)}</span>
         </div>
       </div>
-    </section>
+      <a href="/nyc/rsvp" class="nyc-moss-btn">{t(strings.global.rsvpBtn)}</a>
+    </div>
+  </section>
 
-    <!-- Calendar Subscribe (Prominent) -->
-    <section class="calendar-subscribe">
-      <div class="calendar-content">
-        <h2>{t(strings.nyc.calendar.heading)}</h2>
-        <p>{t(strings.nyc.calendar.subtext)}</p>
-        {calendarToken ? (
-          <a
-            href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
-            class="calendar-btn-prominent"
-          >
-            {t(strings.nyc.calendar.addBtn)}
-          </a>
-        ) : (
-          <>
-            <button class="calendar-btn-prominent" disabled>{t(strings.nyc.calendar.addBtn)}</button>
-            <p class="calendar-note">{t(strings.nyc.calendar.unavailableNote)}</p>
-          </>
-        )}
-      </div>
-    </section>
+  <div class="nyc-moss nyc-explore-band">Explore</div>
 
-    <!-- Navigation Cards -->
-    <section class="nav-cards">
-      <nav class="event-nav" aria-label="Event sections">
-        <a href="/nyc/details" class="nav-card">
-          <span class="nav-title">{t(strings.nyc.nav.details.title)}</span>
-          <span class="nav-desc">{t(strings.nyc.nav.details.desc)}</span>
-        </a>
-        <a href="/nyc/travel" class="nav-card">
-          <span class="nav-title">{t(strings.nyc.nav.travel.title)}</span>
-          <span class="nav-desc">{t(strings.nyc.nav.travel.desc)}</span>
-        </a>
-        <a href="/nyc/rsvp" class="nav-card highlight">
-          <span class="nav-title">{t(strings.nyc.nav.rsvp.title)}</span>
-          <span class="nav-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
-        </a>
-      </nav>
-    </section>
+  <section class="nyc-moss nyc-nav">
+    <nav class="strip-nav page-content" aria-label="Event sections">
+      <a href="/nyc/details" class="nyc-strip-link">
+        <span class="nyc-strip-title">{t(strings.nyc.nav.details.title)}</span>
+        <span class="nyc-strip-desc">{t(strings.nyc.nav.details.desc)}</span>
+        <span class="nyc-strip-arrow">→</span>
+      </a>
+      <a href="/nyc/travel" class="nyc-strip-link">
+        <span class="nyc-strip-title">{t(strings.nyc.nav.travel.title)}</span>
+        <span class="nyc-strip-desc">{t(strings.nyc.nav.travel.desc)}</span>
+        <span class="nyc-strip-arrow">→</span>
+      </a>
+      <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta">
+        <span class="nyc-strip-title">{t(strings.nyc.nav.rsvp.title)}</span>
+        <span class="nyc-strip-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
+        <span class="nyc-strip-arrow">→</span>
+      </a>
+    </nav>
+  </section>
 
-    <!-- Venue Preview -->
-    <section class="venue-preview">
-      <div class="venue-grid">
-        <ImagePlaceholder
-          name="nyc-venue"
-          folder="nyc"
-          description="Interior of the dinner venue — cocktail atmosphere, table settings, or similar aesthetic."
-          aspectRatio="4/3"
-        />
-        <ImagePlaceholder
-          name="nyc-dancing"
-          folder="nyc"
-          description="Dancing venue interior, or a mood-board style image showing the vibe (low lighting, celebration)."
-          aspectRatio="4/3"
-        />
-      </div>
-    </section>
-
-    <!-- Optional Weekend Events -->
-    <section class="optional-events">
-      <h2>{t(strings.nyc.optional.heading)}</h2>
-      <p class="placeholder-note">{t(strings.nyc.optional.placeholder)}</p>
-    </section>
-  </main>
-
-  <footer class="site-footer">
+  <footer class="nyc-moss nyc-footer site-footer">
     <nav>
       <a href="/registry">{t(strings.global.registry)}</a>
       <span> · </span>
@@ -146,212 +137,334 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <span> · </span>
       <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <div class="footer-meta">
+    <div class="nyc-footer-meta">
       <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
+
 </WireframeLayout>
 
-<style>
-  /* Hero */
-  .hero {
-    position: relative;
+<style is:global>
+
+  /* ── Foundation ─────────────────────────────── */
+
+  html[data-event="nyc"] body {
+    background: #F1ECE3 !important;
+    color: #2F3F36 !important;
+    overflow-x: hidden; /* prevents horizontal scroll from skyline bleed */
   }
 
-  .hero-overlay {
-    padding: var(--space-xl) var(--page-margin);
-    text-align: center;
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  /* ── Header ─────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-header {
+    background: #F1ECE3 !important;
+    border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
   }
 
-  .date {
-    font-size: var(--font-size-h3);
-    margin-bottom: var(--space-xs);
+  html[data-event="nyc"] .nyc-header .site-logo,
+  html[data-event="nyc"] .nyc-header .site-logo:hover,
+  html[data-event="nyc"] .nyc-header .event-toggle .active,
+  html[data-event="nyc"] .nyc-header .event-toggle .divider {
+    color: #2F3F36 !important;
   }
 
-  .event-type {
-    font-size: var(--font-size-body);
-    color: var(--color-text-muted);
+  html[data-event="nyc"] .nyc-header .event-toggle a {
+    color: rgba(47, 63, 54, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-rsvp-btn {
+    background: #2F3F36 !important;
+    color: #F1ECE3 !important;
+    padding: 8px 24px;
+    font-size: 12px;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-  }
-
-  .tentative {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-  }
-
-  /* Quick Info */
-  .quick-info {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
-  }
-
-  .info-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-md);
-  }
-
-  .info-card p {
-    margin-bottom: var(--space-xs);
-  }
-
-  .info-card .separator {
-    font-size: var(--font-size-caption);
-    color: var(--color-surface-text);
-    opacity: 0.7;
-  }
-
-  .info-card .note {
-    font-size: var(--font-size-caption);
-    color: var(--color-accent);
-    margin-top: var(--space-xs);
-  }
-
-  .dress-note {
-    font-size: var(--font-size-caption);
-    opacity: 0.7;
-  }
-
-  /* Calendar Subscribe */
-  .calendar-subscribe {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: 640px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .calendar-content {
-    padding: var(--space-lg);
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .calendar-content > p {
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-md);
-  }
-
-  .calendar-btn-prominent {
+    letter-spacing: 0.05em;
+    text-decoration: none;
     display: inline-block;
-    text-decoration: none;
+    transition: opacity 0.15s;
+    border: none;
   }
 
-  .calendar-note {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-    margin-top: var(--space-xs);
+  html[data-event="nyc"] .nyc-rsvp-btn:hover {
+    opacity: 0.85;
+    color: #F1ECE3 !important;
   }
 
-  /* Navigation Cards */
-  .nav-cards {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  /* ── Sun disc — z:2 ─────────────────────────── */
+
+  html[data-event="nyc"] .nyc-disc {
+    position: fixed;
+    width: clamp(300px, 50vh, 580px);
+    height: clamp(300px, 50vh, 580px);
+    background: #D96A1E;
+    border-radius: 50%;
+    top: 3vh;
+    left: -14%;
+    z-index: 2;
   }
 
-  .event-nav {
+  /* ── Fixed hero text — z:1 ─────────────────── */
+
+  html[data-event="nyc"] .nyc-hero-text {
+    position: fixed;
+    top: 80px;           /* just below the sticky header */
+    right: 64px;
+    z-index: 1;
+    text-align: right;
+    /* No background-color — cream body shows through. */
+  }
+
+  html[data-event="nyc"] .nyc-hero-text h1 {
+    font-size: clamp(48px, 8vw, 112px);
+    line-height: 0.93;
+    color: #2F3F36;
+    text-transform: uppercase;
+    font-weight: 500;
+    /*
+      Each <br> creates a hard line break.
+      white-space: nowrap prevents soft wrap within each line,
+      so "New York" stays on line 1 and "With Love" on line 2.
+    */
+    white-space: nowrap;
+    margin-bottom: 16px;
+  }
+
+  html[data-event="nyc"] .nyc-date {
+    font-size: 20px;
+    letter-spacing: 0.05em;
+    color: #2F3F36;
+    margin-bottom: 16px;
+    white-space: nowrap;
+  }
+
+  html[data-event="nyc"] .nyc-rule {
+    border: none;
+    border-top: 1px solid rgba(47, 63, 54, 0.3);
+    margin: 16px 0;
+  }
+
+  html[data-event="nyc"] .nyc-venue {
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(47, 63, 54, 0.55);
+    white-space: nowrap;
+  }
+
+  /* ── Spacer ─────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-spacer {
+    /*
+      Pushes the skyline down so the heading is readable before scrolling.
+      Header (~56px) + heading + date + venue ≈ 350–400px total fixed content.
+      A 40vh spacer gives comfortable breathing room.
+    */
+    height: 40vh;
+  }
+
+  /* ── Skyline — z:3, scrolls over fixed text ── */
+
+  html[data-event="nyc"] .nyc-skyline-wrap {
+    position: relative;
+    z-index: 3;
+    /* 5px bleed on left/right to avoid edge artifacting */
+    width: calc(100% + 10px);
+    margin-left: -5px;
+    height: clamp(220px, 48vh, 520px);
+    /* No overflow:hidden — building tops overflow upward into cream (transparent sky is invisible) */
+  }
+
+  html[data-event="nyc"] .nyc-skyline-img {
+    position: absolute;
+    bottom: -5px; /* 5px bleed at bottom eliminates hairline against moss section */
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── Moss zone — z:4 ────────────────────────── */
+
+  html[data-event="nyc"] .nyc-moss {
+    background: #2F3F36 !important;
+    color: #F1ECE3 !important;
+    position: relative;
+    z-index: 4;
+  }
+
+  html[data-event="nyc"] .nyc-info {
+    padding: 64px 0;
+  }
+
+  html[data-event="nyc"] .nyc-info-inner {
+    max-width: 640px;
+    margin: 0;
+    padding-left: 64px;
+    padding-right: 64px;
+  }
+
+  html[data-event="nyc"] .nyc-info-table {
+    margin-bottom: 48px;
+  }
+
+  html[data-event="nyc"] .nyc-info-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-sm);
+    grid-template-columns: 88px 1fr;
+    gap: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    align-items: baseline;
   }
 
-  .nav-card {
-    display: flex;
-    flex-direction: column;
-    padding: var(--space-md);
-    text-decoration: none;
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-    transition: border-color 0.15s;
-    text-align: center;
-  }
-
-  .nav-card:hover {
-    border-color: var(--color-text);
-    color: var(--color-text);
-  }
-
-  .nav-card.highlight {
-    border-color: var(--color-text);
-    border-width: 2px;
-  }
-
-  .nav-title {
-    font-size: var(--font-size-caption);
+  html[data-event="nyc"] .nyc-info-key {
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    margin-bottom: var(--space-xs);
+    letter-spacing: 0.08em;
+    color: rgba(241, 236, 227, 0.45);
+    padding-top: 3px;
   }
 
-  .nav-desc {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
+  html[data-event="nyc"] .nyc-info-val {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #F1ECE3;
   }
 
-  /* Venue Preview */
-  .venue-preview {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  html[data-event="nyc"] .nyc-info-secondary {
+    display: block;
+    font-size: 12px;
+    color: rgba(241, 236, 227, 0.45);
+    margin-top: 4px;
   }
 
-  .venue-grid {
+  html[data-event="nyc"] .nyc-moss-btn {
+    display: inline-block;
+    padding: 12px 32px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    background: #F1ECE3;
+    color: #2F3F36;
+    transition: opacity 0.15s;
+    cursor: pointer;
+    border: none;
+  }
+
+  html[data-event="nyc"] .nyc-moss-btn:hover {
+    opacity: 0.85;
+    color: #2F3F36;
+  }
+
+  html[data-event="nyc"] .nyc-explore-band {
+    padding: 16px 64px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #F1ECE3 !important;
+    color: #2F3F36 !important;
+  }
+
+  html[data-event="nyc"] .nyc-nav {
+    padding: 24px 0;
+  }
+
+  html[data-event="nyc"] .nyc-strip-link {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 0;
+    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    text-decoration: none;
+    color: #F1ECE3;
+    transition: color 0.15s;
   }
 
-  /* Optional Events */
-  .optional-events {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
-    text-align: center;
-    border-top: 1px solid var(--color-border);
+  html[data-event="nyc"] .nyc-strip-link:first-child {
+    border-top: 1px solid rgba(241, 236, 227, 0.15);
   }
 
-  .optional-events h2 {
-    margin-bottom: var(--space-sm);
+  html[data-event="nyc"] .nyc-strip-link:hover { color: #D96A1E; }
+
+  html[data-event="nyc"] .nyc-strip-title {
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
 
-  .placeholder-note {
-    color: var(--color-text-muted);
+  html[data-event="nyc"] .nyc-strip-desc {
+    font-size: 12px;
+    color: rgba(241, 236, 227, 0.45);
+    text-align: right;
   }
 
-  /* RSVP button in nav */
-  .rsvp-btn {
-    padding: 8px 24px;
-    font-size: var(--font-size-caption);
+  html[data-event="nyc"] .nyc-strip-arrow { color: #D96A1E; }
+
+  html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title { color: #D96A1E; }
+
+  html[data-event="nyc"] .nyc-footer {
+    border-top-color: rgba(241, 236, 227, 0.12) !important;
   }
 
-  /* Footer */
-  .footer-meta {
+  html[data-event="nyc"] .nyc-footer nav a,
+  html[data-event="nyc"] .nyc-footer nav span,
+  html[data-event="nyc"] .nyc-footer .copyright {
+    color: rgba(241, 236, 227, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a:hover {
+    color: #F1ECE3 !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer-meta {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: var(--space-xs);
+    margin-top: 8px;
   }
+
+  /* ── Mobile ─────────────────────────────────── */
 
   @media (max-width: 768px) {
-    .hero-overlay {
-      padding: var(--space-lg) var(--page-margin-mobile);
+    html[data-event="nyc"] .nyc-disc {
+      /* Smaller disc so it doesn't obscure hero text on narrow screens */
+      width: clamp(160px, 50vw, 260px);
+      height: clamp(160px, 50vw, 260px);
+      left: -18%;
+      top: 72px; /* slightly behind mobile header for ~5% overlap */
     }
 
-    .site-nav {
-      flex-direction: column;
-      text-align: center;
-      gap: var(--space-sm);
+    html[data-event="nyc"] .nyc-hero-text {
+      top: 30vh;
+      right: 24px;
     }
 
-    .nav-actions {
-      flex-direction: column;
+    html[data-event="nyc"] .nyc-hero-text h1 {
+      font-size: clamp(36px, 10vw, 64px);
+    }
+
+    html[data-event="nyc"] .nyc-spacer {
+      /* Taller spacer so skyline starts below the hero text block */
+      height: 50vh;
+    }
+
+    html[data-event="nyc"] .nyc-skyline-wrap {
+      height: clamp(180px, 40vw, 320px);
+    }
+
+    html[data-event="nyc"] .nyc-info-inner,
+    html[data-event="nyc"] .nyc-explore-band {
+      padding-left: 24px;
+      padding-right: 24px;
     }
   }
+
 </style>

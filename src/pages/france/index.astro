@@ -1,6 +1,5 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
@@ -35,153 +34,121 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </header>
 
   <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <ImagePlaceholder
-        name="france-hero"
-        folder="france"
-        description="Village De Sully exterior — the grounds, main building, or scenic view of the property."
-        aspectRatio="16/9"
-      />
-      <div class="hero-overlay">
-        <h1>{t(strings.france.heroTitle)}</h1>
-        <p class="date">{t(strings.france.heroDate)}</p>
+
+    <!-- Destination Header — travel poster style -->
+    <section class="france-hero">
+      <div class="destination-header">
+        <p class="event-location">{t(strings.france.heroLocation)}</p>
+        <h1 class="destination-name">{t(strings.france.heroTitle)}</h1>
+        <p class="event-dates">{t(strings.france.heroDate)}</p>
         <p class="event-type">{t(strings.france.heroEventType)}</p>
       </div>
+      <div class="sun-disc-large" aria-hidden="true"></div>
     </section>
 
-    <!-- Quick Info Section -->
-    <section class="quick-info">
-      <div class="info-cards">
-        <div class="content-box info-card">
-          <h3>{t(strings.france.when.heading)}</h3>
-          <p>{t(strings.france.when.dates)}</p>
-          <p>{t(strings.france.when.desc)}</p>
-        </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.france.where.heading)}</h3>
-          <p><strong>{t(strings.france.where.venue)}</strong></p>
-          <p>{t(strings.france.where.location)}</p>
-          <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">{t(strings.france.where.mapLink)}</a>
-        </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.france.accommodation.heading)}</h3>
-          <p>{t(strings.france.accommodation.stayAtVillage)}</p>
-          <p><strong>{t(strings.france.accommodation.price)}</strong></p>
-          <p class="note"><em>{t(strings.france.accommodation.reserveNote)}</em></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Weekend Overview -->
-    <section class="weekend-overview">
-      <div class="day-cards">
-        <div class="content-box day-card">
-          <h3>{t(strings.france.weekend.friday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.friday.timeEvening)}</p>
-            <p><strong>{t(strings.france.weekend.friday.welcomeDinner)}</strong></p>
-            <p class="desc">{t(strings.france.weekend.friday.welcomeDesc)}</p>
+    <!-- Band: Weekend Programme -->
+    <div class="band-header">{t(strings.france.weekend.friday.day)} — {t(strings.france.weekend.sunday.day)}</div>
+    <section class="programme-section page-content">
+      <div class="programme-timetable">
+        <div class="programme-row">
+          <p class="day-label">{t(strings.france.weekend.friday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.friday.timeEvening)}</span>
+              <span class="event-name">{t(strings.france.weekend.friday.welcomeDinner)}</span>
+            </div>
           </div>
         </div>
-        <div class="content-box day-card highlight">
-          <h3>{t(strings.france.weekend.saturday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.saturday.timeMorning)}</p>
-            <p>{t(strings.france.weekend.saturday.breakfast)}</p>
-            <p class="time">{t(strings.france.weekend.saturday.timeAfternoon)}</p>
-            <p><strong>{t(strings.france.weekend.saturday.ceremony)}</strong></p>
-            <p><strong>{t(strings.france.weekend.saturday.cocktail)}</strong></p>
-            <p class="time">{t(strings.france.weekend.saturday.timeEvening)}</p>
-            <p><strong>{t(strings.france.weekend.saturday.reception)}</strong></p>
+        <hr class="timetable-rule">
+        <div class="programme-row programme-row--main">
+          <p class="day-label">{t(strings.france.weekend.saturday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeMorning)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.breakfast)}</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeAfternoon)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.ceremony)}</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeEvening)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.reception)}</span>
+            </div>
           </div>
         </div>
-        <div class="content-box day-card">
-          <h3>{t(strings.france.weekend.sunday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.sunday.timeMorning)}</p>
-            <p>{t(strings.france.weekend.sunday.breakfast)}</p>
-            <p class="time">{t(strings.france.weekend.sunday.timeMidday)}</p>
-            <p><strong>{t(strings.france.weekend.sunday.farewellBrunch)}</strong></p>
+        <hr class="timetable-rule">
+        <div class="programme-row">
+          <p class="day-label">{t(strings.france.weekend.sunday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.sunday.timeMorning)}</span>
+              <span class="event-name">{t(strings.france.weekend.sunday.breakfast)}</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.sunday.timeMidday)}</span>
+              <span class="event-name">{t(strings.france.weekend.sunday.farewellBrunch)}</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Location Map -->
-    <section class="location-map">
-      <h2>{t(strings.france.location.heading)}</h2>
-      <div class="map-placeholder">
-        <p class="placeholder-note">{t(strings.france.location.mapPlaceholder)}</p>
-        <p class="location-context">{t(strings.france.location.context)}</p>
+    <!-- Band: The Venue -->
+    <div class="band-header">{t(strings.france.where.heading)}</div>
+    <section class="venue-section page-content">
+      <div class="venue-info-rows">
+        <div class="venue-row">
+          <span class="venue-key">{t(strings.france.where.venueLabel)}</span>
+          <span class="venue-val">
+            <strong>{t(strings.france.where.venue)}</strong><br>
+            {t(strings.france.where.location)}
+          </span>
+        </div>
+        <div class="venue-row">
+          <span class="venue-key">{t(strings.france.accommodation.heading)}</span>
+          <span class="venue-val">
+            {t(strings.france.accommodation.stayAtVillage)} · <strong>{t(strings.france.accommodation.price)}</strong>
+          </span>
+        </div>
+        <div class="venue-row">
+          <span class="venue-key">{t(strings.france.where.datesLabel)}</span>
+          <span class="venue-val">{t(strings.france.when.dates)}</span>
+        </div>
+        <div class="venue-row">
+          <span class="venue-key">{t(strings.france.where.mapLabel)}</span>
+          <span class="venue-val">
+            <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank">{t(strings.france.where.mapLink)}</a>
+          </span>
+        </div>
       </div>
     </section>
 
-    <!-- Calendar Subscribe (Prominent) -->
-    <section class="calendar-subscribe">
-      <div class="calendar-content">
-        <h2>{t(strings.france.calendar.heading)}</h2>
-        <p>{t(strings.france.calendar.subtext)}</p>
-        {calendarToken ? (
-          <a
-            href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
-            class="calendar-btn-prominent"
-          >
-            {t(strings.france.calendar.addBtn)}
-          </a>
-        ) : (
-          <>
-            <button class="calendar-btn-prominent" disabled>{t(strings.france.calendar.addBtn)}</button>
-            <p class="calendar-note">{t(strings.france.calendar.unavailableNote)}</p>
-          </>
-        )}
-      </div>
-    </section>
-
-    <!-- Navigation Cards -->
-    <section class="nav-cards">
-      <nav class="event-nav" aria-label="Event sections">
-        <a href="/france/schedule" class="nav-card">
-          <span class="nav-title">{t(strings.france.nav.schedule.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.schedule.desc)}</span>
+    <!-- Band: Explore -->
+    <div class="band-header">{t(strings.france.nav.explore)}</div>
+    <section class="nav-section">
+      <nav class="strip-nav page-content" aria-label="Event sections">
+        <a href="/france/schedule" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.schedule.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.schedule.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/details" class="nav-card">
-          <span class="nav-title">{t(strings.france.nav.venue.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.venue.desc)}</span>
+        <a href="/france/details" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.venue.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.venue.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/travel" class="nav-card">
-          <span class="nav-title">{t(strings.france.nav.travel.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.travel.desc)}</span>
+        <a href="/france/travel" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.travel.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.travel.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/rsvp" class="nav-card highlight">
-          <span class="nav-title">{t(strings.france.nav.rsvp.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.rsvp.desc)}</span>
+        <a href="/france/rsvp" class="strip-link strip-link--cta">
+          <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
       </nav>
-    </section>
-
-    <!-- Venue Preview -->
-    <section class="venue-preview">
-      <div class="venue-grid">
-        <ImagePlaceholder
-          name="france-grounds"
-          folder="france"
-          description="The village grounds — gardens, walkways, outdoor spaces where guests will gather."
-          aspectRatio="4/3"
-        />
-        <ImagePlaceholder
-          name="france-accommodation"
-          folder="france"
-          description="Guest accommodation at the village — room interior or building exterior."
-          aspectRatio="4/3"
-        />
-        <ImagePlaceholder
-          name="france-ceremony"
-          folder="france"
-          description="Ceremony location on the property, or similar outdoor ceremony setting."
-          aspectRatio="4/3"
-        />
-      </div>
     </section>
 
   </main>
@@ -202,20 +169,42 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 </WireframeLayout>
 
 <style>
-  /* Hero */
-  .hero {
+  /* ── Destination hero — travel poster ── */
+  .france-hero {
     position: relative;
+    min-height: 70vh;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-xl) var(--page-margin) var(--space-xl);
+    overflow: hidden;
   }
 
-  .hero-overlay {
-    padding: var(--space-xl) var(--page-margin);
-    text-align: center;
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  .destination-header {
+    position: relative;
+    z-index: 2;
+    max-width: 640px;
   }
 
-  .date {
+  .event-location {
+    font-size: var(--font-size-caption);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+  }
+
+  .destination-name {
+    font-size: clamp(56px, 11vw, 128px);
+    line-height: 0.92;
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    font-family: var(--font-display);
+  }
+
+  .event-dates {
     font-size: var(--font-size-h3);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-h3);
     margin-bottom: var(--space-xs);
   }
 
@@ -226,210 +215,162 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     letter-spacing: var(--tracking-caption);
   }
 
-  /* Quick Info */
-  .quick-info {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  /* Sun disc — positioned right edge, partially cropped */
+  .sun-disc-large {
+    position: absolute;
+    width: clamp(240px, 45vw, 560px);
+    height: clamp(240px, 45vw, 560px);
+    background: var(--color-accent);
+    border-radius: 50%;
+    right: -8%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
   }
 
-  .info-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-md);
+  /* ── Weekend programme timetable ── */
+  .programme-section {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
   }
 
-  .info-card p {
-    margin-bottom: var(--space-xs);
-  }
-
-  .info-card .note {
-    font-size: var(--font-size-caption);
-    color: var(--color-accent);
-    margin-top: var(--space-xs);
-  }
-
-  .map-link {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-  }
-
-  /* Weekend Overview */
-  .weekend-overview {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
-  }
-
-  .day-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-md);
-  }
-
-  .day-card {
-    min-height: 200px;
-  }
-
-  .day-card.highlight {
-    border-color: var(--color-text);
-    border-width: 2px;
-  }
-
-  .day-content {
-    margin-top: var(--space-xs);
-  }
-
-  .day-content .time {
-    font-size: var(--font-size-caption);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    color: var(--color-text-muted);
-    margin-top: var(--space-sm);
-    margin-bottom: var(--space-xs);
-  }
-
-  .day-content .time:first-child {
-    margin-top: 0;
-  }
-
-  .day-content p {
-    margin-bottom: var(--space-xs);
-  }
-
-  .day-content .desc {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-  }
-
-  /* Location Map */
-  .location-map {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .location-map h2 {
-    margin-bottom: var(--space-sm);
-    text-align: center;
-  }
-
-  .map-placeholder {
-    background: var(--color-bg);
-    border: 1px dashed var(--color-border);
-    padding: var(--space-xl) var(--space-lg);
-    text-align: center;
-  }
-
-  .placeholder-note {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-    font-style: italic;
-    margin-bottom: var(--space-sm);
-  }
-
-  .location-context {
-    font-size: var(--font-size-body);
-    color: var(--color-text-muted);
-  }
-
-  /* Calendar Subscribe */
-  .calendar-subscribe {
-    padding: var(--space-lg) var(--page-margin);
+  .programme-timetable {
     max-width: 640px;
-    margin: 0 auto;
-    text-align: center;
   }
 
-  .calendar-content {
-    padding: var(--space-lg);
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .calendar-content > p {
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-md);
-  }
-
-  .calendar-btn-prominent {
-    display: inline-block;
-    text-decoration: none;
-  }
-
-  .calendar-note {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
-    margin-top: var(--space-xs);
-  }
-
-  /* Navigation Cards */
-  .nav-cards {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
-  }
-
-  .event-nav {
+  .programme-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-sm);
+    grid-template-columns: 112px 1fr;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    align-items: start;
   }
 
-  .nav-card {
-    display: flex;
-    flex-direction: column;
-    padding: var(--space-md);
-    text-decoration: none;
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-    transition: border-color 0.15s;
-    text-align: center;
-  }
-
-  .nav-card:hover {
-    border-color: var(--color-text);
-    color: var(--color-text);
-  }
-
-  .nav-card.highlight {
-    border-color: var(--color-text);
-    border-width: 2px;
-  }
-
-  .nav-title {
+  .day-label {
+    font-family: var(--font-display);
     font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    margin-bottom: var(--space-xs);
+    letter-spacing: var(--tracking-heading);
+    padding-top: 3px;
   }
 
-  .nav-desc {
+  .programme-row--main .day-label {
+    color: var(--color-accent);
+  }
+
+  .day-events {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .event-item {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: baseline;
+  }
+
+  .event-time {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-text-muted);
+    min-width: 72px;
+    flex-shrink: 0;
+  }
+
+  .event-name {
+    font-size: var(--font-size-body);
+  }
+
+  .timetable-rule {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 0;
+  }
+
+  /* ── Venue info rows ── */
+  .venue-section {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
+  }
+
+  .venue-info-rows {
+    max-width: 640px;
+  }
+
+  .venue-row {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+    align-items: baseline;
+  }
+
+  .venue-key {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text-muted);
+    padding-top: 3px;
+  }
+
+  .venue-val {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  /* ── Navigation strip ── */
+  .strip-nav {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
+  }
+
+  .strip-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color 0.15s;
+  }
+
+  .strip-link:first-child {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .strip-link:hover {
+    color: var(--color-accent);
+  }
+
+  .strip-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-h3);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .strip-desc {
     font-size: var(--font-size-caption);
     color: var(--color-text-muted);
+    text-align: right;
   }
 
-  /* Venue Preview */
-  .venue-preview {
-    padding: var(--space-lg) var(--page-margin);
-    max-width: var(--content-max-width);
-    margin: 0 auto;
+  .strip-arrow {
+    color: var(--color-accent);
   }
 
-  .venue-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-md);
+  .strip-link--cta .strip-title {
+    color: var(--color-accent);
   }
 
-  /* RSVP button in nav */
-  .rsvp-btn {
-    padding: 8px 24px;
-    font-size: var(--font-size-caption);
-  }
-
-  /* Footer */
+  /* ── Footer ── */
   .footer-meta {
     display: flex;
     align-items: center;
@@ -438,19 +379,30 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin-top: var(--space-xs);
   }
 
+  /* ── Header nav button ── */
+  .rsvp-btn {
+    padding: 8px 24px;
+    font-size: var(--font-size-caption);
+  }
+
   @media (max-width: 768px) {
-    .hero-overlay {
+    .france-hero {
+      min-height: 60vh;
       padding: var(--space-lg) var(--page-margin-mobile);
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: flex-end;
     }
 
-    .site-nav {
-      flex-direction: column;
-      text-align: center;
-      gap: var(--space-sm);
+    .sun-disc-large {
+      top: 0;
+      right: -20%;
+      transform: none;
     }
 
-    .nav-actions {
-      flex-direction: column;
+    .programme-row,
+    .venue-row {
+      grid-template-columns: 88px 1fr;
     }
   }
 </style>
