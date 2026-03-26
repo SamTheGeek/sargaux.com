@@ -63,7 +63,7 @@ export const strings = {
       title:        s('Welcome', 'Bienvenue'),
       subtitle:     s('Please enter your name to continue', 'Veuillez entrer votre nom pour continuer'),
       nameLabel:    s('Your name', 'Votre nom'),
-      namePlaceholder: s('Sam Gross', 'Margaux Ancel'),
+      namePlaceholder: s('Your name', 'Votre prénom et nom'),
       submitBtn:    s('Continuer', 'Continuer'),
       checkingBtn:  s('Checking...', 'Vérification...'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
@@ -84,6 +84,7 @@ export const strings = {
     when: {
       heading:  s('When', 'Quand'),
       date:     s('Sunday, October 11, 2026', 'Dimanche 11 octobre 2026'),
+      time:     s('5:15 PM', '17h15'),
       weekend:  s('', ''),
       note:     s('', ''),
     },
@@ -92,7 +93,7 @@ export const strings = {
       dinner:     s('Bar Blondeau', 'Bar Blondeau'),
       dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:  s('followed by', 'suivi de'),
-      dancing:    s('Dancing Venue TBD', 'Lieu du dancing à confirmer'),
+      dancing:    s('Dancing (Venue TBD)', 'Dancing (lieu à confirmer)'),
     },
     dressCode: {
       heading: s('Dress Code', 'Code vestimentaire'),

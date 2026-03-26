@@ -13,6 +13,8 @@ h1, h2, h3 {
   font-style: normal;
   line-height: var(--line-height-heading);
   text-wrap: balance;
+  /* All-caps forms: punctuation at cap height, lining numerals */
+  font-feature-settings: "case" 1, "lnum" 1;
 }
 
 h1 {
@@ -147,9 +149,8 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: 16px var(--page-margin); /* 2 * 8 */
+  height: 56px;
+  padding: 0 var(--page-margin);
 }
 
 .site-logo {
@@ -160,6 +161,11 @@ a:hover {
   text-transform: uppercase;
   text-decoration: none;
   color: var(--color-text);
+  font-feature-settings: "case" 1, "lnum" 1;
+  /* Wrap between words only — never mid-word */
+  overflow-wrap: normal;
+  word-break: keep-all;
+  line-height: var(--line-height-heading);
 }
 
 .site-logo:hover {
@@ -174,7 +180,17 @@ a:hover {
 
 @media (max-width: 768px) {
   .site-nav {
-    padding: 16px var(--page-margin-mobile);
+    /* Remove fixed height so the nav grows naturally when "Chez Sargaux" wraps */
+    height: auto;
+    min-height: 48px;
+    padding: 10px var(--page-margin-mobile);
+    /* Keep both sides vertically centered relative to each other */
+    align-items: center;
+  }
+
+  .nav-actions {
+    /* Pull toggle and RSVP button tighter together on narrow screens */
+    gap: var(--space-xs);
   }
 }
 
@@ -237,8 +253,9 @@ a:hover {
 .event-toggle {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 4px;
   font-size: var(--font-size-caption);
+  font-weight: 600; /* constant weight on both states — prevents reflow/jiggling on page switch */
   text-transform: uppercase;
   letter-spacing: var(--tracking-caption);
 }
@@ -246,16 +263,17 @@ a:hover {
 .event-toggle a {
   text-decoration: none;
   color: var(--color-text-muted);
-  padding: 4px 8px;
+  padding: 4px 4px;
 }
 
 .event-toggle .active {
   color: var(--color-text);
-  font-weight: 600;
+  padding: 4px 4px;
 }
 
 .event-toggle .divider {
   color: var(--color-border);
+  padding: 4px 0;
 }
 
 /* === Form Elements === */

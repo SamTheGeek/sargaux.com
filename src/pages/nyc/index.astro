@@ -75,7 +75,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
   -->
   <div class="nyc-skyline-wrap" aria-hidden="true">
-    <img class="nyc-skyline-img" src="/images/nyc/skyline-fill.svg" alt="">
+    <img class="nyc-skyline-img nyc-skyline-fill" src="/images/nyc/skyline-fill.svg" alt="">
+    <img class="nyc-skyline-img nyc-skyline-outline" src="/images/nyc/skyline.svg" alt="">
   </div>
 
   <!-- ═══════════════════════════════════
@@ -88,7 +89,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <div class="nyc-info-table">
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.when.heading)}</span>
-          <span class="nyc-info-val">{t(strings.nyc.when.date)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.when.date)}
+            <span class="nyc-info-secondary">{t(strings.nyc.when.time)}</span>
+          </span>
         </div>
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.where.heading)}</span>
@@ -176,13 +180,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-rsvp-btn {
     background: #2F3F36 !important;
     color: #F1ECE3 !important;
-    padding: 8px 24px;
+    height: 32px;
+    padding: 0 24px;
     font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     text-decoration: none;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
     transition: opacity 0.15s;
     border: none;
   }
@@ -285,6 +292,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     display: block;
   }
 
+  /* In light mode, only show the filled skyline */
+  html[data-event="nyc"] .nyc-skyline-outline {
+    display: none;
+  }
+
   /* ── Moss zone — z:4 ────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
@@ -298,12 +310,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     padding: 64px 0;
   }
 
-  html[data-event="nyc"] .nyc-info-inner {
-    max-width: 640px;
-    margin: 0;
-    padding-left: 64px;
-    padding-right: 64px;
-  }
+  /* .nyc-info-inner uses page-content class for centering — no override needed */
 
   html[data-event="nyc"] .nyc-info-table {
     margin-bottom: 48px;
@@ -431,6 +438,111 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin-top: 8px;
   }
 
+  /* ── Dark mode ──────────────────────────────── */
+
+  @media (prefers-color-scheme: dark) {
+    /*
+      Dark mode colour logic:
+        - Sky (above skyline) = lighter moss #2F3F36 — so the amber disc pops
+        - Body sections (below skyline) = deep dark #1A2420
+        - Skyline fill darkened via filter to sit between the two tones
+    */
+
+    html[data-event="nyc"] body {
+      background: #2F3F36 !important;
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-header {
+      background: #2F3F36 !important;
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .site-logo,
+    html[data-event="nyc"] .nyc-header .site-logo:hover,
+    html[data-event="nyc"] .nyc-header .event-toggle .active,
+    html[data-event="nyc"] .nyc-header .event-toggle .divider {
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .event-toggle a {
+      color: rgba(241, 236, 227, 0.45) !important;
+    }
+
+    /* RSVP button: system orange CTA in dark mode */
+    html[data-event="nyc"] .nyc-rsvp-btn {
+      background: #D96A1E !important;
+      color: #F1ECE3 !important;
+    }
+
+    /* Disc: full system orange — no dimming */
+    /* (background: #D96A1E already set in light mode styles, no override needed) */
+
+    /* Hero text: cream */
+    html[data-event="nyc"] .nyc-hero-text h1,
+    html[data-event="nyc"] .nyc-date {
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-rule {
+      border-top-color: rgba(241, 236, 227, 0.15) !important;
+    }
+
+    html[data-event="nyc"] .nyc-venue {
+      color: rgba(241, 236, 227, 0.45) !important;
+    }
+
+    /* Skyline: filled, darkened so it reads as a horizon against the lighter sky */
+    html[data-event="nyc"] .nyc-skyline-fill {
+      display: block;
+      filter: brightness(0.52);
+    }
+
+    html[data-event="nyc"] .nyc-skyline-outline {
+      display: none;
+    }
+
+    /* Body sections below skyline: deep dark moss */
+    html[data-event="nyc"] .nyc-moss {
+      background: #1A2420 !important;
+      color: #F1ECE3 !important;
+    }
+
+    /* Explore band: minimal — recedes into dark, faint label only */
+    html[data-event="nyc"] .nyc-explore-band {
+      background: #1A2420 !important;
+      color: rgba(241, 236, 227, 0.28) !important;
+      border-top: 1px solid rgba(241, 236, 227, 0.06);
+      border-bottom: 1px solid rgba(241, 236, 227, 0.06);
+    }
+
+    /* Moss button: amber accent in dark mode too */
+    html[data-event="nyc"] .nyc-moss-btn {
+      background: #D96A1E !important;
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-moss-btn:hover {
+      opacity: 0.85;
+      background: #D96A1E !important;
+      color: #F1ECE3 !important;
+    }
+
+    /* Table rows: softer borders */
+    html[data-event="nyc"] .nyc-info-row {
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    /* Strip links */
+    html[data-event="nyc"] .nyc-strip-link {
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-strip-link:first-child {
+      border-top-color: rgba(241, 236, 227, 0.08) !important;
+    }
+  }
+
   /* ── Mobile ─────────────────────────────────── */
 
   @media (max-width: 768px) {
@@ -460,7 +572,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       height: clamp(180px, 40vw, 320px);
     }
 
-    html[data-event="nyc"] .nyc-info-inner,
     html[data-event="nyc"] .nyc-explore-band {
       padding-left: 24px;
       padding-right: 24px;

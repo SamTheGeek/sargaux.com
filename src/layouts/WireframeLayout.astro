@@ -20,10 +20,18 @@ const lang = Astro.locals.lang ?? 'en';
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="generator" content={Astro.generator} />
+    {(event === 'nyc' || !event) && (
+      <>
+        <link rel="preload" href="/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf" as="font" type="font/ttf" crossorigin />
+        <link rel="preload" href="/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf" as="font" type="font/ttf" crossorigin />
+      </>
+    )}
     {event === 'france' && (
       <>
         <link rel="preload" href="/fonts/peignot-bold.otf" as="font" type="font/otf" crossorigin />
         <link rel="preload" href="/fonts/peignot-demi.ttf" as="font" type="font/ttf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTBook.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTMedium.otf" as="font" type="font/otf" crossorigin />
       </>
     )}
     <title>{title} | Chez Sargaux</title>
