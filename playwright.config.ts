@@ -32,7 +32,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:1213',
+    baseURL: 'http://127.0.0.1:1213',
     trace: 'on-first-retry',
   },
   expect: {
@@ -46,14 +46,16 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && node ./dist/server/entry.mjs',
-    url: 'http://localhost:1213',
-    reuseExistingServer: !process.env.CI,
+    url: 'http://127.0.0.1:1213',
+    reuseExistingServer: false,
     timeout: 120000,
     env: {
       ...process.env,
-      HOST: '0.0.0.0',
+      HOST: '127.0.0.1',
       PORT: '1213',
       ASTRO_ADAPTER: 'node',
+      ASTRO_CHECK_ORIGIN: 'false',
+      ADMIN_SECRET: process.env.ADMIN_SECRET ?? 'test-secret-not-set',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',
