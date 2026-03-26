@@ -59,6 +59,10 @@ export const strings = {
     heroTitle:  s('Chez Sargaux', 'Chez Sargaux'),
     tagline:    s('Sam & Margaux', 'Sam & Margaux'),
     ctaEnter:   s('Entrée', 'Entrée'),
+    inline: {
+      prompt: s('Please enter your name', 'Veuillez entrer votre nom'),
+      note: s('As it appears on your invitation.', "Tel qu'il apparaît sur votre invitation."),
+    },
     modal: {
       title:        s('Welcome', 'Bienvenue'),
       subtitle:     s('Please enter your name to continue', 'Veuillez entrer votre nom pour continuer'),

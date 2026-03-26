@@ -55,6 +55,7 @@ export default defineConfig({
       PORT: '1213',
       ASTRO_ADAPTER: 'node',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
+      FEATURE_GLOBAL_I18N: process.env.FEATURE_GLOBAL_I18N ?? 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',
       FEATURE_NYC_RSVP_ENABLED: process.env.FEATURE_NYC_RSVP_ENABLED ?? 'true',
