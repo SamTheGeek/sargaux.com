@@ -18,7 +18,7 @@ const calendarToken = (features.nyc.calendarSubscribe && guestId)
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.nyc.pageTitle)} description="NYC Wedding - October 2026" event="nyc">
+<WireframeLayout title={t(strings.nyc.pageTitle)} fullTitle="Chez Sargaux | NYC" description="NYC Wedding - October 2026" event="nyc">
 
   <!--
     Z-index stack (all in ROOT context — nothing creates an intermediate SC):
@@ -107,6 +107,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.dressCode.heading)}</span>
           <span class="nyc-info-val">{t(strings.nyc.dressCode.value)}</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.rsvpDeadline.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.rsvpDeadline.value)}</span>
         </div>
       </div>
     </div>
@@ -550,7 +554,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     /*
       Dark mode colour logic:
         - Sky (above skyline) = lighter moss #2F3F36 — so the amber disc pops
-        - Body sections (below skyline) = deep dark #1A2420
+        - Body sections (below skyline) = skyline-matched dark #18211C
         - Skyline fill darkened via filter to sit between the two tones
     */
 
@@ -610,15 +614,15 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     /* Body sections below skyline: deep dark moss */
     html[data-event="nyc"] .nyc-moss {
-      background: #1A2420 !important;
+      background: #18211C !important;
       color: #F1ECE3 !important;
     }
 
-    /* Explore band: minimal — recedes into dark, faint label only */
+    /* Section bands: pull the lighter sky-green into the moss zone for contrast */
     html[data-event="nyc"] .nyc-calendar-band,
     html[data-event="nyc"] .nyc-explore-band {
-      background: #1A2420 !important;
-      color: rgba(241, 236, 227, 0.28) !important;
+      background: #2F3F36 !important;
+      color: #F1ECE3 !important;
       border-top: 1px solid rgba(241, 236, 227, 0.06);
       border-bottom: 1px solid rgba(241, 236, 227, 0.06);
     }

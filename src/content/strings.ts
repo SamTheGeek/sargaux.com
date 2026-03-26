@@ -117,6 +117,10 @@ export const strings = {
       value:   s('Festive Attire', 'Tenue de fête'),
       note:    s('Think jackets but no tie required.', 'Veste recommandée, cravate non obligatoire.'),
     },
+    rsvpDeadline: {
+      heading: s('RSVP', 'RSVP'),
+      value:   s('By September 10, 2026', 'Avant le 10 septembre 2026'),
+    },
     calendar: {
       heading:         s('Save the Date', 'Notez la date'),
       subtext:         s("Add the events to your calendar app.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
@@ -302,11 +306,6 @@ export const strings = {
           note:        s('Let us know about allergies or dietary preferences.', 'Indiquez-nous vos allergies ou préférences alimentaires.'),
           placeholder: s('e.g., Vegetarian, nut allergy, gluten-free', 'ex. : Végétarien, allergie aux noix, sans gluten'),
         },
-        songRequest: {
-          heading:     s('Song Request', 'Demande de chanson'),
-          note:        s('What should we play to get you dancing?', 'Quelle chanson vous ferait danser ?'),
-          placeholder: s('Artist — Song', 'Artiste — Chanson'),
-        },
         message: {
           heading:     s('Message for Us', 'Message pour nous'),
           placeholder: s('Share your well wishes or anything else we should know', 'Partagez vos vœux ou tout ce que nous devrions savoir'),
@@ -317,6 +316,8 @@ export const strings = {
           optional:         s('(optional)', '(facultatif)'),
           placeholder:      s('you@example.com', 'vous@exemple.com'),
           sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par email"),
+          note:             s('Everyone below with an email address will receive the confirmation.', 'Chaque personne ci-dessous avec une adresse email recevra la confirmation.'),
+          requireOne:       s('Add at least one email address to receive a confirmation.', 'Ajoutez au moins une adresse email pour recevoir une confirmation.'),
         },
         submitBtn:   s('Submit RSVP', 'Envoyer mon RSVP'),
         updateBtn:   s('Update RSVP', 'Mettre à jour mon RSVP'),
@@ -392,7 +393,6 @@ export const strings = {
       heading:         s('Save the Dates', 'Notez les dates'),
       subtext:         s('Add the full weekend to your calendar.', 'Ajoutez le week-end complet à votre agenda.'),
       addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
-      unavailableNote: s('Personalized calendar link available after RSVP', 'Lien de calendrier personnalisé disponible après votre RSVP'),
     },
     nav: {
       explore: s('Explore', 'Explorer'),
@@ -541,6 +541,10 @@ export const strings = {
             "Reserve your room through the RSVP form. We'll confirm your booking closer to the event.",
             "Réservez votre chambre via le formulaire RSVP. Nous confirmerons votre réservation à l'approche de l'événement.",
           ),
+        },
+        rsvpDeadline: {
+          heading: s('RSVP', 'RSVP'),
+          value:   s('By March 15, 2027', 'Avant le 15 mars 2027'),
         },
       },
       dressCode: {
@@ -707,6 +711,8 @@ export const strings = {
           optional:         s('(optional)', '(facultatif)'),
           placeholder:      s('you@example.com', 'vous@exemple.com'),
           sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par email"),
+          note:             s('Everyone below with an email address will receive the confirmation.', 'Chaque personne ci-dessous avec une adresse email recevra la confirmation.'),
+          requireOne:       s('Add at least one email address to receive a confirmation.', 'Ajoutez au moins une adresse email pour recevoir une confirmation.'),
         },
         submitBtn:  s('Submit RSVP', 'Envoyer mon RSVP'),
         updateBtn:  s('Update RSVP', 'Mettre à jour mon RSVP'),

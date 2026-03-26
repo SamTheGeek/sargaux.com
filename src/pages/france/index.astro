@@ -16,7 +16,7 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027" event="france">
+<WireframeLayout title={t(strings.france.pageTitle)} fullTitle="Chez Sargaux | France" description="France Wedding - May 2027" event="france">
   <header class="site-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
@@ -150,7 +150,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
               <button class="calendar-btn-prominent" disabled>
                 {t(strings.france.calendar.addBtn)}
               </button>
-              <p class="calendar-prominent-note">{t(strings.france.calendar.unavailableNote)}</p>
+              <p class="calendar-prominent-note">{t(strings.nyc.calendar.unavailableNote)}</p>
             </>
           )}
         </div>

@@ -8,12 +8,20 @@
 
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
-import { submitRSVP, getLatestRSVP, deleteRSVP, fetchAllGuests, updateGuestEmail, getGuestEvents } from '../../lib/notion';
+import { submitRSVP, getLatestRSVP, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
 import { isEnabled } from '../../config/features';
-import { sendEmail } from '../../lib/email';
+import { sendToGuests } from '../../lib/email';
 import { rsvpConfirmation } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
 import type { RSVPSubmission } from '../../types/rsvp';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+function normalizeOptionalEmail(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
 
 /**
  * POST - Submit or update an RSVP
@@ -96,9 +104,93 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 
+  const sendConfirmation = body.sendConfirmation === true;
+
+  let party;
+  try {
+    party = await getGuestParty(guestId);
+  } catch (error) {
+    console.error('Failed to load guest party for RSVP:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to load guest party details' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  const partyById = new Map(party.map((guest) => [guest.id, guest]));
+  const submittedGuestEmails = new Map<string, string | undefined>();
+
+  if (Array.isArray(body.guestEmails)) {
+    for (const entry of body.guestEmails) {
+      if (!entry || typeof entry.guestId !== 'string') {
+        return new Response(JSON.stringify({ error: 'guestEmails entries must include a guestId' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!partyById.has(entry.guestId)) {
+        return new Response(JSON.stringify({ error: 'guestEmails includes a guest outside this party' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const normalizedEmail = normalizeOptionalEmail(entry.email);
+      if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
+        const guestName = partyById.get(entry.guestId)?.name ?? entry.name ?? 'this guest';
+        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      submittedGuestEmails.set(entry.guestId, normalizedEmail);
+    }
+  } else {
+    const fallbackEmail = normalizeOptionalEmail(body.email);
+    if (fallbackEmail) {
+      if (!EMAIL_PATTERN.test(fallbackEmail)) {
+        return new Response(JSON.stringify({ error: 'Enter a valid email address.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      submittedGuestEmails.set(guestId, fallbackEmail);
+    }
+  }
+
+  const partyContacts = party.map((partyGuest) => ({
+    id: partyGuest.id,
+    name: partyGuest.name,
+    currentEmail: normalizeOptionalEmail(partyGuest.email),
+    email: submittedGuestEmails.has(partyGuest.id)
+      ? submittedGuestEmails.get(partyGuest.id)
+      : normalizeOptionalEmail(partyGuest.email),
+  }));
+
+  if (sendConfirmation && partyContacts.every((guest) => !guest.email)) {
+    return new Response(
+      JSON.stringify({ error: 'Add at least one email address to receive a confirmation.' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
   // Submit to Notion
   let responseId: string;
   try {
+    await Promise.all(
+      partyContacts
+        .filter((guest) => submittedGuestEmails.has(guest.id) && guest.email !== guest.currentEmail)
+        .map((guest) => updateGuestEmail(guest.id, guest.email ?? null))
+    );
+
     responseId = await submitRSVP(guestId, body);
   } catch (error) {
     console.error('RSVP submission error:', error);
@@ -115,36 +207,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   // Email logic — non-blocking, never fails the RSVP response
-  if (isEnabled('global.emailEnabled')) {
-    const submittedEmail: string | undefined = (body as any).email?.trim() || undefined;
-    const sendConfirmation: boolean = (body as any).sendConfirmation === true;
+  if (isEnabled('global.emailEnabled') && sendConfirmation) {
+    const recipients = Array.from(
+      partyContacts
+        .filter((guest) => guest.email)
+        .reduce((map, guest) => {
+          const key = guest.email!.toLowerCase();
+          if (!map.has(key)) {
+            map.set(key, { email: guest.email!, name: guest.name });
+          }
+          return map;
+        }, new Map<string, { email: string; name: string }>())
+        .values()
+    );
 
-    // Resolve the best email to use: submitted > on-file
-    let emailToUse: string | undefined = submittedEmail;
-    if (!emailToUse) {
-      try {
-        const guests = await fetchAllGuests();
-        emailToUse = guests.find((g) => g.id === guestId)?.email;
-      } catch (err) {
-        console.error('Failed to fetch guest email for confirmation:', err);
-      }
-    }
-
-    // Save new email back to Notion if guest didn't have one
-    if (submittedEmail) {
-      try {
-        const guests = await fetchAllGuests();
-        const existing = guests.find((g) => g.id === guestId);
-        if (!existing?.email) {
-          await updateGuestEmail(guestId, submittedEmail);
-        }
-      } catch (err) {
-        console.error('Failed to save guest email to Notion:', err);
-      }
-    }
-
-    // Send confirmation if opted in and email is available
-    if (sendConfirmation && emailToUse) {
+    if (recipients.length > 0) {
       try {
         const attending = (body.guestsAttending ?? []).some((g: any) => g.attending);
         const guestsAttendingStr = (body.guestsAttending ?? [])
@@ -176,17 +253,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         const updateUrl = `https://sargaux.com/${body.event}/rsvp`;
-        const template = rsvpConfirmation({
-          guestName: auth.guest,
-          event: body.event,
-          attending,
-          guestsAttending: guestsAttendingStr,
-          eventNames,
-          dietary: body.dietary,
-          updateUrl,
-          calendarUrl,
+        await sendToGuests(recipients, (recipient) => {
+          const template = rsvpConfirmation({
+            guestName: recipient.name,
+            event: body.event,
+            attending,
+            guestsAttending: guestsAttendingStr,
+            eventNames,
+            dietary: body.dietary,
+            updateUrl,
+            calendarUrl,
+          });
+
+          return { to: recipient.email, ...template };
         });
-        await sendEmail({ to: emailToUse, ...template });
       } catch (err) {
         console.error('Failed to send RSVP confirmation email:', err);
       }

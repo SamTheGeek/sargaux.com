@@ -93,6 +93,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
         </ul>
         <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
+        <p class="booking-meta"><strong>{t(strings.france.details.staying.rsvpDeadline.heading)}</strong> {t(strings.france.details.staying.rsvpDeadline.value)}</p>
       </div>
     </section>
 
@@ -280,6 +281,12 @@ main {
     color: var(--color-text-muted);
     font-style: italic;
     margin: 0;
+  }
+
+  .booking-meta {
+    margin: 1rem 0 0;
+    font-size: 0.9375rem;
+    color: var(--color-text);
   }
 
   /* Dress Code */

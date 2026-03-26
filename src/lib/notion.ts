@@ -203,7 +203,7 @@ export function clearGuestCache(): void {
  * Write an email address back to a guest's Notion page.
  * Invalidates the in-memory guest cache so subsequent requests see the update.
  */
-export async function updateGuestEmail(guestId: string, email: string): Promise<void> {
+export async function updateGuestEmail(guestId: string, email: string | null): Promise<void> {
   const notion = getClient();
   await notion.pages.update({
     page_id: guestId,

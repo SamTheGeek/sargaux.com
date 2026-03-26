@@ -7,9 +7,10 @@ interface Props {
   title: string;
   description?: string;
   event?: 'nyc' | 'france';
+  fullTitle?: string;
 }
 
-const { title, description = 'Wedding website for Sam & Margaux', event } = Astro.props;
+const { title, description = 'Wedding website for Sam & Margaux', event, fullTitle } = Astro.props;
 const lang = Astro.locals.lang ?? 'en';
 ---
 
@@ -69,7 +70,7 @@ const lang = Astro.locals.lang ?? 'en';
         });
       }
     </script>
-    <title>{title} | Chez Sargaux</title>
+    <title>{fullTitle ?? `${title} | Chez Sargaux`}</title>
   </head>
   <body>
     <slot />

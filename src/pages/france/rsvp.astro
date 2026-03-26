@@ -27,8 +27,6 @@ if (guestId) {
   }
 }
 
-const primaryGuestEmail = party[0]?.email;
-
 const attendingNames = new Set(
   (existingRSVP?.guestsAttending ?? '')
     .split(',')
@@ -39,6 +37,7 @@ const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
+const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
 const existingSubmittedAt = existingRSVP?.submittedAt
   ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
@@ -220,24 +219,32 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.email.heading)}</h2>
-            {!primaryGuestEmail && (
-              <div class="email-field">
-                <label for="guest-email" class="section-note">{t(strings.france.rsvp.form.email.label)} <span class="optional-label">{t(strings.france.rsvp.form.email.optional)}</span></label>
-                <input
-                  type="email"
-                  id="guest-email"
-                  name="email"
-                  class="single-line-input"
-                  placeholder={t(strings.france.rsvp.form.email.placeholder)}
-                  autocomplete="email"
-                  data-testid="email-input"
-                />
-              </div>
-            )}
             <label class="checkbox-label">
               <input type="checkbox" id="send-confirmation" name="sendConfirmation" data-testid="send-confirmation-checkbox" />
               <span>{t(strings.france.rsvp.form.email.sendConfirmation)}</span>
             </label>
+            <p class="section-note confirmation-note">{t(strings.france.rsvp.form.email.note)}</p>
+            <div class="group-email-list">
+              {party.map((partyGuest) => (
+                <div class="email-field group-email-row">
+                  <label for={`guest-email-${partyGuest.id}`} class="section-note group-email-label">
+                    <span class="group-email-name">{partyGuest.name}</span>
+                    <span class="optional-label">{t(strings.france.rsvp.form.email.optional)}</span>
+                  </label>
+                  <input
+                    type="email"
+                    id={`guest-email-${partyGuest.id}`}
+                    class="single-line-input group-email-input"
+                    placeholder={t(strings.france.rsvp.form.email.placeholder)}
+                    autocomplete="email"
+                    value={partyGuest.email ?? ''}
+                    data-testid="group-email-input"
+                    data-guest-email-id={partyGuest.id}
+                    data-guest-email-name={partyGuest.name}
+                  />
+                </div>
+              ))}
+            </div>
           </section>
 
           <div class="feedback" aria-live="polite">
@@ -527,6 +534,32 @@ main {
     gap: 0.35rem;
   }
 
+  .confirmation-note {
+    margin-top: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .group-email-list {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 0.35rem;
+  }
+
+  .group-email-row {
+    margin-bottom: 0;
+  }
+
+  .group-email-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .group-email-name {
+    color: var(--color-text);
+  }
+
   .optional-label {
     color: var(--color-text-muted);
     font-size: 0.85rem;
@@ -591,13 +624,20 @@ main {
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ confirmationEmailRequired }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
     const submitButton = form.querySelector('button[type="submit"]');
     const successMessage = document.getElementById('form-success');
     const errorMessage = document.getElementById('form-error');
+    const defaultErrorMessage = errorMessage?.textContent || 'We could not submit your RSVP. Please try again.';
+
+    const showError = (message) => {
+      if (!errorMessage) return;
+      errorMessage.textContent = message;
+      errorMessage.hidden = false;
+    };
 
     const updateGuestStatus = (row) => {
       const checkbox = row.querySelector('.guest-attending');
@@ -622,7 +662,10 @@ main {
         submitButton.textContent = 'Saving...';
       }
       if (successMessage) successMessage.hidden = true;
-      if (errorMessage) errorMessage.hidden = true;
+      if (errorMessage) {
+        errorMessage.hidden = true;
+        errorMessage.textContent = defaultErrorMessage;
+      }
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -644,12 +687,26 @@ main {
 
       const allergens = form.querySelector('textarea[name="allergens"]')?.value?.trim();
 
-      const emailInput = form.querySelector('input[name="email"]');
       const sendConfirmationCheckbox = form.querySelector('input[name="sendConfirmation"]');
+      const guestEmails = Array.from(form.querySelectorAll('[data-guest-email-id]')).map((input) => ({
+        guestId: input.dataset.guestEmailId,
+        name: input.dataset.guestEmailName || 'Guest',
+        email: input.value?.trim() || undefined,
+      }));
+
+      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
+        showError(confirmationEmailRequired);
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalButtonText;
+        }
+        return;
+      }
 
       const payload = {
         event: form.dataset.event,
         guestsAttending,
+        guestEmails,
         eventsAttending: anyAttending ? [...coreEventIds, ...optionalEventIds] : [],
         dietary: allergens || undefined,
         message: form.querySelector('textarea[name="message"]')?.value?.trim() || undefined,
@@ -658,7 +715,6 @@ main {
           allergens: allergens || undefined,
           transport: form.querySelector('select[name="transport"]')?.value || undefined,
         },
-        email: emailInput?.value?.trim() || undefined,
         sendConfirmation: sendConfirmationCheckbox?.checked === true,
       };
 
@@ -672,12 +728,13 @@ main {
         });
 
         if (!response.ok) {
-          throw new Error('Request failed');
+          const data = await response.json().catch(() => null);
+          throw new Error(data?.error || defaultErrorMessage);
         }
 
         window.location.href = '/france';
       } catch (error) {
-        if (errorMessage) errorMessage.hidden = false;
+        showError(error instanceof Error ? error.message : defaultErrorMessage);
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;

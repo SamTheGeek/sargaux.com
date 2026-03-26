@@ -189,6 +189,12 @@ a:hover {
   justify-self: end;
 }
 
+.back-link {
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+}
+
 @media (max-width: 768px) {
   .site-nav {
     grid-template-columns: minmax(0, 1fr) max-content;
@@ -204,6 +210,10 @@ a:hover {
 
   .nav-actions {
     gap: var(--space-xs);
+  }
+
+  .back-link {
+    grid-column: 2;
   }
 }
 
