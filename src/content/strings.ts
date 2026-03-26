@@ -312,24 +312,28 @@ export const strings = {
   france: {
     // Landing page
     pageTitle:     s('France Event', 'Événement France'),
-    heroTitle:     s('France', 'France'),
-    heroDate:      s('May 28–30, 2027', '28–30 mai 2027'),
-    heroEventType: s('Weekend Celebration at Village De Sully', 'Week-end de célébration au Village De Sully'),
+    heroLocation:  s('France', 'France'),
+    heroTitle:     s('Village de Sully', 'Village de Sully'),
+    heroDate:      s('28–30 May 2027', '28–30 mai 2027'),
+    heroEventType: s('A Weekend Celebration', 'Un week-end de célébration'),
     when: {
       heading: s('When', 'Quand'),
       dates:   s('Friday, May 28 – Sunday, May 30, 2027', 'Vendredi 28 mai – Dimanche 30 mai 2027'),
       desc:    s('Full weekend celebration', 'Week-end de célébration'),
     },
     where: {
-      heading:  s('Where', 'Où'),
-      venue:    s('Village De Sully', 'Village De Sully'),
-      location: s('Ile-de-France, near Paris', 'Île-de-France, près de Paris'),
-      mapLink:  s('View on Map ↗', 'Voir sur la carte ↗'),
+      heading:    s('Where', 'Où'),
+      venueLabel: s('Venue', 'Lieu'),
+      datesLabel: s('Dates', 'Dates'),
+      mapLabel:   s('Map', 'Carte'),
+      venue:      s('Village De Sully', 'Village De Sully'),
+      location:   s('Ile-de-France, near Paris', 'Île-de-France, près de Paris'),
+      mapLink:    s('View on Map ↗', 'Voir sur la carte ↗'),
     },
     accommodation: {
       heading:         s('Accommodation', 'Hébergement'),
-      stayAtVillage:   s('Stay at the village', 'Séjour au village'),
-      price:           s('€75/night (breakfast included)', '75 €/nuit (petit-déjeuner inclus)'),
+      stayAtVillage:   s('Stay onsite', 'Séjour au village'),
+      price:           s('€75 per person, per night (double occupancy)', '75 € par personne et par nuit (occupation double)'),
       reserveNote:     s('Reserve through RSVP', 'Réservez via le RSVP'),
     },
     weekend: {
@@ -369,6 +373,7 @@ export const strings = {
       unavailableNote: s('Personalized calendar link available after RSVP', 'Lien de calendrier personnalisé disponible après votre RSVP'),
     },
     nav: {
+      explore: s('Explore', 'Explorer'),
       schedule: {
         title: s('Schedule', 'Programme'),
         desc:  s('Full weekend timeline', 'Programme du week-end complet'),

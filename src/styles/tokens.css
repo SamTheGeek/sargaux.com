@@ -18,6 +18,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Peignot';
+  src: url('/fonts/peignot-demi.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peignot';
+  src: url('/fonts/peignot-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* === Base Tokens (NYC / Default) — Light Mode === */
 
 :root {
@@ -92,6 +108,15 @@
   --color-border: var(--color-prussian-blue);
 
   --font-display: 'Peignot', 'Georgia', serif;
+}
+
+/* France typography weights per brand spec */
+[data-event="france"] h1 {
+  font-weight: 700; /* Peignot Bold — hero only */
+}
+
+[data-event="france"] h2 {
+  font-weight: 600; /* Peignot Demi */
 }
 
 /* === NYC Dark Mode === */

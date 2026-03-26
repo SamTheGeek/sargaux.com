@@ -21,7 +21,10 @@ const lang = Astro.locals.lang ?? 'en';
     <meta name="robots" content="noindex, nofollow" />
     <meta name="generator" content={Astro.generator} />
     {event === 'france' && (
-      <link rel="preload" href="/fonts/Peignot 400.ttf" as="font" type="font/ttf" crossorigin />
+      <>
+        <link rel="preload" href="/fonts/peignot-bold.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/peignot-demi.ttf" as="font" type="font/ttf" crossorigin />
+      </>
     )}
     <title>{title} | Chez Sargaux</title>
   </head>
