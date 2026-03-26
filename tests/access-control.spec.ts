@@ -65,6 +65,12 @@ test.describe('Event Access Control', () => {
     await expect(page).toHaveURL('/france');
   });
 
+  test('homepage redirects dual-invited guests to NYC before October 15, 2026', async ({ page, context }) => {
+    await setSessionCookie(context, ['nyc', 'france']);
+    await page.goto('/');
+    await expect(page).toHaveURL('/nyc');
+  });
+
   test('dual-invited guest can access both events and sees switcher', async ({ page, context }) => {
     await setSessionCookie(context, ['nyc', 'france']);
 

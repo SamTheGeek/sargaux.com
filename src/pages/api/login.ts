@@ -8,6 +8,7 @@ import {
 import { features } from '../../config/features';
 import { fetchAllGuests } from '../../lib/notion';
 import type { EventInvitation } from '../../lib/auth';
+import { getPrimaryEventRoute } from '../../lib/event-routing';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
@@ -55,7 +56,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   // Create session token and set cookie
   const token = createSessionToken(guestName, notionId, eventInvitations);
-  const redirectPath = eventInvitations.includes('nyc') ? '/nyc' : '/france';
+  const redirectPath = getPrimaryEventRoute(eventInvitations);
 
   cookies.set(AUTH_COOKIE_NAME, token, {
     path: '/',

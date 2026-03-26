@@ -6,54 +6,70 @@ test.describe('Authentication', () => {
     await context.clearCookies();
   });
 
-  test('should show login modal when clicking Enter button', async ({ page }) => {
+  test('should reveal and focus inline name input when clicking Enter button', async ({ page }) => {
     await page.goto('/');
 
-    // Click the Enter button
     await page.click('#login-trigger');
 
-    // Modal should be visible
-    const modal = page.locator('#login-modal');
-    await expect(modal).toHaveAttribute('aria-hidden', 'false');
-
-    // Name input should be visible and focused
     const nameInput = page.locator('#name');
     await expect(nameInput).toBeVisible();
+    await expect(nameInput).toBeFocused();
+  });
+
+  test('should switch homepage language to French from the footer switcher', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByLabel('Passer en français').click();
+
+    await expect(page).toHaveURL(/lang=fr/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(page.locator('.panel-intro')).toContainText('Veuillez entrer votre nom');
+  });
+
+  test('should collapse inline name input when clicking outside with no text entered', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('#login-trigger');
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-active/);
+
+    await page.locator('body').click({ position: { x: 20, y: 20 } });
+
+    await expect(page.locator('#inline-entry-control')).not.toHaveClass(/is-active/);
+    await expect(page.locator('#login-trigger')).toBeVisible();
   });
 
   test('should show error for invalid name', async ({ page }) => {
     await page.goto('/');
 
-    // Open modal
     await page.click('#login-trigger');
 
-    // Enter an invalid name
     await page.fill('#name', 'Invalid Person');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
 
-    // Should show error message
     const errorMessage = page.locator('#error-message');
     await expect(errorMessage).toContainText("Please enter your name as it appears on your invitation");
-
-    // Should still be on homepage
     await expect(page).toHaveURL('/');
   });
 
   test('should login successfully with valid name', async ({ page }) => {
     await page.goto('/');
 
-    // Open modal
     await page.click('#login-trigger');
-
-    // Enter valid name
     await page.fill('#name', 'Sam Gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
 
-    // Should redirect to NYC page
     await expect(page).toHaveURL('/nyc');
-
-    // Should show guest name in footer
     await expect(page.locator('.guest-name')).toContainText('Sam Gross');
+  });
+
+  test('should submit login when clicking inline arrow button', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.click('#inline-submit');
+
+    await expect(page).toHaveURL('/nyc');
   });
 
   test('should login with case-insensitive name', async ({ page }) => {
@@ -61,7 +77,7 @@ test.describe('Authentication', () => {
 
     await page.click('#login-trigger');
     await page.fill('#name', 'sam gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
   });
@@ -71,7 +87,7 @@ test.describe('Authentication', () => {
 
     await page.click('#login-trigger');
     await page.fill('#name', '  Sam   Gross  ');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
   });
@@ -85,69 +101,40 @@ test.describe('Authentication', () => {
   });
 
   test('should redirect authenticated users from homepage to /nyc', async ({ page }) => {
-    // First login
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
-    // Go back to homepage
     await page.goto('/');
 
-    // Should redirect back to /nyc since already logged in
     await expect(page).toHaveURL('/nyc');
   });
 
   test('should logout and redirect to homepage', async ({ page }) => {
-    // Login first
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
-    // Logout
     await page.goto('/api/logout');
-
-    // Should be on homepage
     await expect(page).toHaveURL('/');
 
-    // Try to access protected route
     await page.goto('/nyc');
-
-    // Should redirect to homepage (no longer authenticated)
     await expect(page).toHaveURL('/');
   });
 
-  test('should close modal on Escape key', async ({ page }) => {
+  test('should keep inline name input open when it contains text', async ({ page }) => {
     await page.goto('/');
 
-    // Open modal
     await page.click('#login-trigger');
-    const modal = page.locator('#login-modal');
-    await expect(modal).toHaveAttribute('aria-hidden', 'false');
+    await page.fill('#name', 'Sam');
+    await page.locator('body').click({ position: { x: 20, y: 20 } });
 
-    // Press Escape
-    await page.keyboard.press('Escape');
-
-    // Modal should be hidden
-    await expect(modal).toHaveAttribute('aria-hidden', 'true');
-  });
-
-  test('should close modal on backdrop click', async ({ page }) => {
-    await page.goto('/');
-
-    // Open modal
-    await page.click('#login-trigger');
-    const modal = page.locator('#login-modal');
-    await expect(modal).toHaveAttribute('aria-hidden', 'false');
-
-    // Click backdrop (outside modal content)
-    await page.click('#login-modal', { position: { x: 10, y: 10 } });
-
-    // Modal should be hidden
-    await expect(modal).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-active/);
+    await expect(page.locator('#name')).toHaveValue('Sam');
   });
 
   test('login API returns JSON with success and guest name', async ({ page }) => {
@@ -164,6 +151,7 @@ test.describe('Authentication', () => {
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.guest).toBe('Sam Gross');
+    expect(response.body.redirectPath).toBe('/nyc');
   });
 
   test('login API returns 401 for unknown guest', async ({ page }) => {
@@ -198,7 +186,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
     // Check the cookie exists
@@ -213,7 +201,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
     const cookies = await context.cookies();

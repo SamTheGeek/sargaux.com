@@ -7,10 +7,10 @@ import LangSwitcher from '../../components/LangSwitcher.astro';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.schedule.pageTitle)}>
-  <header>
-    <nav class="main-nav">
-      <a href="/" class="logo">{t(strings.global.siteName)}</a>
+<WireframeLayout title={t(strings.france.schedule.pageTitle)} event="france">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
       <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
     </nav>
   </header>
@@ -145,37 +145,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
 <style>
   header {
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .main-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .logo {
-    font-size: 1.25rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    color: #1a1a1a;
-  }
-
-  .back-link {
-    font-size: 0.875rem;
-    color: #666;
-    text-decoration: none;
-  }
-
-  .back-link:hover {
-    color: #1a1a1a;
-  }
-
-  main {
+main {
     flex: 1;
     padding: 3rem 2rem;
     max-width: 800px;
@@ -190,7 +163,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .subtitle {
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: 2rem;
   }
 
@@ -201,8 +174,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     align-items: center;
     gap: 2rem;
     padding: 1.5rem;
-    background: #f9f9f9;
-    border-radius: 0.5rem;
+    background: var(--color-bg);
     margin-bottom: 1.5rem;
   }
 
@@ -217,18 +189,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #888;
+    color: var(--color-text-muted);
   }
 
   .stay-value {
     font-weight: 500;
-    color: #1a1a1a;
+    color: var(--color-text);
   }
 
   .stay-divider {
     width: 1px;
     height: 2.5rem;
-    background: #e5e5e5;
+    background: var(--color-border);
   }
 
   /* Calendar Subscribe */
@@ -240,26 +212,25 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   .calendar-btn {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
-    background: #1a1a1a;
+    background: var(--color-text);
     color: white;
     border: none;
-    border-radius: 0.5rem;
     cursor: pointer;
     margin-bottom: 0.5rem;
   }
 
   .calendar-btn:hover:not(:disabled) {
-    background: #333;
+    background: var(--color-text);
   }
 
   .calendar-btn:disabled {
-    background: #888;
+    background: var(--color-text-muted);
     cursor: not-allowed;
   }
 
   .calendar-note {
     font-size: 0.875rem;
-    color: #888;
+    color: var(--color-text-muted);
     font-style: italic;
   }
 
@@ -275,16 +246,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 400;
     margin-bottom: 0.5rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e5e5e5;
+    border-bottom: 2px solid var(--color-border);
   }
 
   .day-section.highlight h2 {
-    border-bottom-color: #1a1a1a;
+    border-bottom-color: var(--color-text);
   }
 
   .day-note {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: 1rem;
     font-weight: 500;
   }
@@ -301,20 +272,19 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     display: flex;
     gap: 1.5rem;
     padding: 1rem;
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
-    background: white;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
   }
 
   .timeline-item.optional {
     border-style: dashed;
-    background: #fafafa;
+    background: var(--color-bg);
   }
 
   .time {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--color-text);
     min-width: 80px;
     flex-shrink: 0;
   }
@@ -332,24 +302,24 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   .event p {
     margin: 0;
     font-size: 0.875rem;
-    color: #666;
+    color: var(--color-text-muted);
   }
 
   .event .location {
-    color: #888;
+    color: var(--color-text-muted);
     font-size: 0.8125rem;
     margin-bottom: 0.25rem;
   }
 
   .placeholder-note {
     font-style: italic;
-    color: #888 !important;
+    color: var(--color-text-muted) !important;
   }
 
   /* Footer */
   footer {
     padding: 2rem;
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid var(--color-border);
   }
 
   .footer-row {
@@ -361,7 +331,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .footer-row p {
     font-size: 0.875rem;
-    color: #888;
+    color: var(--color-text-muted);
     margin: 0;
   }
 

@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest } from './lib/auth';
+import { getPrimaryEventRoute } from './lib/event-routing';
 import { isSiteEnabled, features } from './config/features';
 import type { Lang } from './content/strings';
 
@@ -77,7 +78,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const invitedToNyc = auth.eventInvitations.includes('nyc');
   const invitedToFrance = auth.eventInvitations.includes('france');
-  const primaryEventRoute = invitedToNyc ? '/nyc' : '/france';
+  const primaryEventRoute = getPrimaryEventRoute(auth.eventInvitations);
 
   // Event-level route access control
   if (pathname.startsWith('/nyc') && !invitedToNyc) {

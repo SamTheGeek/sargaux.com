@@ -1,0 +1,199 @@
+/*
+ * SARGAUX Design Tokens
+ *
+ * Single source of truth for colors, typography, and spacing.
+ * Derived from docs/brand identity.md — do not add ad-hoc values here.
+ *
+ * Event theming: pages set data-event="nyc" or data-event="france" on <html>.
+ * Default (no attribute) uses NYC colors for the shared/home pages.
+ */
+
+/* === Fonts === */
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/helvetica-now/HelveticaNowDisplay-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTBook.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/futura/FuturaPTDemi.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peignot';
+  src: url('/fonts/Peignot 400.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peignot';
+  src: url('/fonts/peignot-bold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peignot';
+  src: url('/fonts/peignot-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* === Base Tokens (NYC / Default) — Light Mode === */
+
+:root {
+  /* Brand colors — core palette */
+  --color-warm-cream: #F1ECE3;
+  --color-dark-moss: #2F3F36;
+  --color-burnt-amber: #D96A1E;
+  --color-espresso: #3A2E26;
+  --color-prussian-blue: #1B3A6B;
+
+  /* Semantic tokens — NYC light (default) */
+  --color-bg: var(--color-warm-cream);
+  --color-text: var(--color-dark-moss);
+  --color-text-muted: var(--color-espresso);
+  --color-accent: var(--color-burnt-amber);
+  --color-surface: var(--color-dark-moss);
+  --color-surface-text: var(--color-warm-cream);
+  --color-border: var(--color-dark-moss);
+
+  /* Typography */
+  --font-display: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --font-body: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --font-size-hero: 64px;
+  --font-size-h2: 32px;
+  --font-size-h3: 20px;
+  --font-size-body: 16px;
+  --font-size-caption: 12px;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.6;
+  --tracking-heading: 0.08em;
+  --tracking-h3: 0.05em;
+  --tracking-caption: 0.05em;
+
+  /* Spacing — 8px base unit */
+  --space-unit: 8px;
+  --space-xs: 8px;    /* 1 unit */
+  --space-sm: 16px;   /* 2 units */
+  --space-md: 24px;   /* 3 units */
+  --space-lg: 48px;   /* 6 units */
+  --space-xl: 64px;   /* 8 units */
+  --space-2xl: 96px;  /* 12 units */
+
+  /* Layout */
+  --content-max-width: 960px;
+  --page-margin: 64px;
+  --page-margin-mobile: 24px;
+  --grid-columns: 12;
+  --grid-gutter: 24px;
+
+  /* Borders */
+  --border-hairline: 1px solid var(--color-border);
+
+  /* Functional colors — UI states */
+  --color-error: #9B2C2C;
+  --color-error-bg: #FDF2F2;
+  --color-error-border: #E8BFBF;
+  --color-success: #276749;
+  --color-info: #1B4B66;
+  --color-info-bg: #EEF5F9;
+  --color-info-border: #B7D4E8;
+
+  /* Color scheme hint for native controls */
+  color-scheme: light dark;
+}
+
+/* === France Event — Light Mode === */
+
+[data-event="france"] {
+  --color-text: var(--color-prussian-blue);
+  --color-text-muted: var(--color-dark-moss);
+  --color-surface: var(--color-prussian-blue);
+  --color-border: var(--color-prussian-blue);
+
+  --font-display: 'Peignot', 'Georgia', serif;
+  --font-body: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
+}
+
+/* France typography weights per brand spec */
+[data-event="france"] h1 {
+  font-weight: 700; /* Peignot Bold — hero only */
+}
+
+[data-event="france"] h2 {
+  font-weight: 600; /* Peignot Demi */
+}
+
+/* === NYC Dark Mode === */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1A2420;
+    --color-text: var(--color-warm-cream);
+    --color-text-muted: #8A9484;
+    --color-surface: #243530;
+    --color-surface-text: var(--color-warm-cream);
+    --color-border: #2E3E35;
+
+    --color-error: #E8A0A0;
+    --color-error-bg: #2A1A1A;
+    --color-error-border: #4A2020;
+    --color-success: #7BC8A0;
+    --color-info: #8AB0CC;
+    --color-info-bg: #0F1A22;
+    --color-info-border: #1A3040;
+  }
+
+  /* France Dark Mode */
+  [data-event="france"] {
+    --color-bg: #0F1A2E;
+    --color-text: var(--color-warm-cream);
+    --color-text-muted: #7B8FAA;
+    --color-surface: #162040;
+    --color-border: #1A2844;
+  }
+}

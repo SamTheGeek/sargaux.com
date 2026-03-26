@@ -1,6 +1,5 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { features } from '../../config/features';
 import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
@@ -17,585 +16,575 @@ const calendarToken = (features.france.calendarSubscribe && guestId)
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027">
-  <header>
-    <nav class="main-nav">
-      <a href="/" class="logo">{t(strings.global.siteName)}</a>
-      <div class="nav-right">
+<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027" event="france">
+  <header class="site-header" transition:name="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
         {showEventToggle && (
-          <div class="content-box event-toggle">
-            <h3>Event Toggle (if invited to both)</h3>
-            <a href="/nyc" class="toggle-item">{t(strings.global.toggle.nyc)}</a>
-            <span class="toggle-divider">|</span>
-            <span class="toggle-item active">{t(strings.global.toggle.france)}</span>
+          <div class="event-toggle" transition:name="event-toggle">
+            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</a>
+            <span class="divider">|</span>
+            <span class="active event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</span>
           </div>
         )}
-        <a href="/france/rsvp" class="rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        <a href="/france/rsvp" class="btn btn-primary rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
 
   <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <ImagePlaceholder
-        name="france-hero"
-        folder="france"
-        description="Village De Sully exterior — the grounds, main building, or scenic view of the property."
-        aspectRatio="16/9"
-      />
-      <div class="hero-overlay">
-        <h1>{t(strings.france.heroTitle)}</h1>
-        <p class="date">{t(strings.france.heroDate)}</p>
-        <p class="event-type">{t(strings.france.heroEventType)}</p>
+
+    <!-- Destination Header — travel poster style -->
+    <section class="france-hero">
+      <div class="destination-header">
+        <p class="event-location">{t(strings.france.heroLocation)}</p>
+        <h1 class="destination-name">{t(strings.france.heroTitle)}</h1>
+        <p class="event-dates">{t(strings.france.heroDate)}</p>
+        <p class="event-type">Margaux Marie Ancel please tell me what to put here</p>
       </div>
+      <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc"></div>
     </section>
 
-    <!-- Quick Info Section -->
-    <section class="quick-info">
-      <div class="info-cards">
-        <div class="content-box info-card">
-          <h3>{t(strings.france.when.heading)}</h3>
-          <p>{t(strings.france.when.dates)}</p>
-          <p>{t(strings.france.when.desc)}</p>
-        </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.france.where.heading)}</h3>
-          <p><strong>{t(strings.france.where.venue)}</strong></p>
-          <p>{t(strings.france.where.location)}</p>
-          <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" class="map-link" target="_blank">{t(strings.france.where.mapLink)}</a>
-        </div>
-        <div class="content-box info-card">
-          <h3>{t(strings.france.accommodation.heading)}</h3>
-          <p>{t(strings.france.accommodation.stayAtVillage)}</p>
-          <p><strong>{t(strings.france.accommodation.price)}</strong></p>
-          <p class="note"><em>{t(strings.france.accommodation.reserveNote)}</em></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Weekend Overview -->
-    <section class="weekend-overview">
-      <div class="day-cards">
-        <div class="content-box day-card">
-          <h3>{t(strings.france.weekend.friday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.friday.timeEvening)}</p>
-            <p><strong>{t(strings.france.weekend.friday.welcomeDinner)}</strong></p>
-            <p class="desc">{t(strings.france.weekend.friday.welcomeDesc)}</p>
+    <!-- Band: Programme of Events -->
+    <div class="band-header">Programme of Events</div>
+    <section class="programme-section page-content">
+      <div class="programme-timetable">
+        <div class="programme-row">
+          <p class="day-label">{t(strings.france.weekend.friday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.friday.timeEvening)}</span>
+              <span class="event-name">{t(strings.france.weekend.friday.welcomeDinner)}</span>
+            </div>
           </div>
         </div>
-        <div class="content-box day-card highlight">
-          <h3>{t(strings.france.weekend.saturday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.saturday.timeMorning)}</p>
-            <p>{t(strings.france.weekend.saturday.breakfast)}</p>
-            <p class="time">{t(strings.france.weekend.saturday.timeAfternoon)}</p>
-            <p><strong>{t(strings.france.weekend.saturday.ceremony)}</strong></p>
-            <p><strong>{t(strings.france.weekend.saturday.cocktail)}</strong></p>
-            <p class="time">{t(strings.france.weekend.saturday.timeEvening)}</p>
-            <p><strong>{t(strings.france.weekend.saturday.reception)}</strong></p>
+        <hr class="timetable-rule">
+        <div class="programme-row programme-row--main">
+          <p class="day-label">{t(strings.france.weekend.saturday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeMorning)}</span>
+              <span class="event-name">Breakfast</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeAfternoon)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.ceremony)}</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.saturday.timeEvening)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.reception)}</span>
+            </div>
           </div>
         </div>
-        <div class="content-box day-card">
-          <h3>{t(strings.france.weekend.sunday.day)}</h3>
-          <div class="day-content">
-            <p class="time">{t(strings.france.weekend.sunday.timeMorning)}</p>
-            <p>{t(strings.france.weekend.sunday.breakfast)}</p>
-            <p class="time">{t(strings.france.weekend.sunday.timeMidday)}</p>
-            <p><strong>{t(strings.france.weekend.sunday.farewellBrunch)}</strong></p>
+        <hr class="timetable-rule">
+        <div class="programme-row">
+          <p class="day-label">{t(strings.france.weekend.sunday.day)}</p>
+          <div class="day-events">
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.sunday.timeMorning)}</span>
+              <span class="event-name">Breakfast</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.sunday.timeMidday)}</span>
+              <span class="event-name">All day brunch</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Location Map -->
-    <section class="location-map">
-      <h2>{t(strings.france.location.heading)}</h2>
-      <div class="map-placeholder">
-        <p class="placeholder-note">{t(strings.france.location.mapPlaceholder)}</p>
-        <p class="location-context">{t(strings.france.location.context)}</p>
+    <!-- Band: The Details -->
+    <div class="band-header">The Details</div>
+    <section class="details-section page-content">
+      <div class="details-table">
+        <div class="details-row">
+          <p class="details-label">{t(strings.france.where.venueLabel)}</p>
+          <div class="details-value">
+            <span class="details-primary">{t(strings.france.where.venue)}</span>
+            <span class="details-secondary">{t(strings.france.where.location)}</span>
+          </div>
+        </div>
+        <hr class="timetable-rule">
+        <div class="details-row">
+          <p class="details-label">Location</p>
+          <div class="details-value">
+            <a class="details-link" href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank">{t(strings.france.where.mapLink)}</a>
+          </div>
+        </div>
+        <hr class="timetable-rule">
+        <div class="details-row">
+          <p class="details-label">{t(strings.france.accommodation.heading)}</p>
+          <div class="details-value">
+            <span class="details-primary">{t(strings.france.accommodation.stayAtVillage)}</span>
+            <span class="details-secondary">{t(strings.france.accommodation.price)}</span>
+          </div>
+        </div>
+        <hr class="timetable-rule">
+        <div class="details-row">
+          <p class="details-label">{t(strings.france.where.datesLabel)}</p>
+          <div class="details-value">
+            <span class="details-primary">{t(strings.france.when.dates)}</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Calendar Subscribe (Prominent) -->
-    <section class="calendar-subscribe">
-      <div class="calendar-content">
-        <h2>{t(strings.france.calendar.heading)}</h2>
-        <p>{t(strings.france.calendar.subtext)}</p>
-        {calendarToken ? (
-          <a
-            href={`webcal://${Astro.url.host}/api/calendar/${calendarToken}.ics`}
-            class="calendar-btn-prominent"
-          >
-            {t(strings.france.calendar.addBtn)}
-          </a>
-        ) : (
-          <>
-            <button class="calendar-btn-prominent" disabled>{t(strings.france.calendar.addBtn)}</button>
-            <p class="calendar-note">{t(strings.france.calendar.unavailableNote)}</p>
-          </>
-        )}
+    <div class="band-header">{t(strings.france.calendar.heading)}</div>
+    <section class="calendar-prominent-section page-content">
+      <div class="calendar-prominent">
+        <div class="calendar-prominent-copy">
+          <p class="calendar-prominent-label">{t(strings.france.calendar.heading)}</p>
+          <p class="calendar-prominent-text">{t(strings.france.calendar.subtext)}</p>
+        </div>
+        <div class="calendar-prominent-actions">
+          {calendarToken ? (
+            <a
+              href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+              class="calendar-btn-prominent"
+            >
+              {t(strings.france.calendar.addBtn)}
+            </a>
+          ) : (
+            <>
+              <button class="calendar-btn-prominent" disabled>
+                {t(strings.france.calendar.addBtn)}
+              </button>
+              <p class="calendar-prominent-note">{t(strings.france.calendar.unavailableNote)}</p>
+            </>
+          )}
+        </div>
       </div>
     </section>
 
-    <!-- Navigation Cards -->
-    <section class="nav-cards">
-      <nav class="event-nav" aria-label="Event sections">
-        <a href="/france/schedule" class="nav-card">
-          <span class="nav-icon">📅</span>
-          <span class="nav-title">{t(strings.france.nav.schedule.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.schedule.desc)}</span>
+    <!-- Band: Explore -->
+    <div class="band-header">{t(strings.france.nav.explore)}</div>
+    <section class="nav-section">
+      <nav class="strip-nav page-content" aria-label="Event sections">
+        <a href="/france/schedule" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.schedule.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.schedule.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/details" class="nav-card">
-          <span class="nav-icon">🏰</span>
-          <span class="nav-title">{t(strings.france.nav.venue.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.venue.desc)}</span>
+        <a href="/france/details" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.venue.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.venue.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/travel" class="nav-card">
-          <span class="nav-icon">✈️</span>
-          <span class="nav-title">{t(strings.france.nav.travel.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.travel.desc)}</span>
+        <a href="/france/travel" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.travel.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.travel.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/rsvp" class="nav-card highlight">
-          <span class="nav-icon">💌</span>
-          <span class="nav-title">{t(strings.france.nav.rsvp.title)}</span>
-          <span class="nav-desc">{t(strings.france.nav.rsvp.desc)}</span>
+        <a href="/couple" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.couple.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.couple.desc)}</span>
+          <span class="strip-arrow">→</span>
+        </a>
+        <a href="/france/rsvp" class="strip-link strip-link--cta">
+          <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
+          <span class="strip-arrow">→</span>
         </a>
       </nav>
     </section>
 
-    <!-- Venue Preview -->
-    <section class="venue-preview">
-      <div class="venue-grid">
-        <ImagePlaceholder
-          name="france-grounds"
-          folder="france"
-          description="The village grounds — gardens, walkways, outdoor spaces where guests will gather."
-          aspectRatio="4/3"
-        />
-        <ImagePlaceholder
-          name="france-accommodation"
-          folder="france"
-          description="Guest accommodation at the village — room interior or building exterior."
-          aspectRatio="4/3"
-        />
-        <ImagePlaceholder
-          name="france-ceremony"
-          folder="france"
-          description="Ceremony location on the property, or similar outdoor ceremony setting."
-          aspectRatio="4/3"
-        />
-      </div>
-    </section>
-
   </main>
 
-  <footer>
-    <nav class="footer-nav">
+  <footer class="site-footer">
+    <nav>
       <a href="/registry">{t(strings.global.registry)}</a>
-      <span>·</span>
+      <span> · </span>
       <span class="guest-name">{guest}</span>
-      <span>·</span>
+      <span> · </span>
       <a href="/api/logout">{t(strings.global.logout)}</a>
     </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
+    <div class="footer-meta">
+      <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
 </WireframeLayout>
 
 <style>
-  /* Header */
-  header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: white;
-    border-bottom: 1px solid #e5e5e5;
-  }
-
-  .main-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .logo {
-    font-size: 1.25rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    color: #1a1a1a;
-  }
-
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  .event-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem !important;
-  }
-
-  .event-toggle h3 {
-    display: none;
-  }
-
-  .toggle-item {
-    text-decoration: none;
-    color: #888;
-    padding: 0.25rem 0.5rem;
-  }
-
-  .toggle-item.active {
-    color: #1a1a1a;
-    font-weight: 600;
-  }
-
-  .toggle-divider {
-    color: #ccc;
-  }
-
-  .rsvp-btn {
-    display: inline-block;
-    padding: 0.5rem 1.25rem;
-    background: #1a1a1a;
-    color: white;
-    text-decoration: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.025em;
-  }
-
-  .rsvp-btn:hover {
-    background: #333;
-  }
-
-  /* Hero */
-  .hero {
+  /* ── Destination hero — travel poster ── */
+  .france-hero {
     position: relative;
+    min-height: 70vh;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-xl) var(--page-margin) var(--space-xl);
+    overflow: hidden;
   }
 
-  .hero-overlay {
-    padding: 3rem 2rem;
-    text-align: center;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.9), white);
+  .destination-header {
+    position: relative;
+    z-index: 2;
+    max-width: 640px;
   }
 
-  h1 {
-    font-size: 3rem;
-    font-weight: 300;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
+  .event-location {
+    font-size: var(--font-size-caption);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
   }
 
-  .date {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
+  .destination-name {
+    font-size: clamp(56px, 11vw, 128px);
+    line-height: 0.92;
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    font-family: var(--font-display);
+  }
+
+  .event-dates {
+    font-size: var(--font-size-h3);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-h3);
+    margin-bottom: var(--space-xs);
   }
 
   .event-type {
-    font-size: 1.125rem;
-    color: #666;
-  }
-
-  /* Quick Info */
-  .quick-info {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .info-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .info-card p {
-    margin-bottom: 0.5rem;
-  }
-
-  .info-card .note {
-    font-size: 0.75rem;
-    color: #f59e0b;
-    font-style: italic;
-    margin-top: 0.5rem;
-  }
-
-  .map-link {
-    font-size: 0.875rem;
-    color: #666;
-  }
-
-  /* Weekend Overview */
-  .weekend-overview {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .day-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .day-card {
-    min-height: 200px;
-  }
-
-  .day-card.highlight {
-    border-color: #1a1a1a;
-    border-width: 2px;
-  }
-
-  .day-content {
-    margin-top: 0.5rem;
-  }
-
-  .day-content .time {
-    font-size: 0.75rem;
+    font-size: var(--font-size-body);
+    color: var(--color-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #888;
-    margin-top: 1rem;
-    margin-bottom: 0.25rem;
+    letter-spacing: var(--tracking-caption);
   }
 
-  .day-content .time:first-child {
-    margin-top: 0;
+  /* Sun disc — positioned right edge, partially cropped */
+  .sun-disc-large {
+    position: absolute;
+    width: clamp(240px, 45vw, 560px);
+    height: clamp(240px, 45vw, 560px);
+    background: var(--color-accent);
+    border-radius: 50%;
+    right: -8%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
   }
 
-  .day-content p {
-    margin-bottom: 0.25rem;
+  /* ── Weekend programme timetable ── */
+  .programme-section {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
   }
 
-  .day-content .desc {
-    font-size: 0.875rem;
-    color: #666;
+  .programme-timetable {
+    max-width: 640px;
   }
 
-  /* Location Map */
-  .location-map {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .location-map h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .map-placeholder {
-    background: #f5f5f5;
-    border: 1px dashed #ccc;
-    border-radius: 0.5rem;
-    padding: 3rem 2rem;
-    text-align: center;
-  }
-
-  .placeholder-note {
-    font-size: 0.875rem;
-    color: #666;
-    font-style: italic;
-    margin-bottom: 0.75rem;
-  }
-
-  .location-context {
-    font-size: 0.9375rem;
-    color: #444;
-  }
-
-  /* Calendar Subscribe (Prominent) */
-  .calendar-subscribe {
-    padding: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .calendar-content {
-    background: #f9f9f9;
-    border-radius: 0.75rem;
-    padding: 2rem;
-  }
-
-  .calendar-content h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 0.5rem;
-  }
-
-  .calendar-content > p {
-    color: #666;
-    margin-bottom: 1.5rem;
-  }
-
-  .calendar-btn-prominent {
-    padding: 0.875rem 2rem;
-    font-size: 1rem;
-    background: #1a1a1a;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    margin-bottom: 0.75rem;
-  }
-
-  .calendar-btn-prominent:hover:not(:disabled) {
-    background: #333;
-  }
-
-  .calendar-btn-prominent:disabled {
-    background: #888;
-    cursor: not-allowed;
-  }
-
-  .calendar-note {
-    font-size: 0.875rem;
-    color: #888;
-    font-style: italic;
-  }
-
-  /* Navigation Cards */
-  .nav-cards {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .event-nav {
+  .programme-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem;
+    grid-template-columns: 112px 1fr;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    align-items: start;
   }
 
-  .nav-card {
+  .day-label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    padding-top: 3px;
+  }
+
+  .programme-row--main .day-label {
+    color: var(--color-accent);
+  }
+
+  .day-events {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 1.5rem;
-    text-decoration: none;
-    color: #1a1a1a;
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-    text-align: center;
+    gap: var(--space-xs);
   }
 
-  .nav-card:hover {
-    border-color: #1a1a1a;
-    background: #fafafa;
-  }
-
-  .nav-card.highlight {
-    border-color: #1a1a1a;
-    border-width: 2px;
-  }
-
-  .nav-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .nav-title {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
-
-  .nav-desc {
-    font-size: 0.875rem;
-    color: #666;
-  }
-
-  /* Venue Preview */
-  .venue-preview {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .venue-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 0.5rem;
-  }
-
-  /* Footer */
-  footer {
-    padding: 2rem;
-    text-align: center;
-    border-top: 1px solid #e5e5e5;
-    margin-top: 2rem;
-  }
-
-  .footer-nav {
-    margin-bottom: 1rem;
-  }
-
-  .footer-nav a,
-  .footer-nav .guest-name {
-    color: #666;
-    text-decoration: none;
-  }
-
-  .footer-nav a:hover {
-    color: #1a1a1a;
-  }
-
-  .footer-nav span {
-    color: #ccc;
-    margin: 0 0.5rem;
-  }
-
-  .footer-row {
+  .event-item {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
+    gap: var(--space-sm);
+    align-items: baseline;
   }
 
-  .footer-row p {
-    font-size: 0.875rem;
-    color: #888;
+  .event-time {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-text-muted);
+    min-width: 72px;
+    flex-shrink: 0;
+  }
+
+  .event-name {
+    font-size: var(--font-size-body);
+  }
+
+  .timetable-rule {
+    border: none;
+    border-top: 1px solid var(--color-border);
     margin: 0;
   }
 
+  /* ── Details section ── */
+  .details-section {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
+  }
+
+  .details-table {
+    max-width: 640px;
+  }
+
+  .details-row {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: var(--space-md);
+    padding: 20px 0;
+    align-items: start;
+  }
+
+  .details-label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text-muted);
+    padding-top: 3px;
+  }
+
+  .details-value {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  .details-primary {
+    font-weight: 500;
+  }
+
+  .details-secondary {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    line-height: 1.6;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+  }
+
+  .details-link,
+  .details-value a {
+    width: fit-content;
+    font-size: var(--font-size-caption);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    text-decoration: none;
+  }
+
+  /* ── Calendar subscribe ── */
+  .calendar-prominent-section {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
+  }
+
+  .calendar-prominent {
+    max-width: 640px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-lg);
+    align-items: end;
+  }
+
+  .calendar-prominent-copy {
+    max-width: 420px;
+  }
+
+  .calendar-prominent-label {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text-muted);
+  }
+
+  .calendar-prominent-text {
+    margin: 0;
+  }
+
+  .calendar-prominent-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+
+  .calendar-btn-prominent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 24px;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    background: var(--color-accent);
+    color: var(--color-warm-cream);
+    font-family: var(--font-body);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    text-decoration: none;
+    line-height: 1;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .calendar-btn-prominent:hover {
+    color: var(--color-warm-cream);
+    opacity: 0.85;
+  }
+
+  .calendar-btn-prominent:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  .calendar-prominent-note {
+    margin: 0;
+    max-width: 280px;
+    font-size: var(--font-size-caption);
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+
+  /* ── Navigation strip ── */
+  .strip-nav {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
+  }
+
+  .strip-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color 0.15s;
+  }
+
+  .strip-link:first-child {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .strip-link:hover {
+    color: var(--color-accent);
+  }
+
+  .strip-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-h3);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .strip-desc {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-muted);
+    text-align: right;
+  }
+
+  .strip-arrow {
+    color: var(--color-accent);
+  }
+
+  .strip-link--cta .strip-title {
+    color: var(--color-accent);
+  }
+
+  /* ── Footer ── */
+  .footer-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: var(--space-xs);
+  }
+
+  /* ── Header nav button — fixed height prevents font-metric jumps between events ── */
+  .rsvp-btn {
+    height: 32px;
+    padding: 0 24px;
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--font-size-caption);
+    line-height: 1;
+    /* Orange CTA — overrides .btn-primary which uses --color-text (Prussian blue on France) */
+    background: var(--color-accent) !important;
+    color: var(--color-warm-cream) !important;
+  }
+
   @media (max-width: 768px) {
-    h1 {
-      font-size: 2rem;
-    }
-
-    .date {
-      font-size: 1.25rem;
-    }
-
-    .main-nav {
+    .france-hero {
+      min-height: 60vh;
+      padding: var(--space-lg) var(--page-margin-mobile);
+      align-items: flex-start;
       flex-direction: column;
-      text-align: center;
+      justify-content: flex-end;
     }
 
-    .nav-right {
-      flex-direction: column;
+    .sun-disc-large {
+      top: 0;
+      right: -20%;
+      transform: none;
+    }
+
+    .programme-row {
+      grid-template-columns: 88px 1fr;
+    }
+
+    .details-row {
+      display: block;
+      padding: 16px 0;
+    }
+
+    .details-label {
+      display: block;
+      margin-bottom: 8px;
+      padding-top: 0;
+    }
+
+    .details-value {
+      gap: 4px;
+      max-width: 100%;
+    }
+
+    .calendar-prominent {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+      align-items: start;
+    }
+
+    .calendar-prominent-actions {
+      align-items: stretch;
+    }
+
+    .calendar-btn-prominent {
+      width: 100%;
+    }
+
+    .calendar-prominent-note {
+      max-width: none;
     }
   }
 </style>

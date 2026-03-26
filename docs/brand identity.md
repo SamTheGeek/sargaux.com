@@ -51,7 +51,7 @@ All layouts are built on an **8px base unit**. Every size, margin, padding, and 
 
 ### 1.5 Shared Motif — The Sun Disc
 
-A perfect geometric circle, flat color, no texture, no gradient. Often cropped by the edge of the composition. Never decorative — it is a structural element and the single graphic motif shared across both event identities. Color varies by event (Burnt Amber for NYC, Prussian Blue for France), but the form is identical.
+A perfect geometric circle, flat color, no texture, no gradient. Often cropped by the edge of the composition. Never decorative — it is a structural element and the single graphic motif shared across both event identities. Always Burnt Amber (#D96A1E) — it represents both the sun and the subway, and is the connective thread between events. The form and color are identical across both identities.
 
 ### 1.6 Shared Design Rules
 
@@ -196,11 +196,11 @@ All headings: ALL CAPS. Body: sentence case.
 | Name | Hex | Role |
 |------|-----|------|
 | Warm Cream | #F1ECE3 | Background — same as NYC |
-| Prussian Blue | #1B3A6B | Primary text, headings — replaces Dark Moss |
-| Burnt Amber | #D96A1E | Accent — TGV livery |
-| Dark Moss | #2F3F36 | Secondary text, borders |
+| Prussian Blue | #1B3A6B | Primary text, headings |
+| Burnt Amber | #D96A1E | Accent — TGV livery, sun disc |
+| Dark Moss | #2F3F36 | Tertiary — used sparingly where a green accent is appropriate |
 
-The swap from Dark Moss to Prussian Blue as the primary text color is the visual signal of France. It evokes ocean liner hulls, railway night skies, and the deep blues of PLM/SNCF poster printing.
+The swap from Dark Moss to Prussian Blue as the primary text color is the visual signal of France. It evokes ocean liner hulls, railway night skies, and the deep blues of PLM/SNCF poster printing. Dark Moss is demoted to a tertiary role — it may appear in small accents but should not compete with Prussian Blue for dominance.
 
 ### 3.3 Motifs
 
@@ -214,6 +214,100 @@ The swap from Dark Moss to Prussian Blue as the primary text color is the visual
 VILLAGE DE SULLY
 MAY 28–30, 2027
 ```
+
+---
+
+## Part 4: Derived System Colors
+
+These colors are derived from the core palette for use in the digital design system (CSS tokens). They are not new brand colors — each is a tint or shade of an existing core color, documented here with its derivation logic. Subject to refinement based on testing and feedback.
+
+### 4.1 Derivation Rules
+
+- **Surface (cards):** Inverted — use the event's primary text color as card background, Warm Cream as card text. In dark mode, lighten the dark background by ~8% to create card distinction without bright rectangles.
+- **Border:** Same as primary text color in light mode (hairline rules per brand). In dark mode, lighten the background by ~12% for subtle separation.
+- **Muted text:** In light mode, use the secondary brand color. In dark mode, desaturate and lighten the primary text color to ~60% perceived brightness.
+- **Dark mode background:** Darken the event's primary text color significantly (~85% darker) to create a deep, tinted background — never neutral gray.
+
+### 4.2 NYC System Colors
+
+| Token | Light | Dark | Derivation |
+|-------|-------|------|------------|
+| Background | #F1ECE3 | #1A2420 | Core cream / Dark Moss darkened 85% |
+| Text | #2F3F36 | #F1ECE3 | Core Dark Moss / inverted to cream |
+| Text muted | #3A2E26 | #8A9484 | Core Espresso / Dark Moss at 60% brightness |
+| Accent | #D96A1E | #D96A1E | Burnt Amber — constant |
+| Surface | #2F3F36 | #243530 | Dark Moss / dark bg lightened 8% |
+| Surface text | #F1ECE3 | #F1ECE3 | Always cream on inverted surfaces |
+| Border | #2F3F36 | #2E3E35 | Dark Moss / dark bg lightened 12% |
+
+### 4.3 France System Colors
+
+| Token | Light | Dark | Derivation |
+|-------|-------|------|------------|
+| Background | #F1ECE3 | #0F1A2E | Core cream / Prussian Blue darkened 85% |
+| Text | #1B3A6B | #F1ECE3 | Core Prussian Blue / inverted to cream |
+| Text muted | #2F3F36 | #7B8FAA | Core Dark Moss (tertiary) / Prussian Blue at 60% brightness |
+| Accent | #D96A1E | #D96A1E | Burnt Amber — constant |
+| Surface | #1B3A6B | #162040 | Prussian Blue / dark bg lightened 8% |
+| Surface text | #F1ECE3 | #F1ECE3 | Always cream on inverted surfaces |
+| Border | #1B3A6B | #1A2844 | Prussian Blue / dark bg lightened 12% |
+
+---
+
+## Part 5: Design Inspiration Reference
+
+These sites were reviewed as design references. Notes capture what is relevant to sargaux.com — not to copy, but to understand the design language.
+
+### 5.1 Key Patterns Across All References
+
+Every reference site shares one trait: **no bordered content boxes as the primary layout unit.** Content is organized by whitespace, full-width bands, hairline rules, scale contrast, and color fields — not rectangles with borders. This is the single biggest gap between the current site and where it needs to go.
+
+Other shared patterns:
+- **Large type as the primary visual element** — not headers above content boxes, but type *that is* the content
+- **Full-width sections** that bleed edge-to-edge, separated by color shifts, hairlines, or vertical space
+- **Horizontal motion** — content often reads across the page before down it
+- **Personality through scale contrast** — a 64px heading next to 12px caption text creates visual drama
+- **No visual clichés** — no rounded corners, no drop shadows, no gradients, no icon-in-a-box patterns
+
+### 5.2 Site-by-Site Notes
+
+**Jones Bar-B-Q (jonesbbqkc.com)**
+Most relevant to NYC. Full-width sections in alternating widths, editorial bold headlines as visual anchors, generous whitespace between bands, no cards or boxes. Animated marquee text creates kinetic energy without decoration. Bold and statement-driven, not text-heavy.
+
+**Jus Jus Verjus (jusjus.saladforpresident.com)**
+Most relevant to France. Refined minimalism meets illustration warmth. Horizontal rules as section dividers (not boxes), alternating text/image layouts, high-contrast type on white. The art-meets-product narrative style is close to the travel poster spirit we want.
+
+**Thirsty Dumpling (thirstydumpling.com)**
+Good reference for sub-page information structure: numbered steps without boxes, substantial whitespace between sections, punchy short copy. Information flows as a vertical narrative, not a grid of cards.
+
+**Mack & Pouya (mackpouya.webflow.io)**
+Reference for the event landing page hero: full-screen, immersive, hero-first. Horizontal scroll and layered depth. Shows how photo + large type can work together with no boxes.
+
+**byMarkLange (bymarklange.com)**
+Reference for asymmetric, layered composition. Elements don't have to stack — they can overlap, float, and rotate. Useful for thinking about the France poster-style layout where the destination header and the sun disc can be placed with intention rather than stacked.
+
+**diana.lu, yelena-sophia.webflow.io**
+Reference for portfolio-style editorial whitespace and text-as-navigation. Sections introduced by plain text with no containers.
+
+**Johnny Harris (johnnyharris.ch)**
+Reference for editorial journalist aesthetic — structured but not boxed, credibility through hierarchy not decoration.
+
+### 5.3 Implications for This Site
+
+**What must change:**
+- All `.content-box`, `.travel-card`, `.info-card`, `.day-card`, `.timeline-item` bordered containers must go
+- Sub-page content should live in full-width bands separated by `<hr class="section-rule">` hairlines
+- The 64px h1 with ALL CAPS tracking must dominate, not be overridden to 2.5rem/font-weight:300
+- The sun disc (§1.5) must be a rendered CSS circle on event landing pages, not a concept
+
+**NYC page structure should feel like:**
+A subway information panel. Fixed-width columns with clear labels. Information presented in rows, not boxes. Station disc (●) as a bullet for key facts. Hairlines divide zones.
+
+**France page structure should feel like:**
+A vintage travel poster rendered as a webpage. Peignot destination header at full scale. Content cascades below in a clear typographic hierarchy. Route arc motif appears once. No boxes — information sits openly on the cream field.
+
+**Interior pages (schedule, details, travel):**
+Content flows as a single-column editorial narrative. For schedule/timeline: train-timetable layout — time left-aligned, event name large, location small below — not timeline boxes. For travel: clear section headers with open body text below, no travel-card containers.
 
 ---
 

@@ -82,6 +82,12 @@ The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to
 
 **IMPORTANT - Port 1213**: The development server and all tests use port **1213** (December 13th - the engagement date). This is a sentimental choice and must NEVER be changed. Do not use port 4321 or any other port.
 
+**Server choice guidance**:
+
+- Prefer the built server path used by Playwright when validating production behavior. `npm test` and targeted Playwright runs are the most reliable source of truth for route transitions, auth redirects, and asset loading.
+- `npm run dev` can be less reliable in this repo because the Netlify adapter may attempt writes outside the workspace during local startup.
+- If browser behavior and source code disagree, rebuild first and then verify against the built app before assuming the code is wrong.
+
 ```bash
 # Start development server (http://localhost:1213 - engagement date!)
 npm run dev
@@ -94,7 +100,7 @@ npm run preview
 
 # Run all tests (accessibility, best practices, auth, and performance)
 # Note: This automatically installs Playwright browsers if needed
-# Tests run against built server: node ./dist/server/entry.mjs
+# Tests run against the built server configured in playwright.config.ts
 npm test
 
 # Quick verification (build + all tests)
@@ -128,7 +134,7 @@ The project includes 51 automated tests that run on every PR:
    - Semantic HTML structure
 
 2. **Auth Tests** (`tests/auth.spec.ts` + `tests/auth-unit.spec.ts`)
-   - Login modal behavior (open, close, escape, backdrop)
+   - Homepage inline login behavior (`Entrée` -> inline name field)
    - Login with valid/invalid names, case sensitivity, whitespace
    - Session cookie properties (httpOnly, base64 JSON payload)
    - Login API response shapes (200, 400, 401)
@@ -154,6 +160,29 @@ All test suites run simultaneously in CI. **Important**: CI tests only run when 
 - API tests that require Notion backend use `test.skip()` to gracefully skip when `FEATURE_GLOBAL_NOTION_BACKEND` is not enabled
 - Use `.skip()` for placeholder tests that will be enabled in future phases
 - `beforeAll` hooks can get auth cookies once and reuse across test suite
+
+**Targeted verification commands that are especially useful:**
+
+```bash
+# Auth, event routing, and middleware access-control
+npx playwright test tests/event-routing.spec.ts tests/auth.spec.ts tests/access-control.spec.ts
+
+# Accessibility-only quick pass
+npm run test:quick
+```
+
+**Homepage login behavior to remember when testing:**
+
+- The homepage login is an inline control, not a modal.
+- The active state is intentionally subtle: the dark bar stays in the same place, and the most visible change is `Entrée` becoming the `Your name` placeholder plus the arrow submit button.
+- If `Entrée` appears to "do nothing", inspect focus and DOM state before assuming a click handler failure.
+- The hidden state must keep the input shell out of the focus order. Regressions here will show up in the accessibility suite.
+
+**Transition testing notes:**
+
+- For NYC/France route transitions, verify both visual motion and element stability for the shared amber disc, the `Chez Sargaux` header logo, the event toggle, and the top-right RSVP button.
+- The header right-side controls are intended to stay pinned to the same right edge across NYC and France. Avoid changes that let differing text metrics shift those controls horizontally.
+- If a transition appears broken, confirm whether the element still has the expected `transition:name` before changing layout or JS.
 
 ## Git Workflow
 
@@ -222,6 +251,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `src/pages/` - Astro pages (file-based routing)
 - `src/pages/api/` - Server-side API endpoints (login, logout, RSVP)
 - `src/lib/auth.ts` - Authentication utilities (name validation, session tokens)
+- `src/lib/event-routing.ts` - Shared default event-routing rules
 - `src/lib/notion.ts` - Notion client wrapper (guest data fetching)
 - `src/types/guest.ts` - GuestRecord type definition
 - `src/config/features.ts` - Build-time feature flags
@@ -238,9 +268,11 @@ The project version in `package.json` follows semantic versioning with wedding m
 - Uses Astro's minimal template as the base
 - TypeScript strict mode is enabled for type safety
 - File-based routing: pages in `src/pages/` become routes
-- Static assets in `public/` are served at root path
+- SVGs used by pages should prefer Astro-managed imports from `src/assets/` over hard-coded `/public` paths. This is especially important for critical visual elements like the NYC skyline and favicons.
 - SSR enabled with `@astrojs/node` adapter (standalone mode)
 - **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
+- **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept.
+- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` across the homepage, NYC, and France pages. The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
 - **Notion SDK**: Uses `@notionhq/client` v5.x targeting Notion API v2025-09-03. Key difference from older versions: `dataSources.query()` replaces `databases.query()`, using `data_source_id` instead of `database_id`. See [upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
 
 ## Authentication
@@ -253,6 +285,13 @@ The project version in `package.json` follows semantic versioning with wedding m
 - Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated
 - `Astro.locals.guest` (string) — guest display name, available in all protected pages
 - `Astro.locals.guestId` (string) — Notion page ID, available when notionBackend is enabled
+- Default event routing must be centralized through `src/lib/event-routing.ts`
+- Guests invited only to NYC default to `/nyc`
+- Guests invited only to France default to `/france`
+- Guests invited to both events default to `/nyc` through **October 14, 2026**
+- Guests invited to both events default to `/france` starting **October 15, 2026**
+- The dual-invite cutoff is evaluated in the `America/New_York` time zone
+- Homepage redirect, login API redirect, and middleware fallback redirects must stay aligned with the same shared helper
 
 ## Secrets & API Keys
 
