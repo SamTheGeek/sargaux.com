@@ -1,8 +1,7 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../components/ImagePlaceholder.astro';
 import { getAuthenticatedGuest } from '../lib/auth';
-import { isSiteEnabled, isEnabled } from '../config/features';
+import { isSiteEnabled } from '../config/features';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import LangSwitcher from '../components/LangSwitcher.astro';
@@ -17,269 +16,365 @@ if (isSiteEnabled()) {
 }
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const emptyError = t(strings.home.modal.errorEmpty);
+const defaultError = t(strings.home.modal.errorDefault);
+const checkingLabel = t(strings.home.modal.checkingBtn);
+const submitLabel = t(strings.home.modal.submitBtn);
 ---
 
 {isSiteEnabled() ? (
   <WireframeLayout title={t(strings.home.pageTitle)}>
-    <main>
-      <section class="hero">
-        <div class="hero-image">
-          <ImagePlaceholder
-            name="hero-main"
-            folder="hero"
-            description="Full-width couple photo — candid moment, engagement-style, or favorite photo together. Should feel warm and inviting."
-            aspectRatio="21/9"
-          />
-        </div>
-        <div class="hero-content">
-          <h1>{t(strings.home.heroTitle)}</h1>
-          <hr class="section-rule" />
-          <p class="tagline">{t(strings.home.tagline)}</p>
-          <div class="cta-area">
-            <button class="btn btn-outline" id="login-trigger">{t(strings.home.ctaEnter)}</button>
+    <main class="landing-shell">
+      <section class="landing-hero">
+        <div class="hero-disc" aria-hidden="true"></div>
+        <div class="hero-grid page-content">
+          <div class="hero-copy">
+            <p class="eyebrow">Vous êtes les bienvenus à</p>
+            <h1>{t(strings.home.heroTitle)}</h1>
+            <p class="hero-subtitle">{t(strings.home.tagline)}</p>
+            <hr class="section-rule hero-rule" />
           </div>
+
+          <aside class="login-panel" aria-labelledby="login-panel-title">
+            <form id="login-form" class="inline-login-form">
+              <label for="name" class="visually-hidden">{t(strings.home.modal.nameLabel)}</label>
+              <div class="inline-entry-control" id="inline-entry-control">
+                <button type="button" class="btn btn-primary login-trigger-panel" id="login-trigger">
+                  {t(strings.home.ctaEnter)}
+                </button>
+                <div class="inline-name-shell" aria-hidden="true">
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="inline-name-input"
+                    placeholder={t(strings.home.modal.namePlaceholder)}
+                    autocomplete="off"
+                    autocapitalize="words"
+                    spellcheck="false"
+                    required
+                  />
+                </div>
+              </div>
+              <button type="submit" class="visually-hidden" id="submit-btn">
+                {t(strings.home.modal.submitBtn)}
+              </button>
+              <div id="error-message" class="error-message" aria-live="polite"></div>
+            </form>
+            <p class="panel-intro" id="login-panel-title">Please enter your name</p>
+            <p class="panel-copy">As it appears on your invitation.</p>
+          </aside>
         </div>
       </section>
-
-      {isEnabled('homepage.teaser') && (
-        <section class="teaser">
-          <p class="teaser-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-        </section>
-      )}
     </main>
 
-    <!-- Login Modal -->
-    <div class="modal-backdrop" id="login-modal" aria-hidden="true" inert>
-      <div class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
-        <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
-
-        <h2 id="modal-title">{t(strings.home.modal.title)}</h2>
-        <p class="modal-subtitle">{t(strings.home.modal.subtitle)}</p>
-
-        <form id="login-form">
-          <label for="name" class="visually-hidden">{t(strings.home.modal.nameLabel)}</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder={t(strings.home.modal.namePlaceholder)}
-            autocomplete="off"
-            autocapitalize="words"
-            spellcheck="false"
-            required
-          />
-          <div id="error-message" class="error-message" aria-live="polite"></div>
-          <button type="submit" class="btn btn-primary submit-btn" id="submit-btn">{t(strings.home.modal.submitBtn)}</button>
-        </form>
-      </div>
-    </div>
-
-    <footer class="site-footer">
+    <footer class="site-footer landing-footer">
       <div class="footer-row">
         <p class="copyright">&copy; 2026 Sam Gross</p>
         <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
       </div>
     </footer>
 
-
     <style>
-    main {
-      flex: 1;
-    }
-
-    .hero {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .hero-image {
-      width: 100%;
-    }
-
-    .hero-content {
-      padding: var(--space-xl) var(--page-margin);
-      text-align: center;
-      max-width: var(--content-max-width);
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .hero-content .section-rule {
-      max-width: 120px;
-      margin: var(--space-md) auto;
-    }
-
-    .tagline {
-      font-size: var(--font-size-h3);
-      color: var(--color-text-muted);
-      margin-bottom: var(--space-lg);
-    }
-
-    .cta-area {
-      margin-top: var(--space-sm);
-    }
-
-    /* Teaser */
-    .teaser {
-      padding: var(--space-xl) var(--page-margin);
-      max-width: 640px;
-      margin: 0 auto;
-      text-align: center;
-      content-visibility: auto;
-      contain-intrinsic-size: 200px;
-    }
-
-    .teaser-text {
-      color: var(--color-text-muted);
-      line-height: 1.8;
-    }
-
-    /* Modal */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1001;
-      padding: var(--space-sm);
-      opacity: 1;
-      transition: opacity 0.2s;
-    }
-
-    .modal-backdrop[aria-hidden="true"] {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .modal {
-      background: var(--color-bg);
-      padding: var(--space-lg);
-      max-width: 400px;
-      width: 100%;
-      position: relative;
-      transform: scale(1);
-      transition: transform 0.2s;
-    }
-
-    .modal-backdrop[aria-hidden="true"] .modal {
-      transform: scale(0.95);
-    }
-
-    .modal-close {
-      position: absolute;
-      top: var(--space-sm);
-      right: var(--space-sm);
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--color-text-muted);
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-close:hover {
-      color: var(--color-text);
-    }
-
-    .modal h2 {
-      margin-bottom: var(--space-xs);
-      text-align: center;
-    }
-
-    .modal-subtitle {
-      color: var(--color-text-muted);
-      text-align: center;
-      margin-bottom: var(--space-md);
-      font-size: 0.9375rem;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    form input {
-      text-align: center;
-    }
-
-    .error-message {
-      color: var(--color-error);
-      font-size: 0.875rem;
-      text-align: center;
-      min-height: 1.25rem;
-    }
-
-    .submit-btn {
-      width: 100%;
-    }
-
-    .submit-btn:disabled {
-      cursor: not-allowed;
-    }
-
-    .footer-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    @media (max-width: 768px) {
-      .hero-content {
-        padding: var(--space-lg) var(--page-margin-mobile);
+      main {
+        flex: 1;
       }
 
-      .tagline {
+      .landing-shell {
+        position: relative;
+        overflow: clip;
+      }
+
+      .landing-hero {
+        position: relative;
+        padding: var(--space-xl) 0 var(--space-lg);
+        min-height: min(820px, calc(100vh - 120px));
+        display: flex;
+        align-items: center;
+      }
+
+      .hero-disc {
+        position: absolute;
+        width: clamp(240px, 34vw, 520px);
+        height: clamp(240px, 34vw, 520px);
+        border-radius: 50%;
+        background: var(--color-accent);
+        left: clamp(-96px, -8vw, -32px);
+        top: clamp(24px, 8vw, 96px);
+        z-index: 0;
+      }
+
+      .hero-grid {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+        align-items: center;
+        justify-items: center;
+      }
+
+      .hero-copy {
+        max-width: 760px;
+        padding-top: var(--space-2xl);
+        text-align: left;
+        justify-self: stretch;
+      }
+
+      .eyebrow {
+        font-size: var(--font-size-caption);
+        letter-spacing: var(--tracking-heading);
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        margin-bottom: var(--space-sm);
+        max-width: none;
+        white-space: nowrap;
+      }
+
+      .hero-copy h1 {
+        font-size: clamp(64px, 12vw, 156px);
+        line-height: 0.9;
+        margin-bottom: var(--space-sm);
+        max-width: 6ch;
+      }
+
+      .hero-subtitle {
+        font-size: clamp(18px, 2.8vw, 32px);
+        line-height: 1.2;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .hero-rule {
+        width: min(100%, 280px);
+        margin: var(--space-md) 0 0;
+      }
+
+      .login-panel {
+        position: relative;
+        width: min(100%, 420px);
+        padding: 0;
+        display: grid;
+        gap: var(--space-sm);
+        justify-items: center;
+        text-align: center;
+      }
+
+      .panel-intro {
+        font-family: var(--font-display);
+        font-size: var(--font-size-h3);
+        line-height: 1.2;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-h3);
+      }
+
+      .panel-copy {
+        color: var(--color-text-muted);
+        max-width: 28ch;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-caption);
+        font-size: var(--font-size-caption);
+      }
+
+      .login-trigger-panel {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+      }
+
+      .inline-login-form {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .inline-entry-control {
+        width: 100%;
+        position: relative;
+        min-height: 48px;
+      }
+
+      .inline-name-shell {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .login-trigger-panel,
+      input.inline-name-input {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        padding: 12px 32px;
+        background: var(--color-text);
+        color: var(--color-surface-text);
+        -webkit-text-fill-color: var(--color-surface-text);
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-h3);
+        font-weight: 500;
         font-size: var(--font-size-body);
+        line-height: 1;
+        text-align: center;
+        caret-color: currentColor;
+        border-radius: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        box-shadow: none;
+        cursor: pointer;
       }
-    }
+
+      input.inline-name-input::placeholder {
+        color: rgba(241, 236, 227, 0.68);
+        -webkit-text-fill-color: rgba(241, 236, 227, 0.68);
+        opacity: 1;
+        text-align: center;
+        font-style: italic;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+
+      input.inline-name-input:focus {
+        outline: none;
+        border: none;
+        cursor: text;
+      }
+
+      .inline-entry-control.is-active .login-trigger-panel {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .inline-entry-control.is-active .inline-name-shell {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .error-message {
+        color: var(--color-error);
+        font-size: 0.875rem;
+        min-height: 1.25rem;
+        order: 2;
+      }
+
+      .landing-footer {
+        margin-top: 0;
+      }
+
+      .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .landing-shell {
+          background:
+            radial-gradient(circle at 84% 24%, rgba(217, 106, 30, 0.18), transparent 0 26%),
+            linear-gradient(180deg, rgba(22, 32, 64, 0.24), transparent 240px);
+        }
+
+        .hero-copy h1,
+        .panel-intro {
+          font-family: 'Peignot', 'Georgia', serif;
+          letter-spacing: 0.05em;
+          font-weight: 700;
+        }
+
+        .hero-subtitle,
+        .panel-copy,
+        input,
+        button {
+          font-family: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
+        }
+
+        .login-panel {
+          background: transparent;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .landing-hero {
+          min-height: auto;
+          padding-top: var(--space-lg);
+        }
+
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-copy {
+          padding-top: var(--space-xl);
+        }
+
+        .login-panel {
+          width: min(100%, 520px);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .landing-hero {
+          padding-bottom: var(--space-md);
+        }
+
+        .hero-copy {
+          padding-top: 120px;
+        }
+
+        .hero-copy h1 {
+          max-width: none;
+        }
+
+        .eyebrow {
+          white-space: normal;
+        }
+
+        .panel-copy {
+          max-width: none;
+        }
+      }
     </style>
   </WireframeLayout>
 
-  <script is:inline type="module">
-    const modal = document.getElementById('login-modal');
-    const trigger = document.getElementById('login-trigger');
-    const closeBtn = document.getElementById('modal-close');
-    const nameInput = document.getElementById('name');
+  <script is:inline define:vars={{ emptyError, defaultError, checkingLabel, submitLabel }}>
     const form = document.getElementById('login-form');
+    const entryControl = document.getElementById('inline-entry-control');
+    const trigger = document.getElementById('login-trigger');
+    const nameInput = document.getElementById('name');
     const errorMessage = document.getElementById('error-message');
     const submitBtn = document.getElementById('submit-btn');
-
-    const openModal = () => {
-      if (modal) {
-        modal.setAttribute('aria-hidden', 'false');
-        modal.removeAttribute('inert');
-      }
-      document.body.style.overflow = 'hidden';
-      nameInput?.focus();
+    const activateInlineForm = () => {
+      entryControl?.classList.add('is-active');
+      requestAnimationFrame(() => {
+        nameInput?.focus();
+        const length = nameInput?.value.length ?? 0;
+        nameInput?.setSelectionRange(length, length);
+      });
     };
 
-    const closeModal = () => {
-      if (modal) {
-        modal.setAttribute('aria-hidden', 'true');
-        modal.setAttribute('inert', '');
-      }
-      document.body.style.overflow = '';
-      if (errorMessage) errorMessage.textContent = '';
+    const collapseInlineForm = () => {
+      if ((nameInput?.value ?? '').trim()) return;
+      entryControl?.classList.remove('is-active');
     };
 
     const showError = (message) => {
@@ -288,34 +383,43 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       }
     };
 
-    trigger?.addEventListener('click', openModal);
-    closeBtn?.addEventListener('click', closeModal);
+    const resetSubmitState = () => {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitLabel;
+      }
+    };
 
-    // Close on backdrop click
-    modal?.addEventListener('click', (event) => {
-      if (event.target === modal) closeModal();
+    trigger?.addEventListener('click', () => {
+      activateInlineForm();
+      if (errorMessage) errorMessage.textContent = '';
     });
 
-    // Close on Escape
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && modal?.getAttribute('aria-hidden') === 'false') {
-        closeModal();
+    nameInput?.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        collapseInlineForm();
+      }, 0);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!entryControl?.contains(event.target)) {
+        collapseInlineForm();
       }
     });
 
-    // Handle form submission
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
 
       const name = nameInput?.value.trim() ?? '';
       if (!name) {
-        showError('Please enter your name');
+        showError(emptyError);
+        activateInlineForm();
         return;
       }
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Checking...';
+        submitBtn.textContent = checkingLabel;
       }
 
       try {
@@ -332,18 +436,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         if (response.ok) {
           window.location.href = data.redirectPath || '/nyc';
         } else {
-          showError(data.error || 'Something went wrong. Please try again.');
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Continue';
-          }
+          showError(data.error || defaultError);
+          resetSubmitState();
         }
       } catch (error) {
-        showError('Something went wrong. Please try again.');
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Continue';
-        }
+        showError(defaultError);
+        resetSubmitState();
       }
     });
   </script>
