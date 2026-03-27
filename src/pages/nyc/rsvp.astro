@@ -11,6 +11,8 @@ import type { RSVPResponse } from '../../types/rsvp';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 
 let party: GuestRecord[] = [];
 let coreEvents: EventRecord[] = [];
@@ -99,84 +101,117 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 ---
 
 <WireframeLayout title={t(strings.nyc.rsvp.pageTitle)} event="nyc">
-  <header class="site-header">
+
+  <!-- NYC-style header -->
+  <header class="site-header nyc-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/nyc" class="back-link">{t(strings.nav.backToEvent)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
+          </div>
+        )}
+      </div>
     </nav>
   </header>
 
-  <main>
-    <h1>{t(strings.nyc.rsvp.heading)}</h1>
-    <p class="subtitle">{t(strings.nyc.rsvp.subtitle)} <span class="tentative">{t(strings.nyc.rsvp.subtitleTentative)}</span></p>
+  <main class="rsvp-page">
 
-    <div class="deadline-banner">
-      <p>{t(strings.nyc.rsvp.deadline)} <strong>{t(strings.nyc.rsvp.deadlineDate)}</strong></p>
+    <!-- ── Cream hero — discs contained via overflow:hidden ── -->
+    <div class="rsvp-hero">
+      <div class="rsvp-disc-m" aria-hidden="true">M</div>
+      <div class="rsvp-disc-s" aria-hidden="true">S</div>
+      <div class="page-content rsvp-hero-inner">
+        <a href="/nyc" class="back-link rsvp-back">{t(strings.nav.backToEvent)}</a>
+        <h1>{t(strings.nyc.rsvp.heading)}</h1>
+        <p class="rsvp-subtitle">{t(strings.nyc.rsvp.subtitle)}</p>
+      </div>
+    </div>
+
+    <!-- ── Deadline band (full-width) ── -->
+    <div class="rsvp-deadline-band">
+      <div class="page-content rsvp-deadline-inner">
+        <span class="deadline-label">{t(strings.nyc.rsvp.deadline)}</span>
+        <strong class="deadline-date">{t(strings.nyc.rsvp.deadlineDate)}</strong>
+      </div>
     </div>
 
     {!guestId && !isPreview ? (
-      <div class="error-card" data-testid="notion-required">
-        <h2>{t(strings.nyc.rsvp.unavailable.heading)}</h2>
-        <p>{t(strings.nyc.rsvp.unavailable.text)}</p>
+      <div class="page-content">
+        <div class="rsvp-error-wrap">
+          <div class="error-card" data-testid="notion-required">
+            <h2>{t(strings.nyc.rsvp.unavailable.heading)}</h2>
+            <p>{t(strings.nyc.rsvp.unavailable.text)}</p>
+          </div>
+        </div>
       </div>
     ) : loadError ? (
-      <div class="error-card" data-testid="rsvp-load-error">
-        <h2>{t(strings.nyc.rsvp.loadError.heading)}</h2>
-        <p>{loadError}</p>
+      <div class="page-content">
+        <div class="rsvp-error-wrap">
+          <div class="error-card" data-testid="rsvp-load-error">
+            <h2>{t(strings.nyc.rsvp.loadError.heading)}</h2>
+            <p>{loadError}</p>
+          </div>
+        </div>
       </div>
     ) : (
       <>
         {existingRSVP && (
-          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-            <p>
-              {t(strings.nyc.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.
-              {t(strings.nyc.rsvp.existingBanner.suffix)}
-            </p>
-          </aside>
+          <div class="page-content">
+            <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
+              <p>
+                {t(strings.nyc.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.{' '}
+                {t(strings.nyc.rsvp.existingBanner.suffix)}
+              </p>
+            </aside>
+          </div>
         )}
 
         <form class="rsvp-form" id="rsvp-form" data-event="nyc">
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.whosComing.heading)}</h2>
+
+          <!-- ── Who's Coming ── -->
+          <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
+          <div class="rsvp-section page-content">
             <p class="section-note">{t(strings.nyc.rsvp.form.whosComing.note)}</p>
-
-            {party.map((partyGuest) => {
-              const isAttending =
-                attendingNames.size > 0 ? attendingNames.has(partyGuest.name) : !partyGuest.isPlusOne;
-
-              return (
-                <div class:list={["guest-row", partyGuest.isPlusOne && 'plus-one']} data-guest-row>
-                  <label class="guest-toggle">
-                    <input
-                      type="checkbox"
-                      class="guest-attending"
-                      checked={isAttending}
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
-                  <div class="guest-info">
-                    <input
-                      type="text"
-                      class="guest-name"
-                      value={partyGuest.name}
-                      data-plus-one={partyGuest.isPlusOne ? 'true' : 'false'}
-                    />
-                    <span class="guest-status">{isAttending ? t(strings.global.attending) : t(strings.global.notAttending)}</span>
+            <div class="guest-list">
+              {party.map((partyGuest) => {
+                const isAttending = attendingNames.size > 0 ? attendingNames.has(partyGuest.name) : !partyGuest.isPlusOne;
+                return (
+                  <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row>
+                    <label class="guest-toggle">
+                      <input type="checkbox" class="guest-attending" checked={isAttending} />
+                      <span class="toggle-slider"></span>
+                    </label>
+                    <div class="guest-info">
+                      <input
+                        type="text"
+                        class="guest-name"
+                        value={partyGuest.name}
+                        data-plus-one={partyGuest.isPlusOne ? 'true' : 'false'}
+                      />
+                      <span class="guest-status">
+                        {isAttending ? t(strings.global.attending) : t(strings.global.notAttending)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </section>
+                );
+              })}
+            </div>
+          </div>
 
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.coreEvents.heading)}</h2>
+          <!-- ── Core Events ── -->
+          <div class="rsvp-band">{t(strings.nyc.rsvp.form.coreEvents.heading)}</div>
+          <div class="rsvp-section page-content">
             <p class="section-note">{t(strings.nyc.rsvp.form.coreEvents.note)}</p>
             {coreEvents.length === 0 ? (
               <p class="placeholder-note">{t(strings.nyc.rsvp.form.coreEvents.empty)}</p>
             ) : (
               <div class="event-list">
                 {coreEvents.map((event) => (
-                  <label class="event-checkbox is-core">
+                  <label class="event-row event-checkbox is-core">
                     <input
                       type="checkbox"
                       class="event-attending"
@@ -184,47 +219,52 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                       data-event-type="core"
                       checked={selectedEventIds.size > 0 ? selectedEventIds.has(event.id) : true}
                     />
-                    <span class="checkbox-mark"></span>
-                    <div class="event-details">
-                      <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
+                    <span class="event-check-mark"></span>
+                    <div class="event-row-content">
+                      <span class="event-row-name">{event.name}</span>
+                      <span class="event-row-meta">
+                        {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                      </span>
                     </div>
                   </label>
                 ))}
               </div>
             )}
-          </section>
+          </div>
 
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.optionalEvents.heading)}</h2>
-            <p class="section-note">{t(strings.nyc.rsvp.form.optionalEvents.note)}</p>
-
-            {optionalEvents.length === 0 ? (
-              <p class="placeholder-note" data-testid="no-optional-events">{t(strings.nyc.rsvp.form.optionalEvents.empty)}</p>
-            ) : (
-              <div class="event-list">
-                {optionalEvents.map((event) => (
-                  <label class="event-checkbox optional-event">
-                    <input
-                      type="checkbox"
-                      class="event-attending"
-                      data-event-id={event.id}
-                      data-event-type="optional"
-                      checked={selectedEventIds.has(event.id)}
-                    />
-                    <span class="checkbox-mark"></span>
-                    <div class="event-details">
-                      <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
-                    </div>
-                  </label>
-                ))}
+          <!-- ── Optional Events — hidden entirely when empty ── -->
+          {optionalEvents.length > 0 && (
+            <>
+              <div class="rsvp-band">{t(strings.nyc.rsvp.form.optionalEvents.heading)}</div>
+              <div class="rsvp-section page-content">
+                <p class="section-note">{t(strings.nyc.rsvp.form.optionalEvents.note)}</p>
+                <div class="event-list">
+                  {optionalEvents.map((event) => (
+                    <label class="event-row event-checkbox">
+                      <input
+                        type="checkbox"
+                        class="event-attending"
+                        data-event-id={event.id}
+                        data-event-type="optional"
+                        checked={selectedEventIds.has(event.id)}
+                      />
+                      <span class="event-check-mark"></span>
+                      <div class="event-row-content">
+                        <span class="event-row-name">{event.name}</span>
+                        <span class="event-row-meta">
+                          {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
-            )}
-          </section>
+            </>
+          )}
 
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.dietary.heading)}</h2>
+          <!-- ── Dietary Notes ── -->
+          <div class="rsvp-band">{t(strings.nyc.rsvp.form.dietary.heading)}</div>
+          <div class="rsvp-section page-content">
             <p class="section-note">{t(strings.nyc.rsvp.form.dietary.note)}</p>
             <textarea
               name="dietary"
@@ -232,29 +272,36 @@ const existingSubmittedAt = existingRSVP?.submittedAt
               placeholder={t(strings.nyc.rsvp.form.dietary.placeholder)}
               rows="3"
             >{existingRSVP?.dietary ?? ''}</textarea>
-          </section>
+          </div>
 
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.message.heading)}</h2>
+          <!-- ── Message ── -->
+          <div class="rsvp-band">{t(strings.nyc.rsvp.form.message.heading)}</div>
+          <div class="rsvp-section page-content">
             <textarea
               name="message"
               class="text-input"
               placeholder={t(strings.nyc.rsvp.form.message.placeholder)}
               rows="4"
             >{existingRSVP?.message ?? ''}</textarea>
-          </section>
+          </div>
 
-          <section class="form-section">
-            <h2>{t(strings.nyc.rsvp.form.email.heading)}</h2>
+          <!-- ── Confirmation Email ── -->
+          <div class="rsvp-band">{t(strings.nyc.rsvp.form.email.heading)}</div>
+          <div class="rsvp-section page-content">
             <label class="checkbox-label">
-              <input type="checkbox" id="send-confirmation" name="sendConfirmation" data-testid="send-confirmation-checkbox" />
+              <input
+                type="checkbox"
+                id="send-confirmation"
+                name="sendConfirmation"
+                data-testid="send-confirmation-checkbox"
+              />
               <span>{t(strings.nyc.rsvp.form.email.sendConfirmation)}</span>
             </label>
             <p class="section-note confirmation-note">{t(strings.nyc.rsvp.form.email.note)}</p>
             <div class="group-email-list">
               {party.map((partyGuest) => (
-                <div class="email-field group-email-row">
-                  <label for={`guest-email-${partyGuest.id}`} class="section-note group-email-label">
+                <div class="group-email-row">
+                  <label for={`guest-email-${partyGuest.id}`} class="group-email-label">
                     <span class="group-email-name">{partyGuest.name}</span>
                     <span class="optional-label">{t(strings.nyc.rsvp.form.email.optional)}</span>
                   </label>
@@ -272,121 +319,384 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                 </div>
               ))}
             </div>
-          </section>
-
-          <div class="feedback" aria-live="polite">
-            <p id="form-success" class="success-message" hidden>{t(strings.nyc.rsvp.form.successMsg)}</p>
-            <p id="form-error" class="error-message" hidden>{t(strings.nyc.rsvp.form.errorMsg)}</p>
           </div>
 
-          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}</button>
+          <!-- ── Submit ── -->
+          <div class="page-content rsvp-submit-zone">
+            <div class="feedback" aria-live="polite">
+              <p id="form-success" class="success-message" hidden>{t(strings.nyc.rsvp.form.successMsg)}</p>
+              <p id="form-error" class="error-message" hidden>{t(strings.nyc.rsvp.form.errorMsg)}</p>
+            </div>
+            <button type="submit" class="rsvp-submit-btn">
+              {existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}
+            </button>
+            <p class="form-note">
+              {t(strings.nyc.rsvp.form.signedInAs)} <strong>{guest}</strong>.{' '}
+              {t(strings.nyc.rsvp.form.canUpdate)}
+            </p>
+          </div>
 
-          <p class="form-note">{t(strings.nyc.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.nyc.rsvp.form.canUpdate)}</p>
         </form>
       </>
     )}
+
   </main>
 
-  <footer>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
+  <footer class="site-footer">
+    <nav>
+      <a href="/registry">{t(strings.global.registry)}</a>
+      <span> · </span>
+      <span class="guest-name">{guest}</span>
+      <span> · </span>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
+    </nav>
+    <div>
+      <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
 </WireframeLayout>
 
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
-  }
+<style is:global>
 
-main {
+  /* ── Page ──────────────────────────────────── */
+
+  .rsvp-page {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    padding: 3rem 2rem;
-    max-width: 680px;
-    margin: 0 auto;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
+  /* ── Header (mirrors nyc-header from index/details) ── */
+
+  .nyc-header {
+    background: #F1ECE3 !important;
+    border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
+  }
+
+  .nyc-header .site-logo,
+  .nyc-header .site-logo:hover,
+  .nyc-header .event-toggle .active,
+  .nyc-header .event-toggle .divider {
+    color: #2F3F36 !important;
+  }
+
+  .nyc-header .event-toggle a {
+    color: rgba(47, 63, 54, 0.4) !important;
+  }
+
+  /* ── Discs — absolute within hero, right side, contained by overflow:hidden ── */
+
+  /*
+   * M — large amber disc, partially cropped off the right edge and top.
+   */
+  .rsvp-disc-m {
+    position: absolute;
+    width: clamp(260px, 46vh, 520px);
+    height: clamp(260px, 46vh, 520px);
+    background: #D96A1E;
+    border-radius: 50%;
+    right: -10%;
+    top: -5%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(104px, 18.4vh, 208px);
+    color: #F1ECE3;
+    letter-spacing: 0;
+    font-feature-settings: "case" 1;
+    pointer-events: none;
+  }
+
+  /*
+   * S — smaller grey disc, lower-left of M.
+   * Partially cropped at bottom by hero overflow:hidden.
+   */
+  .rsvp-disc-s {
+    position: absolute;
+    width: clamp(150px, 27vh, 302px);
+    height: clamp(150px, 27vh, 302px);
+    background: #808183;
+    border-radius: 50%;
+    right: 8%;
+    bottom: -15%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(60px, 10.8vh, 121px);
+    color: #F1ECE3;
+    letter-spacing: 0;
+    font-feature-settings: "case" 1;
+    pointer-events: none;
+  }
+
+  /* ── Cream hero — overflow:hidden contains the discs ── */
+
+  .rsvp-hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 44vh;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 48px;
+  }
+
+  .rsvp-hero-inner {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+  }
+
+  .rsvp-back {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2F3F36;
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: opacity 0.15s;
+  }
+
+  .rsvp-back:hover {
+    opacity: 0.6;
+    color: #2F3F36;
+  }
+
+  .rsvp-hero h1 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 500;
+    line-height: 0.93;
+    color: #2F3F36;
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    white-space: nowrap;
+  }
+
+  .rsvp-subtitle {
+    font-size: 16px;
     letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+    color: rgba(47, 63, 54, 0.55);
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  /* Cream sections */
+  .rsvp-section,
+  .rsvp-submit-zone,
+  .rsvp-page > .page-content {
+    background: #F1ECE3;
+  }
+
+  /* ── Deadline band ─────────────────────────── */
+
+  .rsvp-deadline-band {
+    background: var(--color-surface);
+    color: var(--color-surface-text);
+  }
+
+  .rsvp-deadline-inner {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
     text-align: center;
   }
 
-  .subtitle {
-    color: var(--color-text-muted);
-    margin-bottom: 1.5rem;
-    text-align: center;
+  .deadline-label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
+    opacity: 0.6;
   }
 
-  .tentative {
-    font-size: 0.875rem;
-    font-style: italic;
+  .deadline-date {
+    font-family: var(--font-display);
+    font-size: var(--font-size-h3);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-h3);
+    font-feature-settings: "case" 1, "lnum" 1;
   }
 
-  .deadline-banner {
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
+  /* ── Error / unavailable ───────────────────── */
 
-    padding: 1rem;
-    text-align: center;
-    margin-bottom: 2rem;
+  .rsvp-error-wrap {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
   }
+
+  .error-card {
+    border: 1px solid var(--color-error-border);
+    background: var(--color-error-bg);
+    padding: var(--space-md);
+    border-radius: 8px;
+    color: var(--color-error);
+  }
+
+  .error-card h2 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--space-xs);
+  }
+
+  .error-card p {
+    font-size: 14px;
+    margin: 0;
+  }
+
+  /* ── Existing RSVP notice ──────────────────── */
 
   .existing-rsvp-banner {
     background: var(--color-info-bg);
     border: 1px solid var(--color-info-border);
-
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 6px;
     color: var(--color-info);
+    margin-top: var(--space-md);
   }
+
+  .existing-rsvp-banner p {
+    font-size: 14px;
+    margin: 0;
+  }
+
+  /* ── Form ──────────────────────────────────── */
 
   .rsvp-form {
     display: flex;
     flex-direction: column;
   }
 
-  .form-section {
-    padding: 1.25rem 0;
-    border-bottom: 1px solid var(--color-border);
+  /* ── Section bands — full-width dark moss ── */
+
+  .rsvp-band {
+    background: var(--color-surface);
+    color: var(--color-surface-text);
+    padding: 12px var(--page-margin);
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
   }
 
-  .form-section h2 {
-    font-size: 1.25rem;
-    margin-bottom: 0.5rem;
+  /* ── Section body ── */
+
+  /* .rsvp-section and .rsvp-submit-zone are flex items of .rsvp-form (flex column).
+     In flex layout, margin: 0 auto (from .page-content) prevents align-self: stretch,
+     so the section would shrink to content width. width: 100% fixes this so max-width
+     + centering work correctly. */
+  .rsvp-section,
+  .rsvp-submit-zone {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .rsvp-submit-zone {
+    max-width: 540px;
+  }
+
+  .rsvp-section {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-lg);
   }
 
   .section-note {
-    font-size: 0.9rem;
+    font-size: 14px;
     color: var(--color-text-muted);
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .placeholder-note {
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  /* ── Guest rows ────────────────────────────── */
+
+  .guest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .guest-row {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
-    padding: 0.8rem;
+    gap: var(--space-sm);
+    padding: 14px var(--space-sm);
     border: 1px solid var(--color-border);
-
-    margin-bottom: 0.75rem;
+    border-radius: 8px;
   }
 
   .guest-row.plus-one {
     border-style: dashed;
   }
 
+  .guest-info {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+  }
+
+  /* Name input — clearly editable.
+     Uses [type="text"] to beat base.css specificity. */
+  .guest-name[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: var(--font-size-body);
+    font-family: var(--font-body);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: border-color 0.15s;
+  }
+
+  .guest-name[type="text"]:focus {
+    border-color: var(--color-text);
+    outline: none;
+  }
+
+  .guest-status {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-text-muted);
+    min-width: 96px;
+    text-align: right;
+    flex-shrink: 0;
+    font-feature-settings: "case" 1;
+  }
+
+  /* Toggle switch */
   .guest-toggle {
     position: relative;
-    width: 44px;
-    height: 24px;
+    width: 48px;
+    height: 26px;
     flex-shrink: 0;
+    cursor: pointer;
   }
 
   .guest-toggle input {
+    position: absolute;
     opacity: 0;
     width: 0;
     height: 0;
@@ -395,7 +705,7 @@ main {
   .toggle-slider {
     position: absolute;
     inset: 0;
-    background: var(--color-border);
+    background: rgba(47, 63, 54, 0.15);
     border-radius: 999px;
     transition: background 0.2s;
   }
@@ -403,12 +713,13 @@ main {
   .toggle-slider::before {
     content: '';
     position: absolute;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     left: 3px;
     top: 3px;
     border-radius: 50%;
-    background: var(--color-bg);
+    background: #F1ECE3;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
     transition: transform 0.2s;
   }
 
@@ -417,233 +728,316 @@ main {
   }
 
   .guest-toggle input:checked + .toggle-slider::before {
-    transform: translateX(20px);
+    transform: translateX(22px);
   }
 
-  .guest-info {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .guest-name {
-    flex: 1;
-    border: 1px solid var(--color-border);
-    border-radius: 0.4rem;
-    padding: 0.5rem 0.6rem;
-    font-size: 0.95rem;
-  }
-
-  .guest-status {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    min-width: 90px;
-    text-align: right;
-  }
+  /* ── Event rows ────────────────────────────── */
 
   .event-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 10px;
   }
 
-  .event-checkbox {
+  .event-row {
     display: flex;
-    align-items: start;
-    gap: 0.65rem;
-    padding: 0.85rem;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: 16px var(--space-sm);
     border: 1px solid var(--color-border);
-
+    border-radius: 8px;
     cursor: pointer;
+    transition: border-color 0.15s;
   }
 
-  .event-checkbox.is-core {
-    background: var(--color-bg);
+  .event-row:hover {
+    border-color: var(--color-text);
   }
 
-  .checkbox-mark {
-    width: 18px;
-    height: 18px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    margin-top: 2px;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .event-checkbox input {
+  .event-row input {
     position: absolute;
     opacity: 0;
     pointer-events: none;
   }
 
-  .event-checkbox input:checked + .checkbox-mark::after {
+  .event-check-mark {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1.5px solid var(--color-border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .event-row input:checked ~ .event-check-mark {
+    background: var(--color-text);
+    border-color: var(--color-text);
+  }
+
+  .event-row input:checked ~ .event-check-mark::after {
     content: '';
     position: absolute;
-    left: 5px;
+    left: 4px;
     top: 1px;
     width: 5px;
-    height: 10px;
-    border: solid var(--color-text);
-    border-width: 0 2px 2px 0;
+    height: 9px;
+    border: 2px solid #F1ECE3;
+    border-top: none;
+    border-left: none;
     transform: rotate(45deg);
   }
 
-  .event-details strong {
+  .event-row-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .event-row-name {
     display: block;
-    margin-bottom: 0.1rem;
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text);
+    margin-bottom: 5px;
+    font-feature-settings: "case" 1, "lnum" 1;
   }
 
-  .event-info {
+  .event-row-meta {
+    font-size: 13px;
     color: var(--color-text-muted);
-    font-size: 0.86rem;
   }
 
-  .placeholder-note {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-  }
+  /* ── Text inputs ───────────────────────────── */
 
-  .single-line-input,
   .text-input {
     width: 100%;
-    border: 1px solid var(--color-border);
-
-    padding: 0.7rem 0.75rem;
-    font-size: 0.95rem;
-    font-family: inherit;
+    border-radius: 6px;
+    box-sizing: border-box;
+    resize: vertical;
   }
 
-  .feedback {
-    margin-top: 1rem;
-    min-height: 1.5rem;
+  .single-line-input {
+    width: 100%;
+    border-radius: 6px;
+    box-sizing: border-box;
   }
 
-  .success-message {
-    color: var(--color-success);
-    font-size: 0.9rem;
+  /* ── Email section ─────────────────────────── */
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--font-size-body);
+    cursor: pointer;
+    margin-bottom: 6px;
   }
 
-  .error-message {
-    color: var(--color-error);
-    font-size: 0.9rem;
-  }
-
-  .submit-btn {
-    margin-top: 0.75rem;
-    padding: 0.95rem 1.2rem;
-    border: none;
-
-    background: var(--color-text);
-    color: var(--color-surface-text);
-    font-weight: 600;
+  .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--color-text);
     cursor: pointer;
   }
 
-  .submit-btn:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-
-  .form-note {
-    margin-top: 0.8rem;
-    color: var(--color-text-muted);
-    font-size: 0.85rem;
-    text-align: center;
-  }
-
-  .email-field {
-    margin-bottom: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
   .confirmation-note {
-    margin-top: 0.75rem;
-    margin-bottom: 0.9rem;
+    margin-top: 0;
+    margin-bottom: var(--space-md);
   }
 
   .group-email-list {
-    display: grid;
-    gap: 0.85rem;
-    margin-top: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
   }
 
   .group-email-row {
-    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .group-email-label {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 1rem;
+    gap: var(--space-sm);
   }
 
   .group-email-name {
+    font-size: 14px;
+    font-weight: 500;
     color: var(--color-text);
   }
 
   .optional-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
-    font-size: 0.85rem;
+    font-feature-settings: "case" 1;
   }
 
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-    cursor: pointer;
+  /* ── Feedback ──────────────────────────────── */
+
+  .feedback {
+    min-height: 1.5em;
+    margin-bottom: var(--space-xs);
   }
 
-  .error-card {
-    border: 1px solid var(--color-error-border);
-    background: var(--color-error-bg);
-
-    padding: 1rem;
-    color: var(--color-error);
-  }
-
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+  .success-message {
+    color: var(--color-success);
+    font-size: 14px;
     margin: 0;
   }
 
+  .error-message {
+    color: var(--color-error);
+    font-size: 14px;
+    margin: 0;
+  }
+
+  /* ── Submit zone ───────────────────────────── */
+
+  .rsvp-submit-zone {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-2xl);
+  }
+
+  .rsvp-submit-btn {
+    display: block;
+    width: 100%;
+    height: 56px;
+    background: var(--color-text);
+    color: var(--color-surface-text);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .rsvp-submit-btn:hover {
+    opacity: 0.82;
+  }
+
+  .rsvp-submit-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+
+  .form-note {
+    margin-top: var(--space-sm);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* ── Dark mode ─────────────────────────────── */
+
+  @media (prefers-color-scheme: dark) {
+    .nyc-header {
+      background: #2F3F36 !important;
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    .nyc-header .site-logo,
+    .nyc-header .site-logo:hover,
+    .nyc-header .event-toggle .active,
+    .nyc-header .event-toggle .divider {
+      color: #F1ECE3 !important;
+    }
+
+    .nyc-header .event-toggle a {
+      color: rgba(241, 236, 227, 0.45) !important;
+    }
+
+    .rsvp-hero h1 {
+      color: #F1ECE3;
+    }
+
+    .rsvp-back {
+      color: #F1ECE3;
+    }
+
+    .rsvp-back:hover {
+      color: #F1ECE3;
+    }
+
+    .rsvp-section,
+    .rsvp-submit-zone,
+    .rsvp-page > .page-content {
+      background: #2F3F36;
+    }
+
+    .toggle-slider {
+      background: rgba(241, 236, 227, 0.1);
+    }
+
+    .toggle-slider::before {
+      background: var(--color-text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .guest-toggle input:checked + .toggle-slider::before {
+      background: var(--color-bg);
+    }
+  }
+
+  /* ── Mobile ────────────────────────────────── */
+
   @media (max-width: 768px) {
-    main {
-      padding: 2rem 1rem;
+    .rsvp-disc-m {
+      width: clamp(200px, 52vw, 320px);
+      height: clamp(200px, 52vw, 320px);
+      font-size: clamp(80px, 20.8vw, 128px);
+      left: -18%;
+      top: 72px;
     }
 
-    h1 {
-      font-size: 2rem;
+    .rsvp-disc-s {
+      width: clamp(116px, 30vw, 186px);
+      height: clamp(116px, 30vw, 186px);
+      font-size: clamp(46px, 12vw, 74px);
+      top: calc(72px + clamp(130px, 34vw, 210px));
+      left: calc(-18% + clamp(80px, 20.8vw, 128px));
     }
 
-    .guest-info {
-      flex-direction: column;
-      align-items: start;
+    .rsvp-hero {
+      min-height: 44vh;
+      padding-bottom: 32px;
+    }
+
+    .rsvp-hero h1 {
+      font-size: clamp(40px, 10vw, 64px);
+    }
+
+    .rsvp-band {
+      padding: 12px var(--page-margin-mobile);
+    }
+
+    .rsvp-deadline-inner {
+      padding-top: var(--space-sm);
+      padding-bottom: var(--space-sm);
     }
 
     .guest-status {
       min-width: 0;
-      text-align: left;
+      font-size: 10px;
     }
   }
+
 </style>
 
 <script is:inline define:vars={{ confirmationEmailRequired }}>

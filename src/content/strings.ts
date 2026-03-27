@@ -24,6 +24,10 @@ function s(en: string, fr: string): T {
   return { en, fr };
 }
 
+/** RSVP deadline dates — single source of truth for each event */
+export const RSVP_DEADLINE_NYC    = { en: 'September 1, 2026',  fr: '1er septembre 2026' } satisfies T;
+export const RSVP_DEADLINE_FRANCE = { en: 'April 15, 2027',     fr: '15 avril 2027'      } satisfies T;
+
 export const strings = {
   // ─────────────────────────────────────────
   // Global — shared across all pages
@@ -118,7 +122,7 @@ export const strings = {
     },
     rsvpDeadline: {
       heading: s('RSVP', 'RSVP'),
-      value:   s('By September 10, 2026', 'Avant le 10 septembre 2026'),
+      value:   { en: `By ${RSVP_DEADLINE_NYC.en}`, fr: `Avant le ${RSVP_DEADLINE_NYC.fr}` },
     },
     calendar: {
       heading:         s('Save the Date', 'Notez la date'),
@@ -260,6 +264,12 @@ export const strings = {
           heading:     s('Exhibitions & Experiences', 'Expositions & Expériences'),
           placeholder: s("Current exhibitions for October 2026 TBD — check museum websites closer to date", "Expositions en octobre 2026 à confirmer — consultez les sites des musées à l'approche de la date"),
         },
+        cycling: {
+          heading:        s('Bicycle Rides', 'Balades à vélo'),
+          body:           s('Cycling together is something Sam & Margaux often do together around the city. A quick loop of Prospect Park is a great way to get outdoors and enjoy Brooklyn. CitiBikes are plentiful, and rental shops abound when the weather is nice. For the more adventurous, October is also peak leaf-peeping season. You can follow Sam\'s typical', 'Le vélo est une activité que Sam & Margaux pratiquent souvent ensemble en ville. Un tour de Prospect Park est une excellente façon de profiter de Brooklyn. Les CitiBikes sont nombreux, et les loueurs de vélos abondent quand le temps le permet. Pour les plus aventureux, octobre est aussi la pleine saison des feuillages. Vous pouvez suivre la'),
+          linkText:       s('Sunday morning ride', 'sortie dominicale de Sam'),
+          bodyAfter:      s('to New Jersey.', 'jusqu\'au New Jersey.'),
+        },
       },
     },
 
@@ -270,7 +280,7 @@ export const strings = {
       subtitle:          s('New York · October 11, 2026', 'New York · 11 octobre 2026'),
       subtitleTentative: s('', ''),
       deadline:          s('Please respond by', 'Merci de répondre avant le'),
-      deadlineDate:      s('September 1, 2026', '1er septembre 2026'),
+      deadlineDate:      RSVP_DEADLINE_NYC,
       unavailable: {
         heading: s('RSVP Unavailable', 'RSVP indisponible'),
         text:    s(
@@ -543,7 +553,7 @@ export const strings = {
         },
         rsvpDeadline: {
           heading: s('RSVP', 'RSVP'),
-          value:   s('By March 15, 2027', 'Avant le 15 mars 2027'),
+          value:   { en: `By ${RSVP_DEADLINE_FRANCE.en}`, fr: `Avant le ${RSVP_DEADLINE_FRANCE.fr}` },
         },
       },
       dressCode: {
@@ -651,7 +661,7 @@ export const strings = {
       heading:      s('RSVP', 'RSVP'),
       subtitle:     s('France · May 28–30, 2027', 'France · 28–30 mai 2027'),
       deadline:     s('Please respond by', 'Merci de répondre avant le'),
-      deadlineDate: s('March 15, 2027', '15 mars 2027'),
+      deadlineDate: RSVP_DEADLINE_FRANCE,
       unavailable: {
         heading: s('RSVP Unavailable', 'RSVP indisponible'),
         text:    s(

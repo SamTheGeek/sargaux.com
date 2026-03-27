@@ -119,6 +119,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.exhibitions.heading)}</span>
           <span class="nyc-info-val nyc-info-val--muted">{t(strings.nyc.travel.whileHere.exhibitions.placeholder)}</span>
         </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.cycling.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.travel.whileHere.cycling.body)}{' '}
+            <a class="nyc-info-link" href="https://ridewithgps.com/routes/54409165?privacy_code=KshzTPHp7mi0yNFE4vWgB8nLIRlb69QY" target="_blank" rel="noopener">{t(strings.nyc.travel.whileHere.cycling.linkText)}</a>{' '}
+            {t(strings.nyc.travel.whileHere.cycling.bodyAfter)}
+          </span>
+        </div>
       </div>
     </div>
   </section>
