@@ -38,7 +38,9 @@ type FeatureFlags = {
     travelBus: boolean;
     travelMta: boolean;
     travelMuseums: boolean;
+    wytheRoomBlock: boolean;
     rsvpEnabled: boolean;
+    rsvpPreview: boolean;
   };
   france: {
     calendarSubscribe: boolean;
@@ -76,7 +78,9 @@ const features: FeatureFlags = {
     travelBus: flag(import.meta.env.FEATURE_NYC_TRAVEL_BUS, false),
     travelMta: flag(import.meta.env.FEATURE_NYC_TRAVEL_MTA, false),
     travelMuseums: flag(import.meta.env.FEATURE_NYC_TRAVEL_MUSEUMS, false),
+    wytheRoomBlock: flag(import.meta.env.FEATURE_NYC_WYTHE_ROOM_BLOCK, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_NYC_RSVP_ENABLED, false),
+    rsvpPreview: flag(import.meta.env.FEATURE_NYC_RSVP_PREVIEW, false),
   },
   france: {
     calendarSubscribe: flag(import.meta.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE, false),

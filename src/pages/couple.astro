@@ -3,10 +3,44 @@ import WireframeLayout from '../layouts/WireframeLayout.astro';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import LangSwitcher from '../components/LangSwitcher.astro';
+import exifr from 'exifr';
+import path from 'path';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+
+// Format a Date as "Month Day, Year" using UTC fields (EXIF stores local time, exifr parses as UTC)
+function formatExifDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+// All 16 couple photos (photo_1.jpeg is already in the hero)
+const allPhotos = Array.from({ length: 16 }, (_, i) => `/images/couple/couple - ${i + 1}.jpeg`);
+
+// Read EXIF dates at build time
+const exifDates = await Promise.all(
+  allPhotos.map(async (src) => {
+    try {
+      const filePath = path.join(process.cwd(), 'public', src);
+      const data = await exifr.parse(filePath, ['DateTimeOriginal']);
+      return data?.DateTimeOriginal ? formatExifDate(data.DateTimeOriginal) : null;
+    } catch {
+      return null;
+    }
+  })
+);
+const photosWithDates = allPhotos.map((src, i) => ({ src, date: exifDates[i] }));
+
+// Pick 6 at random on every render, each with a slight rotation and vertical offset
+const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 6);
+const scattered = shuffled.map(({ src, date }) => ({
+  src,
+  alt: `Sam and Margaux`,
+  date,
+  rotate: (Math.random() * 10 - 5).toFixed(1),   // –5° to +5°
+  ty: (Math.random() * 48 - 24).toFixed(0),        // –24px to +24px
+}));
 ---
 
 <WireframeLayout title={t(strings.couple.pageTitle)} description="Shared page for Sam and Margaux" event="nyc">
@@ -54,6 +88,23 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
             </div>
           </div>
         </aside>
+      </div>
+    </section>
+
+    <section class="couple-gallery" aria-label="Photos">
+      <div class="gallery-scatter">
+        {scattered.map(({ src, alt, date, rotate, ty }) => (
+          <div class="photo-card gallery-scatter-card" style={`--rotate: ${rotate}deg; --ty: ${ty}px`}>
+            <div class="photo-card-inner">
+              <div class="photo-label-row">
+                <span class="photo-label photo-label--muted">{date ?? 'Chez Sargaux'}</span>
+              </div>
+              <figure class="couple-photo-frame">
+                <img src={src} alt={alt} loading="lazy" decoding="async" class="couple-photo" />
+              </figure>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   </main>
@@ -195,6 +246,8 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
   .couple-copy {
     max-width: 720px;
     padding-top: var(--space-2xl);
+    position: relative;
+    z-index: 2;
   }
 
   .couple-eyebrow {
@@ -231,6 +284,8 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
   .couple-panel {
     justify-self: end;
     width: 100%;
+    position: relative;
+    z-index: 1;
   }
 
   .photo-card {
@@ -294,6 +349,60 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: rgba(58, 46, 38, 0.72);
+  }
+
+  /* ── Gallery ─────────────────────────────────── */
+
+  .couple-gallery {
+    background: #F1ECE3;
+    padding: var(--space-2xl) var(--space-lg);
+    border-top: 1px solid rgba(47, 63, 54, 0.1);
+  }
+
+  .gallery-scatter {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 300px));
+    justify-content: center;
+    gap: 2rem 3rem;
+    padding: var(--space-lg) var(--space-xl);
+  }
+
+  .gallery-scatter-card {
+    transform: rotate(var(--rotate)) translateY(var(--ty));
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .gallery-scatter-card:hover {
+    transform: rotate(0deg) translateY(0px) scale(1.03);
+    z-index: 10;
+    box-shadow:
+      0 40px 100px rgba(58, 46, 38, 0.22),
+      inset 0 0 0 1px rgba(241, 236, 227, 0.5);
+  }
+
+  @media (max-width: 900px) {
+    .gallery-scatter {
+      grid-template-columns: repeat(2, minmax(0, 300px));
+    }
+  }
+
+  @media (max-width: 540px) {
+    .gallery-scatter {
+      grid-template-columns: minmax(0, 340px);
+    }
+
+    .gallery-scatter-card {
+      transform: rotate(var(--rotate));
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .couple-gallery {
+      background: #131d1a;
+      border-top-color: rgba(241, 236, 227, 0.06);
+    }
   }
 
   .couple-footer {

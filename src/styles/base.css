@@ -145,6 +145,17 @@ a:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Extend header background above viewport to cover springy overscroll bleed */
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: -25px;
+  left: 0;
+  right: 0;
+  height: 25px;
+  background: inherit;
+}
+
 ::view-transition-group(site-header) {
   z-index: 120;
 }

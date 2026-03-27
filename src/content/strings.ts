@@ -47,8 +47,7 @@ export const strings = {
   // Navigation — back links etc.
   // ─────────────────────────────────────────
   nav: {
-    backToNyc:    s('← Back to NYC', '← Retour à New York'),
-    backToFrance: s('← Back to France', '← Retour à la France'),
+    backToEvent:  s('← Return to event', '← Retour à l\'événement'),
   },
 
   // ─────────────────────────────────────────
@@ -101,7 +100,7 @@ export const strings = {
     when: {
       heading:  s('When', 'Quand'),
       date:     s('Sunday, October 11, 2026', 'Dimanche 11 octobre 2026'),
-      time:     s('5:15 PM', '17h15'),
+      time:     s('5:15 PM – 9:15 PM', '17h15 – 21h15'),
       weekend:  s('', ''),
       note:     s('', ''),
     },
@@ -209,10 +208,10 @@ export const strings = {
       hotels: {
         heading:    s('Hotels', 'Hôtels'),
         intro:      s('Suggested accommodations near the venues:', 'Hébergements suggérés à proximité des lieux :'),
-        hotel1:     s('Wythe Hotel — We have a limited number of rooms available at a special rate for our guests.', 'Hôtel à confirmer — Près du lieu du dîner'),
-        hotel2:     s('Hotel TBD — Near dancing venue', 'Hôtel à confirmer — Près du lieu du dancing'),
-        hotel3:     s('Budget Option TBD — Nearby neighborhood', 'Option économique à confirmer — Quartier proche'),
-        roomBlock:  s('Room block details coming soon', 'Détails du bloc de chambres à venir'),
+        hotel1:     s('We have a limited number of rooms available at a special rate for our guests.', 'Un nombre limité de chambres est disponible à un tarif préférentiel pour nos invités.'),
+        hotel2:     s('Just down the street from the Wythe at', 'Juste en bas de la rue du Wythe, au'),
+        hotel2BookNow: s('Book now →', 'Réserver →'),
+        hotel3:     s('Another room block is coming soon!', 'Un autre bloc de chambres arrive bientôt !'),
       },
       gettingThere: {
         heading: s('Getting There', 'Comment arriver'),

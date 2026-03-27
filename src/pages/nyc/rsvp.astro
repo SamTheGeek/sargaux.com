@@ -1,20 +1,69 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
+import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import type { GuestRecord } from '../../types/guest';
+import type { EventRecord } from '../../types/event';
+import type { RSVPResponse } from '../../types/rsvp';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 
-let party: Awaited<ReturnType<typeof getGuestParty>> = [];
-let coreEvents: Awaited<ReturnType<typeof getGuestEvents>> = [];
-let optionalEvents: Awaited<ReturnType<typeof getGuestEvents>> = [];
-let existingRSVP: Awaited<ReturnType<typeof getLatestRSVP>> = null;
+let party: GuestRecord[] = [];
+let coreEvents: EventRecord[] = [];
+let optionalEvents: EventRecord[] = [];
+let existingRSVP: RSVPResponse | null = null;
 let loadError: string | null = null;
 
-if (guestId) {
+const isPreview = features.nyc.rsvpPreview && !guestId;
+
+if (isPreview) {
+  party = [
+    {
+      id: 'preview-sam',
+      name: 'Sam Gross',
+      normalizedName: 'sam gross',
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['preview-margaux'],
+      email: 'sam@samthegeek.net',
+    },
+    {
+      id: 'preview-margaux',
+      name: 'Margaux Ancel',
+      normalizedName: 'margaux ancel',
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['preview-sam'],
+      email: undefined,
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'preview-event-dinner',
+      name: 'Dinner',
+      type: 'Core',
+      wedding: 'nyc',
+      time: '5:00 PM',
+      location: 'Bar Blondeau at the Wythe Hotel',
+      showOnWebsite: true,
+    },
+    {
+      id: 'preview-event-dancing',
+      name: 'Dancing',
+      type: 'Core',
+      wedding: 'nyc',
+      time: '9:00 PM',
+      location: 'TBD',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [];
+  existingRSVP = null;
+} else if (guestId) {
   try {
     party = await getGuestParty(guestId);
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
@@ -53,7 +102,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
+      <a href="/nyc" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
@@ -65,7 +114,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
       <p>{t(strings.nyc.rsvp.deadline)} <strong>{t(strings.nyc.rsvp.deadlineDate)}</strong></p>
     </div>
 
-    {!guestId ? (
+    {!guestId && !isPreview ? (
       <div class="error-card" data-testid="notion-required">
         <h2>{t(strings.nyc.rsvp.unavailable.heading)}</h2>
         <p>{t(strings.nyc.rsvp.unavailable.text)}</p>

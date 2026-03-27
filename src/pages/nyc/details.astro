@@ -1,293 +1,662 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 
 const guest = Astro.locals.guest;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
+
+const MAPS_KEY = import.meta.env.GOOGLE_MAPS_STATIC_API_KEY ?? process.env.GOOGLE_MAPS_STATIC_API_KEY;
+
+const DINNER_LAT = 40.72235;
+const DINNER_LNG = -73.95709;
+
+function buildStaticMapUrl(lat: number, lng: number, zoom = 15): string {
+  const u = new URL('https://maps.googleapis.com/maps/api/staticmap');
+  u.searchParams.set('center', `${lat},${lng}`);
+  u.searchParams.set('zoom', String(zoom));
+  u.searchParams.set('size', '600x280');
+  u.searchParams.set('scale', '2');
+  u.searchParams.set('maptype', 'roadmap');
+  u.searchParams.set('markers', `color:0xD96A1E|${lat},${lng}`);
+  u.searchParams.set('key', MAPS_KEY!);
+  return u.toString();
+}
+
+function buildMapsLink(lat: number, lng: number): string {
+  const u = new URL('https://www.google.com/maps/search/');
+  u.searchParams.set('api', '1');
+  u.searchParams.set('query', `${lat},${lng}`);
+  return u.toString();
+}
+
+const DANCING_LAT = 40.7131;
+const DANCING_LNG = -73.9620;
+
+const dinnerMapSrc = MAPS_KEY ? buildStaticMapUrl(DINNER_LAT, DINNER_LNG) : null;
+const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
+
+const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14) : null;
+const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 ---
 
-<WireframeLayout title={t(strings.nyc.details.pageTitle)} event="nyc">
-  <header class="site-header">
+<WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc">
+
+  <!-- Amber disc — z:2, persists from index page -->
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+
+  <!-- Sticky header -->
+  <header class="site-header nyc-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle" transition:name="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
+          </div>
+        )}
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
+      </div>
     </nav>
   </header>
 
-  <main>
-    <h1>{t(strings.nyc.details.heroTitle)}</h1>
-    <p class="subtitle">{t(strings.nyc.details.subtitle)} <span class="tentative">{t(strings.nyc.heroDateTentative)}</span></p>
+  <!-- Cream hero — disc is visible here before moss covers it on scroll -->
+  <div class="details-hero">
+    <div class="page-content details-hero-inner">
+      <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
+      <h1>{t(strings.nyc.details.heroTitle)}</h1>
+      <p class="details-date">{t(strings.nyc.details.subtitle)}</p>
+    </div>
+  </div>
 
-    <!-- Schedule Timeline -->
-    <section class="schedule">
-      <h2>{t(strings.nyc.details.schedule.heading)}</h2>
-      <div class="timeline">
-        <div class="timeline-item">
-          <span class="time">{t(strings.nyc.details.schedule.dinner.time)}</span>
-          <div class="event">
-            <h4>{t(strings.nyc.details.schedule.dinner.title)}</h4>
-            <p>{t(strings.nyc.details.schedule.dinner.desc)}</p>
-          </div>
+  <!-- ═══════ Moss zone ═══════ -->
+
+  <!-- Section band: Schedule -->
+  <div class="nyc-moss details-band">Schedule</div>
+
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.schedule.dinner.time)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.details.schedule.dinner.title)}
+            <span class="nyc-info-secondary">{t(strings.nyc.details.schedule.dinner.desc)}</span>
+          </span>
         </div>
-        <div class="timeline-item">
-          <span class="time">{t(strings.nyc.details.schedule.dancing.time)}</span>
-          <div class="event">
-            <h4>{t(strings.nyc.details.schedule.dancing.title)}</h4>
-            <p>{t(strings.nyc.details.schedule.dancing.desc)}</p>
-          </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">6:23 PM</span>
+          <span class="nyc-info-val">Sunset</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.schedule.dancing.time)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.details.schedule.dancing.title)}
+            <span class="nyc-info-secondary">{t(strings.nyc.details.schedule.dancing.desc)}</span>
+          </span>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Venues - Responsive horizontal/vertical -->
-    <section class="venues">
-      <h2>{t(strings.nyc.details.venues.heading)}</h2>
+  <!-- Section band: Venues -->
+  <div class="nyc-moss details-band">Venues</div>
+
+  <section class="nyc-moss details-venues">
+    <div class="page-content">
       <div class="venue-grid">
+
+        <!-- Dinner venue -->
         <div class="venue-card">
-          <ImagePlaceholder
-            name="nyc-dinner"
-            folder="nyc"
-            description="Dinner venue interior"
-            aspectRatio="4/3"
-          />
-          <h3>{t(strings.nyc.details.venues.dinner.title)}</h3>
-          <p>{t(strings.nyc.details.venues.dinner.name)}</p>
-          <p class="venue-address">{t(strings.nyc.details.venues.dinner.address)}</p>
-          <div class="map-embed">
-            <iframe
-              src="https://maps.google.com/maps?q=80+Wythe+Ave+Brooklyn+NY+11249&output=embed"
-              width="100%"
-              height="200"
-              style="border:0;"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-              title="Bar Blondeau at the Wythe Hotel"
-            ></iframe>
+          <div class="venue-photo">
+            <img
+              src="/images/nyc/bar-blondeau.avif"
+              alt="Interior of Bar Blondeau at the Wythe Hotel, Brooklyn"
+              class="venue-photo-img"
+              loading="eager"
+            />
+          </div>
+          <div class="venue-body">
+            <div class="venue-text">
+              <p class="venue-type">Cocktails, Dinner, & Celebration</p>
+              <h3 class="venue-name">{t(strings.nyc.details.venues.dinner.name)}</h3>
+              <p class="venue-address">{t(strings.nyc.details.venues.dinner.address)}</p>
+            </div>
+            <div class="venue-map-section">
+              {dinnerMapSrc && (
+                <a
+                  href={dinnerMapsHref}
+                  class="venue-map-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Bar Blondeau in Google Maps"
+                >
+                  <img
+                    class="venue-map"
+                    src={dinnerMapSrc}
+                    alt="Map of Bar Blondeau at the Wythe Hotel, Brooklyn"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    width="600"
+                    height="280"
+                  />
+                </a>
+              )}
+              <a href={dinnerMapsHref} class="venue-directions-link" target="_blank" rel="noopener noreferrer">
+                Get Directions →
+              </a>
+            </div>
           </div>
         </div>
+
+        <!-- Dancing venue (TBD) -->
         <div class="venue-card">
-          <ImagePlaceholder
-            name="nyc-dancing"
-            folder="nyc"
-            description="Dancing venue"
-            aspectRatio="4/3"
-          />
-          <h3>{t(strings.nyc.details.venues.dancing.title)}</h3>
-          <p>{t(strings.nyc.details.venues.dancing.name)}</p>
-          <div class="map-placeholder">
-            <p class="placeholder-note">{t(strings.nyc.details.venues.dancing.mapPlaceholder)}</p>
+          <div class="venue-photo">
+            <img
+              src="/images/nyc/blondeau-placeholder.avif"
+              alt="Dancing venue"
+              class="venue-photo-img"
+              loading="lazy"
+            />
           </div>
+          <div class="venue-body">
+            <div class="venue-text">
+              <p class="venue-type">{t(strings.nyc.details.venues.dancing.title)}</p>
+              <h3 class="venue-name">{t(strings.nyc.details.venues.dancing.name)}</h3>
+              <p class="venue-address">Williamsburg, Brooklyn</p>
+            </div>
+            <div class="venue-map-section">
+              {dancingMapSrc && (
+                <a
+                  href={dancingMapsHref}
+                  class="venue-map-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Williamsburg area in Google Maps"
+                >
+                  <img
+                    class="venue-map"
+                    src={dancingMapSrc}
+                    alt="Map of Williamsburg, Brooklyn"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    width="600"
+                    height="280"
+                  />
+                </a>
+              )}
+              <a
+                href="https://maps.google.com"
+                class="venue-directions-link venue-directions-link--disabled"
+                aria-disabled="true"
+                tabindex="-1"
+              >
+                Get Directions →
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Section band: Details -->
+  <div class="nyc-moss details-band">Details</div>
+
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.dressCode.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.details.dressCode.value)}
+            <span class="nyc-info-secondary">{t(strings.nyc.details.dressCode.note)}</span>
+          </span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.whatToExpect.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.details.whatToExpect.text)}</span>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- What to Expect -->
-    <section class="what-to-expect">
-      <h2>{t(strings.nyc.details.whatToExpect.heading)}</h2>
-      <p>{t(strings.nyc.details.whatToExpect.text)}</p>
-    </section>
-
-    <!-- Dress Code -->
-    <section class="dress-code">
-      <h2>{t(strings.nyc.details.dressCode.heading)}</h2>
-      <p><strong>{t(strings.nyc.details.dressCode.value)}</strong></p>
-      <p>{t(strings.nyc.details.dressCode.note)}</p>
-    </section>
-
-    <!-- Calendar Subscribe -->
-    <section class="calendar-section">
-      <h2>{t(strings.nyc.details.calendar.heading)}</h2>
-      <button class="calendar-btn" disabled>{t(strings.nyc.details.calendar.btn)}</button>
-      <p class="placeholder-note">{t(strings.nyc.details.calendar.note)}</p>
-    </section>
-  </main>
-
-  <footer>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
+  <!-- Footer -->
+  <footer class="nyc-moss nyc-footer site-footer">
+    <nav>
+      <a href="/registry">{t(strings.global.registry)}</a>
+      <span> · </span>
+      <span class="guest-name">{guest}</span>
+      <span> · </span>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
+    </nav>
+    <div class="nyc-footer-meta">
+      <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
+
 </WireframeLayout>
 
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
+<style is:global>
+
+  /* ── Foundation ──────────────────────────────────── */
+
+  html[data-event="nyc"] body {
+    background: #F1ECE3 !important;
+    color: #2F3F36 !important;
+    overflow-x: hidden;
   }
 
-main {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem;
+  /* ── Header ──────────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-header {
+    background: #F1ECE3 !important;
+    border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    margin-bottom: 0.5rem;
+  html[data-event="nyc"] .nyc-header .site-logo,
+  html[data-event="nyc"] .nyc-header .site-logo:hover,
+  html[data-event="nyc"] .nyc-header .event-toggle .active,
+  html[data-event="nyc"] .nyc-header .event-toggle .divider {
+    color: #2F3F36 !important;
   }
 
-  .subtitle {
-    color: var(--color-text-muted);
-    margin-bottom: 3rem;
+  html[data-event="nyc"] .nyc-header .event-toggle a {
+    color: rgba(47, 63, 54, 0.4) !important;
   }
 
-  .tentative {
-    font-size: 0.875rem;
-    font-style: italic;
-  }
-
-  section {
-    margin-bottom: 3rem;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 0.5rem;
-  }
-
-  /* Timeline */
-  .timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .timeline-item {
-    display: flex;
-    gap: 2rem;
-    align-items: flex-start;
-  }
-
-  .time {
-    font-weight: 600;
-    min-width: 80px;
-    color: var(--color-text);
-  }
-
-  .event h4 {
-    margin: 0 0 0.25rem 0;
+  html[data-event="nyc"] .nyc-rsvp-btn {
+    background: #2F3F36 !important;
+    color: #F1ECE3 !important;
+    height: 32px;
+    padding: 0 24px;
+    font-size: 12px;
     font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    transition: opacity 0.15s;
+    border: none;
   }
 
-  .event p {
+  html[data-event="nyc"] .nyc-rsvp-btn:hover {
+    opacity: 0.85;
+    color: #F1ECE3 !important;
+  }
+
+  /* ── Amber disc — z:2 ────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-disc {
+    position: fixed;
+    width: clamp(300px, 50vh, 580px);
+    height: clamp(300px, 50vh, 580px);
+    background: #D96A1E;
+    border-radius: 50%;
+    top: 3vh;
+    left: -14%;
+    z-index: 2;
+  }
+
+  /* ── Cream hero ──────────────────────────────────── */
+
+  html[data-event="nyc"] .details-hero {
+    position: relative;
+    z-index: 3; /* sits above disc so text is readable */
+    min-height: 38vh;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 48px;
+  }
+
+  html[data-event="nyc"] .details-hero-inner {
+    width: 100%;
+  }
+
+  html[data-event="nyc"] .details-back {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2F3F36;
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: opacity 0.15s;
+  }
+
+  html[data-event="nyc"] .details-back:hover {
+    opacity: 0.6;
+  }
+
+  html[data-event="nyc"] .details-hero h1 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 500;
+    line-height: 0.93;
+    color: #2F3F36;
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    white-space: nowrap;
+  }
+
+  html[data-event="nyc"] .details-date {
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: rgba(47, 63, 54, 0.55);
     margin: 0;
-    color: var(--color-text-muted);
+    text-transform: uppercase;
   }
 
-  /* Venue Grid - Horizontal on desktop, vertical on mobile */
-  .venue-grid {
+  /* ── Moss zone — z:4 ─────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-moss {
+    background: #2F3F36 !important;
+    color: #F1ECE3 !important;
+    position: relative;
+    z-index: 4;
+  }
+
+  /* Section band (cream-on-moss label strip) */
+  html[data-event="nyc"] .details-band {
+    padding: 14px 64px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: #F1ECE3 !important;
+    color: rgba(47, 63, 54, 0.5) !important;
+    border-top: 1px solid rgba(47, 63, 54, 0.1);
+  }
+
+  html[data-event="nyc"] .details-section {
+    padding: 40px 0 48px;
+  }
+
+  /* ── Info table (shared with index) ──────────────── */
+
+  html[data-event="nyc"] .nyc-info-table {
+    margin: 0;
+  }
+
+  html[data-event="nyc"] .nyc-info-row {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    align-items: baseline;
+  }
+
+  html[data-event="nyc"] .nyc-info-row:first-child {
+    border-top: 1px solid rgba(241, 236, 227, 0.15);
+  }
+
+  html[data-event="nyc"] .nyc-info-key {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(241, 236, 227, 0.45);
+    padding-top: 3px;
+  }
+
+  html[data-event="nyc"] .nyc-info-val {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #F1ECE3;
+  }
+
+  html[data-event="nyc"] .nyc-info-secondary {
+    display: block;
+    font-size: 12px;
+    color: rgba(241, 236, 227, 0.45);
+    margin-top: 4px;
+  }
+
+  /* ── Venues section ──────────────────────────────── */
+
+  html[data-event="nyc"] .details-venues {
+    padding: 40px 0 48px;
+  }
+
+  html[data-event="nyc"] .venue-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    gap: 2px; /* tight gap — border-like gap between cards */
   }
 
-  @media (max-width: 768px) {
-    .venue-grid {
-      grid-template-columns: 1fr;
-    }
+  html[data-event="nyc"] .venue-card {
+    background: rgba(241, 236, 227, 0.04);
+    display: flex;
+    flex-direction: column;
   }
 
-  .venue-card {
-    border: 1px solid var(--color-border);
-    overflow: hidden;
+  html[data-event="nyc"] .venue-photo-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
   }
 
-  .venue-card h3 {
-    margin: 1rem;
-    font-size: 1.25rem;
+  html[data-event="nyc"] .venue-body {
+    padding: 20px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  html[data-event="nyc"] .venue-map-section {
+    margin-top: auto;
+  }
+
+  html[data-event="nyc"] .venue-type {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #D96A1E;
+    margin: 0 0 8px;
+  }
+
+  html[data-event="nyc"] .venue-name {
+    font-size: 20px;
     font-weight: 500;
+    color: #F1ECE3;
+    margin: 0 0 6px;
+    line-height: 1.2;
   }
 
-  .venue-card > p {
-    margin: 0 1rem 1rem;
-    color: var(--color-text-muted);
+  html[data-event="nyc"] .venue-address {
+    font-size: 13px;
+    color: rgba(241, 236, 227, 0.5);
+    margin: 0 0 20px;
+    line-height: 1.5;
   }
 
-  .venue-address {
-    margin: 0 1rem 0.75rem;
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-  }
-
-  .map-embed {
-    margin: 0 1rem 1rem;
+  /* Static map tile */
+  html[data-event="nyc"] .venue-map-link {
+    display: block;
+    text-decoration: none;
     overflow: hidden;
   }
 
-  .map-placeholder {
-    margin: 1rem;
-    padding: 2rem;
-    background: var(--color-bg);
-    text-align: center;
+  html[data-event="nyc"] .venue-map {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 600 / 280;
+    object-fit: cover;
+    transition: opacity 0.2s;
+    filter: saturate(0.8) brightness(0.95);
   }
 
-  .placeholder-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
+  html[data-event="nyc"] .venue-map-link:hover .venue-map {
+    opacity: 0.85;
   }
 
-  /* What to Expect */
-  .what-to-expect p {
-    line-height: 1.8;
-    color: var(--color-text-muted);
-  }
-
-  /* Dress Code */
-  .dress-code p {
-    margin: 0.5rem 0;
-  }
-
-  /* Calendar */
-  .calendar-section {
-    text-align: center;
-    padding: 2rem;
-    background: var(--color-bg);
-  }
-
-  .calendar-btn {
+  /* Directions link — shown below map tile (or alone when no API key) */
+  html[data-event="nyc"] .venue-directions-link {
     display: inline-block;
-    padding: 0.875rem 2rem;
-    background: var(--color-text);
-    color: white;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #D96A1E;
     text-decoration: none;
-    border: none;
-    margin-bottom: 1rem;
-    cursor: pointer;
+    transition: opacity 0.15s;
   }
 
-  .calendar-btn:hover:not(:disabled) {
-    background: var(--color-text);
+  html[data-event="nyc"] .venue-directions-link:hover {
+    opacity: 0.75;
   }
 
-  .calendar-btn:disabled {
-    background: var(--color-text-muted);
-    cursor: not-allowed;
+  html[data-event="nyc"] .venue-directions-link--disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    cursor: default;
   }
 
-  /* Footer */
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
+  /* TBD venue */
+  /* ── Footer ──────────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-footer {
+    border-top-color: rgba(241, 236, 227, 0.12) !important;
   }
 
-  .footer-row {
+  html[data-event="nyc"] .nyc-footer nav a,
+  html[data-event="nyc"] .nyc-footer nav span,
+  html[data-event="nyc"] .nyc-footer .copyright {
+    color: rgba(241, 236, 227, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a:hover {
+    color: #F1ECE3 !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer-meta {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
+    gap: 8px;
+    margin-top: 8px;
   }
 
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
+  /* ── Dark mode ────────────────────────────────────── */
+
+  @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] body {
+      background: #2F3F36 !important;
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-header {
+      background: #2F3F36 !important;
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .site-logo,
+    html[data-event="nyc"] .nyc-header .site-logo:hover,
+    html[data-event="nyc"] .nyc-header .event-toggle .active,
+    html[data-event="nyc"] .nyc-header .event-toggle .divider {
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .event-toggle a {
+      color: rgba(241, 236, 227, 0.45) !important;
+    }
+
+    html[data-event="nyc"] .nyc-rsvp-btn {
+      background: #D96A1E !important;
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .details-hero {
+      /* Dark mode: hero bg matches header */
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .details-date {
+      color: rgba(241, 236, 227, 0.45) !important;
+    }
+
+    html[data-event="nyc"] .details-back {
+      color: rgba(241, 236, 227, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .details-back:hover {
+      opacity: 0.6 !important;
+    }
+
+    html[data-event="nyc"] .nyc-moss {
+      background: #18211C !important;
+      color: #F1ECE3 !important;
+    }
+
+    html[data-event="nyc"] .details-band {
+      background: #2F3F36 !important;
+      color: rgba(241, 236, 227, 0.4) !important;
+      border-top-color: rgba(241, 236, 227, 0.06) !important;
+    }
+
+    html[data-event="nyc"] .nyc-info-row {
+      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-info-row:first-child {
+      border-top-color: rgba(241, 236, 227, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .venue-map {
+      filter: saturate(0.7) brightness(0.8);
+    }
   }
+
+  /* ── Mobile ───────────────────────────────────────── */
+
+  @media (max-width: 768px) {
+    html[data-event="nyc"] .nyc-disc {
+      width: clamp(160px, 50vw, 260px);
+      height: clamp(160px, 50vw, 260px);
+      left: -18%;
+      top: 72px;
+    }
+
+    html[data-event="nyc"] .details-hero {
+      min-height: 28vh;
+      padding-bottom: 32px;
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      font-size: clamp(40px, 12vw, 64px);
+      white-space: normal;
+    }
+
+    html[data-event="nyc"] .details-band {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    html[data-event="nyc"] .venue-grid {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+
+    html[data-event="nyc"] .venue-body {
+      padding: 16px 20px 24px;
+    }
+  }
+
 </style>

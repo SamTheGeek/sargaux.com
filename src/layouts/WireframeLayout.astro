@@ -7,15 +7,16 @@ interface Props {
   title: string;
   description?: string;
   event?: 'nyc' | 'france';
+  page?: string;
   fullTitle?: string;
 }
 
-const { title, description = 'Wedding website for Sam & Margaux', event, fullTitle } = Astro.props;
+const { title, description = 'Wedding website for Sam & Margaux', event, page, fullTitle } = Astro.props;
 const lang = Astro.locals.lang ?? 'en';
 ---
 
 <!DOCTYPE html>
-<html lang={lang} data-event={event}>
+<html lang={lang} data-event={event} data-page={page}>
   <head>
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
@@ -38,6 +39,27 @@ const lang = Astro.locals.lang ?? 'en';
     )}
     <ClientRouter />
     <script>
+      // Suppress disc FLIP when navigating deeper (e.g. /nyc → /nyc/travel).
+      // astro:after-preparation fires before startViewTransition captures the old
+      // state, so removing view-transition-name here prevents the disc from being
+      // included in the forward snapshot. astro:page-load cleans up any inline
+      // style left on the new page's disc element.
+      if (!window.__sargauxDiscTransitionSetup) {
+        window.__sargauxDiscTransitionSetup = true;
+
+        document.addEventListener('astro:after-preparation', (e) => {
+          const fromDepth = e.from.pathname.replace(/\/$/, '').split('/').length;
+          const toDepth = e.to.pathname.replace(/\/$/, '').split('/').length;
+          if (toDepth > fromDepth) {
+            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'none');
+          }
+        });
+
+        document.addEventListener('astro:page-load', () => {
+          document.querySelector('.nyc-disc')?.style.removeProperty('view-transition-name');
+        });
+      }
+
       if (!window.__sargauxLangTransitionSetup) {
         window.__sargauxLangTransitionSetup = true;
 

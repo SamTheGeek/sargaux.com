@@ -122,7 +122,7 @@ npm run test:install
 
 ## Testing
 
-The project includes 51 automated tests that run on every PR:
+The project includes automated tests that run on every PR:
 
 ### Test Suites (run in parallel)
 
@@ -151,6 +151,12 @@ The project includes 51 automated tests that run on every PR:
    - Core Web Vitals (LCP, FCP, CLS)
    - Time to Interactive (TTI), DOM Content Loaded
    - Page size, JavaScript execution time, resource loading
+
+5. **Pages Tests** (`tests/pages.spec.ts`)
+   - Back links ("← Return to event") present on all sub-pages
+   - NYC travel page hotel section content
+   - RSVP preview mode form rendering
+   - Couple page scattered gallery (exactly 6 cards)
 
 All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
@@ -272,7 +278,10 @@ The project version in `package.json` follows semantic versioning with wedding m
 - SSR enabled with `@astrojs/node` adapter (standalone mode)
 - **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
 - **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept.
-- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` across the homepage, NYC, and France pages. The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
+- **Script gotcha**: Never suppress view transition animations for named elements using `html[data-astro-transition] ::view-transition-group(name)` CSS — this selector does not reliably fire because `data-astro-transition` may not be set at the right moment relative to pseudo-element creation. Use the `astro:after-preparation` event in JavaScript instead to modify `view-transition-name` on the element directly before the VT snapshot.
+- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` (NO `transition:persist`) on all NYC pages (index, details, travel). Removing `transition:persist` was required to let the VT API reliably FLIP between pages. Forward navigation (clicking into sub-pages) suppresses the disc FLIP via `astro:after-preparation` in `WireframeLayout`: if `toDepth > fromDepth` (by URL path segment count), the disc's `view-transition-name` is temporarily set to `none` on the old element before the VT snapshot, preventing an unwanted cross-screen animation. The disc FLIP only plays on backward navigation (returning to a parent page). The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
+- **`WireframeLayout` `page` prop**: `WireframeLayout` accepts a `page` prop that sets `data-page` on `<html>` statically, allowing per-page CSS scoping without inline scripts. Currently used by `nyc/travel.astro` (passes `page="travel"`) to position the disc on the right side.
+- **Header overscroll fix**: `.site-header::before` in `base.css` extends a 25px panel above the header's top edge (using `position: absolute; top: -25px; background: inherit`) to cover springy overscroll bleed. This is purely cosmetic and does not affect header children layout.
 - **Notion SDK**: Uses `@notionhq/client` v5.x targeting Notion API v2025-09-03. Key difference from older versions: `dataSources.query()` replaces `databases.query()`, using `data_source_id` instead of `database_id`. See [upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
 
 ## Authentication
@@ -370,6 +379,8 @@ See `src/config/features.ts` for the full list. Key flags:
 - `global.notionBackend` — Use Notion Guest List for auth (requires `NOTION_API_KEY` and `NOTION_GUEST_LIST_DB`). When off, falls back to hardcoded guest list.
 - `global.i18n` — French language support
 - `nyc.*` / `france.*` — Event-specific features
+  - `nyc.wytheRoomBlock` — Controls visibility of the entire Wythe Hotel row on the travel page (default: false, enables when room block is bookable)
+  - `nyc.rsvpPreview` — Renders RSVP forms (NYC and France) with mock party data (Sam Gross + Margaux Ancel, invited to everything) when no Notion guestId is present. Used for local dev without Notion backend.
 - `registry.enabled` — Registry page visibility
 
 ### For Netlify Preview Deploys
