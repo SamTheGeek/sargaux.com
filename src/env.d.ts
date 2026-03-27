@@ -52,7 +52,6 @@ interface ImportMetaEnv {
   readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
   readonly FEATURE_REGISTRY_ENABLED?: string;
   readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
-  readonly GOOGLE_MAPS_STATIC_API_KEY?: string;
 }
 
 interface ImportMeta {

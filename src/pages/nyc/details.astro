@@ -9,7 +9,7 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
-const MAPS_KEY = import.meta.env.GOOGLE_MAPS_STATIC_API_KEY ?? process.env.GOOGLE_MAPS_STATIC_API_KEY;
+const MAPS_KEY = process.env.GOOGLE_MAPS_STATIC_API_KEY;
 
 const DINNER_LAT = 40.72235;
 const DINNER_LNG = -73.95709;
