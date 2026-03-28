@@ -122,8 +122,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
     <!-- ── Cream hero — discs contained via overflow:hidden ── -->
     <div class="rsvp-hero">
-      <div class="rsvp-disc-m" aria-hidden="true">M</div>
-      <div class="rsvp-disc-s" aria-hidden="true">S</div>
+      <div class="rsvp-disc-m" aria-hidden="true" transition:name="event-disc">M</div>
+      <div class="rsvp-disc-s" aria-hidden="true" transition:name="rsvp-disc-s">S</div>
       <div class="page-content rsvp-hero-inner">
         <a href="/nyc" class="back-link rsvp-back">{t(strings.nav.backToEvent)}</a>
         <h1>{t(strings.nyc.rsvp.heading)}</h1>
@@ -404,7 +404,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(104px, 18.4vh, 208px);
+    font-size: clamp(169px, 29.9vh, 338px);
     color: #F1ECE3;
     letter-spacing: 0;
     font-feature-settings: "case" 1;
@@ -412,8 +412,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   /*
-   * S — smaller grey disc, lower-left of M.
-   * Partially cropped at bottom by hero overflow:hidden.
+   * S — smaller grey disc, lower-right of M.
    */
   .rsvp-disc-s {
     position: absolute;
@@ -421,15 +420,15 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     height: clamp(150px, 27vh, 302px);
     background: #808183;
     border-radius: 50%;
-    right: 8%;
-    bottom: -15%;
+    right: 16%;
+    top: 40%;
     z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(60px, 10.8vh, 121px);
+    font-size: clamp(97px, 17.6vh, 196px);
     color: #F1ECE3;
     letter-spacing: 0;
     font-feature-settings: "case" 1;
@@ -605,9 +604,6 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     max-width: 720px;
   }
 
-  .rsvp-submit-zone {
-    max-width: 540px;
-  }
 
   .rsvp-section {
     padding-top: var(--space-md);
@@ -670,7 +666,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   .guest-name[type="text"]:focus {
-    border-color: var(--color-text);
+    border-color: #D96A1E;
     outline: none;
   }
 
@@ -680,11 +676,13 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
-    min-width: 96px;
+    width: 116px;      /* fixed: sized for "Not attending" so layout never shifts */
+    white-space: nowrap;
     text-align: right;
     flex-shrink: 0;
     font-feature-settings: "case" 1;
   }
+
 
   /* Toggle switch */
   .guest-toggle {
@@ -724,7 +722,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   .guest-toggle input:checked + .toggle-slider {
-    background: var(--color-text);
+    background: #D96A1E;
   }
 
   .guest-toggle input:checked + .toggle-slider::before {
@@ -772,8 +770,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   .event-row input:checked ~ .event-check-mark {
-    background: var(--color-text);
-    border-color: var(--color-text);
+    background: #D96A1E;
+    border-color: #D96A1E;
   }
 
   .event-row input:checked ~ .event-check-mark::after {
@@ -817,13 +815,19 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     width: 100%;
     border-radius: 6px;
     box-sizing: border-box;
-    resize: vertical;
+    resize: none;
   }
 
   .single-line-input {
     width: 100%;
     border-radius: 6px;
     box-sizing: border-box;
+  }
+
+  .text-input:focus,
+  .single-line-input:focus {
+    border-color: #D96A1E;
+    outline: none;
   }
 
   /* ── Email section ─────────────────────────── */
@@ -884,6 +888,11 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     font-feature-settings: "case" 1;
   }
 
+  /* Hide "(optional)" once the guest opts in to a confirmation email */
+  .rsvp-section:has(#send-confirmation:checked) .optional-label {
+    display: none;
+  }
+
   /* ── Feedback ──────────────────────────────── */
 
   .feedback {
@@ -913,6 +922,9 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   .rsvp-submit-btn {
     display: block;
     width: 100%;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
     height: 56px;
     background: var(--color-text);
     color: var(--color-surface-text);
@@ -943,6 +955,18 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     font-size: 13px;
     text-align: center;
   }
+
+  /* ── Responsive disc positioning ───────────── */
+  /*
+   * Disc size is vh-based so it doesn't shrink with viewport width.
+   * At narrow screens the disc's left edge drifts toward center, so we
+   * increase the negative `right` value (in vw) to keep the disc
+   * right-anchored. overflow:hidden on .rsvp-hero handles cropping.
+   */
+
+  /* No breakpoint needed between 768px and desktop — default right: -10% / 8%
+     works cleanly across all widths above mobile. The 768px block below
+     handles the switch to vw-based sizing for smaller screens. */
 
   /* ── Dark mode ─────────────────────────────── */
 
@@ -1001,17 +1025,21 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     .rsvp-disc-m {
       width: clamp(200px, 52vw, 320px);
       height: clamp(200px, 52vw, 320px);
-      font-size: clamp(80px, 20.8vw, 128px);
-      left: -18%;
-      top: 72px;
+      font-size: clamp(130px, 33.8vw, 208px);
+      right: -8%;
+      left: auto;
+      top: -5%;
     }
 
     .rsvp-disc-s {
       width: clamp(116px, 30vw, 186px);
       height: clamp(116px, 30vw, 186px);
-      font-size: clamp(46px, 12vw, 74px);
-      top: calc(72px + clamp(130px, 34vw, 210px));
-      left: calc(-18% + clamp(80px, 20.8vw, 128px));
+      font-size: clamp(75px, 19.5vw, 121px);
+      right: 22%;
+      left: auto;
+      /* Use top so S stays near M at all heights; offset below M's center */
+      top: 38%;
+      bottom: auto;
     }
 
     .rsvp-hero {
