@@ -1,21 +1,23 @@
 import { test, expect, type BrowserContext, type Page, type APIRequestContext } from '@playwright/test';
 
 const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
+const syntheticNotion = process.env.SYNTHETIC_NOTION_BACKEND === 'true';
 
 const notionRequired =
   process.env.FEATURE_GLOBAL_NOTION_BACKEND !== 'true' ||
   process.env.FEATURE_NYC_RSVP_ENABLED !== 'true' ||
   process.env.FEATURE_FRANCE_RSVP_ENABLED !== 'true' ||
-  !process.env.NOTION_API_KEY ||
-  !process.env.NOTION_GUEST_LIST_DB ||
-  !process.env.NOTION_EVENT_CATALOG_DB ||
-  !process.env.NOTION_RSVP_RESPONSES_DB;
+  (!syntheticNotion &&
+    (!process.env.NOTION_API_KEY ||
+      !process.env.NOTION_GUEST_LIST_DB ||
+      !process.env.NOTION_EVENT_CATALOG_DB ||
+      !process.env.NOTION_RSVP_RESPONSES_DB));
 
 async function login(page: Page) {
   await page.goto('/');
   await page.click('#login-trigger');
   await page.fill('#name', TEST_GUEST_NAME);
-  await page.click('#submit-btn');
+  await page.press('#name', 'Enter');
   await page.waitForURL(/\/(nyc|france)$/);
 }
 

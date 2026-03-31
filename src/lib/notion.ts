@@ -9,6 +9,14 @@ import { Client } from '@notionhq/client';
 import type { GuestRecord } from '../types/guest';
 import type { EventRecord } from '../types/event';
 import type { RSVPSubmission, RSVPResponse, RSVPDetails } from '../types/rsvp';
+import * as syntheticNotion from './notion-synthetic';
+
+function useSyntheticNotionBackend(): boolean {
+  return (
+    process.env.SYNTHETIC_NOTION_BACKEND === 'true' ||
+    import.meta.env.SYNTHETIC_NOTION_BACKEND === 'true'
+  );
+}
 
 let notionClient: Client | null = null;
 
@@ -107,6 +115,9 @@ let guestCachePromise: Promise<GuestRecord[]> | null = null;
  * Uses promise deduplication to prevent concurrent Notion fetches.
  */
 export async function fetchAllGuests(): Promise<GuestRecord[]> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.fetchAllGuests();
+  }
   if (guestCache) return guestCache;
   if (guestCachePromise) return guestCachePromise;
   guestCachePromise = _fetchAllGuests().catch((err) => {
@@ -195,6 +206,10 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
  * Clear the guest cache (useful for testing or manual refresh).
  */
 export function clearGuestCache(): void {
+  if (useSyntheticNotionBackend()) {
+    syntheticNotion.resetSyntheticNotionState();
+    return;
+  }
   guestCache = null;
   guestCachePromise = null;
 }
@@ -204,6 +219,10 @@ export function clearGuestCache(): void {
  * Invalidates the in-memory guest cache so subsequent requests see the update.
  */
 export async function updateGuestEmail(guestId: string, email: string): Promise<void> {
+  if (useSyntheticNotionBackend()) {
+    await syntheticNotion.updateGuestEmail(guestId, email);
+    return;
+  }
   const notion = getClient();
   await notion.pages.update({
     page_id: guestId,
@@ -222,6 +241,9 @@ let eventCatalogCache: Map<'nyc' | 'france', EventRecord[]> = new Map();
  * Results are cached in memory for the lifetime of the server process.
  */
 export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventRecord[]> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.getEventCatalog(wedding);
+  }
   if (eventCatalogCache.has(wedding)) {
     return eventCatalogCache.get(wedding)!;
   }
@@ -304,6 +326,9 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
  * Fetch events that a specific guest is invited to.
  */
 export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.getGuestEvents(guestId);
+  }
   const notion = getClient();
 
   // Fetch the guest page to get Events Invited relation
@@ -367,6 +392,9 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
  * Returns [primary guest, ...related guests], with +1s sorted last.
  */
 export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.getGuestParty(guestId);
+  }
   const allGuests = await fetchAllGuests();
   const primaryGuest = allGuests.find(g => g.id === guestId);
 
@@ -403,6 +431,9 @@ export async function submitRSVP(
   guestId: string,
   submission: RSVPSubmission
 ): Promise<string> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.submitRSVP(guestId, submission);
+  }
   const notion = getClient();
   const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
 
@@ -508,6 +539,9 @@ export async function getLatestRSVP(
   guestId: string,
   event: 'nyc' | 'france'
 ): Promise<RSVPResponse | null> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.getLatestRSVP(guestId, event);
+  }
   const notion = getClient();
   const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
 
@@ -617,6 +651,9 @@ export async function deleteRSVP(
   guestId: string,
   event: 'nyc' | 'france'
 ): Promise<boolean> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.deleteRSVP(guestId, event);
+  }
   const existingRSVP = await getLatestRSVP(guestId, event);
 
   if (!existingRSVP) {
@@ -638,6 +675,9 @@ export async function deleteRSVP(
  * Clear the event catalog cache (useful for testing or manual refresh).
  */
 export function clearEventCache(): void {
+  if (useSyntheticNotionBackend()) {
+    return;
+  }
   eventCatalogCache.clear();
 }
 
@@ -650,6 +690,9 @@ const dayDateCache: Map<string, string | undefined> = new Map();
  * Results are cached in memory for the lifetime of the server process.
  */
 export async function fetchDayDate(dayId: string): Promise<string | undefined> {
+  if (useSyntheticNotionBackend()) {
+    return syntheticNotion.fetchDayDate(dayId);
+  }
   if (dayDateCache.has(dayId)) {
     return dayDateCache.get(dayId);
   }
@@ -674,5 +717,8 @@ export async function fetchDayDate(dayId: string): Promise<string | undefined> {
  * Clear the day date cache (useful for testing or manual refresh).
  */
 export function clearDayDateCache(): void {
+  if (useSyntheticNotionBackend()) {
+    return;
+  }
   dayDateCache.clear();
 }

@@ -23,6 +23,8 @@ function loadDotEnvLocal(): void {
 }
 
 loadDotEnvLocal();
+process.env.SYNTHETIC_NOTION_BACKEND ??= 'true';
+process.env.CALENDAR_HMAC_SECRET ??= 'test-calendar-secret';
 
 export default defineConfig({
   testDir: './tests',
@@ -32,7 +34,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:1213',
+    baseURL: 'http://localhost:1213',
     trace: 'on-first-retry',
   },
   expect: {
@@ -46,7 +48,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && node ./dist/server/entry.mjs',
-    url: 'http://127.0.0.1:1213',
+    url: 'http://localhost:1213',
     reuseExistingServer: false,
     timeout: 120000,
     env: {
@@ -60,9 +62,15 @@ export default defineConfig({
       FEATURE_GLOBAL_I18N: process.env.FEATURE_GLOBAL_I18N ?? 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',
+      SYNTHETIC_NOTION_BACKEND: process.env.SYNTHETIC_NOTION_BACKEND ?? 'true',
       FEATURE_NYC_RSVP_ENABLED: process.env.FEATURE_NYC_RSVP_ENABLED ?? 'true',
       FEATURE_FRANCE_RSVP_ENABLED:
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',
+      FEATURE_NYC_CALENDAR_SUBSCRIBE:
+        process.env.FEATURE_NYC_CALENDAR_SUBSCRIBE ?? 'true',
+      FEATURE_FRANCE_CALENDAR_SUBSCRIBE:
+        process.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE ?? 'true',
+      CALENDAR_HMAC_SECRET: process.env.CALENDAR_HMAC_SECRET ?? 'test-calendar-secret',
     },
   },
 });

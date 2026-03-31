@@ -17,10 +17,15 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
 const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
+const syntheticNotion = process.env.SYNTHETIC_NOTION_BACKEND === 'true';
 
 const notionEnabled =
   process.env.FEATURE_GLOBAL_NOTION_BACKEND === 'true' &&
-  !!process.env.CALENDAR_HMAC_SECRET;
+  !!process.env.CALENDAR_HMAC_SECRET &&
+  (syntheticNotion ||
+    (!!process.env.NOTION_API_KEY &&
+      !!process.env.NOTION_GUEST_LIST_DB &&
+      !!process.env.NOTION_EVENT_CATALOG_DB));
 
 const calendarEnabled =
   process.env.FEATURE_NYC_CALENDAR_SUBSCRIBE === 'true' ||
@@ -42,7 +47,7 @@ test.describe('Calendar ICS Endpoint', () => {
     await page.goto(`${BASE_URL}/`);
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await page.waitForURL(`${BASE_URL}/nyc`);
 
     // Extract the webcal:// href from the Add to Calendar link

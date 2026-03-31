@@ -36,17 +36,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const guestId = auth.notionId;
-  if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-
   // Parse request body
   let body: RSVPSubmission;
   try {
@@ -89,6 +78,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!Array.isArray(body.eventsAttending)) {
     return new Response(
       JSON.stringify({ error: 'eventsAttending must be an array' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  const guestId = auth.notionId;
+  if (!guestId) {
+    return new Response(
+      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -227,17 +227,6 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const guestId = auth.notionId;
-  if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-
   // Parse query params
   const url = new URL(request.url);
   const event = url.searchParams.get('event');
@@ -257,6 +246,17 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  const guestId = auth.notionId;
+  if (!guestId) {
+    return new Response(
+      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   // Fetch from Notion
@@ -310,17 +310,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  const guestId = auth.notionId;
-  if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-
   // Parse query params
   const url = new URL(request.url);
   const event = url.searchParams.get('event');
@@ -340,6 +329,17 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  const guestId = auth.notionId;
+  if (!guestId) {
+    return new Response(
+      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   // Delete from Notion

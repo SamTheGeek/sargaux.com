@@ -12,9 +12,12 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { createSessionToken } from '../src/lib/auth';
+import { SYNTHETIC_PRIMARY_GUEST_ID } from '../src/lib/notion-synthetic';
 
 const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
 const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
+const syntheticNotion = process.env.SYNTHETIC_NOTION_BACKEND === 'true';
 
 test.describe('RSVP API Endpoints', () => {
   // Run tests serially — they write to shared Notion state (Sam Gross's RSVPs)
@@ -27,24 +30,36 @@ test.describe('RSVP API Endpoints', () => {
   // This is detected by checking if the login redirects to /nyc (Notion enabled) or stays on / (hardcoded list)
   test.skip(
     !process.env.FEATURE_GLOBAL_NOTION_BACKEND ||
-      process.env.FEATURE_GLOBAL_NOTION_BACKEND !== 'true',
+      process.env.FEATURE_GLOBAL_NOTION_BACKEND !== 'true' ||
+      (!syntheticNotion &&
+        (!process.env.NOTION_API_KEY ||
+          !process.env.NOTION_GUEST_LIST_DB ||
+          !process.env.NOTION_RSVP_RESPONSES_DB)),
     'Notion backend not configured'
   );
 
   test.beforeAll(async ({ browser }) => {
-    // Login once to get auth cookie
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(`${BASE_URL}/`);
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.click('#submit-btn');
-    await page.waitForURL(`${BASE_URL}/nyc`);
+    if (syntheticNotion) {
+      authCookie = createSessionToken(
+        TEST_GUEST_NAME,
+        SYNTHETIC_PRIMARY_GUEST_ID,
+        ['nyc', 'france']
+      );
+    } else {
+      // Login once to get auth cookie from the real backend
+      await page.goto(`${BASE_URL}/`);
+      await page.click('#login-trigger');
+      await page.fill('#name', TEST_GUEST_NAME);
+      await page.press('#name', 'Enter');
+      await page.waitForURL(`${BASE_URL}/nyc`);
 
-    const cookies = await context.cookies();
-    const auth = cookies.find(c => c.name === 'sargaux_auth');
-    authCookie = auth?.value;
+      const cookies = await context.cookies();
+      const auth = cookies.find(c => c.name === 'sargaux_auth');
+      authCookie = auth?.value;
+    }
 
     // Clean up any existing RSVPs for the test guest to ensure a clean slate.
     // Loop until all RSVPs are deleted (there may be multiple from prior test runs).

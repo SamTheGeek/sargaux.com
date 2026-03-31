@@ -11,12 +11,14 @@
  */
 
 import { test, expect } from '@playwright/test';
+const syntheticNotion = process.env.SYNTHETIC_NOTION_BACKEND === 'true';
 
 // Admin endpoints require Notion backend to fetch guests
 const notionRequired =
   process.env.FEATURE_GLOBAL_NOTION_BACKEND !== 'true' ||
-  !process.env.NOTION_API_KEY ||
-  !process.env.NOTION_GUEST_LIST_DB;
+  (!syntheticNotion &&
+    (!process.env.NOTION_API_KEY ||
+      !process.env.NOTION_GUEST_LIST_DB));
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'test-secret-not-set';
 
