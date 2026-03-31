@@ -39,24 +39,53 @@ const lang = Astro.locals.lang ?? 'en';
     )}
     <ClientRouter />
     <script>
-      // Suppress disc FLIP when navigating deeper (e.g. /nyc → /nyc/travel).
-      // astro:after-preparation fires before startViewTransition captures the old
-      // state, so removing view-transition-name here prevents the disc from being
-      // included in the forward snapshot. astro:page-load cleans up any inline
-      // style left on the new page's disc element.
+      // Disc transition rules:
+      //
+      // Forward nav (e.g. /nyc → /nyc/travel, toDepth > fromDepth):
+      //   Suppress disc on OLD page only — disc enters on sub-page without a FLIP.
+      //
+      // Cross-area nav (e.g. /france → /nyc, toIsNycIndex && !fromIsNycArea):
+      //   Suppress disc on BOTH old and new pages. The ::view-transition overlay
+      //   sits above the entire DOM, so any disc VT pseudo-element would appear
+      //   above the skyline (z:3 in DOM). With disc fully suppressed it renders
+      //   at z:2 in normal flow — always below the skyline — from the first frame.
+      //
+      // Backward nav (e.g. /nyc/rsvp → /nyc, toIsNycIndex && fromIsNycArea):
+      //   Keep the disc FLIP. Skyline is absent from the old (sub-)page, so it
+      //   only appears in the new-page capture. We give it view-transition-name
+      //   "nyc-skyline" in astro:before-swap so it gets its own VT group at
+      //   z:22 — above the disc (z:20) and below the header (z:120) — for the
+      //   duration of the FLIP animation.
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
         document.addEventListener('astro:after-preparation', (e) => {
           const fromDepth = e.from.pathname.replace(/\/$/, '').split('/').length;
           const toDepth = e.to.pathname.replace(/\/$/, '').split('/').length;
-          if (toDepth > fromDepth) {
+          const toIsNycIndex = e.to.pathname.replace(/\/$/, '') === '/nyc';
+          const fromIsNycArea = e.from.pathname.startsWith('/nyc');
+          if (toDepth > fromDepth || (toIsNycIndex && !fromIsNycArea)) {
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'none');
+          }
+        });
+
+        document.addEventListener('astro:before-swap', (event) => {
+          const toPath = event.to?.pathname?.replace(/\/$/, '') ?? '';
+          const fromIsNycArea = event.from?.pathname?.startsWith('/nyc') ?? false;
+          if (toPath === '/nyc') {
+            if (!fromIsNycArea) {
+              // Cross-area: suppress disc on incoming page too
+              event.newDocument.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'none');
+            } else {
+              // Backward nav: give skyline a VT group so it stays above the disc FLIP
+              event.newDocument.querySelector('.nyc-skyline-wrap')?.style.setProperty('view-transition-name', 'nyc-skyline');
+            }
           }
         });
 
         document.addEventListener('astro:page-load', () => {
           document.querySelector('.nyc-disc')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
         });
       }
 

@@ -168,6 +168,10 @@ a:hover {
   z-index: 21;
 }
 
+::view-transition-group(nyc-skyline) {
+  z-index: 22;
+}
+
 .site-nav {
   display: grid;
   grid-template-columns: max-content 1fr max-content;

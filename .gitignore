@@ -160,3 +160,7 @@ sargaux.com.code-workspace
 
 # Git worktrees
 .worktrees/
+
+# Generated icons (produced by scripts/generate-icons.ts at build time)
+public/apple-touch-icon.png
+public/apple-touch-icon-precomposed.png
