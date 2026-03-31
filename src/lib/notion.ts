@@ -481,6 +481,7 @@ export async function submitRSVP(
     },
   };
 
+  let responseId: string;
   if (existingRSVP) {
     // Update existing page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -488,7 +489,7 @@ export async function submitRSVP(
       page_id: existingRSVP.id,
       properties,
     });
-    return existingRSVP.id;
+    responseId = existingRSVP.id;
   } else {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -496,8 +497,32 @@ export async function submitRSVP(
       parent: { type: 'database_id', database_id: dataSourceId },
       properties,
     });
-    return response.id;
+    responseId = response.id;
   }
+
+  // Sync RSVP status back to the Guest List record.
+  // For dual-invite guests, combine this event's status with the other event's
+  // latest response: all positive → Attending, all declined → Declined, mixed → Partial.
+  const otherEvents = (guest?.eventInvitations ?? []).filter(e => e !== submission.event);
+  let guestListStatus: 'Attending' | 'Declined' | 'Partial';
+
+  if (otherEvents.length === 0) {
+    guestListStatus = status === 'Declined' ? 'Declined' : 'Attending';
+  } else {
+    const otherRSVPs = await Promise.all(otherEvents.map(e => getLatestRSVP(guestId, e)));
+    const allStatuses = [status, ...otherRSVPs.filter(Boolean).map(r => r!.status)];
+    const anyPositive = allStatuses.some(s => s !== 'Declined');
+    const anyNegative = allStatuses.some(s => s === 'Declined');
+    guestListStatus = anyPositive && anyNegative ? 'Partial' : anyPositive ? 'Attending' : 'Declined';
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await notion.pages.update({
+    page_id: guestId,
+    properties: { RSVP: { status: { name: guestListStatus } } } as any,
+  });
+
+  return responseId;
 }
 
 /**
