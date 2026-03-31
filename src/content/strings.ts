@@ -113,7 +113,7 @@ export const strings = {
       dinner:     s('Bar Blondeau', 'Bar Blondeau'),
       dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:  s('followed by', 'suivi de'),
-      dancing:    s('Dancing (Venue TBD)', 'Dancing (lieu à confirmer)'),
+      dancing:    s('Dancing (Location TBA)', 'Dancing (lieu à confirmer)'),
     },
     dressCode: {
       heading: s('Dress Code', 'Code vestimentaire'),
@@ -181,7 +181,7 @@ export const strings = {
         },
         dancing: {
           title:          s('Dancing', 'Dancing'),
-          name:           s('Venue TBD', 'Lieu à confirmer'),
+          name:           s('Location TBA', 'Lieu à confirmer'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
       },

@@ -1,6 +1,8 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
+import mBulletSrc from '../../assets/nyc/subway-bullet-m.svg?url';
+import sfBulletSrc from '../../assets/nyc/subway-bullet-sf.svg?url';
 import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
@@ -59,7 +61,7 @@ if (isPreview) {
       type: 'Core',
       wedding: 'nyc',
       time: '9:00 PM',
-      location: 'TBD',
+      location: 'Location TBA',
       showOnWebsite: true,
     },
   ];
@@ -122,8 +124,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
     <!-- ── Cream hero — discs contained via overflow:hidden ── -->
     <div class="rsvp-hero">
-      <div class="rsvp-disc-m" aria-hidden="true" transition:name="event-disc">M</div>
-      <div class="rsvp-disc-s" aria-hidden="true" transition:name="rsvp-disc-s">S</div>
+      <img class="rsvp-disc-m" src={mBulletSrc} aria-hidden="true" transition:name="event-disc" alt="" />
+      <img class="rsvp-disc-s" src={sfBulletSrc} aria-hidden="true" transition:name="rsvp-disc-s" alt="" />
       <div class="page-content rsvp-hero-inner">
         <a href="/nyc" class="back-link rsvp-back">{t(strings.nav.backToEvent)}</a>
         <h1>{t(strings.nyc.rsvp.heading)}</h1>
@@ -389,50 +391,28 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   /* ── Discs — absolute within hero, right side, contained by overflow:hidden ── */
 
   /*
-   * M — large amber disc, partially cropped off the right edge and top.
+   * M — large amber subway bullet, partially cropped off the right edge and top.
    */
   .rsvp-disc-m {
     position: absolute;
     width: clamp(260px, 46vh, 520px);
     height: clamp(260px, 46vh, 520px);
-    background: #D96A1E;
-    border-radius: 50%;
     right: -10%;
     top: -5%;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(169px, 29.9vh, 338px);
-    color: #F1ECE3;
-    letter-spacing: 0;
-    font-feature-settings: "case" 1;
     pointer-events: none;
   }
 
   /*
-   * S — smaller grey disc, lower-right of M.
+   * S — smaller silver subway bullet, lower-right of M.
    */
   .rsvp-disc-s {
     position: absolute;
     width: clamp(150px, 27vh, 302px);
     height: clamp(150px, 27vh, 302px);
-    background: #808183;
-    border-radius: 50%;
     right: 16%;
     top: 40%;
     z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(97px, 17.6vh, 196px);
-    color: #F1ECE3;
-    letter-spacing: 0;
-    font-feature-settings: "case" 1;
     pointer-events: none;
   }
 
@@ -658,7 +638,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     min-width: 0;
     border: 1px solid var(--color-border);
     border-radius: 4px;
-    padding: 6px 10px;
+    padding: 10px 10px;
     font-size: var(--font-size-body);
     font-family: var(--font-body);
     background: var(--color-bg);
@@ -1002,7 +982,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     .rsvp-section,
     .rsvp-submit-zone,
     .rsvp-page > .page-content {
-      background: #2F3F36;
+      background: var(--color-bg);
     }
 
     .toggle-slider {
@@ -1022,6 +1002,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
       color: var(--color-bg);
     }
 
+    .guest-row,
+    .guest-name[type="text"],
     .event-row {
       border-color: var(--color-text-muted);
     }
@@ -1037,7 +1019,6 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     .rsvp-disc-m {
       width: clamp(200px, 52vw, 320px);
       height: clamp(200px, 52vw, 320px);
-      font-size: clamp(130px, 33.8vw, 208px);
       right: -8%;
       left: auto;
       top: -5%;
@@ -1046,7 +1027,6 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     .rsvp-disc-s {
       width: clamp(116px, 30vw, 186px);
       height: clamp(116px, 30vw, 186px);
-      font-size: clamp(75px, 19.5vw, 121px);
       right: 22%;
       left: auto;
       /* Use top so S stays near M at all heights; offset below M's center */
