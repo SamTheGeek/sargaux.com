@@ -1,6 +1,6 @@
 /**
  * Generates apple-touch-icon.png and apple-touch-icon-precomposed.png
- * from public/favicon.svg at build time.
+ * from src/assets/common/favicon.svg at build time.
  *
  * Run via: tsx scripts/generate-icons.ts
  * Automatically runs as prebuild hook.
@@ -14,7 +14,7 @@ import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-const input = join(root, 'public', 'favicon.svg');
+const input = join(root, 'src', 'assets', 'common', 'favicon.svg');
 const output = join(root, 'public', 'apple-touch-icon.png');
 const outputPrecomposed = join(root, 'public', 'apple-touch-icon-precomposed.png');
 
