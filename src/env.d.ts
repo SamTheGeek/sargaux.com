@@ -40,7 +40,9 @@ interface ImportMetaEnv {
   readonly FEATURE_NYC_TRAVEL_BUS?: string;
   readonly FEATURE_NYC_TRAVEL_MTA?: string;
   readonly FEATURE_NYC_TRAVEL_MUSEUMS?: string;
-  readonly FEATURE_NYC_WYTHE_ROOM_BLOCK?: string;
+  readonly FEATURE_NYC_WYTHE_SOLD_OUT?: string;
+  readonly FEATURE_NYC_ARLO_SOLD_OUT?: string;
+  readonly FEATURE_NYC_SEVILLE_SOLD_OUT?: string;
   readonly FEATURE_FRANCE_CALENDAR_SUBSCRIBE?: string;
   readonly FEATURE_FRANCE_OPTIONAL_EXCURSIONS?: string;
   readonly FEATURE_FRANCE_TRAVEL_RESTRUCTURED?: string;

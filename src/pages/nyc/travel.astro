@@ -49,26 +49,33 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <section class="nyc-moss details-section">
     <div class="page-content">
       <div class="nyc-info-table">
-        {features.nyc.wytheRoomBlock && (
+        {!features.nyc.wytheSoldOut && (
           <div class="nyc-info-row">
             <span class="nyc-info-key">Wythe Hotel</span>
-            <span class="nyc-info-val">{t(strings.nyc.travel.hotels.hotel1)}</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel1)} <a class="nyc-info-address" href="https://maps.app.goo.gl/kYLuYNuMUKNwkGRQA" target="_blank" rel="noopener">80 Wythe Avenue, Brooklyn, NY 11249</a></span>
+              <a class="nyc-info-link--cta" href="https://app.mews.com/distributor/6b87e134-8c75-468a-82d4-aca900c43c70?mewsAvailabilityBlockId=81019661-425a-4bba-a1ff-b3fc0120bbfc&mewsStart=2026-10-10&mewsEnd=2026-10-12" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel1BookNow)}</a>
+            </span>
           </div>
         )}
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">Arlo Williamsburg</span>
-          <span class="nyc-info-val nyc-info-val--stack">
-            <span>{t(strings.nyc.travel.hotels.hotel2)} <a class="nyc-info-address" href="https://maps.app.goo.gl/d65Gn17JYfJHy4hB6" target="_blank" rel="noopener">96 Wythe Avenue, Brooklyn</a></span>
-            <a class="nyc-info-link--cta" href="https://be.synxis.com/?Hotel=41850&Chain=19470&arrive=2026-10-10&depart=2026-10-12&adult=1&child=0&group=261010ANCE" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel2BookNow)}</a>
-          </span>
-        </div>
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">Hotel Seville NoMad</span>
-          <span class="nyc-info-val nyc-info-val--stack">
-            <span>{t(strings.nyc.travel.hotels.hotel3)} <a class="nyc-info-address" href="https://maps.app.goo.gl/XtUmtf1KYhEVdCjt7" target="_blank" rel="noopener">22 E 29th St, New York, NY</a></span>
-            <a class="nyc-info-link--cta" href="https://www.hyatt.com/events/en-US/group-booking/NYCUD/G-MBO0" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel3BookNow)}</a>
-          </span>
-        </div>
+        {!features.nyc.arloSoldOut && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">Arlo Williamsburg</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel2)} <a class="nyc-info-address" href="https://maps.app.goo.gl/d65Gn17JYfJHy4hB6" target="_blank" rel="noopener">96 Wythe Avenue, Brooklyn</a></span>
+              <a class="nyc-info-link--cta" href="https://be.synxis.com/?Hotel=41850&Chain=19470&arrive=2026-10-10&depart=2026-10-12&adult=1&child=0&group=261010ANCE" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel2BookNow)}</a>
+            </span>
+          </div>
+        )}
+        {!features.nyc.sevilleSoldOut && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">Hotel Seville NoMad</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel3)} <a class="nyc-info-address" href="https://maps.app.goo.gl/XtUmtf1KYhEVdCjt7" target="_blank" rel="noopener">22 E 29th St, New York, NY</a></span>
+              <a class="nyc-info-link--cta" href="https://www.hyatt.com/events/en-US/group-booking/NYCUD/G-MBO0" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel3BookNow)}</a>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   </section>

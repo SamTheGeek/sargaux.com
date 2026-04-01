@@ -398,6 +398,20 @@ const submitLabel = t(strings.home.modal.submitBtn);
           font-family: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
         }
 
+        /* In dark mode, --color-text (background) and --color-surface-text
+           both resolve to warm-cream — use --color-bg for legible text. */
+        .login-trigger-panel,
+        input.inline-name-input {
+          color: var(--color-bg);
+          -webkit-text-fill-color: var(--color-bg);
+        }
+
+        input.inline-name-input::placeholder {
+          color: var(--color-bg);
+          -webkit-text-fill-color: var(--color-bg);
+          opacity: 0.45;
+        }
+
         .login-panel {
           background: transparent;
         }

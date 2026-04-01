@@ -38,7 +38,9 @@ type FeatureFlags = {
     travelBus: boolean;
     travelMta: boolean;
     travelMuseums: boolean;
-    wytheRoomBlock: boolean;
+    wytheSoldOut: boolean;
+    arloSoldOut: boolean;
+    sevilleSoldOut: boolean;
     rsvpEnabled: boolean;
     rsvpPreview: boolean;
   };
@@ -78,7 +80,9 @@ const features: FeatureFlags = {
     travelBus: flag(import.meta.env.FEATURE_NYC_TRAVEL_BUS, false),
     travelMta: flag(import.meta.env.FEATURE_NYC_TRAVEL_MTA, false),
     travelMuseums: flag(import.meta.env.FEATURE_NYC_TRAVEL_MUSEUMS, false),
-    wytheRoomBlock: flag(import.meta.env.FEATURE_NYC_WYTHE_ROOM_BLOCK, false),
+    wytheSoldOut: flag(import.meta.env.FEATURE_NYC_WYTHE_SOLD_OUT, false),
+    arloSoldOut: flag(import.meta.env.FEATURE_NYC_ARLO_SOLD_OUT, false),
+    sevilleSoldOut: flag(import.meta.env.FEATURE_NYC_SEVILLE_SOLD_OUT, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_NYC_RSVP_ENABLED, false),
     rsvpPreview: flag(import.meta.env.FEATURE_NYC_RSVP_PREVIEW, false),
   },

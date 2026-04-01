@@ -42,36 +42,31 @@ const lang = Astro.locals.lang ?? 'en';
       // Disc transition rules:
       //
       // Forward nav (e.g. /nyc → /nyc/travel, toDepth > fromDepth):
-      //   Suppress disc on the old page only — disc enters on the sub-page
-      //   without a FLIP.
+      //   base.css raises ::view-transition-group(root) to z:21 on pages with
+      //   data-page="details" or data-page="travel". This places the root
+      //   snapshot above the disc group (z:20), hiding the disc FLIP behind
+      //   the page content during the cross-fade. No JS needed.
+      //
+      // Backward nav (e.g. /nyc/details → /nyc):
+      //   /nyc has no data-page, so root reverts to default z:0. The disc
+      //   group (z:20) is now above root, and the FLIP plays as intended.
       //
       // Any nav TO /nyc (from France, homepage, or a sub-page):
-      //   Let the disc FLIP play. The skyline (z:3 in DOM) would otherwise
-      //   sit behind the disc's VT pseudo-element (z:20 in the ::view-transition
-      //   overlay, which floats above the entire DOM). To fix this, astro:before-swap
+      //   The skyline (z:3 in DOM) would otherwise sit behind the disc's VT
+      //   pseudo-element (z:20 in the overlay). To fix this, astro:before-swap
       //   injects view-transition-name "nyc-skyline" onto the incoming skyline
       //   element, giving it its own VT group at z:22 — above the disc (z:20)
       //   and below the header (z:120) — for the duration of the animation.
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
-        document.addEventListener('astro:after-preparation', (e) => {
-          const fromDepth = e.from.pathname.replace(/\/$/, '').split('/').length;
-          const toDepth = e.to.pathname.replace(/\/$/, '').split('/').length;
-          if (toDepth > fromDepth) {
-            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'none');
-          }
-        });
-
         document.addEventListener('astro:before-swap', (event) => {
           if (event.to?.pathname?.replace(/\/$/, '') === '/nyc') {
             event.newDocument.querySelector('.nyc-skyline-wrap')?.style.setProperty('view-transition-name', 'nyc-skyline');
+            event.viewTransition?.ready?.finally(() => {
+              document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
+            });
           }
-        });
-
-        document.addEventListener('astro:page-load', () => {
-          document.querySelector('.nyc-disc')?.style.removeProperty('view-transition-name');
-          document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
         });
       }
 

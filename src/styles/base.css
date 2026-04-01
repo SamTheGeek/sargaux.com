@@ -172,6 +172,14 @@ a:hover {
   z-index: 22;
 }
 
+/* On sub-pages, raise the root group above the disc (z:20) so the page
+   content snapshot covers the disc FLIP during forward navigation. The
+   FLIP still plays (backward nav to /nyc) because /nyc has no data-page. */
+html[data-page="details"] ::view-transition-group(root),
+html[data-page="travel"] ::view-transition-group(root) {
+  z-index: 21;
+}
+
 .site-nav {
   display: grid;
   grid-template-columns: max-content 1fr max-content;

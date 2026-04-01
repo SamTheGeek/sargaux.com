@@ -43,7 +43,7 @@ const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14)
 const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 ---
 
-<WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc">
+<WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">
 
   <!-- Amber disc — z:2, persists from index page -->
   <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
@@ -367,6 +367,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   /* Section band (cream-on-moss label strip) */
   html[data-event="nyc"] .details-band {
+    position: relative;
+    z-index: 4;
     padding: 14px 64px;
     font-size: 11px;
     font-weight: 600;
@@ -397,7 +399,11 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   }
 
   html[data-event="nyc"] .nyc-info-row:first-child {
-    border-top: 1px solid rgba(241, 236, 227, 0.15);
+    border-top: none;
+  }
+
+  html[data-event="nyc"] .nyc-info-row:last-child {
+    border-bottom: none;
   }
 
   html[data-event="nyc"] .nyc-info-key {
@@ -613,10 +619,6 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
     html[data-event="nyc"] .nyc-info-row {
       border-bottom-color: rgba(241, 236, 227, 0.08) !important;
-    }
-
-    html[data-event="nyc"] .nyc-info-row:first-child {
-      border-top-color: rgba(241, 236, 227, 0.08) !important;
     }
 
     html[data-event="nyc"] .venue-map {
