@@ -69,25 +69,30 @@ const lang = Astro.locals.lang ?? 'en';
           const toDepth   = to.split('/').length;
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressHeader = (doc) => {
+            suppress(doc?.querySelector('.site-logo'));
+            suppress(doc?.querySelector('.event-toggle'));
+            suppress(doc?.querySelector('.nyc-rsvp-btn'));
+          };
 
           if (toDepth > fromDepth) {
-            // Forward nav into a sub-page: suppress the disc and all individual
-            // header element names on the OLD page so the entire page — header
-            // children included — cross-fades as a single root unit with no
-            // elements fading at different speeds.
+            // Forward nav into a sub-page: suppress disc + header children on
+            // both old AND new documents so nothing gets an orphaned VT group.
+            // All content cross-fades together as a single root unit.
             suppress(document.querySelector('.nyc-disc'));
-            suppress(document.querySelector('.site-logo'));
-            suppress(document.querySelector('.event-toggle'));
-            suppress(document.querySelector('.nyc-rsvp-btn'));
+            suppressHeader(document);
+            suppressHeader(e.newDocument);
           } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward nav to /nyc: restore disc name on the sub-page element
-            // so the VT can FLIP it back to the index position.
-            // Suppress header children on the NEW /nyc document so they appear
-            // in the root group and fade in as part of the unified page.
+            // Backward nav to /nyc: restore disc name on the sub-page so the
+            // VT can FLIP it back. Suppress header children on the NEW /nyc
+            // document so they stay in the root group for a unified page fade.
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
-            suppress(e.newDocument?.querySelector('.site-logo'));
-            suppress(e.newDocument?.querySelector('.event-toggle'));
-            suppress(e.newDocument?.querySelector('.nyc-rsvp-btn'));
+            suppressHeader(e.newDocument);
+          } else if (from.startsWith('/nyc/') && to.startsWith('/nyc/')) {
+            // Sibling sub-page nav (e.g. rsvp ↔ details ↔ travel): suppress
+            // everything on the old page for a clean root cross-fade.
+            suppress(document.querySelector('.nyc-disc'));
+            suppressHeader(document);
           }
         });
 
@@ -169,19 +174,25 @@ const lang = Astro.locals.lang ?? 'en';
    * stacking hierarchy is correct immediately after a SPA DOM swap, before
    * the incoming page's own CSS file has finished loading.
    * Visual styles (size, color, coordinates) remain in the page-specific files.
+   *
+   * NOTE: No [data-page] qualifier here — data-page is written to <html>
+   * during the DOM swap and may not be present when these rules first need to
+   * apply. The class names themselves are sufficient scope:
+   *   .details-hero / .details-band  only exist on sub-pages
+   *   .nyc-moss                       also on index, but already z:4 there
    */
   html[data-event="nyc"] .nyc-disc {
     position: fixed;
     z-index: 2;
   }
 
-  html[data-event="nyc"][data-page] .details-hero {
+  html[data-event="nyc"] .details-hero {
     position: relative;
     z-index: 3;
   }
 
-  html[data-event="nyc"][data-page] .nyc-moss,
-  html[data-event="nyc"][data-page] .details-band {
+  html[data-event="nyc"] .nyc-moss,
+  html[data-event="nyc"] .details-band {
     position: relative;
     z-index: 4;
   }

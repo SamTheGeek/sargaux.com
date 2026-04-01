@@ -53,16 +53,16 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   <!-- Sticky header -->
   <header class="site-header nyc-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
       <div class="nav-actions">
         {showEventToggle && (
-          <div class="event-toggle" transition:name="event-toggle">
+          <div class="event-toggle">
             <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
             <span class="divider">|</span>
             <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
       </div>
     </nav>
   </header>
