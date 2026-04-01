@@ -68,14 +68,26 @@ const lang = Astro.locals.lang ?? 'en';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
 
+          const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+
           if (toDepth > fromDepth) {
-            // Forward nav into a sub-page: suppress the /nyc disc so it stays
-            // in the root group and doesn't float above page content.
-            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'none');
+            // Forward nav into a sub-page: suppress the disc and all individual
+            // header element names on the OLD page so the entire page — header
+            // children included — cross-fades as a single root unit with no
+            // elements fading at different speeds.
+            suppress(document.querySelector('.nyc-disc'));
+            suppress(document.querySelector('.site-logo'));
+            suppress(document.querySelector('.event-toggle'));
+            suppress(document.querySelector('.nyc-rsvp-btn'));
           } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward nav to /nyc: give the sub-page disc a name so the
-            // VT can FLIP it to the index disc position.
+            // Backward nav to /nyc: restore disc name on the sub-page element
+            // so the VT can FLIP it back to the index position.
+            // Suppress header children on the NEW /nyc document so they appear
+            // in the root group and fade in as part of the unified page.
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
+            suppress(e.newDocument?.querySelector('.site-logo'));
+            suppress(e.newDocument?.querySelector('.event-toggle'));
+            suppress(e.newDocument?.querySelector('.nyc-rsvp-btn'));
           }
         });
 
