@@ -133,6 +133,28 @@ const lang = Astro.locals.lang ?? 'en';
     line-height: var(--line-height-body);
   }
 
+  /* ── NYC sub-page z-ordering ────────────────────────────────────────────────
+   * These positioning rules live in the layout (shared CSS bundle) so the
+   * stacking hierarchy is correct immediately after a SPA DOM swap, before
+   * the incoming page's own CSS file has finished loading.
+   * Visual styles (size, color, coordinates) remain in the page-specific files.
+   */
+  html[data-event="nyc"] .nyc-disc {
+    position: fixed;
+    z-index: 2;
+  }
+
+  html[data-event="nyc"][data-page] .details-hero {
+    position: relative;
+    z-index: 3;
+  }
+
+  html[data-event="nyc"][data-page] .nyc-moss,
+  html[data-event="nyc"][data-page] .details-band {
+    position: relative;
+    z-index: 4;
+  }
+
   /* Content box styling (legacy — use .card for new code) */
   .content-box {
     border: var(--border-hairline);
