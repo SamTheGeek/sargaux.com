@@ -13,8 +13,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
 <WireframeLayout title={t(strings.nyc.travel.pageTitle)} fullTitle="Chez Sargaux | NYC — Travel" event="nyc" page="travel">
 
-  <!-- Amber disc — z:2, persists from index page -->
-  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+  <!-- Amber disc — z:2. No transition:name here — see details.astro comment. -->
+  <div class="nyc-disc" aria-hidden="true"></div>
 
   <!-- Sticky header -->
   <header class="site-header nyc-header" transition:name="site-header">

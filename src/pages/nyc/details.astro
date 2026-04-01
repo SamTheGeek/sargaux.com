@@ -45,8 +45,10 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
 <WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">
 
-  <!-- Amber disc — z:2, persists from index page -->
-  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+  <!-- Amber disc — z:2. No transition:name here — the disc is kept in the
+       root VT group on sub-pages so it never floats above content. The FLIP
+       back to /nyc is handled by WireframeLayout's astro:after-preparation. -->
+  <div class="nyc-disc" aria-hidden="true"></div>
 
   <!-- Sticky header -->
   <header class="site-header nyc-header" transition:name="site-header">
