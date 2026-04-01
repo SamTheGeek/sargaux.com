@@ -215,7 +215,8 @@ export const strings = {
         hotel1:     s('We have a limited number of rooms available at a special rate for our guests.', 'Un nombre limité de chambres est disponible à un tarif préférentiel pour nos invités.'),
         hotel2:     s('Just down the street from the Wythe at', 'Juste en bas de la rue du Wythe, au'),
         hotel2BookNow: s('Book now →', 'Réserver →'),
-        hotel3:     s('Another room block is coming soon!', 'Un autre bloc de chambres arrive bientôt !'),
+        hotel3:     s("Located in Manhattan's NoMad neighborhood at", "Situé dans le quartier NoMad de Manhattan au"),
+        hotel3BookNow: s('Book now →', 'Réserver →'),
       },
       gettingThere: {
         heading: s('Getting There', 'Comment arriver'),
