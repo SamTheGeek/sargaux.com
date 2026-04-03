@@ -81,8 +81,9 @@ test.describe('NYC Travel page — hotels section', () => {
     await expect(page.locator('text=Arlo Williamsburg')).toBeVisible();
   });
 
-  test('"Book now" link is visible and has an href', async () => {
-    const bookNow = page.getByRole('link', { name: /Book now/i });
+  test('"Book now" link for Arlo Williamsburg is visible and has an href', async () => {
+    const arloRow = page.locator('.nyc-info-row').filter({ hasText: /Arlo Williamsburg/i });
+    const bookNow = arloRow.getByRole('link', { name: /Book now/i });
     await expect(bookNow).toBeVisible();
     const href = await bookNow.getAttribute('href');
     expect(href).toBeTruthy();

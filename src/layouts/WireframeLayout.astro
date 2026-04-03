@@ -48,23 +48,29 @@ const lang = Astro.locals.lang ?? 'en';
       // use that cache in after-preparation to suppress OLD-page elements before
       // the VT snapshot. New-document suppression happens in before-swap.
       //
-      // Sub-pages (details, travel) have NO transition:name on their .nyc-disc
-      // or header children (site-logo, event-toggle, nyc-rsvp-btn). This keeps
-      // them in the root VT group.
+      // For any NYC sub-page navigation (forward, backward, or sibling), we
+      // suppress the disc and header children on BOTH the old page and the
+      // incoming document. This keeps all elements in the root VT group so
+      // the entire page cross-fades as a single unit.
       //
-      // Forward nav (/nyc → sub-page):
-      //   Suppress disc + header children on OLD /nyc page (after-preparation)
-      //   so everything goes to root group. Also suppress on new doc (before-swap)
-      //   as belt-and-suspenders.
-      //
-      // Backward nav (sub-page → /nyc):
-      //   Restore event-disc name on the sub-page disc (after-preparation) for
-      //   the FLIP back to /nyc. Suppress header children on new /nyc doc
-      //   (before-swap) so they don't create one-sided VT groups.
+      // Why suppress on both sides?
+      //   - Disc elements (.nyc-disc, .rsvp-disc-m) have CSS z-index: 2, so
+      //     their VT groups render at z:2 — above the root group (z:auto).
+      //     Any named disc group would float over page content during animation.
+      //   - Header children (site-logo, event-toggle, header-rsvp) have named
+      //     VTs on /nyc/index but not on sub-pages; one-sided groups animate
+      //     independently at wrong z-order.
+      //   Suppressing on both sides ensures the disc/header children are
+      //   captured in the root group and fade with the rest of the page.
       //
       // Any nav TO /nyc:
       //   before-swap injects view-transition-name "nyc-skyline" onto the
-      //   incoming skyline element, giving it z:22 for the animation.
+      //   incoming skyline element for the FLIP animation.
+      //
+      // isNycSubpageNav criteria (scoped to /nyc routes):
+      //   - Forward: /nyc → deeper path (e.g. /nyc/details)
+      //   - Backward: /nyc/* → /nyc
+      //   - Sibling: /nyc/* → /nyc/* (different sub-pages)
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
@@ -77,7 +83,7 @@ const lang = Astro.locals.lang ?? 'en';
           _navTo   = e.to;
         });
 
-        // Suppress OLD-page elements before the VT takes the old snapshot.
+        // Suppress OLD-page disc + header children before the VT old snapshot.
         document.addEventListener('astro:after-preparation', () => {
           const from      = _navFrom?.pathname?.replace(/\/$/, '') ?? '';
           const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
@@ -85,28 +91,28 @@ const lang = Astro.locals.lang ?? 'en';
           const toDepth   = to.split('/').length;
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressDisc = (doc) => {
+            suppress(doc?.querySelector('.nyc-disc'));
+            suppress(doc?.querySelector('.rsvp-disc-m'));
+          };
           const suppressHeader = (doc) => {
             suppress(doc?.querySelector('.site-logo'));
             suppress(doc?.querySelector('.event-toggle'));
             suppress(doc?.querySelector('.nyc-rsvp-btn'));
           };
 
-          if (toDepth > fromDepth) {
-            // Forward nav into a sub-page: suppress disc + header children so
-            // the entire page cross-fades as a single root unit.
-            suppress(document.querySelector('.nyc-disc'));
-            suppressHeader(document);
-          } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward nav to /nyc: restore disc name so the VT can FLIP it.
-            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
-          } else if (from.startsWith('/nyc/') && to.startsWith('/nyc/')) {
-            // Sibling sub-page nav (rsvp ↔ details ↔ travel): suppress old page.
-            suppress(document.querySelector('.nyc-disc'));
+          const isNycSubpageNav =
+            (toDepth > fromDepth && from.startsWith('/nyc')) ||
+            (to === '/nyc' && from.startsWith('/nyc/')) ||
+            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
+
+          if (isNycSubpageNav) {
+            suppressDisc(document);
             suppressHeader(document);
           }
         });
 
-        // Suppress NEW-document elements and handle skyline animation.
+        // Suppress NEW-document disc + header children, and handle skyline animation.
         // before-swap fires inside startViewTransition's callback, after the
         // old snapshot but before the new snapshot — the right moment to
         // modify newDocument.
@@ -117,18 +123,23 @@ const lang = Astro.locals.lang ?? 'en';
           const toDepth   = to.split('/').length;
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressDiscOnDoc = (doc) => {
+            suppress(doc?.querySelector('.nyc-disc'));
+            suppress(doc?.querySelector('.rsvp-disc-m'));
+          };
           const suppressHeaderOnDoc = (doc) => {
             suppress(doc?.querySelector('.site-logo'));
             suppress(doc?.querySelector('.event-toggle'));
             suppress(doc?.querySelector('.nyc-rsvp-btn'));
           };
 
-          // Suppress header children on new document for any NYC sub-page nav
-          // so they don't create orphaned one-sided VT groups.
-          const isNycSubpageNav = (toDepth > fromDepth) ||
+          const isNycSubpageNav =
+            (toDepth > fromDepth && from.startsWith('/nyc')) ||
             (to === '/nyc' && from.startsWith('/nyc/')) ||
             (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
+
           if (isNycSubpageNav) {
+            suppressDiscOnDoc(event.newDocument);
             suppressHeaderOnDoc(event.newDocument);
           }
 
