@@ -41,30 +41,46 @@ const lang = Astro.locals.lang ?? 'en';
     <script>
       // Disc transition rules:
       //
-      // Sub-pages (details, travel) have NO transition:name on their .nyc-disc.
-      // This keeps the disc in the root VT group so it never gets its own
-      // group at z:20 and floats above page content during navigation.
+      // In Astro 6, astro:after-preparation fires as a PLAIN Event (no from/to/
+      // newDocument). Navigation data is only available on astro:before-preparation
+      // (TransitionBeforePreparationEvent) and astro:before-swap
+      // (TransitionBeforeSwapEvent). We cache from/to on before-preparation and
+      // use that cache in after-preparation to suppress OLD-page elements before
+      // the VT snapshot. New-document suppression happens in before-swap.
+      //
+      // Sub-pages (details, travel) have NO transition:name on their .nyc-disc
+      // or header children (site-logo, event-toggle, nyc-rsvp-btn). This keeps
+      // them in the root VT group.
       //
       // Forward nav (/nyc → sub-page):
-      //   The /nyc index disc DOES have transition:name="event-disc". We
-      //   suppress it in astro:after-preparation (before the VT snapshot) so
-      //   the old disc also stays in the root group. Both snapshots then show
-      //   the disc correctly behind content — no pop.
+      //   Suppress disc + header children on OLD /nyc page (after-preparation)
+      //   so everything goes to root group. Also suppress on new doc (before-swap)
+      //   as belt-and-suspenders.
       //
       // Backward nav (sub-page → /nyc):
-      //   We restore view-transition-name="event-disc" on the sub-page disc
-      //   in astro:after-preparation so the VT can FLIP it back to /nyc.
+      //   Restore event-disc name on the sub-page disc (after-preparation) for
+      //   the FLIP back to /nyc. Suppress header children on new /nyc doc
+      //   (before-swap) so they don't create one-sided VT groups.
       //
       // Any nav TO /nyc:
-      //   The skyline (z:3 in DOM) would sit behind the disc's VT group
-      //   (z:20). astro:before-swap injects view-transition-name "nyc-skyline"
-      //   onto the incoming skyline element, giving it z:22 for the animation.
+      //   before-swap injects view-transition-name "nyc-skyline" onto the
+      //   incoming skyline element, giving it z:22 for the animation.
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
-        document.addEventListener('astro:after-preparation', (e) => {
-          const from = e.from.pathname.replace(/\/$/, '');
-          const to   = e.to.pathname.replace(/\/$/, '');
+        let _navFrom = null;
+        let _navTo   = null;
+
+        // Cache navigation URLs from the only event that carries them.
+        document.addEventListener('astro:before-preparation', (e) => {
+          _navFrom = e.from;
+          _navTo   = e.to;
+        });
+
+        // Suppress OLD-page elements before the VT takes the old snapshot.
+        document.addEventListener('astro:after-preparation', () => {
+          const from      = _navFrom?.pathname?.replace(/\/$/, '') ?? '';
+          const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
 
@@ -76,28 +92,48 @@ const lang = Astro.locals.lang ?? 'en';
           };
 
           if (toDepth > fromDepth) {
-            // Forward nav into a sub-page: suppress disc + header children on
-            // both old AND new documents so nothing gets an orphaned VT group.
-            // All content cross-fades together as a single root unit.
+            // Forward nav into a sub-page: suppress disc + header children so
+            // the entire page cross-fades as a single root unit.
             suppress(document.querySelector('.nyc-disc'));
             suppressHeader(document);
-            suppressHeader(e.newDocument);
           } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward nav to /nyc: restore disc name on the sub-page so the
-            // VT can FLIP it back. Suppress header children on the NEW /nyc
-            // document so they stay in the root group for a unified page fade.
+            // Backward nav to /nyc: restore disc name so the VT can FLIP it.
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
-            suppressHeader(e.newDocument);
           } else if (from.startsWith('/nyc/') && to.startsWith('/nyc/')) {
-            // Sibling sub-page nav (e.g. rsvp ↔ details ↔ travel): suppress
-            // everything on the old page for a clean root cross-fade.
+            // Sibling sub-page nav (rsvp ↔ details ↔ travel): suppress old page.
             suppress(document.querySelector('.nyc-disc'));
             suppressHeader(document);
           }
         });
 
+        // Suppress NEW-document elements and handle skyline animation.
+        // before-swap fires inside startViewTransition's callback, after the
+        // old snapshot but before the new snapshot — the right moment to
+        // modify newDocument.
         document.addEventListener('astro:before-swap', (event) => {
-          if (event.to?.pathname?.replace(/\/$/, '') === '/nyc') {
+          const from      = event.from?.pathname?.replace(/\/$/, '') ?? '';
+          const to        = event.to?.pathname?.replace(/\/$/, '')   ?? '';
+          const fromDepth = from.split('/').length;
+          const toDepth   = to.split('/').length;
+
+          const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressHeaderOnDoc = (doc) => {
+            suppress(doc?.querySelector('.site-logo'));
+            suppress(doc?.querySelector('.event-toggle'));
+            suppress(doc?.querySelector('.nyc-rsvp-btn'));
+          };
+
+          // Suppress header children on new document for any NYC sub-page nav
+          // so they don't create orphaned one-sided VT groups.
+          const isNycSubpageNav = (toDepth > fromDepth) ||
+            (to === '/nyc' && from.startsWith('/nyc/')) ||
+            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
+          if (isNycSubpageNav) {
+            suppressHeaderOnDoc(event.newDocument);
+          }
+
+          // Skyline FLIP when arriving at /nyc.
+          if (to === '/nyc') {
             event.newDocument.querySelector('.nyc-skyline-wrap')?.style.setProperty('view-transition-name', 'nyc-skyline');
             event.viewTransition?.ready?.finally(() => {
               document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
