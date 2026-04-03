@@ -39,40 +39,31 @@ const lang = Astro.locals.lang ?? 'en';
     )}
     <ClientRouter />
     <script>
-      // Disc transition rules:
+      // Page transition rules:
       //
       // In Astro 6, astro:after-preparation fires as a PLAIN Event (no from/to/
       // newDocument). Navigation data is only available on astro:before-preparation
       // (TransitionBeforePreparationEvent) and astro:before-swap
       // (TransitionBeforeSwapEvent). We cache from/to on before-preparation and
-      // use that cache in after-preparation to suppress OLD-page elements before
-      // the VT snapshot. New-document suppression happens in before-swap.
+      // use that cache in after-preparation.
       //
-      // Disc elements:
-      //   /nyc/index   — .nyc-disc   with transition:name="event-disc" (z:2)
-      //   /nyc/details — .nyc-disc   with NO transition:name (z:2, excluded from FLIP)
-      //   /nyc/travel  — .nyc-disc   with NO transition:name (z:2, excluded from FLIP)
-      //   /nyc/rsvp    — .rsvp-disc-m with transition:name="event-disc" (z:auto)
+      // Disc z-ordering is handled entirely by CSS:
+      //   ::view-transition-group(root)       { z-index: 1 }
+      //   ::view-transition-group(event-disc) { z-index: 0 }
+      // This forces the disc VT group below the root group on every transition,
+      // so the disc never floats over page content. The VT system leaves
+      // transparent holes in root screenshots at each named element's captured
+      // position — the disc slides through those holes, visible at its start and
+      // end positions, without obscuring content.
       //
-      // Forward nav (/nyc → sub-page):
-      //   Suppress old /nyc disc so it fades with the page (root group). The
-      //   sub-page disc — if any — fades in as a one-sided group on the new doc.
-      //   Header children suppressed on both sides to prevent one-sided orphans.
-      //
-      // Backward nav (sub-page → /nyc):
-      //   Restore event-disc VTN on the old page's .nyc-disc (details/travel only;
-      //   .rsvp-disc-m already has it from the template). This creates a two-sided
-      //   FLIP: disc animates from sub-page position back to the /nyc center.
-      //   Header children suppressed on new /nyc doc to prevent orphaned one-sided
-      //   groups (header children have VTN on /nyc but not on sub-pages).
-      //
-      // Sibling nav (/nyc/* → /nyc/*):
-      //   Suppress disc on both sides — no meaningful FLIP between sub-pages.
-      //   Header children suppressed on both sides.
+      // Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
+      // only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
+      // we suppress those names on BOTH the old page and the incoming document
+      // to prevent one-sided orphaned VT groups that would fade independently.
       //
       // Any nav TO /nyc:
       //   before-swap injects view-transition-name "nyc-skyline" onto the
-      //   incoming skyline element for the skyline FLIP animation.
+      //   incoming skyline element for its fade-in animation.
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
@@ -85,7 +76,7 @@ const lang = Astro.locals.lang ?? 'en';
           _navTo   = e.to;
         });
 
-        // Modify OLD-page elements before the VT takes the old snapshot.
+        // Suppress header children on the OLD page before the VT snapshot.
         document.addEventListener('astro:after-preparation', () => {
           const from      = _navFrom?.pathname?.replace(/\/$/, '') ?? '';
           const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
@@ -99,28 +90,19 @@ const lang = Astro.locals.lang ?? 'en';
             suppress(document.querySelector('.nyc-rsvp-btn'));
           };
 
-          if (toDepth > fromDepth && from.startsWith('/nyc')) {
-            // Forward: suppress old /nyc disc so it fades with the page.
-            suppress(document.querySelector('.nyc-disc'));
-            suppressHeader();
-          } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward: give the old sub-page disc a name so the VT can FLIP it.
-            // (.rsvp-disc-m already has event-disc from its template; this covers
-            // details and travel whose .nyc-disc has no static transition:name.)
-            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
-            suppressHeader();
-          } else if (from.startsWith('/nyc/') && to.startsWith('/nyc/')) {
-            // Sibling: suppress both disc classes and header children.
-            suppress(document.querySelector('.nyc-disc'));
-            suppress(document.querySelector('.rsvp-disc-m'));
+          const isNycSubpageNav =
+            (toDepth > fromDepth && from.startsWith('/nyc')) ||
+            (to === '/nyc' && from.startsWith('/nyc/')) ||
+            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
+
+          if (isNycSubpageNav) {
             suppressHeader();
           }
         });
 
-        // Modify NEW-document elements, and handle skyline animation.
+        // Suppress header children on the NEW document, and handle skyline.
         // before-swap fires inside startViewTransition's callback — after the
-        // old snapshot, before the new snapshot — the right moment to modify
-        // newDocument.
+        // old snapshot, before the new snapshot.
         document.addEventListener('astro:before-swap', (event) => {
           const from      = event.from?.pathname?.replace(/\/$/, '') ?? '';
           const to        = event.to?.pathname?.replace(/\/$/, '')   ?? '';
@@ -128,30 +110,22 @@ const lang = Astro.locals.lang ?? 'en';
           const toDepth   = to.split('/').length;
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
-          const suppressDiscOnDoc = (doc) => {
-            suppress(doc?.querySelector('.nyc-disc'));
-            suppress(doc?.querySelector('.rsvp-disc-m'));
-          };
           const suppressHeaderOnDoc = (doc) => {
             suppress(doc?.querySelector('.site-logo'));
             suppress(doc?.querySelector('.event-toggle'));
             suppress(doc?.querySelector('.nyc-rsvp-btn'));
           };
 
-          if (toDepth > fromDepth && from.startsWith('/nyc')) {
-            // Forward: suppress header children on new doc (disc fades in naturally).
-            suppressHeaderOnDoc(event.newDocument);
-          } else if (to === '/nyc' && from.startsWith('/nyc/')) {
-            // Backward: suppress header children on new /nyc doc only.
-            // Do NOT suppress .nyc-disc — it participates in the two-sided FLIP.
-            suppressHeaderOnDoc(event.newDocument);
-          } else if (from.startsWith('/nyc/') && to.startsWith('/nyc/')) {
-            // Sibling: suppress disc + header on new doc.
-            suppressDiscOnDoc(event.newDocument);
+          const isNycSubpageNav =
+            (toDepth > fromDepth && from.startsWith('/nyc')) ||
+            (to === '/nyc' && from.startsWith('/nyc/')) ||
+            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
+
+          if (isNycSubpageNav) {
             suppressHeaderOnDoc(event.newDocument);
           }
 
-          // Skyline FLIP when arriving at /nyc.
+          // Skyline fade-in when arriving at /nyc.
           if (to === '/nyc') {
             event.newDocument.querySelector('.nyc-skyline-wrap')?.style.setProperty('view-transition-name', 'nyc-skyline');
             event.viewTransition?.ready?.finally(() => {
@@ -222,6 +196,23 @@ const lang = Astro.locals.lang ?? 'en';
     background-color: var(--color-bg);
     color: var(--color-text);
     line-height: var(--line-height-body);
+  }
+
+  /* ── View-transition disc z-ordering ───────────────────────────────────────
+   * The root VT group must render above the disc so the disc never floats over
+   * page content during a transition. Without overrides, the disc's page
+   * z-index (2) would make its VT group render above the root group (z:auto),
+   * which causes the disc to obscure text and UI elements mid-animation.
+   *
+   * Setting root to z:1 and the disc group to z:0 fixes this. The disc still
+   * animates (FLIPs between pages) — it's visible through the transparent holes
+   * the VT system leaves in root screenshots at the disc's captured position.
+   */
+  ::view-transition-group(root) {
+    z-index: 1;
+  }
+  ::view-transition-group(event-disc) {
+    z-index: 0;
   }
 
   /* ── NYC sub-page z-ordering ────────────────────────────────────────────────
