@@ -66,7 +66,7 @@ const scattered = shuffled.map(({ src, date }) => ({
       <div class="couple-ribbon couple-ribbon--moss" aria-hidden="true" transition:persist="couple-ribbon-moss"></div>
       <div class="couple-ribbon couple-ribbon--espresso" aria-hidden="true" transition:persist="couple-ribbon-espresso"></div>
 
-      <div class="couple-grid page-content">
+      <div class="couple-grid page-content" transition:name="couple-content">
         <div class="couple-copy">
           <p class="couple-eyebrow">{t(strings.couple.eyebrow)}</p>
           <h1>{t(strings.couple.heroTitle)}</h1>
@@ -201,6 +201,7 @@ const scattered = shuffled.map(({ src, date }) => ({
     left: clamp(-72px, -4vw, -24px);
     top: 72px;
     background: rgba(217, 106, 30, 0.9);
+    z-index: 2;
   }
 
   .couple-disc--blue {
@@ -236,7 +237,7 @@ const scattered = shuffled.map(({ src, date }) => ({
 
   .couple-grid {
     position: relative;
-    z-index: 1;
+    z-index: 3;
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
     gap: var(--space-xl);

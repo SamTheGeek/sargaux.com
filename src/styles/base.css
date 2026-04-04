@@ -156,29 +156,21 @@ a:hover {
   background: inherit;
 }
 
-::view-transition-group(site-header) {
-  z-index: 120;
-}
-
-::view-transition-group(event-disc) {
-  z-index: 20;
-}
-
-::view-transition-group(rsvp-disc-s) {
-  z-index: 21;
-}
-
-::view-transition-group(nyc-skyline) {
-  z-index: 22;
-}
-
-/* On sub-pages, raise the root group above the disc (z:20) so the page
-   content snapshot covers the disc FLIP during forward navigation. The
-   FLIP still plays (backward nav to /nyc) because /nyc has no data-page. */
-html[data-page="details"] ::view-transition-group(root),
-html[data-page="travel"] ::view-transition-group(root) {
-  z-index: 21;
-}
+/* ── Global view-transition z-index scale ───────────────────────────────────
+ * VT group z-indices MUST mirror element z-indices exactly. Any mismatch
+ * causes a visible snap when VT ends and the element returns to its CSS layer.
+ *
+ * Scale: root:1  disc:2  content/skyline:3  moss:4  header:100
+ *
+ * DO NOT raise individual groups above this scale (e.g. to z:20+) to "see"
+ * a FLIP — that creates the mismatch. Instead, give the covering content its
+ * own VT group so the disc can be z:2 and still be visible below content:z:4.
+ */
+::view-transition-group(root)       { z-index: 1; }
+::view-transition-group(event-disc) { z-index: 2; }
+::view-transition-group(rsvp-disc-s){ z-index: 3; }
+::view-transition-group(nyc-skyline){ z-index: 3; }
+::view-transition-group(site-header){ z-index: 100; }
 
 .site-nav {
   display: grid;

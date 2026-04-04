@@ -13,8 +13,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
 <WireframeLayout title={t(strings.nyc.travel.pageTitle)} fullTitle="Chez Sargaux | NYC — Travel" event="nyc" page="travel">
 
-  <!-- Amber disc — z:2. No transition:name here — see details.astro comment. -->
-  <div class="nyc-disc" aria-hidden="true"></div>
+  <!-- Amber disc — z:2. Sits behind .nyc-page-main (z:5) during transitions. -->
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
 
   <!-- Sticky header -->
   <header class="site-header nyc-header" transition:name="site-header">
@@ -33,16 +33,19 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </nav>
   </header>
 
-  <!-- Cream hero — right-aligned composition for travel -->
-  <div class="details-hero travel-hero">
-    <div class="page-content travel-hero-inner">
-      <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
-      <h1>{t(strings.nyc.travel.heading)}</h1>
-      <p class="details-date">{t(strings.nyc.travel.subtitle)}</p>
+  <div class="nyc-page-main">
+    <!-- Cream hero — right-aligned composition for travel -->
+    <div class="details-hero travel-hero">
+      <div class="page-content travel-hero-inner">
+        <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
+        <h1>{t(strings.nyc.travel.heading)}</h1>
+        <p class="details-date">{t(strings.nyc.travel.subtitle)}</p>
+      </div>
     </div>
   </div>
 
   <!-- ═══════ Moss zone ═══════ -->
+  <div class="nyc-page-moss">
 
   <!-- Hotels -->
   <div class="nyc-moss details-band">{t(strings.nyc.travel.hotels.heading)}</div>
@@ -155,6 +158,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
+
+  </div><!-- .nyc-page-moss -->
 
 </WireframeLayout>
 

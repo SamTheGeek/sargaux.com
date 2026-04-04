@@ -45,10 +45,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
 <WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">
 
-  <!-- Amber disc — z:2. No transition:name here — the disc is kept in the
-       root VT group on sub-pages so it never floats above content. The FLIP
-       back to /nyc is handled by WireframeLayout's astro:after-preparation. -->
-  <div class="nyc-disc" aria-hidden="true"></div>
+  <!-- Amber disc — z:2. Sits behind .nyc-page-main (z:5) during transitions. -->
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
 
   <!-- Sticky header -->
   <header class="site-header nyc-header" transition:name="site-header">
@@ -67,16 +65,19 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     </nav>
   </header>
 
-  <!-- Cream hero — disc is visible here before moss covers it on scroll -->
-  <div class="details-hero">
-    <div class="page-content details-hero-inner">
-      <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
-      <h1>{t(strings.nyc.details.heroTitle)}</h1>
-      <p class="details-date">{t(strings.nyc.details.subtitle)}</p>
+  <div class="nyc-page-main">
+    <!-- Cream hero — disc is visible here before moss covers it on scroll -->
+    <div class="details-hero">
+      <div class="page-content details-hero-inner">
+        <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
+        <h1>{t(strings.nyc.details.heroTitle)}</h1>
+        <p class="details-date">{t(strings.nyc.details.subtitle)}</p>
+      </div>
     </div>
   </div>
 
   <!-- ═══════ Moss zone ═══════ -->
+  <div class="nyc-page-moss">
 
   <!-- Section band: Schedule -->
   <div class="nyc-moss details-band">Schedule</div>
@@ -244,6 +245,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     </div>
   </footer>
 
+  </div><!-- .nyc-page-moss -->
+
 </WireframeLayout>
 
 <style is:global>
@@ -300,12 +303,12 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   html[data-event="nyc"] .nyc-disc {
     position: fixed;
-    width: clamp(300px, 50vh, 580px);
-    height: clamp(300px, 50vh, 580px);
+    width: clamp(260px, 44vh, 500px);
+    height: clamp(260px, 44vh, 500px);
     background: #D96A1E;
     border-radius: 50%;
     top: 3vh;
-    left: -14%;
+    left: -8%;
     z-index: 2;
   }
 

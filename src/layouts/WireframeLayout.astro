@@ -47,14 +47,10 @@ const lang = Astro.locals.lang ?? 'en';
       // (TransitionBeforeSwapEvent). We cache from/to on before-preparation and
       // use that cache in after-preparation.
       //
-      // Disc z-ordering is handled entirely by CSS:
-      //   ::view-transition-group(root)       { z-index: 1 }
-      //   ::view-transition-group(event-disc) { z-index: 0 }
-      // This forces the disc VT group below the root group on every transition,
-      // so the disc never floats over page content. The VT system leaves
-      // transparent holes in root screenshots at each named element's captured
-      // position — the disc slides through those holes, visible at its start and
-      // end positions, without obscuring content.
+      // The disc (event-disc) FLIPs naturally above the root group. Content that
+      // must render above the disc during transitions uses higher-z VT groups:
+      //   - NYC sub-page <main class="nyc-page-main">  → inherits z:5 from element
+      //   - Couple page .couple-grid (couple-content)   → CSS override z:5
       //
       // Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
       // only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
@@ -76,12 +72,21 @@ const lang = Astro.locals.lang ?? 'en';
           _navTo   = e.to;
         });
 
-        // Suppress header children on the OLD page before the VT snapshot.
+        // Set VT name on the OLD page's moss zone so it gets its own VT group
+        // (z:4) rather than being baked into the root screenshot (z:1). This
+        // lets the disc (z:2) FLIP visibly below content during the transition.
+        // The name is applied here (old page) and removed in astro:page-load
+        // (new page) so it never persists between navigations — persistence
+        // would promote the element to a compositor layer that bypasses CSS
+        // z-index during scrolling.
         document.addEventListener('astro:after-preparation', () => {
           const from      = _navFrom?.pathname?.replace(/\/$/, '') ?? '';
           const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
+
+          // Give old-page moss its own VT group before the old snapshot.
+          document.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
           const suppressHeader = () => {
@@ -100,7 +105,8 @@ const lang = Astro.locals.lang ?? 'en';
           }
         });
 
-        // Suppress header children on the NEW document, and handle skyline.
+        // Give the NEW page's moss its own VT group before the new snapshot,
+        // and handle header suppression and skyline fade-in.
         // before-swap fires inside startViewTransition's callback — after the
         // old snapshot, before the new snapshot.
         document.addEventListener('astro:before-swap', (event) => {
@@ -108,6 +114,9 @@ const lang = Astro.locals.lang ?? 'en';
           const to        = event.to?.pathname?.replace(/\/$/, '')   ?? '';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
+
+          // Give incoming moss its own VT group before the new snapshot.
+          event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
           const suppressHeaderOnDoc = (doc) => {
@@ -132,6 +141,12 @@ const lang = Astro.locals.lang ?? 'en';
               document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
             });
           }
+        });
+
+        // Remove the moss VT name after each transition so the compositor-layer
+        // promotion from view-transition-name doesn't persist to normal browsing.
+        document.addEventListener('astro:page-load', () => {
+          document.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
         });
       }
 
@@ -198,22 +213,27 @@ const lang = Astro.locals.lang ?? 'en';
     line-height: var(--line-height-body);
   }
 
-  /* ── View-transition disc z-ordering ───────────────────────────────────────
-   * The root VT group must render above the disc so the disc never floats over
-   * page content during a transition. Without overrides, the disc's page
-   * z-index (2) would make its VT group render above the root group (z:auto),
-   * which causes the disc to obscure text and UI elements mid-animation.
+  /* ── Overscroll protection for NYC ─────────────────────────────────────────
+   * Extend the header's background fill panel further above the viewport edge
+   * so elastic bounce can't expose the fixed disc peeking above the header.
+   * base.css provides 25px globally; NYC pages need more travel. */
+  html[data-event="nyc"] .site-header::before {
+    top: -100px;
+    height: 100px;
+  }
+
+  /* ── View-transition z-ordering (site-wide) ────────────────────────────────
+   * base.css establishes the global VT z-index scale that mirrors element CSS
+   * z-indices exactly (root:1, disc:2, content:3, moss:4, header:100).
    *
-   * Setting root to z:1 and the disc group to z:0 fixes this. The disc still
-   * animates (FLIPs between pages) — it's visible through the transparent holes
-   * the VT system leaves in root screenshots at the disc's captured position.
+   * nyc-page-moss is NOT a static transition:name — it is applied dynamically
+   * via JS (astro:before-preparation / astro:before-swap) and removed after
+   * each transition (astro:page-load). This prevents the compositor-layer
+   * z-index bypass that occurs when view-transition-name persists on a fixed
+   * background element between navigations.
    */
-  ::view-transition-group(root) {
-    z-index: 1;
-  }
-  ::view-transition-group(event-disc) {
-    z-index: 0;
-  }
+  ::view-transition-group(couple-content) { z-index: 3; }
+  ::view-transition-group(nyc-page-moss)  { z-index: 4; }
 
   /* ── NYC sub-page z-ordering ────────────────────────────────────────────────
    * These positioning rules live in the layout (shared CSS bundle) so the
@@ -257,6 +277,31 @@ const lang = Astro.locals.lang ?? 'en';
     letter-spacing: var(--tracking-caption);
     color: var(--color-surface-text);
     margin-bottom: var(--space-xs);
+  }
+
+  /* ── NYC moss zone slide-up entrance ────────────────────────────────────────
+   * When the moss zone is entering (NYC→sub-page), it slides up from below
+   * the disc rather than crossfading, giving the content a distinct entrance.
+   * Slide-up only applies to the entering (new) image; the exiting image uses
+   * the default crossfade.
+   *
+   * The nyc-page-moss VT name is applied dynamically by JS (not via
+   * transition:name in HTML) so the compositor-layer promotion is transient
+   * and doesn't persist between navigations.
+   */
+  @keyframes nyc-moss-slide-up {
+    from {
+      transform: translateY(40%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  ::view-transition-new(nyc-page-moss) {
+    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
 </style>
