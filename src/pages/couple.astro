@@ -444,15 +444,11 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
 
   .gallery-scatter-card {
     transform: rotate(var(--rotate)) translateY(var(--ty));
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease;
   }
 
   .gallery-scatter-card:hover {
     transform: rotate(var(--rotate)) translateY(calc(var(--ty) - 4px));
-  }
-
-  .gallery-scatter-card:hover .photo-card-inner {
-    background: color-mix(in srgb, var(--color-bg) 88%, var(--color-accent) 12%);
   }
 
   .couple-panel .photo-card {
