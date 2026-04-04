@@ -1,0 +1,18 @@
+export const couplePhotoDateFallbacks: Record<string, string> = {
+  "/images/couple/couple - 1.jpeg": "December 14, 2025",
+  "/images/couple/couple - 2.jpeg": "November 30, 2025",
+  "/images/couple/couple - 3.jpeg": "June 29, 2025",
+  "/images/couple/couple - 4.jpeg": "June 23, 2025",
+  "/images/couple/couple - 5.jpeg": "May 1, 2025",
+  "/images/couple/couple - 6.jpeg": "May 31, 2024",
+  "/images/couple/couple - 7.jpeg": "April 28, 2024",
+  "/images/couple/couple - 8.jpeg": "January 1, 2024",
+  "/images/couple/couple - 9.jpeg": "October 8, 2023",
+  "/images/couple/couple - 10.jpeg": "October 7, 2023",
+  "/images/couple/couple - 11.jpeg": "March 10, 2023",
+  "/images/couple/couple - 12.jpeg": "January 19, 2023",
+  "/images/couple/couple - 13.jpeg": "June 11, 2022",
+  "/images/couple/couple - 14.jpeg": "June 11, 2022",
+  "/images/couple/couple - 15.jpeg": "March 19, 2022",
+  "/images/couple/couple - 16.jpeg": "June 14, 2021",
+};

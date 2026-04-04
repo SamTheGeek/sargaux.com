@@ -1,6 +1,7 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
 import { strings } from '../content/strings';
+import { couplePhotoDateFallbacks } from '../content/couplePhotoDates';
 import { createTranslator } from '../lib/i18n';
 import LangSwitcher from '../components/LangSwitcher.astro';
 import exifr from 'exifr';
@@ -9,6 +10,17 @@ import path from 'path';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const singleEventHref = eventInvitations.includes('nyc')
+  ? '/nyc'
+  : eventInvitations.includes('france')
+    ? '/france'
+    : null;
+const singleEventLabel = eventInvitations.includes('nyc')
+  ? 'NYC'
+  : eventInvitations.includes('france')
+    ? 'France'
+    : null;
 const heroPhotoSrc = '/images/couple/photo_1.jpeg';
 
 // Format a Date as "Month Day, Year" using UTC fields (EXIF stores local time, exifr parses as UTC)
@@ -29,13 +41,30 @@ const exifDates = await Promise.all(
     try {
       const filePath = path.join(process.cwd(), 'public', src);
       const data = await exifr.parse(filePath, ['DateTimeOriginal']);
-      return data?.DateTimeOriginal ? formatExifDate(data.DateTimeOriginal) : null;
+      if (data?.DateTimeOriginal) {
+        return formatExifDate(data.DateTimeOriginal);
+      }
     } catch {
-      return null;
+      // Fall through to the checked-in fallback when metadata is missing.
     }
+
+    return couplePhotoDateFallbacks[src] ?? null;
   })
 );
 const photosWithDates = allPhotos.map((src, i) => ({ jpeg: src, webp: toWebp(src), date: exifDates[i] }));
+
+let heroPhotoDate: string | null = null;
+try {
+  const heroFilePath = path.join(process.cwd(), 'public', heroPhotoSrc);
+  const data = await exifr.parse(heroFilePath, ['DateTimeOriginal']);
+  if (data?.DateTimeOriginal) {
+    heroPhotoDate = formatExifDate(data.DateTimeOriginal);
+  }
+} catch {
+  // Fall through to the checked-in fallback when metadata is missing.
+}
+
+heroPhotoDate ??= couplePhotoDateFallbacks[heroPhotoSrc] ?? null;
 
 // Pick 6 at random on every render, each with a slight rotation and vertical offset
 const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 6);
@@ -50,16 +79,19 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
 ---
 
 <WireframeLayout title={t(strings.couple.pageTitle)} description="Shared page for Sam and Margaux" event="nyc">
-  <header class="site-header couple-header">
+  <header class="site-header couple-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
       <div class="nav-actions couple-nav-actions">
-        <span class="couple-nav-label">{t(strings.couple.navLabel)}</span>
-        {eventInvitations.includes('nyc') && (
-          <a href="/nyc" class="couple-event-link">NYC</a>
+        {showEventToggle && (
+          <div class="event-toggle" transition:name="event-toggle">
+            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">France</a>
+          </div>
         )}
-        {eventInvitations.includes('france') && (
-          <a href="/france" class="couple-event-link">France</a>
+        {!showEventToggle && singleEventHref && singleEventLabel && (
+          <a href={singleEventHref} class="couple-event-nav-link">{singleEventLabel}</a>
         )}
       </div>
     </nav>
@@ -84,7 +116,7 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
           <div class="photo-card">
             <div class="photo-card-inner">
               <div class="photo-label-row">
-                <span class="photo-label" id="couple-panel-title">{t(strings.couple.photoLabel)}</span>
+                <span class="photo-label" id="couple-panel-title">{heroPhotoDate ?? t(strings.couple.photoLabel)}</span>
                 <span class="photo-label photo-label--muted">Chez Sargaux</span>
               </div>
               <figure class="couple-photo-frame" transition:persist="couple-photo-frame">
@@ -93,7 +125,6 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
                   <img src={heroPhotoSrc} alt="Sam and Margaux together" class="couple-photo" />
                 </picture>
               </figure>
-              <p class="photo-caption">{t(strings.couple.photoCaption)}</p>
             </div>
           </div>
         </aside>
@@ -153,34 +184,18 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     gap: 12px;
   }
 
-  .couple-nav-label {
-    font-size: var(--font-size-caption);
-    letter-spacing: var(--tracking-caption);
-    text-transform: uppercase;
-    color: rgba(58, 46, 38, 0.7);
-  }
-
-  .couple-event-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 72px;
-    min-height: 32px;
-    padding: 0 16px;
-    border-radius: 999px;
+  .couple-event-nav-link {
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
+    border-radius: 999px;
     font-size: var(--font-size-caption);
-    border: 1px solid rgba(47, 63, 54, 0.18);
-    background: rgba(241, 236, 227, 0.72);
-    color: var(--color-text);
+    font-weight: 600;
+    color: var(--color-text-muted);
   }
 
-  .couple-event-link:hover {
+  .couple-event-nav-link:hover {
     color: var(--color-text);
-    border-color: rgba(217, 106, 30, 0.4);
-    background: rgba(241, 236, 227, 0.94);
   }
 
   .couple-shell {
@@ -252,7 +267,7 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     z-index: 3;
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
-    gap: var(--space-xl);
+    gap: clamp(56px, 6vw, 92px);
     align-items: center;
   }
 
@@ -277,6 +292,8 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     line-height: 0.9;
     max-width: 6ch;
     margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 4;
   }
 
   .couple-subtitle {
@@ -361,15 +378,6 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     object-fit: cover;
   }
 
-  .photo-caption {
-    margin-top: 14px;
-    font-size: var(--font-size-caption);
-    line-height: 1.6;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    color: rgba(58, 46, 38, 0.72);
-  }
-
   /* ── Gallery ─────────────────────────────────── */
 
   .couple-gallery {
@@ -444,20 +452,12 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
       border-bottom-color: rgba(241, 236, 227, 0.1);
     }
 
-    .couple-nav-label {
+    .couple-event-nav-link {
       color: rgba(241, 236, 227, 0.6);
     }
 
-    .couple-event-link {
-      background: rgba(22, 32, 64, 0.72);
-      border-color: rgba(241, 236, 227, 0.12);
+    .couple-event-nav-link:hover {
       color: var(--color-surface-text);
-    }
-
-    .couple-event-link:hover {
-      color: var(--color-surface-text);
-      border-color: rgba(217, 106, 30, 0.42);
-      background: rgba(22, 32, 64, 0.92);
     }
 
     .couple-hero {
@@ -496,8 +496,7 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
       color: rgba(241, 236, 227, 0.92);
     }
 
-    .photo-label--muted,
-    .photo-caption {
+    .photo-label--muted {
       color: rgba(241, 236, 227, 0.56);
     }
 

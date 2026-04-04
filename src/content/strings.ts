@@ -83,7 +83,7 @@ export const strings = {
   // ─────────────────────────────────────────
   couple: {
     pageTitle: s('The Couple', 'Le Couple'),
-    eyebrow: s('A shared page for stories and photographs', 'Une page partagée pour les histoires et les photographies'),
+    eyebrow: s('Established May 2020', 'Established May 2020'),
     heroTitle: s('The Couple', 'Le Couple'),
     subtitle: s('A first place for the two of us. We will build this out over time.', 'Un premier espace pour nous deux. Nous le développerons progressivement.'),
     photoLabel: s('Photo One', 'Photo Un'),
