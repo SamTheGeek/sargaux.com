@@ -89,23 +89,23 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
   .flag-fr {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    background: #f1ece3;
+    background: var(--color-warm-cream);
   }
 
   .flag-fr-blue {
-    background: #1b3a6b;
+    background: var(--color-prussian-blue);
   }
 
   .flag-fr-white {
-    background: #f8f4ed;
+    background: var(--color-warm-cream);
   }
 
   .flag-fr-red {
-    background: #d96a1e;
+    background: var(--color-flag-fr-red);
   }
 
   .flag-us {
-    background: #c74b34;
+    background: var(--color-flag-us-red);
   }
 
   .flag-us-stripes {
@@ -120,11 +120,11 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     width: 100%;
     height: 100%;
     min-height: 0;
-    background: #f6f1e8;
+    background: var(--color-warm-cream);
   }
 
   .flag-us-stripe:nth-child(odd) {
-    background: #c74b34;
+    background: var(--color-flag-us-red);
   }
 
   .flag-us-canton {
@@ -134,30 +134,30 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     width: 54%;
     height: 54%;
     background:
-      radial-gradient(circle at 12% 14%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 14%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 14%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 14%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 29%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 29%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 29%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 29%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 12% 44%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 44%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 44%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 44%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 59%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 59%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 59%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 59%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 12% 74%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 74%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 74%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 74%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 89%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 89%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 89%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 89%, rgba(241, 236, 227, 0.95) 0 5%, transparent 5.8%),
-      #1b3a6b;
+      radial-gradient(circle at 12% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 32% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 52% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 72% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 22% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 42% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 62% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 82% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 12% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 32% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 52% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 72% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 22% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 42% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 62% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 82% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 12% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 32% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 52% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 72% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 22% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 42% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 62% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      radial-gradient(circle at 82% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      var(--color-prussian-blue);
   }
 </style>

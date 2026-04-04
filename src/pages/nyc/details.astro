@@ -254,15 +254,15 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   /* ── Foundation ──────────────────────────────────── */
 
   html[data-event="nyc"] body {
-    background: #F1ECE3 !important;
-    color: #2F3F36 !important;
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
     overflow-x: hidden;
   }
 
   /* ── Header ──────────────────────────────────────── */
 
   html[data-event="nyc"] .nyc-header {
-    background: #F1ECE3 !important;
+    background: var(--color-warm-cream) !important;
     border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
   }
 
@@ -270,7 +270,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   html[data-event="nyc"] .nyc-header .site-logo:hover,
   html[data-event="nyc"] .nyc-header .event-toggle .active,
   html[data-event="nyc"] .nyc-header .event-toggle .divider {
-    color: #2F3F36 !important;
+    color: var(--color-dark-moss) !important;
   }
 
   html[data-event="nyc"] .nyc-header .event-toggle a {
@@ -278,8 +278,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   }
 
   html[data-event="nyc"] .nyc-rsvp-btn {
-    background: #2F3F36 !important;
-    color: #F1ECE3 !important;
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
     height: 32px;
     padding: 0 24px;
     font-size: 12px;
@@ -296,7 +296,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   html[data-event="nyc"] .nyc-rsvp-btn:hover {
     opacity: 0.85;
-    color: #F1ECE3 !important;
+    color: var(--color-warm-cream) !important;
   }
 
   /* ── Amber disc — z:2 ────────────────────────────── */
@@ -305,7 +305,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     position: fixed;
     width: clamp(260px, 44vh, 500px);
     height: clamp(260px, 44vh, 500px);
-    background: #D96A1E;
+    background: var(--color-burnt-amber);
     border-radius: 50%;
     top: 3vh;
     left: -8%;
@@ -333,7 +333,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #2F3F36;
+    color: var(--color-dark-moss);
     text-decoration: none;
     margin-bottom: 24px;
     transition: opacity 0.15s;
@@ -347,7 +347,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-size: clamp(48px, 8vw, 96px);
     font-weight: 500;
     line-height: 0.93;
-    color: #2F3F36;
+    color: var(--color-dark-moss);
     text-transform: uppercase;
     margin: 0 0 20px;
     white-space: nowrap;
@@ -364,8 +364,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   /* ── Moss zone — z:4 ─────────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
-    background: #2F3F36 !important;
-    color: #F1ECE3 !important;
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
     position: relative;
     z-index: 4;
   }
@@ -379,7 +379,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    background: #F1ECE3 !important;
+    background: var(--color-warm-cream) !important;
     color: rgba(47, 63, 54, 0.5) !important;
     border-top: 1px solid rgba(47, 63, 54, 0.1);
   }
@@ -423,7 +423,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   html[data-event="nyc"] .nyc-info-val {
     font-size: 16px;
     line-height: 1.6;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-info-secondary {
@@ -474,14 +474,14 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #D96A1E;
+    color: var(--color-burnt-amber);
     margin: 0 0 8px;
   }
 
   html[data-event="nyc"] .venue-name {
     font-size: 20px;
     font-weight: 500;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
     margin: 0 0 6px;
     line-height: 1.2;
   }
@@ -522,7 +522,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #D96A1E;
+    color: var(--color-burnt-amber);
     text-decoration: none;
     transition: opacity 0.15s;
   }
@@ -551,7 +551,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   }
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
-    color: #F1ECE3 !important;
+    color: var(--color-warm-cream) !important;
   }
 
   html[data-event="nyc"] .nyc-footer-meta {
@@ -566,12 +566,12 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   @media (prefers-color-scheme: dark) {
     html[data-event="nyc"] body {
-      background: #2F3F36 !important;
-      color: #F1ECE3 !important;
+      background: var(--color-dark-moss) !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .nyc-header {
-      background: #2F3F36 !important;
+      background: var(--color-dark-moss) !important;
       border-bottom-color: rgba(241, 236, 227, 0.08) !important;
     }
 
@@ -579,7 +579,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     html[data-event="nyc"] .nyc-header .site-logo:hover,
     html[data-event="nyc"] .nyc-header .event-toggle .active,
     html[data-event="nyc"] .nyc-header .event-toggle .divider {
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .nyc-header .event-toggle a {
@@ -587,8 +587,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     }
 
     html[data-event="nyc"] .nyc-rsvp-btn {
-      background: #D96A1E !important;
-      color: #F1ECE3 !important;
+      background: var(--color-burnt-amber) !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .details-hero {
@@ -596,7 +596,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     }
 
     html[data-event="nyc"] .details-hero h1 {
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .details-date {
@@ -613,11 +613,11 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
     html[data-event="nyc"] .nyc-moss {
       background: #18211C !important;
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .details-band {
-      background: #2F3F36 !important;
+      background: var(--color-dark-moss) !important;
       color: rgba(241, 236, 227, 0.4) !important;
       border-top-color: rgba(241, 236, 227, 0.06) !important;
     }

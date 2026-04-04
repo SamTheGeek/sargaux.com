@@ -23,14 +23,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <!--
     Z-index stack (all in ROOT context — nothing creates an intermediate SC):
 
-      body bg  #F1ECE3  cream
+      body bg  var(--color-warm-cream)  cream
       z:1      hero text   position:fixed, top-left
       z:2      sun disc    position:fixed, right
       z:3      skyline     position:relative, in normal flow, scrolls over text
-      z:4      moss sections  solid #2F3F36, cover disc + text as you scroll past
+      z:4      moss sections  solid var(--color-dark-moss), cover disc + text as you scroll past
 
     Skyline colouring:
-      Vector SVG (skyline-fill.svg) with <path fill="#2F3F36"> — rendered as
+      Vector SVG (skyline-fill.svg) with <path fill="var(--color-dark-moss)"> — rendered as
       a plain <img> anchored bottom-left. No mask or filter needed.
       Transparent sky above buildings is invisible against the cream body.
   -->
@@ -73,7 +73,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <!--
     Skyline: in normal flow, z:3, scrolls up over fixed text.
     Inline SVG uses feMorphology dilate to fill building interiors from the
-    outline PNG, then feColorMatrix colours everything to exact #2F3F36.
+    outline PNG, then feColorMatrix colours everything to exact var(--color-dark-moss).
     -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
   -->
   <div class="nyc-skyline-wrap" aria-hidden="true" transition:persist="nyc-skyline">
@@ -192,15 +192,15 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   /* ── Foundation ─────────────────────────────── */
 
   html[data-event="nyc"] body {
-    background: #F1ECE3 !important;
-    color: #2F3F36 !important;
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
     overflow-x: hidden; /* prevents horizontal scroll from skyline bleed */
   }
 
   /* ── Header ─────────────────────────────────── */
 
   html[data-event="nyc"] .nyc-header {
-    background: #F1ECE3 !important;
+    background: var(--color-warm-cream) !important;
     border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
   }
 
@@ -208,7 +208,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-header .site-logo:hover,
   html[data-event="nyc"] .nyc-header .event-toggle .active,
   html[data-event="nyc"] .nyc-header .event-toggle .divider {
-    color: #2F3F36 !important;
+    color: var(--color-dark-moss) !important;
   }
 
   html[data-event="nyc"] .nyc-header .event-toggle a {
@@ -216,8 +216,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-rsvp-btn {
-    background: #2F3F36 !important;
-    color: #F1ECE3 !important;
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
     height: 32px;
     padding: 0 24px;
     font-size: 12px;
@@ -234,7 +234,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-rsvp-btn:hover {
     opacity: 0.85;
-    color: #F1ECE3 !important;
+    color: var(--color-warm-cream) !important;
   }
 
   /* ── Sun disc — z:2 ─────────────────────────── */
@@ -243,7 +243,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     position: fixed;
     width: clamp(300px, 50vh, 580px);
     height: clamp(300px, 50vh, 580px);
-    background: #D96A1E;
+    background: var(--color-burnt-amber);
     border-radius: 50%;
     top: 3vh;
     left: -14%;
@@ -264,7 +264,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-hero-text h1 {
     font-size: clamp(48px, 8vw, 112px);
     line-height: 0.93;
-    color: #2F3F36;
+    color: var(--color-dark-moss);
     text-transform: uppercase;
     font-weight: 500;
     /*
@@ -279,7 +279,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-date {
     font-size: 20px;
     letter-spacing: 0.05em;
-    color: #2F3F36;
+    color: var(--color-dark-moss);
     margin-bottom: 16px;
     white-space: nowrap;
   }
@@ -338,8 +338,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   /* ── Moss zone — z:4 ────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
-    background: #2F3F36 !important;
-    color: #F1ECE3 !important;
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
     position: relative;
     z-index: 4;
   }
@@ -375,7 +375,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-info-val {
     font-size: 16px;
     line-height: 1.6;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-info-secondary {
@@ -395,8 +395,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    background: #F1ECE3 !important;
-    color: #2F3F36 !important;
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
   }
 
   html[data-event="nyc"] .nyc-calendar-inner {
@@ -424,7 +424,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin: 0;
     font-size: 16px;
     line-height: 1.6;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-calendar-actions {
@@ -450,8 +450,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-transform: uppercase;
     letter-spacing: 0.08em;
     text-decoration: none;
-    background: #D96A1E;
-    color: #F1ECE3;
+    background: var(--color-burnt-amber);
+    color: var(--color-warm-cream);
     font-style: normal;
     line-height: 1;
     border: none;
@@ -461,7 +461,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-calendar-btn:hover,
   html[data-event="nyc"] .nyc-calendar-actions .calendar-btn-prominent:hover {
     opacity: 0.85;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-calendar-btn:disabled,
@@ -484,8 +484,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    background: #F1ECE3 !important;
-    color: #2F3F36 !important;
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
   }
 
   html[data-event="nyc"] .nyc-nav {
@@ -500,7 +500,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     padding: 24px 0;
     border-bottom: 1px solid rgba(241, 236, 227, 0.15);
     text-decoration: none;
-    color: #F1ECE3;
+    color: var(--color-warm-cream);
     transition: color 0.15s;
   }
 
@@ -508,7 +508,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     border-top: 1px solid rgba(241, 236, 227, 0.15);
   }
 
-  html[data-event="nyc"] .nyc-strip-link:hover { color: #D96A1E; }
+  html[data-event="nyc"] .nyc-strip-link:hover { color: var(--color-burnt-amber); }
 
   html[data-event="nyc"] .nyc-strip-title {
     font-size: 20px;
@@ -522,9 +522,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-align: right;
   }
 
-  html[data-event="nyc"] .nyc-strip-arrow { color: #D96A1E; }
+  html[data-event="nyc"] .nyc-strip-arrow { color: var(--color-burnt-amber); }
 
-  html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title { color: #D96A1E; }
+  html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title { color: var(--color-burnt-amber); }
 
   html[data-event="nyc"] .nyc-footer {
     border-top-color: rgba(241, 236, 227, 0.12) !important;
@@ -537,7 +537,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
-    color: #F1ECE3 !important;
+    color: var(--color-warm-cream) !important;
   }
 
   html[data-event="nyc"] .nyc-footer-meta {
@@ -553,18 +553,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   @media (prefers-color-scheme: dark) {
     /*
       Dark mode colour logic:
-        - Sky (above skyline) = lighter moss #2F3F36 — so the amber disc pops
+        - Sky (above skyline) = lighter moss var(--color-dark-moss) — so the amber disc pops
         - Body sections (below skyline) = skyline-matched dark #18211C
         - Skyline fill darkened via filter to sit between the two tones
     */
 
     html[data-event="nyc"] body {
-      background: #2F3F36 !important;
-      color: #F1ECE3 !important;
+      background: var(--color-dark-moss) !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .nyc-header {
-      background: #2F3F36 !important;
+      background: var(--color-dark-moss) !important;
       border-bottom-color: rgba(241, 236, 227, 0.08) !important;
     }
 
@@ -572,7 +572,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     html[data-event="nyc"] .nyc-header .site-logo:hover,
     html[data-event="nyc"] .nyc-header .event-toggle .active,
     html[data-event="nyc"] .nyc-header .event-toggle .divider {
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .nyc-header .event-toggle a {
@@ -581,17 +581,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     /* RSVP button: system orange CTA in dark mode */
     html[data-event="nyc"] .nyc-rsvp-btn {
-      background: #D96A1E !important;
-      color: #F1ECE3 !important;
+      background: var(--color-burnt-amber) !important;
+      color: var(--color-warm-cream) !important;
     }
 
     /* Disc: full system orange — no dimming */
-    /* (background: #D96A1E already set in light mode styles, no override needed) */
+    /* (background: var(--color-burnt-amber) already set in light mode styles, no override needed) */
 
     /* Hero text: cream */
     html[data-event="nyc"] .nyc-hero-text h1,
     html[data-event="nyc"] .nyc-date {
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     html[data-event="nyc"] .nyc-rule {
@@ -615,14 +615,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     /* Body sections below skyline: deep dark moss */
     html[data-event="nyc"] .nyc-moss {
       background: #18211C !important;
-      color: #F1ECE3 !important;
+      color: var(--color-warm-cream) !important;
     }
 
     /* Section bands: pull the lighter sky-green into the moss zone for contrast */
     html[data-event="nyc"] .nyc-calendar-band,
     html[data-event="nyc"] .nyc-explore-band {
-      background: #2F3F36 !important;
-      color: #F1ECE3 !important;
+      background: var(--color-dark-moss) !important;
+      color: var(--color-warm-cream) !important;
       border-top: 1px solid rgba(241, 236, 227, 0.06);
       border-bottom: 1px solid rgba(241, 236, 227, 0.06);
     }

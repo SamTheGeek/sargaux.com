@@ -143,6 +143,16 @@
   --color-info-bg: #EEF5F9;
   --color-info-border: #B7D4E8;
 
+  /* Flag colors — LangSwitcher only
+     Blues use --color-prussian-blue; whites use --color-warm-cream; reds are independent */
+  --color-flag-fr-red: #d96a1e;
+  --color-flag-us-red: #c74b34;
+  --color-flag-us-stars: rgba(241, 236, 227, 0.95);
+
+  /* Semi-transparent surface text — used on dark (moss) surfaces */
+  --color-surface-text-placeholder: rgba(241, 236, 227, 0.68);
+  --color-surface-text-loading: rgba(241, 236, 227, 0.82);
+
   /* Color scheme hint for native controls */
   color-scheme: light dark;
 }
