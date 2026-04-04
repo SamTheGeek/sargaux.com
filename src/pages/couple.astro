@@ -23,7 +23,6 @@ const singleEventLabel = eventInvitations.includes('nyc')
     : null;
 const heroPhotoSrc = '/images/couple/photo_1.jpeg';
 
-// Format a Date as "Month Day, Year" using UTC fields (EXIF stores local time, exifr parses as UTC)
 function formatExifDate(date: Date): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
@@ -32,10 +31,8 @@ function toWebp(src: string): string {
   return src.replace(/\.jpeg$/i, '.webp');
 }
 
-// All 16 couple photos (photo_1.jpeg is already in the hero)
 const allPhotos = Array.from({ length: 16 }, (_, i) => `/images/couple/couple - ${i + 1}.jpeg`);
 
-// Read EXIF dates at build time
 const exifDates = await Promise.all(
   allPhotos.map(async (src) => {
     try {
@@ -51,6 +48,7 @@ const exifDates = await Promise.all(
     return couplePhotoDateFallbacks[src] ?? null;
   })
 );
+
 const photosWithDates = allPhotos.map((src, i) => ({ jpeg: src, webp: toWebp(src), date: exifDates[i] }));
 
 let heroPhotoDate: string | null = null;
@@ -66,16 +64,35 @@ try {
 
 heroPhotoDate ??= couplePhotoDateFallbacks[heroPhotoSrc] ?? null;
 
-// Pick 6 at random on every render, each with a slight rotation and vertical offset
 const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 6);
 const scattered = shuffled.map(({ jpeg, webp, date }) => ({
   jpeg,
   webp,
-  alt: `Sam and Margaux`,
+  alt: 'Sam and Margaux',
   date,
-  rotate: (Math.random() * 10 - 5).toFixed(1),   // –5° to +5°
-  ty: (Math.random() * 48 - 24).toFixed(0),        // –24px to +24px
+  rotate: (Math.random() * 6 - 3).toFixed(1),
+  ty: (Math.random() * 24 - 12).toFixed(0),
 }));
+
+const storyPlaceholders = [
+  [
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.',
+    'Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.',
+  ],
+  [
+    'Nullam quis risus eget urna mollis ornare vel eu leo. Sed posuere consectetur est at lobortis.',
+    'Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Aenean lacinia bibendum nulla sed consectetur.',
+  ],
+  [
+    'Etiam porta sem malesuada magna mollis euismod. Vestibulum id ligula porta felis euismod semper.',
+    'Cras justo odio, dapibus ac facilisis in, egestas eget quam. Curabitur blandit tempus porttitor.',
+  ],
+];
+
+const galleryRows = storyPlaceholders.map((copy, index) => {
+  const [leftPhoto, rightPhoto] = scattered.slice(index * 2, index * 2 + 2);
+  return { copy, leftPhoto, rightPhoto };
+});
 ---
 
 <WireframeLayout title={t(strings.couple.pageTitle)} description="Shared page for Sam and Margaux" event="nyc">
@@ -101,8 +118,6 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     <section class="couple-hero">
       <div class="couple-disc couple-disc--amber" aria-hidden="true" transition:name="event-disc" transition:persist="couple-disc-amber"></div>
       <div class="couple-disc couple-disc--blue" aria-hidden="true" transition:persist="couple-disc-blue"></div>
-      <div class="couple-ribbon couple-ribbon--moss" aria-hidden="true" transition:persist="couple-ribbon-moss"></div>
-      <div class="couple-ribbon couple-ribbon--espresso" aria-hidden="true" transition:persist="couple-ribbon-espresso"></div>
 
       <div class="couple-grid page-content" transition:name="couple-content">
         <div class="couple-copy">
@@ -132,20 +147,52 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     </section>
 
     <section class="couple-gallery" aria-label="Photos">
-      <div class="gallery-scatter">
-        {scattered.map(({ jpeg, webp, alt, date, rotate, ty }) => (
-          <div class="photo-card gallery-scatter-card" style={`--rotate: ${rotate}deg; --ty: ${ty}px`}>
-            <div class="photo-card-inner">
-              <div class="photo-label-row">
-                <span class="photo-label photo-label--muted">{date ?? 'Chez Sargaux'}</span>
-              </div>
-              <figure class="couple-photo-frame">
-                <picture class="couple-photo-picture">
-                  <source srcset={webp} type="image/webp" />
-                  <img src={jpeg} alt={alt} loading="lazy" decoding="async" class="couple-photo" />
-                </picture>
-              </figure>
-            </div>
+      <div class="couple-gallery-shell page-content">
+        {galleryRows.map(({ copy, leftPhoto, rightPhoto }) => (
+          <div class="gallery-row">
+            {leftPhoto && (
+              <article
+                class="photo-card gallery-scatter-card gallery-scatter-card--left"
+                style={`--rotate: ${leftPhoto.rotate}deg; --ty: ${leftPhoto.ty}px;`}
+              >
+                <div class="photo-card-inner">
+                  <div class="photo-label-row">
+                    <span class="photo-label photo-label--muted">{leftPhoto.date ?? 'Chez Sargaux'}</span>
+                  </div>
+                  <figure class="couple-photo-frame">
+                    <picture class="couple-photo-picture">
+                      <source srcset={leftPhoto.webp} type="image/webp" />
+                      <img src={leftPhoto.jpeg} alt={leftPhoto.alt} loading="lazy" decoding="async" class="couple-photo" />
+                    </picture>
+                  </figure>
+                </div>
+              </article>
+            )}
+
+            <article class="story-card" aria-label="Story placeholder">
+              {copy.map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
+            </article>
+
+            {rightPhoto && (
+              <article
+                class="photo-card gallery-scatter-card gallery-scatter-card--right"
+                style={`--rotate: ${rightPhoto.rotate}deg; --ty: ${rightPhoto.ty}px;`}
+              >
+                <div class="photo-card-inner">
+                  <div class="photo-label-row">
+                    <span class="photo-label photo-label--muted">{rightPhoto.date ?? 'Chez Sargaux'}</span>
+                  </div>
+                  <figure class="couple-photo-frame">
+                    <picture class="couple-photo-picture">
+                      <source srcset={rightPhoto.webp} type="image/webp" />
+                      <img src={rightPhoto.jpeg} alt={rightPhoto.alt} loading="lazy" decoding="async" class="couple-photo" />
+                    </picture>
+                  </figure>
+                </div>
+              </article>
+            )}
           </div>
         ))}
       </div>
@@ -173,25 +220,20 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
 
 <style>
   .couple-header {
-    background:
-      linear-gradient(90deg, rgba(241, 236, 227, 0.98), rgba(241, 236, 227, 0.9)),
-      linear-gradient(120deg, rgba(217, 106, 30, 0.12), rgba(27, 58, 107, 0.1));
-    border-bottom: 1px solid rgba(47, 63, 54, 0.18);
-    backdrop-filter: blur(14px);
+    background: var(--color-bg);
   }
 
   .couple-nav-actions {
-    gap: 12px;
+    gap: var(--space-sm);
   }
 
   .couple-event-nav-link {
+    color: var(--color-text-muted);
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
-    border-radius: 999px;
     font-size: var(--font-size-caption);
-    font-weight: 600;
-    color: var(--color-text-muted);
+    font-weight: 500;
   }
 
   .couple-event-nav-link:hover {
@@ -202,167 +244,149 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     position: relative;
     overflow: clip;
     flex: 1;
+    background: var(--color-bg);
   }
 
   .couple-hero {
     position: relative;
-    min-height: min(840px, calc(100vh - 112px));
-    padding: var(--space-xl) 0 var(--space-lg);
-    display: flex;
-    align-items: center;
-    background:
-      radial-gradient(circle at 16% 20%, rgba(217, 106, 30, 0.16), transparent 32%),
-      radial-gradient(circle at 88% 14%, rgba(27, 58, 107, 0.16), transparent 28%),
-      linear-gradient(150deg, rgba(241, 236, 227, 1) 0%, rgba(241, 236, 227, 0.96) 48%, rgba(58, 46, 38, 0.08) 100%);
+    padding: var(--space-2xl) 0 var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
   }
 
   .couple-disc {
     position: absolute;
     border-radius: 50%;
-    filter: blur(0.2px);
+    background: var(--color-accent);
+    pointer-events: none;
   }
 
   .couple-disc--amber {
-    width: clamp(220px, 28vw, 420px);
-    height: clamp(220px, 28vw, 420px);
-    left: clamp(-72px, -4vw, -24px);
-    top: 72px;
-    background: rgba(217, 106, 30, 0.9);
-    z-index: 2;
+    width: clamp(240px, 28vw, 360px);
+    height: clamp(240px, 28vw, 360px);
+    top: calc(var(--space-xl) * -1);
+    left: clamp(-140px, -10vw, -56px);
+    opacity: 0.92;
+    z-index: 1;
   }
 
   .couple-disc--blue {
-    width: clamp(180px, 20vw, 280px);
-    height: clamp(180px, 20vw, 280px);
-    right: clamp(16px, 6vw, 120px);
-    top: clamp(40px, 10vw, 120px);
-    background: rgba(27, 58, 107, 0.88);
-  }
-
-  .couple-ribbon {
-    position: absolute;
-    border-radius: 999px;
-    transform: rotate(-12deg);
-    opacity: 0.76;
-  }
-
-  .couple-ribbon--moss {
-    width: min(480px, 58vw);
-    height: 24px;
-    right: -40px;
-    bottom: 120px;
-    background: rgba(47, 63, 54, 0.9);
-  }
-
-  .couple-ribbon--espresso {
-    width: min(340px, 46vw);
-    height: 18px;
-    left: 18%;
-    bottom: 88px;
-    background: rgba(58, 46, 38, 0.72);
+    width: clamp(120px, 14vw, 184px);
+    height: clamp(120px, 14vw, 184px);
+    right: clamp(24px, 8vw, 120px);
+    bottom: calc(var(--space-xl) * -0.5);
+    background: var(--color-prussian-blue);
+    opacity: 0.88;
+    z-index: 1;
   }
 
   .couple-grid {
     position: relative;
     z-index: 3;
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
-    gap: clamp(56px, 6vw, 92px);
-    align-items: center;
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 384px);
+    gap: var(--space-xl);
+    align-items: start;
   }
 
   .couple-copy {
-    max-width: 720px;
-    padding-top: var(--space-2xl);
-    position: relative;
-    z-index: 2;
+    max-width: 38rem;
+    padding-top: var(--space-md);
   }
 
   .couple-eyebrow {
     margin-bottom: var(--space-sm);
     font-size: var(--font-size-caption);
-    text-transform: uppercase;
     letter-spacing: var(--tracking-heading);
-    color: rgba(58, 46, 38, 0.8);
-    max-width: 28rem;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
 
   .couple-copy h1 {
-    font-size: clamp(60px, 10vw, 140px);
-    line-height: 0.9;
     max-width: 6ch;
     margin-bottom: var(--space-sm);
-    position: relative;
-    z-index: 4;
+    font-size: clamp(64px, 10vw, 128px);
+    line-height: 0.88;
   }
 
   .couple-subtitle {
-    max-width: 34rem;
-    font-size: clamp(18px, 2.5vw, 30px);
-    line-height: 1.24;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: rgba(47, 63, 54, 0.82);
+    max-width: 32rem;
+    color: var(--color-text-muted);
+    font-size: 20px;
+    line-height: var(--line-height-body);
   }
 
   .couple-rule {
     width: min(100%, 320px);
-    margin: var(--space-md) 0 0;
-    border-top-color: rgba(47, 63, 54, 0.22);
+    margin: var(--space-lg) 0 0;
   }
 
   .couple-panel {
     justify-self: end;
     width: 100%;
-    position: relative;
-    z-index: 1;
   }
 
   .photo-card {
     position: relative;
-    border-radius: 32px;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--color-text);
+    border-radius: 30px 30px 22px 22px;
     padding: 14px;
-    background:
-      linear-gradient(135deg, rgba(27, 58, 107, 0.18), rgba(217, 106, 30, 0.2) 54%, rgba(47, 63, 54, 0.18));
-    box-shadow:
-      0 28px 70px rgba(58, 46, 38, 0.16),
-      inset 0 0 0 1px rgba(241, 236, 227, 0.4);
+  }
+
+  .photo-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 12px;
+    background: var(--color-accent);
+    border-radius: 0 0 22px 22px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .photo-card::after {
+    display: none;
   }
 
   .photo-card-inner {
-    border-radius: 24px;
-    padding: 18px;
-    background: rgba(241, 236, 227, 0.92);
-    border: 1px solid rgba(58, 46, 38, 0.12);
-    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-sm);
+    min-height: 100%;
+    padding: 14px;
+    background: var(--color-bg);
+    border-radius: 22px 22px 16px 16px;
   }
 
   .photo-label-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: var(--space-sm);
   }
 
   .photo-label {
+    color: var(--color-text);
     font-size: var(--font-size-caption);
     letter-spacing: var(--tracking-caption);
     text-transform: uppercase;
-    color: var(--color-text);
   }
 
   .photo-label--muted {
-    color: rgba(58, 46, 38, 0.6);
+    color: var(--color-text-muted);
   }
 
   .couple-photo-frame {
     margin: 0;
-    border-radius: 18px;
-    overflow: hidden;
-    background: rgba(27, 58, 107, 0.08);
-    border: 1px solid rgba(27, 58, 107, 0.12);
     aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: var(--color-surface);
+    border-radius: 18px 18px 14px 14px;
   }
 
   .couple-photo-picture {
@@ -378,215 +402,209 @@ const scattered = shuffled.map(({ jpeg, webp, date }) => ({
     object-fit: cover;
   }
 
-  /* ── Gallery ─────────────────────────────────── */
-
   .couple-gallery {
-    background: #F1ECE3;
-    padding: var(--space-2xl) var(--space-lg);
-    border-top: 1px solid rgba(47, 63, 54, 0.1);
+    padding: var(--space-2xl) 0;
+    background: var(--color-bg);
   }
 
-  .gallery-scatter {
+  .couple-gallery-shell {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 300px));
-    justify-content: center;
-    gap: 2rem 3rem;
-    padding: var(--space-lg) var(--space-xl);
+    gap: var(--space-2xl);
+  }
+
+  .gallery-row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--space-lg) var(--space-md);
+    align-items: stretch;
+  }
+
+  .gallery-scatter-card--left {
+    grid-column: 1 / span 4;
+  }
+
+  .story-card {
+    grid-column: 5 / span 4;
+    display: grid;
+    align-content: center;
+    gap: var(--space-md);
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    min-height: 100%;
+  }
+
+  .story-card p {
+    color: var(--color-text-muted);
+  }
+
+  .gallery-scatter-card--right {
+    grid-column: 9 / span 4;
   }
 
   .gallery-scatter-card {
     transform: rotate(var(--rotate)) translateY(var(--ty));
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    position: relative;
-    z-index: 1;
+    transition: transform 0.2s ease, border-color 0.2s ease;
   }
 
   .gallery-scatter-card:hover {
-    transform: rotate(0deg) translateY(0px) scale(1.03);
-    z-index: 10;
-    box-shadow:
-      0 40px 100px rgba(58, 46, 38, 0.22),
-      inset 0 0 0 1px rgba(241, 236, 227, 0.5);
+    transform: rotate(var(--rotate)) translateY(calc(var(--ty) - 4px));
   }
 
-  @media (max-width: 900px) {
-    .gallery-scatter {
-      grid-template-columns: repeat(2, minmax(0, 300px));
-    }
+  .gallery-scatter-card:hover .photo-card-inner {
+    background: color-mix(in srgb, var(--color-bg) 88%, var(--color-accent) 12%);
   }
 
-  @media (max-width: 540px) {
-    .gallery-scatter {
-      grid-template-columns: minmax(0, 340px);
-    }
-
-    .gallery-scatter-card {
-      transform: rotate(var(--rotate));
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .couple-gallery {
-      background: #131d1a;
-      border-top-color: rgba(241, 236, 227, 0.06);
-    }
+  .couple-panel .photo-card {
+    background: var(--color-prussian-blue);
   }
 
   .couple-footer {
-    border-top-color: rgba(47, 63, 54, 0.12);
+    border-top-color: var(--color-border);
   }
 
   .footer-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-xs);
     margin-top: var(--space-xs);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .couple-header {
-      background:
-        linear-gradient(90deg, rgba(15, 26, 46, 0.96), rgba(26, 36, 32, 0.9)),
-        linear-gradient(120deg, rgba(217, 106, 30, 0.14), rgba(27, 58, 107, 0.18));
-      border-bottom-color: rgba(241, 236, 227, 0.1);
-    }
-
-    .couple-event-nav-link {
-      color: rgba(241, 236, 227, 0.6);
-    }
-
-    .couple-event-nav-link:hover {
-      color: var(--color-surface-text);
-    }
-
-    .couple-hero {
-      background:
-        radial-gradient(circle at 16% 18%, rgba(217, 106, 30, 0.18), transparent 32%),
-        radial-gradient(circle at 84% 16%, rgba(27, 58, 107, 0.28), transparent 30%),
-        linear-gradient(145deg, #131d1a 0%, #101b31 56%, #1d2836 100%);
-    }
-
-    .couple-eyebrow {
-      color: rgba(241, 236, 227, 0.72);
-    }
-
-    .couple-subtitle {
-      color: rgba(241, 236, 227, 0.82);
-    }
-
-    .couple-rule {
-      border-top-color: rgba(241, 236, 227, 0.16);
-    }
-
-    .photo-card {
-      background:
-        linear-gradient(135deg, rgba(27, 58, 107, 0.34), rgba(217, 106, 30, 0.28) 54%, rgba(47, 63, 54, 0.32));
-      box-shadow:
-        0 28px 80px rgba(0, 0, 0, 0.32),
-        inset 0 0 0 1px rgba(241, 236, 227, 0.08);
-    }
-
-    .photo-card-inner {
-      background: rgba(20, 28, 40, 0.9);
-      border-color: rgba(241, 236, 227, 0.08);
-    }
-
-    .photo-label {
-      color: rgba(241, 236, 227, 0.92);
-    }
-
-    .photo-label--muted {
-      color: rgba(241, 236, 227, 0.56);
-    }
-
-    .couple-photo-frame {
-      background: rgba(241, 236, 227, 0.04);
-      border-color: rgba(241, 236, 227, 0.08);
-    }
-  }
-
-  @media (max-width: 900px) {
+  @media (max-width: 960px) {
     .couple-grid {
       grid-template-columns: 1fr;
       gap: var(--space-lg);
     }
 
     .couple-copy {
-      padding-top: var(--space-xl);
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .couple-copy h1,
+    .couple-subtitle,
+    .couple-rule {
+      margin-inline: auto;
     }
 
     .couple-panel {
-      justify-self: stretch;
-      max-width: 440px;
+      justify-self: center;
+      max-width: 420px;
+    }
+
+    .gallery-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-items: center;
+    }
+
+    .gallery-scatter-card--left,
+    .gallery-scatter-card--right {
+      grid-column: auto;
+    }
+
+    .gallery-scatter-card {
+      width: min(100%, 320px);
+    }
+
+    .story-card {
+      grid-column: 1 / -1;
+      order: 3;
+      min-height: 0;
+      width: min(100%, 36rem);
+      margin-inline: auto;
+      text-align: center;
     }
   }
 
   @media (max-width: 768px) {
     .couple-header .site-nav {
       grid-template-columns: 1fr;
-      justify-items: start;
+      justify-items: center;
       gap: 10px;
     }
 
     .couple-nav-actions {
       flex-wrap: wrap;
-      justify-self: start;
+      justify-self: center;
     }
 
     .couple-hero {
-      min-height: auto;
-      padding: var(--space-lg) 0;
+      padding: var(--space-xl) 0;
     }
 
     .couple-disc--amber {
-      width: 180px;
-      height: 180px;
-      left: -36px;
-      top: 96px;
+      width: 192px;
+      height: 192px;
+      top: -72px;
+      left: -72px;
     }
 
     .couple-disc--blue {
-      width: 132px;
-      height: 132px;
+      width: 120px;
+      height: 120px;
       right: -24px;
-      top: 44px;
+      bottom: 56px;
     }
 
-    .couple-ribbon--moss {
-      height: 18px;
-      width: 240px;
-      right: -70px;
-      bottom: 104px;
-    }
-
-    .couple-ribbon--espresso {
-      width: 180px;
-      height: 14px;
-      left: 8%;
-      bottom: 78px;
+    .couple-copy {
+      padding-top: 0;
     }
 
     .couple-copy h1 {
-      font-size: clamp(44px, 16vw, 76px);
+      font-size: clamp(48px, 16vw, 80px);
     }
 
     .couple-subtitle {
-      font-size: 18px;
+      font-size: var(--font-size-body);
     }
 
     .photo-card {
-      border-radius: 24px;
-      padding: 10px;
+      padding: 12px;
+      border-radius: 26px 26px 20px 20px;
     }
 
     .photo-card-inner {
-      border-radius: 18px;
-      padding: 14px;
+      padding: 10px;
+      border-radius: 18px 18px 14px 14px;
     }
 
     .footer-row {
       flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .couple-gallery {
+      padding: var(--space-xl) 0;
+    }
+
+    .couple-gallery-shell {
+      gap: var(--space-xl);
+    }
+
+    .gallery-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+      justify-items: center;
+    }
+
+    .gallery-scatter-card,
+    .story-card {
+      grid-column: 1 / -1;
+    }
+
+    .gallery-scatter-card {
+      transform: rotate(var(--rotate));
+    }
+
+    .gallery-scatter-card:hover {
+      transform: rotate(var(--rotate));
+    }
+
+    .story-card {
+      order: 0;
+      padding: var(--space-md) 0;
     }
   }
 </style>
