@@ -9,10 +9,15 @@ import path from 'path';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const heroPhotoSrc = '/images/couple/photo_1.jpeg';
 
 // Format a Date as "Month Day, Year" using UTC fields (EXIF stores local time, exifr parses as UTC)
 function formatExifDate(date: Date): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+function toWebp(src: string): string {
+  return src.replace(/\.jpeg$/i, '.webp');
 }
 
 // All 16 couple photos (photo_1.jpeg is already in the hero)
@@ -30,12 +35,13 @@ const exifDates = await Promise.all(
     }
   })
 );
-const photosWithDates = allPhotos.map((src, i) => ({ src, date: exifDates[i] }));
+const photosWithDates = allPhotos.map((src, i) => ({ jpeg: src, webp: toWebp(src), date: exifDates[i] }));
 
 // Pick 6 at random on every render, each with a slight rotation and vertical offset
 const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 6);
-const scattered = shuffled.map(({ src, date }) => ({
-  src,
+const scattered = shuffled.map(({ jpeg, webp, date }) => ({
+  jpeg,
+  webp,
   alt: `Sam and Margaux`,
   date,
   rotate: (Math.random() * 10 - 5).toFixed(1),   // –5° to +5°
@@ -82,7 +88,10 @@ const scattered = shuffled.map(({ src, date }) => ({
                 <span class="photo-label photo-label--muted">Chez Sargaux</span>
               </div>
               <figure class="couple-photo-frame" transition:persist="couple-photo-frame">
-                <img src="/images/couple/photo_1.jpeg" alt="Sam and Margaux together" class="couple-photo" />
+                <picture class="couple-photo-picture">
+                  <source srcset={toWebp(heroPhotoSrc)} type="image/webp" />
+                  <img src={heroPhotoSrc} alt="Sam and Margaux together" class="couple-photo" />
+                </picture>
               </figure>
               <p class="photo-caption">{t(strings.couple.photoCaption)}</p>
             </div>
@@ -93,14 +102,17 @@ const scattered = shuffled.map(({ src, date }) => ({
 
     <section class="couple-gallery" aria-label="Photos">
       <div class="gallery-scatter">
-        {scattered.map(({ src, alt, date, rotate, ty }) => (
+        {scattered.map(({ jpeg, webp, alt, date, rotate, ty }) => (
           <div class="photo-card gallery-scatter-card" style={`--rotate: ${rotate}deg; --ty: ${ty}px`}>
             <div class="photo-card-inner">
               <div class="photo-label-row">
                 <span class="photo-label photo-label--muted">{date ?? 'Chez Sargaux'}</span>
               </div>
               <figure class="couple-photo-frame">
-                <img src={src} alt={alt} loading="lazy" decoding="async" class="couple-photo" />
+                <picture class="couple-photo-picture">
+                  <source srcset={webp} type="image/webp" />
+                  <img src={jpeg} alt={alt} loading="lazy" decoding="async" class="couple-photo" />
+                </picture>
               </figure>
             </div>
           </div>
@@ -334,6 +346,12 @@ const scattered = shuffled.map(({ src, date }) => ({
     background: rgba(27, 58, 107, 0.08);
     border: 1px solid rgba(27, 58, 107, 0.12);
     aspect-ratio: 4 / 5;
+  }
+
+  .couple-photo-picture {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .couple-photo {
