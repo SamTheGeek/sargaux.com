@@ -55,14 +55,20 @@ const lang = Astro.locals.lang ?? 'en';
       //   - Couple page .couple-grid (couple-content) → z:3
       //
       // NYC index/sub-page navigations use a hybrid approach:
-      //   - suppress the disc's independent VT name on both documents so the
-      //     disc stays baked into the root snapshot; and
-      //   - TEMPORARILY give the incoming sub-page hero its own VT group so
-      //     the entering headline block sits above the exiting root snapshot.
-      //     That VT name must be injected in before-swap and removed on
-      //     page-load; leaving it in the markup would keep the hero promoted
-      //     after the transition and break its normal z-index relationship
-      //     with the disc while scrolling.
+      //   - Forward (/nyc -> /nyc/*): suppress the disc on both documents so
+      //     it stays baked into the root snapshot while the incoming moss zone
+      //     slides upward below it.
+      //   - Backward (/nyc/* -> /nyc): restore event-disc on the OLD sub-page
+      //     disc and leave the NEW /nyc disc active so the disc FLIPs back to
+      //     the main page instead of crossfading.
+      //   - Sibling (/nyc/* -> /nyc/*): suppress the disc on both sides.
+      //
+      // NYC index -> sub-page also TEMPORARILY gives the incoming sub-page hero
+      // its own VT group so the entering headline block sits above the exiting
+      // root snapshot. That VT name must be injected in before-swap and removed
+      // on page-load; leaving it in the markup would keep the hero promoted
+      // after the transition and break its normal z-index relationship with the
+      // disc while scrolling.
       //
       // Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
       // only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
@@ -122,6 +128,9 @@ const lang = Astro.locals.lang ?? 'en';
           const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
+          const isNycForwardNav = toDepth > fromDepth && from.startsWith('/nyc');
+          const isNycBackwardNav = to === '/nyc' && from.startsWith('/nyc/');
+          const isNycSiblingNav = from.startsWith('/nyc/') && to.startsWith('/nyc/');
           const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
           const useSafariMossFallback = isSafari && isNycIndexToSubpage;
 
@@ -140,12 +149,14 @@ const lang = Astro.locals.lang ?? 'en';
             suppress(document.querySelector('.nyc-disc'));
           };
 
-          const isNycSubpageNav =
-            (toDepth > fromDepth && from.startsWith('/nyc')) ||
-            (to === '/nyc' && from.startsWith('/nyc/')) ||
-            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
-
-          if (isNycSubpageNav) {
+          if (isNycForwardNav) {
+            suppressHeader();
+            suppressNycDisc();
+          } else if (isNycBackwardNav) {
+            // Returning to /nyc must recreate a two-sided event-disc pair.
+            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
+            suppressHeader();
+          } else if (isNycSiblingNav) {
             suppressHeader();
             suppressNycDisc();
           }
@@ -181,11 +192,9 @@ const lang = Astro.locals.lang ?? 'en';
             suppress(doc?.querySelector('.nyc-disc'));
           };
 
-          const isNycSubpageNav =
-            (toDepth > fromDepth && from.startsWith('/nyc')) ||
-            (to === '/nyc' && from.startsWith('/nyc/')) ||
-            (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
-
+          const isNycForwardNav = toDepth > fromDepth && from.startsWith('/nyc');
+          const isNycBackwardNav = to === '/nyc' && from.startsWith('/nyc/');
+          const isNycSiblingNav = from.startsWith('/nyc/') && to.startsWith('/nyc/');
           const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
           const useSafariMossFallback = isSafari && isNycIndexToSubpage;
 
@@ -198,7 +207,14 @@ const lang = Astro.locals.lang ?? 'en';
             event.newDocument.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
           }
 
-          if (isNycSubpageNav) {
+          if (isNycForwardNav) {
+            suppressHeaderOnDoc(event.newDocument);
+            suppressNycDiscOnDoc(event.newDocument);
+          } else if (isNycBackwardNav) {
+            // Leave the incoming /nyc disc active so it can pair with the old
+            // sub-page disc's restored event-disc name and FLIP home.
+            suppressHeaderOnDoc(event.newDocument);
+          } else if (isNycSiblingNav) {
             suppressHeaderOnDoc(event.newDocument);
             suppressNycDiscOnDoc(event.newDocument);
           }

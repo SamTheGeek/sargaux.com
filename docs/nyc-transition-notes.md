@@ -43,6 +43,21 @@ On `/nyc` -> `/nyc/*` navigations:
 If Safari gets both the fallback class and the VT name, the browser goes back
 through the compositor snapshot path and the travel/details entrance can clip.
 
+## Return-to-index disc rule
+
+Sub-page -> `/nyc` navigations must not use the same disc suppression as the
+forward path.
+
+On return to `/nyc`:
+
+- restore `view-transition-name: event-disc` on the OLD sub-page `.nyc-disc`
+- leave the NEW `/nyc` disc active
+- suppress header children only
+
+If the backward path suppresses the disc on both sides, the disc no longer FLIPs
+home and will crossfade instead. This regressed once when forward/backward/sibling
+NYC navigations were merged into one broad `isNycSubpageNav` branch.
+
 ## Related route-state rule
 
 `<html>` route attributes (`data-event`, `data-page`, `lang`) must be synced from
