@@ -30,6 +30,11 @@ Requirements:
 This is what lets the moss layer slide above the disc without staying promoted
 after the navigation completes.
 
+For `/nyc` -> `/nyc/*`, do not suppress `event-disc`.
+
+The index disc and the sub-page disc should stay active as a two-sided pair so
+the disc translates into the new position instead of crossfading.
+
 ## Safari fallback path
 
 Safari does not use the same reliable path for this transition.
@@ -45,8 +50,8 @@ through the compositor snapshot path and the travel/details entrance can clip.
 
 ## Return-to-index disc rule
 
-Sub-page -> `/nyc` navigations must not use the same disc suppression as the
-forward path.
+Sub-page -> `/nyc` navigations must not use the same disc suppression as sibling
+navs.
 
 On return to `/nyc`:
 
@@ -54,9 +59,10 @@ On return to `/nyc`:
 - leave the NEW `/nyc` disc active
 - suppress header children only
 
-If the backward path suppresses the disc on both sides, the disc no longer FLIPs
-home and will crossfade instead. This regressed once when forward/backward/sibling
-NYC navigations were merged into one broad `isNycSubpageNav` branch.
+If forward or backward paths suppress the disc on both sides, the disc no longer
+FLIPs and will crossfade instead. This regressed once when
+forward/backward/sibling NYC navigations were merged into one broad
+`isNycSubpageNav` branch.
 
 ## Related route-state rule
 

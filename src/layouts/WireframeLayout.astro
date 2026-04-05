@@ -55,9 +55,9 @@ const lang = Astro.locals.lang ?? 'en';
       //   - Couple page .couple-grid (couple-content) → z:3
       //
       // NYC index/sub-page navigations use a hybrid approach:
-      //   - Forward (/nyc -> /nyc/*): suppress the disc on both documents so
-      //     it stays baked into the root snapshot while the incoming moss zone
-      //     slides upward below it.
+      //   - Forward (/nyc -> /nyc/*): leave the disc active on both documents
+      //     so it FLIPs into the sub-page position while the incoming moss zone
+      //     slides upward above it.
       //   - Backward (/nyc/* -> /nyc): restore event-disc on the OLD sub-page
       //     disc and leave the NEW /nyc disc active so the disc FLIPs back to
       //     the main page instead of crossfading.
@@ -151,7 +151,6 @@ const lang = Astro.locals.lang ?? 'en';
 
           if (isNycForwardNav) {
             suppressHeader();
-            suppressNycDisc();
           } else if (isNycBackwardNav) {
             // Returning to /nyc must recreate a two-sided event-disc pair.
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
@@ -208,8 +207,9 @@ const lang = Astro.locals.lang ?? 'en';
           }
 
           if (isNycForwardNav) {
+            // Leave the incoming sub-page disc active so it can pair with the
+            // old /nyc disc and translate into place.
             suppressHeaderOnDoc(event.newDocument);
-            suppressNycDiscOnDoc(event.newDocument);
           } else if (isNycBackwardNav) {
             // Leave the incoming /nyc disc active so it can pair with the old
             // sub-page disc's restored event-disc name and FLIP home.
@@ -241,6 +241,11 @@ const lang = Astro.locals.lang ?? 'en';
         document.addEventListener('astro:page-load', () => {
           document.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
           document.querySelector('.nyc-page-main')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-disc')?.style.removeProperty('view-transition-name');
+          document.querySelector('.rsvp-disc-m')?.style.removeProperty('view-transition-name');
+          document.querySelector('.site-logo')?.style.removeProperty('view-transition-name');
+          document.querySelector('.event-toggle')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-rsvp-btn')?.style.removeProperty('view-transition-name');
           syncRootRouteAttributes(document);
 
           const enteringMoss = document.querySelector('.nyc-page-moss-entering');
