@@ -256,6 +256,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     top: 80px;           /* just below the sticky header */
     right: 64px;
     z-index: 1;
+    width: fit-content;
     text-align: right;
     /* No background-color — cream body shows through. */
   }
@@ -266,6 +267,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     color: var(--color-dark-moss);
     text-transform: uppercase;
     font-weight: 500;
+    letter-spacing: -0.01em;
     /*
       Each <br> creates a hard line break.
       white-space: nowrap prevents soft wrap within each line,
@@ -284,6 +286,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-rule {
+    width: 100%;
     border: none;
     border-top: 1px solid rgba(23, 50, 11, 0.3);
     margin: 16px 0;
