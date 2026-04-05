@@ -129,7 +129,7 @@ export const strings = {
       heading:         s('Save the Date', 'Notez la date'),
       subtext:         s("Add the events to your calendar app.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
       addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
-      unavailableNote: s('Your personalized calendar link will be available after you RSVP.', 'Lien de calendrier personnalisé disponible après votre RSVP'),
+      unavailableNote: s('Your calendar will be available after you RSVP.', 'Votre calendrier sera disponible après votre RSVP.'),
     },
     nav: {
       details: {
@@ -298,6 +298,19 @@ export const strings = {
         prefix: s('We already have your RSVP. Last saved', 'Nous avons déjà votre RSVP. Dernière sauvegarde le'),
         suffix: s('You can update and submit again anytime.', 'Vous pouvez le modifier et le soumettre à nouveau à tout moment.'),
       },
+      confirmation: {
+        pageTitle:    s('NYC RSVP Confirmation', 'Confirmation RSVP New York'),
+        heading:      s('RSVP Saved', 'RSVP enregistré'),
+        subtitle:     s('Here is your latest response for New York.', 'Voici votre dernière réponse pour New York.'),
+        savedLabel:   s('Last updated', 'Dernière mise à jour'),
+        editLink:     s('Edit RSVP', 'Modifier le RSVP'),
+        emptyValue:   s('Not provided', 'Non renseigné'),
+        emailMissing: s('No email provided', "Aucune adresse email renseignée"),
+        missing: {
+          heading: s('No RSVP Found', 'Aucun RSVP trouvé'),
+          text:    s('We could not find a saved NYC RSVP for your invitation yet.', "Nous n'avons pas encore trouvé de RSVP enregistré pour votre invitation New York."),
+        },
+      },
       form: {
         whosComing: {
           heading: s("Who's Coming?", 'Qui vient ?'),
@@ -381,7 +394,7 @@ export const strings = {
       saturday: {
         day:           s('Saturday', 'Samedi'),
         timeMorning:   s('Morning', 'Matin'),
-        breakfast:     s('Breakfast for overnight guests', 'Petit-déjeuner pour les résidents'),
+        breakfast:     s('Breakfast', 'Petit-déj'),
         timeAfternoon: s('Afternoon', 'Après-midi'),
         ceremony:      s('Ceremony', 'Cérémonie'),
         cocktail:      s('Cocktail Hour', 'Cocktail'),
@@ -391,7 +404,7 @@ export const strings = {
       sunday: {
         day:           s('Sunday', 'Dimanche'),
         timeMorning:   s('Morning', 'Matin'),
-        breakfast:     s('Breakfast for overnight guests', 'Petit-déjeuner pour les résidents'),
+        breakfast:     s('Breakfast', 'Petit-déj'),
         timeMidday:    s('Midday', 'Midi'),
         farewellBrunch: s('Farewell Brunch', "Brunch d'adieu"),
       },
@@ -677,6 +690,19 @@ export const strings = {
       existingBanner: {
         prefix: s('We already have your RSVP. Last saved', 'Nous avons déjà votre RSVP. Dernière sauvegarde le'),
         suffix: s('You can update and submit again anytime.', 'Vous pouvez le modifier et le soumettre à nouveau à tout moment.'),
+      },
+      confirmation: {
+        pageTitle:    s('France RSVP Confirmation', 'Confirmation RSVP France'),
+        heading:      s('RSVP Saved', 'RSVP enregistré'),
+        subtitle:     s('Here is your latest response for France.', 'Voici votre dernière réponse pour la France.'),
+        savedLabel:   s('Last updated', 'Dernière mise à jour'),
+        editLink:     s('Edit RSVP', 'Modifier le RSVP'),
+        emptyValue:   s('Not provided', 'Non renseigné'),
+        emailMissing: s('No email provided', "Aucune adresse email renseignée"),
+        missing: {
+          heading: s('No RSVP Found', 'Aucun RSVP trouvé'),
+          text:    s('We could not find a saved France RSVP for your invitation yet.', "Nous n'avons pas encore trouvé de RSVP enregistré pour votre invitation France."),
+        },
       },
       form: {
         whosComing: {

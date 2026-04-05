@@ -1,10 +1,20 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { getLatestRSVP } from '../../lib/notion';
+import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 
+const guestId = Astro.locals.guestId;
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const latestRSVP = guestId
+  ? await getLatestRSVP(guestId, 'france').catch((error) => {
+      console.error('Failed to load France RSVP status for calendar CTA:', error);
+      return null;
+    })
+  : null;
+const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 ---
 
 <WireframeLayout title={t(strings.france.schedule.pageTitle)} event="france">
@@ -32,10 +42,20 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       </div>
     </div>
 
-    <!-- Calendar Subscribe -->
     <section class="calendar-subscribe">
-      <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
-      <p class="calendar-note">{t(strings.france.schedule.calendarNote)}</p>
+      {calendarToken ? (
+        <a
+          href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+          class="calendar-btn"
+        >
+          {t(strings.france.schedule.calendarBtn)}
+        </a>
+      ) : (
+        <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
+      )}
+      <p class="calendar-note">
+        {calendarToken ? t(strings.france.schedule.calendarNote) : t(strings.nyc.calendar.unavailableNote)}
+      </p>
     </section>
 
     <section class="days">
@@ -133,6 +153,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </div>
       </div>
     </section>
+
   </main>
 
   <footer>
@@ -210,22 +231,34 @@ main {
   }
 
   .calendar-btn {
+    display: inline-block;
     padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    background: var(--color-text);
+    min-height: 44px;
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    line-height: 1;
+    background: var(--color-accent);
     color: var(--color-surface-text);
     border: none;
     cursor: pointer;
     margin-bottom: 0.5rem;
+    text-decoration: none;
   }
 
   .calendar-btn:hover:not(:disabled) {
-    background: var(--color-text);
+    background: var(--color-accent);
+    color: var(--color-surface-text);
+    opacity: 0.85;
   }
 
   .calendar-btn:disabled {
-    background: var(--color-text-muted);
+    background: color-mix(in srgb, var(--color-accent) 42%, white);
+    color: var(--color-surface-text);
     cursor: not-allowed;
+    opacity: 1;
   }
 
   .calendar-note {

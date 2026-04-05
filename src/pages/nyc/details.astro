@@ -1,10 +1,13 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { getLatestRSVP } from '../../lib/notion';
+import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 
 const guest = Astro.locals.guest;
+const guestId = Astro.locals.guestId;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
@@ -41,6 +44,13 @@ const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
 
 const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14) : null;
 const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
+const latestRSVP = guestId
+  ? await getLatestRSVP(guestId, 'nyc').catch((error) => {
+      console.error('Failed to load NYC RSVP status for calendar CTA:', error);
+      return null;
+    })
+  : null;
+const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 ---
 
 <WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">
@@ -103,6 +113,26 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
             <span class="nyc-info-secondary">{t(strings.nyc.details.schedule.dancing.desc)}</span>
           </span>
         </div>
+      </div>
+      <div class="details-calendar-inline">
+        {calendarToken ? (
+          <>
+            <a
+              href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
+              class="details-calendar-btn"
+            >
+              {t(strings.nyc.calendar.addBtn)}
+            </a>
+            <p class="details-calendar-note">{t(strings.nyc.details.calendar.note)}</p>
+          </>
+        ) : (
+          <>
+            <button class="details-calendar-btn" disabled>
+              {t(strings.nyc.calendar.addBtn)}
+            </button>
+            <p class="details-calendar-note">{t(strings.nyc.calendar.unavailableNote)}</p>
+          </>
+        )}
       </div>
     </div>
   </section>
@@ -399,6 +429,53 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     margin: 0;
   }
 
+  html[data-event="nyc"] .details-calendar-inline {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  html[data-event="nyc"] .details-calendar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 32px;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    background: var(--color-burnt-amber);
+    color: var(--color-warm-cream);
+    font-style: normal;
+    line-height: 1;
+    border: none;
+    transition: opacity 0.15s;
+  }
+
+  html[data-event="nyc"] .details-calendar-btn:hover {
+    opacity: 0.82;
+    color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .details-calendar-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  html[data-event="nyc"] .details-calendar-note {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(255, 249, 240, 0.55);
+  }
+
   html[data-event="nyc"] .nyc-info-row {
     display: grid;
     grid-template-columns: 88px 1fr;
@@ -664,6 +741,14 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     html[data-event="nyc"] .details-band {
       padding-left: 24px;
       padding-right: 24px;
+    }
+
+    html[data-event="nyc"] .details-calendar-inline {
+      align-items: center;
+    }
+
+    html[data-event="nyc"] .details-calendar-note {
+      text-align: center;
     }
 
     html[data-event="nyc"] .venue-grid {

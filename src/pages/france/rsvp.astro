@@ -791,7 +791,7 @@ main {
           throw new Error(data?.error || defaultErrorMessage);
         }
 
-        window.location.href = '/france';
+        window.location.href = '/france/rsvp/confirmed';
       } catch (error) {
         showError(error instanceof Error ? error.message : defaultErrorMessage);
         if (submitButton) {

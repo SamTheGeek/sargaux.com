@@ -1162,7 +1162,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           throw new Error(data?.error || defaultErrorMessage);
         }
 
-        window.location.href = '/nyc';
+        window.location.href = '/nyc/rsvp/confirmed';
       } catch (error) {
         showError(error instanceof Error ? error.message : defaultErrorMessage);
         if (submitButton) {
