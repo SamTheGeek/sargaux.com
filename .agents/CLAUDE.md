@@ -189,6 +189,13 @@ npm run test:quick
 - For NYC/France route transitions, verify both visual motion and element stability for the shared amber disc, the `Chez Sargaux` header logo, the event toggle, and the top-right RSVP button.
 - The header right-side controls are intended to stay pinned to the same right edge across NYC and France. Avoid changes that let differing text metrics shift those controls horizontally.
 - If a transition appears broken, confirm whether the element still has the expected `transition:name` before changing layout or JS.
+- Use two different fixes depending on the transition goal:
+- If the disc should keep animating independently but some text/UI must stay above it, put that content in its own named view-transition group and give that group a z-index above `event-disc`. This is the right fix for cases like the login page where the disc still animates but must not cover the entering text.
+- If the disc should remain visually behind a route family's content for the whole transition, suppress the disc's `view-transition-name` on both the old and new documents for that navigation.
+- NYC index → Details/Travel uses a hybrid of both rules: suppress the disc VT name so the disc stays in the root snapshot, then temporarily assign a named VT group to the incoming sub-page hero above `root` so the entering header block is not trapped under the exiting snapshot while the moss/content rises in above it.
+- For this NYC sub-page hero case, do not leave `transition:name` in the page markup. Inject the VT name during `astro:before-swap` and remove it on `astro:page-load`, otherwise the hero can remain compositor-promoted after the animation and end up layered incorrectly relative to the disc during normal scrolling.
+- If a sliding view-transition snapshot is visually correct at the end state but appears clipped during motion, check the transition pseudo tree before changing z-index. Allowing overflow on the relevant `::view-transition-group(...)` / `::view-transition-image-pair(...)` can fix content that should slide over neighboring layers but is being cropped to its snapshot box.
+- Keep the shared scale aligned with the global stack when using named groups: root `1`, disc `2`, content `3`, moss `4`, header `100`. Do not raise groups above this scale just to force visibility; choose the correct strategy instead.
 
 ## Git Workflow
 

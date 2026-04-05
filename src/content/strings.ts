@@ -37,6 +37,7 @@ export const strings = {
     rsvpBtn:      s('RSVP', 'RSVP'),
     registry:     s('Registry', 'Liste de mariage'),
     logout:       s('Logout', 'Se déconnecter'),
+    explore:      s('Explore', 'Explorer'),
     copyright:    s('© 2026 Sam Gross', '© 2026 Sam Gross'),
     detailsToCome: s('Details to come', 'Détails à venir'),
     attending:    s('Attending', 'Présent'),
@@ -406,7 +407,6 @@ export const strings = {
       addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
     },
     nav: {
-      explore: s('Explore', 'Explorer'),
       schedule: {
         title: s('Schedule', 'Programme'),
         desc:  s('Full weekend timeline', 'Programme du week-end complet'),

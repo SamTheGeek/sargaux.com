@@ -47,10 +47,22 @@ const lang = Astro.locals.lang ?? 'en';
       // (TransitionBeforeSwapEvent). We cache from/to on before-preparation and
       // use that cache in after-preparation.
       //
-      // The disc (event-disc) FLIPs naturally above the root group. Content that
-      // must render above the disc during transitions uses higher-z VT groups:
-      //   - NYC sub-page <main class="nyc-page-main">  → inherits z:5 from element
-      //   - Couple page .couple-grid (couple-content)   → CSS override z:5
+      // The disc (event-disc) FLIPs naturally above the root group unless a
+      // route family explicitly suppresses that VT name. Content that must
+      // render above an independently animating disc during transitions uses
+      // its own VT group:
+      //   - Landing page .hero-grid (landing-content) → z:3
+      //   - Couple page .couple-grid (couple-content) → z:3
+      //
+      // NYC index/sub-page navigations use a hybrid approach:
+      //   - suppress the disc's independent VT name on both documents so the
+      //     disc stays baked into the root snapshot; and
+      //   - TEMPORARILY give the incoming sub-page hero its own VT group so
+      //     the entering headline block sits above the exiting root snapshot.
+      //     That VT name must be injected in before-swap and removed on
+      //     page-load; leaving it in the markup would keep the hero promoted
+      //     after the transition and break its normal z-index relationship
+      //     with the disc while scrolling.
       //
       // Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
       // only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
@@ -63,10 +75,21 @@ const lang = Astro.locals.lang ?? 'en';
       if (!window.__sargauxDiscTransitionSetup) {
         window.__sargauxDiscTransitionSetup = true;
 
+        const isSafari =
+          navigator.userAgent.includes('Safari') &&
+          !navigator.userAgent.includes('Chrome') &&
+          !navigator.userAgent.includes('Chromium') &&
+          !navigator.userAgent.includes('CriOS') &&
+          !navigator.userAgent.includes('FxiOS') &&
+          !navigator.userAgent.includes('EdgiOS');
+
+        if (isSafari) {
+          document.documentElement.dataset.safariVtFallback = 'true';
+        }
+
         let _navFrom = null;
         let _navTo   = null;
 
-        // Cache navigation URLs from the only event that carries them.
         document.addEventListener('astro:before-preparation', (e) => {
           _navFrom = e.from;
           _navTo   = e.to;
@@ -94,6 +117,9 @@ const lang = Astro.locals.lang ?? 'en';
             suppress(document.querySelector('.event-toggle'));
             suppress(document.querySelector('.nyc-rsvp-btn'));
           };
+          const suppressNycDisc = () => {
+            suppress(document.querySelector('.nyc-disc'));
+          };
 
           const isNycSubpageNav =
             (toDepth > fromDepth && from.startsWith('/nyc')) ||
@@ -102,6 +128,7 @@ const lang = Astro.locals.lang ?? 'en';
 
           if (isNycSubpageNav) {
             suppressHeader();
+            suppressNycDisc();
           }
         });
 
@@ -115,6 +142,10 @@ const lang = Astro.locals.lang ?? 'en';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
 
+          if (isSafari) {
+            event.newDocument.documentElement.dataset.safariVtFallback = 'true';
+          }
+
           // Give incoming moss its own VT group before the new snapshot.
           event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
 
@@ -124,14 +155,28 @@ const lang = Astro.locals.lang ?? 'en';
             suppress(doc?.querySelector('.event-toggle'));
             suppress(doc?.querySelector('.nyc-rsvp-btn'));
           };
+          const suppressNycDiscOnDoc = (doc) => {
+            suppress(doc?.querySelector('.nyc-disc'));
+          };
 
           const isNycSubpageNav =
             (toDepth > fromDepth && from.startsWith('/nyc')) ||
             (to === '/nyc' && from.startsWith('/nyc/')) ||
             (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
 
+          const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
+
           if (isNycSubpageNav) {
             suppressHeaderOnDoc(event.newDocument);
+            suppressNycDiscOnDoc(event.newDocument);
+          }
+
+          if (isNycIndexToSubpage) {
+            event.newDocument.querySelector('.nyc-page-main')?.style.setProperty('view-transition-name', 'nyc-subpage-hero');
+          }
+
+          if (isSafari && isNycIndexToSubpage) {
+            event.newDocument.querySelector('.nyc-page-moss')?.classList.add('nyc-page-moss-entering');
           }
 
           // Skyline fade-in when arriving at /nyc.
@@ -147,6 +192,14 @@ const lang = Astro.locals.lang ?? 'en';
         // promotion from view-transition-name doesn't persist to normal browsing.
         document.addEventListener('astro:page-load', () => {
           document.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-page-main')?.style.removeProperty('view-transition-name');
+
+          const enteringMoss = document.querySelector('.nyc-page-moss-entering');
+          if (enteringMoss) {
+            const cleanup = () => enteringMoss.classList.remove('nyc-page-moss-entering');
+            enteringMoss.addEventListener('animationend', cleanup, { once: true });
+            window.setTimeout(cleanup, 500);
+          }
         });
       }
 
@@ -232,8 +285,15 @@ const lang = Astro.locals.lang ?? 'en';
    * z-index bypass that occurs when view-transition-name persists on a fixed
    * background element between navigations.
    */
-  ::view-transition-group(couple-content) { z-index: 3; }
-  ::view-transition-group(nyc-page-moss)  { z-index: 4; }
+  ::view-transition-group(landing-content)  { z-index: 3; }
+  ::view-transition-group(couple-content)   { z-index: 3; }
+  ::view-transition-group(nyc-subpage-hero) { z-index: 3; }
+  ::view-transition-group(nyc-page-moss)    { z-index: 4; }
+  ::view-transition-group(nyc-page-moss),
+  ::view-transition-image-pair(nyc-page-moss),
+  ::view-transition-new(nyc-page-moss) {
+    overflow: visible;
+  }
 
   /* ── NYC sub-page z-ordering ────────────────────────────────────────────────
    * These positioning rules live in the layout (shared CSS bundle) so the
@@ -261,6 +321,25 @@ const lang = Astro.locals.lang ?? 'en';
   html[data-event="nyc"] .details-band {
     position: relative;
     z-index: 4;
+  }
+
+  /* Critical dark-mode sub-page backgrounds live in the shared layout bundle
+   * so incoming NYC sub-pages don't momentarily keep the light/fallback moss
+   * color while their page-specific stylesheet is still applying after a swap.
+   */
+  @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] .nyc-page-moss .details-section,
+    html[data-event="nyc"] .nyc-page-moss .details-venues,
+    html[data-event="nyc"] .nyc-page-moss .nyc-footer {
+      background: var(--color-nyc-skyline-dark) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-page-moss .details-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
   }
 
   /* Content box styling (legacy — use .card for new code) */
@@ -301,6 +380,14 @@ const lang = Astro.locals.lang ?? 'en';
   }
 
   ::view-transition-new(nyc-page-moss) {
+    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  html[data-safari-vt-fallback="true"]::view-transition-new(nyc-page-moss) {
+    animation: none;
+  }
+
+  html[data-event="nyc"][data-safari-vt-fallback="true"] .nyc-page-moss-entering {
     animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 

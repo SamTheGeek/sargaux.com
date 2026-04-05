@@ -5,7 +5,7 @@ import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import skylineFill from '../../assets/nyc/skyline-fill.svg?url';
+import skylineFill from '../../assets/nyc/skyline-fill.svg?raw';
 import skylineOutline from '../../assets/nyc/skyline.svg?url';
 
 const guest = Astro.locals.guest;
@@ -30,8 +30,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       z:4      moss sections  solid var(--color-dark-moss), cover disc + text as you scroll past
 
     Skyline colouring:
-      Vector SVG (skyline-fill.svg) with <path fill="var(--color-dark-moss)"> — rendered as
-      a plain <img> anchored bottom-left. No mask or filter needed.
+      Inline SVG (skyline-fill.svg) with fill="currentColor" — color driven by
+      CSS var(--color-dark-moss) via .nyc-skyline-fill svg { color: ... }.
       Transparent sky above buildings is invisible against the cream body.
   -->
 
@@ -72,12 +72,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   <!--
     Skyline: in normal flow, z:3, scrolls up over fixed text.
-    Inline SVG uses feMorphology dilate to fill building interiors from the
-    outline PNG, then feColorMatrix colours everything to exact var(--color-dark-moss).
+    Inline SVG uses fill="currentColor" so CSS --color-dark-moss drives the color.
     -5px horizontal overhang (CSS) ensures pixel-perfect edge-to-edge coverage.
   -->
   <div class="nyc-skyline-wrap" aria-hidden="true" transition:persist="nyc-skyline">
-    <img class="nyc-skyline-img nyc-skyline-fill" src={skylineFill} alt="">
+    <div class="nyc-skyline-img nyc-skyline-fill" set:html={skylineFill}></div>
     <img class="nyc-skyline-img nyc-skyline-outline" src={skylineOutline} alt="">
   </div>
 
@@ -144,7 +143,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </div>
   </section>
 
-  <div class="nyc-moss nyc-explore-band">Explore</div>
+  <div class="nyc-moss nyc-explore-band">{t(strings.global.explore)}</div>
 
   <section class="nyc-moss nyc-nav">
     <nav class="strip-nav page-content" aria-label="Event sections">
@@ -201,7 +200,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-header {
     background: var(--color-warm-cream) !important;
-    border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
+    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
   }
 
   html[data-event="nyc"] .nyc-header .site-logo,
@@ -212,7 +211,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-header .event-toggle a {
-    color: rgba(47, 63, 54, 0.4) !important;
+    color: rgba(23, 50, 11, 0.4) !important;
   }
 
   html[data-event="nyc"] .nyc-rsvp-btn {
@@ -286,7 +285,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-rule {
     border: none;
-    border-top: 1px solid rgba(47, 63, 54, 0.3);
+    border-top: 1px solid rgba(23, 50, 11, 0.3);
     margin: 16px 0;
   }
 
@@ -294,7 +293,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: rgba(47, 63, 54, 0.55);
+    color: rgba(23, 50, 11, 0.55);
     white-space: nowrap;
   }
 
@@ -330,6 +329,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     display: block;
   }
 
+  /* Inline SVG fill — currentColor picks up the wrapper color */
+  html[data-event="nyc"] .nyc-skyline-fill {
+    color: var(--color-dark-moss);
+  }
+
+  html[data-event="nyc"] .nyc-skyline-fill svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    color: inherit;
+  }
+
   /* In light mode, only show the filled skyline */
   html[data-event="nyc"] .nyc-skyline-outline {
     display: none;
@@ -359,7 +370,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     grid-template-columns: 88px 1fr;
     gap: 24px;
     padding: 16px 0;
-    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    border-bottom: 1px solid rgba(255, 249, 240, 0.15);
     align-items: baseline;
   }
 
@@ -368,7 +379,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     padding-top: 3px;
   }
 
@@ -381,7 +392,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
     font-size: 12px;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }
 
@@ -417,7 +428,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
   }
 
   html[data-event="nyc"] .nyc-calendar-text {
@@ -474,7 +485,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin: 0;
     font-size: 12px;
     line-height: 1.5;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     max-width: 260px;
   }
 
@@ -498,14 +509,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     align-items: center;
     gap: 24px;
     padding: 24px 0;
-    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    border-bottom: 1px solid rgba(255, 249, 240, 0.15);
     text-decoration: none;
     color: var(--color-warm-cream);
     transition: color 0.15s;
   }
 
   html[data-event="nyc"] .nyc-strip-link:first-child {
-    border-top: 1px solid rgba(241, 236, 227, 0.15);
+    border-top: 1px solid rgba(255, 249, 240, 0.15);
   }
 
   html[data-event="nyc"] .nyc-strip-link:hover { color: var(--color-burnt-amber); }
@@ -518,7 +529,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-strip-desc {
     font-size: 12px;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     text-align: right;
   }
 
@@ -527,13 +538,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title { color: var(--color-burnt-amber); }
 
   html[data-event="nyc"] .nyc-footer {
-    border-top-color: rgba(241, 236, 227, 0.12) !important;
+    border-top-color: rgba(255, 249, 240, 0.12) !important;
   }
 
   html[data-event="nyc"] .nyc-footer nav a,
   html[data-event="nyc"] .nyc-footer nav span,
   html[data-event="nyc"] .nyc-footer .copyright {
-    color: rgba(241, 236, 227, 0.4) !important;
+    color: rgba(255, 249, 240, 0.4) !important;
   }
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
@@ -554,8 +565,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     /*
       Dark mode colour logic:
         - Sky (above skyline) = lighter moss var(--color-dark-moss) — so the amber disc pops
-        - Body sections (below skyline) = skyline-matched dark #18211C
-        - Skyline fill darkened via filter to sit between the two tones
+        - Skyline + body sections below it = skyline-matched dark var(--color-nyc-skyline-dark)
     */
 
     html[data-event="nyc"] body {
@@ -565,7 +575,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     html[data-event="nyc"] .nyc-header {
       background: var(--color-dark-moss) !important;
-      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
     }
 
     html[data-event="nyc"] .nyc-header .site-logo,
@@ -576,7 +586,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     html[data-event="nyc"] .nyc-header .event-toggle a {
-      color: rgba(241, 236, 227, 0.45) !important;
+      color: rgba(255, 249, 240, 0.45) !important;
     }
 
     /* RSVP button: system orange CTA in dark mode */
@@ -595,17 +605,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     html[data-event="nyc"] .nyc-rule {
-      border-top-color: rgba(241, 236, 227, 0.15) !important;
+      border-top-color: rgba(255, 249, 240, 0.15) !important;
     }
 
     html[data-event="nyc"] .nyc-venue {
-      color: rgba(241, 236, 227, 0.45) !important;
+      color: rgba(255, 249, 240, 0.45) !important;
     }
 
     /* Skyline: filled, darkened so it reads as a horizon against the lighter sky */
     html[data-event="nyc"] .nyc-skyline-fill {
       display: block;
-      filter: brightness(0.52);
+      filter: none;
+      color: var(--color-nyc-skyline-dark);
     }
 
     html[data-event="nyc"] .nyc-skyline-outline {
@@ -614,7 +625,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     /* Body sections below skyline: deep dark moss */
     html[data-event="nyc"] .nyc-moss {
-      background: #18211C !important;
+      background: var(--color-nyc-skyline-dark) !important;
       color: var(--color-warm-cream) !important;
     }
 
@@ -623,22 +634,22 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     html[data-event="nyc"] .nyc-explore-band {
       background: var(--color-dark-moss) !important;
       color: var(--color-warm-cream) !important;
-      border-top: 1px solid rgba(241, 236, 227, 0.06);
-      border-bottom: 1px solid rgba(241, 236, 227, 0.06);
+      border-top: 1px solid rgba(255, 249, 240, 0.06);
+      border-bottom: 1px solid rgba(255, 249, 240, 0.06);
     }
 
     /* Table rows: softer borders */
     html[data-event="nyc"] .nyc-info-row {
-      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
     }
 
     /* Strip links */
     html[data-event="nyc"] .nyc-strip-link {
-      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
     }
 
     html[data-event="nyc"] .nyc-strip-link:first-child {
-      border-top-color: rgba(241, 236, 227, 0.08) !important;
+      border-top-color: rgba(255, 249, 240, 0.08) !important;
     }
   }
 

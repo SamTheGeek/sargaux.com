@@ -268,9 +268,24 @@ a:hover {
   color: var(--color-text-muted);
 }
 
+.site-footer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.site-footer nav + .site-footer-meta {
+  margin-top: var(--space-xs);
+}
+
 @media (max-width: 768px) {
   .site-footer {
     padding: var(--space-lg) var(--page-margin-mobile);
+  }
+
+  .site-footer-meta {
+    flex-wrap: wrap;
   }
 }
 

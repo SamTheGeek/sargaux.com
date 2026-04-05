@@ -80,7 +80,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   <div class="nyc-page-moss">
 
   <!-- Section band: Schedule -->
-  <div class="nyc-moss details-band">Schedule</div>
+  <div class="nyc-moss details-band">{t(strings.nyc.details.schedule.heading)}</div>
 
   <section class="nyc-moss details-section">
     <div class="page-content">
@@ -108,7 +108,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   </section>
 
   <!-- Section band: Venues -->
-  <div class="nyc-moss details-band">Venues</div>
+  <div class="nyc-moss details-band">{t(strings.nyc.details.venues.heading)}</div>
 
   <section class="nyc-moss details-venues">
     <div class="page-content">
@@ -210,7 +210,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   </section>
 
   <!-- Section band: Details -->
-  <div class="nyc-moss details-band">Details</div>
+  <div class="nyc-moss details-band">{t(strings.nyc.nav.details.title)}</div>
 
   <section class="nyc-moss details-section">
     <div class="page-content">
@@ -263,7 +263,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   html[data-event="nyc"] .nyc-header {
     background: var(--color-warm-cream) !important;
-    border-bottom: 1px solid rgba(47, 63, 54, 0.18) !important;
+    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
   }
 
   html[data-event="nyc"] .nyc-header .site-logo,
@@ -274,7 +274,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   }
 
   html[data-event="nyc"] .nyc-header .event-toggle a {
-    color: rgba(47, 63, 54, 0.4) !important;
+    color: rgba(23, 50, 11, 0.4) !important;
   }
 
   html[data-event="nyc"] .nyc-rsvp-btn {
@@ -356,7 +356,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   html[data-event="nyc"] .details-date {
     font-size: 16px;
     letter-spacing: 0.05em;
-    color: rgba(47, 63, 54, 0.55);
+    color: rgba(23, 50, 11, 0.55);
     margin: 0;
     text-transform: uppercase;
   }
@@ -364,10 +364,15 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   /* ── Moss zone — z:4 ─────────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
-    background: var(--color-dark-moss) !important;
-    color: var(--color-warm-cream) !important;
     position: relative;
     z-index: 4;
+  }
+
+  html[data-event="nyc"] .details-section,
+  html[data-event="nyc"] .details-venues,
+  html[data-event="nyc"] .nyc-footer {
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
   }
 
   /* Section band (cream-on-moss label strip) */
@@ -380,8 +385,8 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     background: var(--color-warm-cream) !important;
-    color: rgba(47, 63, 54, 0.5) !important;
-    border-top: 1px solid rgba(47, 63, 54, 0.1);
+    color: rgba(23, 50, 11, 0.5) !important;
+    border-top: 1px solid rgba(23, 50, 11, 0.1);
   }
 
   html[data-event="nyc"] .details-section {
@@ -399,7 +404,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     grid-template-columns: 88px 1fr;
     gap: 24px;
     padding: 16px 0;
-    border-bottom: 1px solid rgba(241, 236, 227, 0.15);
+    border-bottom: 1px solid rgba(255, 249, 240, 0.15);
     align-items: baseline;
   }
 
@@ -416,7 +421,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     padding-top: 3px;
   }
 
@@ -429,7 +434,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
     font-size: 12px;
-    color: rgba(241, 236, 227, 0.45);
+    color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }
 
@@ -446,7 +451,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   }
 
   html[data-event="nyc"] .venue-card {
-    background: rgba(241, 236, 227, 0.04);
+    background: rgba(255, 249, 240, 0.04);
     display: flex;
     flex-direction: column;
   }
@@ -488,7 +493,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
   html[data-event="nyc"] .venue-address {
     font-size: 13px;
-    color: rgba(241, 236, 227, 0.5);
+    color: rgba(255, 249, 240, 0.5);
     margin: 0 0 20px;
     line-height: 1.5;
   }
@@ -541,13 +546,13 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
   /* ── Footer ──────────────────────────────────────── */
 
   html[data-event="nyc"] .nyc-footer {
-    border-top-color: rgba(241, 236, 227, 0.12) !important;
+    border-top-color: rgba(255, 249, 240, 0.12) !important;
   }
 
   html[data-event="nyc"] .nyc-footer nav a,
   html[data-event="nyc"] .nyc-footer nav span,
   html[data-event="nyc"] .nyc-footer .copyright {
-    color: rgba(241, 236, 227, 0.4) !important;
+    color: rgba(255, 249, 240, 0.4) !important;
   }
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
@@ -572,7 +577,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
 
     html[data-event="nyc"] .nyc-header {
       background: var(--color-dark-moss) !important;
-      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
     }
 
     html[data-event="nyc"] .nyc-header .site-logo,
@@ -583,7 +588,7 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     }
 
     html[data-event="nyc"] .nyc-header .event-toggle a {
-      color: rgba(241, 236, 227, 0.45) !important;
+      color: rgba(255, 249, 240, 0.45) !important;
     }
 
     html[data-event="nyc"] .nyc-rsvp-btn {
@@ -600,11 +605,11 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     }
 
     html[data-event="nyc"] .details-date {
-      color: rgba(241, 236, 227, 0.45) !important;
+      color: rgba(255, 249, 240, 0.45) !important;
     }
 
     html[data-event="nyc"] .details-back {
-      color: rgba(241, 236, 227, 0.7) !important;
+      color: rgba(255, 249, 240, 0.7) !important;
     }
 
     html[data-event="nyc"] .details-back:hover {
@@ -612,18 +617,23 @@ const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
     }
 
     html[data-event="nyc"] .nyc-moss {
-      background: #18211C !important;
       color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-section,
+    html[data-event="nyc"] .details-venues,
+    html[data-event="nyc"] .nyc-footer {
+      background: var(--color-nyc-skyline-dark) !important;
     }
 
     html[data-event="nyc"] .details-band {
       background: var(--color-dark-moss) !important;
-      color: rgba(241, 236, 227, 0.4) !important;
-      border-top-color: rgba(241, 236, 227, 0.06) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
     }
 
     html[data-event="nyc"] .nyc-info-row {
-      border-bottom-color: rgba(241, 236, 227, 0.08) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
     }
 
     html[data-event="nyc"] .venue-map {

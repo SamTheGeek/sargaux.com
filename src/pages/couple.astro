@@ -3,7 +3,7 @@ import WireframeLayout from '../layouts/WireframeLayout.astro';
 import { strings } from '../content/strings';
 import { couplePhotoDateFallbacks } from '../content/couplePhotoDates';
 import { createTranslator } from '../lib/i18n';
-import LangSwitcher from '../components/LangSwitcher.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import exifr from 'exifr';
 import path from 'path';
 
@@ -199,23 +199,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     </section>
   </main>
 
-  <footer class="site-footer couple-footer">
-    <nav>
-      <a href="/registry">{t(strings.global.registry)}</a>
-      {guest && (
-        <>
-          <span> · </span>
-          <span class="guest-name">{guest}</span>
-        </>
-      )}
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div class="footer-row">
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} />
 </WireframeLayout>
 
 <style>
@@ -455,18 +439,6 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     background: var(--color-prussian-blue);
   }
 
-  .couple-footer {
-    border-top-color: var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-xs);
-    margin-top: var(--space-xs);
-  }
-
   @media (max-width: 960px) {
     .couple-grid {
       grid-template-columns: 1fr;
@@ -565,9 +537,6 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
       border-radius: 18px 18px 14px 14px;
     }
 
-    .footer-row {
-      flex-wrap: wrap;
-    }
   }
 
   @media (max-width: 640px) {
@@ -600,7 +569,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
 
     .story-card {
       order: 0;
-      padding: var(--space-md) 0;
+      padding: var(--space-md);
     }
   }
 </style>

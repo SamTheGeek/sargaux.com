@@ -7,7 +7,7 @@ import { isSiteEnabled } from '../config/features';
 import { getPrimaryEventRoute } from '../lib/event-routing';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
-import LangSwitcher from '../components/LangSwitcher.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 
 // Only redirect if site is enabled and user is logged in
 if (isSiteEnabled()) {
@@ -30,7 +30,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
     <main class="landing-shell">
       <section class="landing-hero">
         <div class="hero-disc" aria-hidden="true" transition:name="event-disc" transition:persist="home-hero-disc"></div>
-        <div class="hero-grid page-content">
+        <div class="hero-grid page-content" transition:name="landing-content">
           <div class="hero-copy">
             <p class="eyebrow">Vous êtes les bienvenus</p>
             <h1>{t(strings.home.heroTitle)}</h1>
@@ -77,12 +77,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
       </section>
     </main>
 
-    <footer class="site-footer landing-footer">
-      <div class="footer-row">
-        <p class="copyright">&copy; 2026 Sam Gross</p>
-        <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-      </div>
-    </footer>
+    <SiteFooter className="landing-footer" lang={Astro.locals.lang ?? 'en'} showNav={false} />
 
     <style>
       main {
@@ -370,18 +365,16 @@ const submitLabel = t(strings.home.modal.submitBtn);
         margin-top: 0;
       }
 
-      .footer-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
       @media (prefers-color-scheme: dark) {
         .landing-shell {
-          background:
+          background-color: var(--color-nyc-skyline-dark);
+          background-image:
             radial-gradient(circle at 84% 24%, rgba(217, 106, 30, 0.18), transparent 0 26%),
             linear-gradient(180deg, rgba(22, 32, 64, 0.24), transparent 240px);
+        }
+
+        .landing-footer {
+          background-color: var(--color-nyc-skyline-dark);
         }
 
         .hero-copy h1,

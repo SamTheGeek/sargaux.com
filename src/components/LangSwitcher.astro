@@ -8,7 +8,6 @@ const enUrl = new URL(Astro.url);
 enUrl.searchParams.set('lang', 'en');
 const frUrl = new URL(Astro.url);
 frUrl.searchParams.set('lang', 'fr');
-const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
 ---
 
 <div class="lang-switcher" aria-label="Language">
@@ -21,11 +20,6 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     aria-current={lang === 'en' ? 'true' : undefined}
   >
     <span class="flag flag-us" aria-hidden="true">
-      <span class="flag-us-stripes">
-        {usStripeRows.map((stripe) => (
-          <span class="flag-us-stripe" data-stripe={stripe}></span>
-        ))}
-      </span>
       <span class="flag-us-canton"></span>
     </span>
   </a>
@@ -60,16 +54,19 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     height: 1.625rem;
     border-radius: 50%;
     text-decoration: none;
-    border: 1.5px solid transparent;
+    border: none;
+    /* box-shadow on the element itself is not clipped by overflow:hidden */
+    box-shadow: 0 0 0 0 transparent;
     opacity: 0.45;
-    transition: opacity 0.15s, border-color 0.15s, transform 0.15s;
-    cursor: pointer;
     overflow: hidden;
+    transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s;
+    cursor: pointer;
   }
 
   .flag-btn.active {
     opacity: 1;
-    border-color: var(--color-border);
+    /* --color-text is dark-moss in light mode, warm-cream in dark mode — always high contrast */
+    box-shadow: 0 0 0 2px var(--color-text);
   }
 
   .flag-btn:not(.active):hover {
@@ -77,19 +74,21 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     transform: translateY(-1px);
   }
 
+  /* Single clipping context — .flag-btn owns border-radius + overflow:hidden.
+     No border-radius/overflow on .flag avoids double-clipping antialiasing. */
   .flag {
     position: relative;
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 50%;
-    overflow: hidden;
   }
+
+  /* ── French flag ─────────────────────── */
 
   .flag-fr {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    background: var(--color-warm-cream);
+    height: 100%;
   }
 
   .flag-fr-blue {
@@ -101,30 +100,19 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
   }
 
   .flag-fr-red {
-    background: var(--color-flag-fr-red);
+    background: var(--color-burgundy-red);
   }
 
+  /* ── US flag ─────────────────────────── */
+
+  /* repeating-linear-gradient gives mathematically equal stripes at any size,
+     avoiding the subpixel rounding issues that 13 separate DOM elements have. */
   .flag-us {
-    background: var(--color-flag-us-red);
-  }
-
-  .flag-us-stripes {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    grid-template-rows: repeat(13, 1fr);
-  }
-
-  .flag-us-stripe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    background: var(--color-warm-cream);
-  }
-
-  .flag-us-stripe:nth-child(odd) {
-    background: var(--color-flag-us-red);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--color-burgundy-red) 0 calc(100% / 13),
+      var(--color-warm-cream) calc(100% / 13) calc(200% / 13)
+    );
   }
 
   .flag-us-canton {
@@ -134,30 +122,31 @@ const usStripeRows = Array.from({ length: 13 }, (_, index) => index);
     width: 54%;
     height: 54%;
     background:
-      radial-gradient(circle at 12% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 14%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 29%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 12% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 44%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 59%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 12% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 32% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 52% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 72% 74%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 22% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 42% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 62% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
-      radial-gradient(circle at 82% 89%, var(--color-flag-us-stars) 0 5%, transparent 5.8%),
+      /* 1px fixed radius — all stars identical size regardless of gradient origin position */
+      radial-gradient(circle at 12% 14%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 32% 14%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 52% 14%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 72% 14%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 22% 29%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 42% 29%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 62% 29%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 82% 29%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 12% 44%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 32% 44%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 52% 44%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 72% 44%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 22% 59%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 42% 59%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 62% 59%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 82% 59%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 12% 74%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 32% 74%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 52% 74%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 72% 74%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 22% 89%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 42% 89%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 62% 89%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
+      radial-gradient(circle at 82% 89%, var(--color-flag-us-stars) 0 0.75px, transparent 1.125px),
       var(--color-prussian-blue);
   }
 </style>

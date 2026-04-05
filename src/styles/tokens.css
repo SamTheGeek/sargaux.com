@@ -86,11 +86,17 @@
 
 :root {
   /* Brand colors — core palette */
-  --color-warm-cream: #F1ECE3;
-  --color-dark-moss: #2F3F36;
-  --color-burnt-amber: #D96A1E;
+  --color-warm-cream: #FFF9F0;
+  --color-dark-moss: #17320b;
+  --color-nyc-skyline-dark: #0c1a06;
+  --color-burnt-amber: #e65a17;
   --color-espresso: #3A2E26;
-  --color-prussian-blue: #1B3A6B;
+  --color-prussian-blue: #0d244d;
+  --color-mustard: #f49a28;
+  --color-shadow-mustard: #DA9419;
+  --color-burgundy-red: #980204;
+  --color-sage-green: #9CAD69;
+  --color-pale-green: #C5CF98;
 
   /* Semantic tokens — NYC light (default) */
   --color-bg: var(--color-warm-cream);
@@ -144,14 +150,12 @@
   --color-info-border: #B7D4E8;
 
   /* Flag colors — LangSwitcher only
-     Blues use --color-prussian-blue; whites use --color-warm-cream; reds are independent */
-  --color-flag-fr-red: #d96a1e;
-  --color-flag-us-red: #c74b34;
-  --color-flag-us-stars: rgba(241, 236, 227, 0.95);
+     Blues use --color-prussian-blue; whites use --color-warm-cream; reds use --color-burgundy-red */
+  --color-flag-us-stars: rgba(255, 249, 240, 0.95);
 
   /* Semi-transparent surface text — used on dark (moss) surfaces */
-  --color-surface-text-placeholder: rgba(241, 236, 227, 0.68);
-  --color-surface-text-loading: rgba(241, 236, 227, 0.82);
+  --color-surface-text-placeholder: rgba(255, 249, 240, 0.68);
+  --color-surface-text-loading: rgba(255, 249, 240, 0.82);
 
   /* Color scheme hint for native controls */
   color-scheme: light dark;
@@ -182,7 +186,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #1A2420;
+    --color-bg: var(--color-nyc-skyline-dark);
     --color-text: var(--color-warm-cream);
     --color-text-muted: #8A9484;
     --color-surface: #243530;
