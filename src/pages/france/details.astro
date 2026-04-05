@@ -34,8 +34,30 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <p><strong>{t(strings.france.details.about.name)}</strong></p>
       <p>{t(strings.france.details.about.location)}</p>
       <div class="venue-links">
-        <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank" class="venue-link">{t(strings.france.details.about.mapLink)}</a>
-        <a href="https://www.groupeamadeus.com/le-village-de-sully" target="_blank" class="venue-link">{t(strings.france.details.about.websiteLink)}</a>
+        <a
+          href="https://maps.apple/p/dHL2e4qibM7MGE"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="venue-link"
+        >
+          {t(strings.france.details.about.appleMapLink)}
+        </a>
+        <a
+          href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="venue-link"
+        >
+          {t(strings.france.details.about.googleMapLink)}
+        </a>
+        <a
+          href="https://www.groupeamadeus.com/le-village-de-sully"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="venue-link"
+        >
+          {t(strings.france.details.about.websiteLink)}
+        </a>
       </div>
       <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
     </section>

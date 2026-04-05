@@ -103,7 +103,24 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <div class="details-row">
           <p class="details-label">Location</p>
           <div class="details-value">
-            <a class="details-link" href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank">{t(strings.france.where.mapLink)}</a>
+            <div class="details-links">
+              <a
+                class="details-link"
+                href="https://maps.apple/p/dHL2e4qibM7MGE"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(strings.france.where.appleMapLink)}
+              </a>
+              <a
+                class="details-link"
+                href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(strings.france.where.googleMapLink)}
+              </a>
+            </div>
           </div>
         </div>
         <hr class="timetable-rule">
@@ -337,6 +354,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     text-decoration: none;
+  }
+
+  .details-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
   }
 
   /* ── Navigation strip ── */
