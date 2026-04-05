@@ -326,13 +326,13 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
           <!-- ── Submit ── -->
           <div class="page-content rsvp-submit-zone">
+            <button type="submit" class="rsvp-submit-btn">
+              {existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}
+            </button>
             <div class="feedback" aria-live="polite">
               <p id="form-success" class="success-message" hidden>{t(strings.nyc.rsvp.form.successMsg)}</p>
               <p id="form-error" class="error-message" hidden>{t(strings.nyc.rsvp.form.errorMsg)}</p>
             </div>
-            <button type="submit" class="rsvp-submit-btn">
-              {existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}
-            </button>
             <p class="form-note">
               {t(strings.nyc.rsvp.form.signedInAs)} <strong>{guest}</strong>.{' '}
               {t(strings.nyc.rsvp.form.canUpdate)}
@@ -877,7 +877,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
   .feedback {
     min-height: 1.5em;
-    margin-bottom: var(--space-xs);
+    margin-top: var(--space-xs);
+    text-align: center;
   }
 
   .success-message {
@@ -895,8 +896,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   /* ── Submit zone ───────────────────────────── */
 
   .rsvp-submit-zone {
-    padding-top: var(--space-lg);
-    padding-bottom: var(--space-2xl);
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-lg);
   }
 
   .rsvp-submit-btn {
@@ -930,7 +931,8 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   .form-note {
-    margin-top: var(--space-sm);
+    margin-top: var(--space-xs);
+    margin-bottom: 0;
     color: var(--color-text-muted);
     font-size: 13px;
     text-align: center;
@@ -1060,7 +1062,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired }}>
+<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -1165,6 +1167,14 @@ const existingSubmittedAt = existingRSVP?.submittedAt
         window.location.href = '/nyc/rsvp/confirmed';
       } catch (error) {
         showError(error instanceof Error ? error.message : defaultErrorMessage);
+
+        if (isLocalDev) {
+          window.setTimeout(() => {
+            window.location.href = '/nyc/rsvp/confirmed?mock=dev';
+          }, 1600);
+          return;
+        }
+
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;

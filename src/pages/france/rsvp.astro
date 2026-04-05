@@ -306,12 +306,12 @@ const existingSubmittedAt = existingRSVP?.submittedAt
             </div>
           </section>
 
+          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.france.rsvp.form.updateBtn) : t(strings.france.rsvp.form.submitBtn)}</button>
+
           <div class="feedback" aria-live="polite">
             <p id="form-success" class="success-message" hidden>{t(strings.france.rsvp.form.successMsg)}</p>
             <p id="form-error" class="error-message" hidden>{t(strings.france.rsvp.form.errorMsg)}</p>
           </div>
-
-          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.france.rsvp.form.updateBtn) : t(strings.france.rsvp.form.submitBtn)}</button>
 
           <p class="form-note">{t(strings.france.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.france.rsvp.form.canUpdate)}</p>
         </form>
@@ -549,8 +549,9 @@ main {
   }
 
   .feedback {
-    margin-top: 1rem;
+    margin-top: 0.4rem;
     min-height: 1.5rem;
+    text-align: center;
   }
 
   .success-message {
@@ -564,7 +565,7 @@ main {
   }
 
   .submit-btn {
-    margin-top: 0.75rem;
+    margin-top: 0.2rem;
     padding: 0.95rem 1.2rem;
     border: none;
 
@@ -580,7 +581,8 @@ main {
   }
 
   .form-note {
-    margin-top: 0.8rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0;
     color: var(--color-text-muted);
     font-size: 0.85rem;
     text-align: center;
@@ -683,7 +685,7 @@ main {
   }
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired }}>
+<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -794,6 +796,14 @@ main {
         window.location.href = '/france/rsvp/confirmed';
       } catch (error) {
         showError(error instanceof Error ? error.message : defaultErrorMessage);
+
+        if (isLocalDev) {
+          window.setTimeout(() => {
+            window.location.href = '/france/rsvp/confirmed?mock=dev';
+          }, 1600);
+          return;
+        }
+
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;

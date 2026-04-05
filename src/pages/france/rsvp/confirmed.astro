@@ -6,21 +6,93 @@ import { getAttendingNames, redactEmail } from '../../../lib/rsvp-display';
 import { strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
+import FranceCalendarCta from '../../../components/FranceCalendarCta.astro';
 import type { GuestRecord } from '../../../types/guest';
 import type { EventRecord } from '../../../types/event';
+import type { RSVPResponse } from '../../../types/rsvp';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
+const isDevMock = import.meta.env.DEV && Astro.url.searchParams.get('mock') === 'dev';
+const devCompanionName = guest === 'Margaux Ancel' ? 'Sam Gross' : 'Margaux Ancel';
 
 let party: GuestRecord[] = [];
 let coreEvents: EventRecord[] = [];
 let optionalEvents: EventRecord[] = [];
-let existingRSVP = null;
+let existingRSVP: RSVPResponse | null = null;
 let loadError: string | null = null;
 
-if (guestId) {
+if (isDevMock) {
+  party = [
+    {
+      id: 'dev-primary',
+      name: guest,
+      normalizedName: guest.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-companion'],
+      email: 'sam@example.com',
+    },
+    {
+      id: 'dev-companion',
+      name: devCompanionName,
+      normalizedName: devCompanionName.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-primary'],
+      email: 'margaux@example.com',
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'dev-france-ceremony',
+      name: 'Ceremony',
+      type: 'Core',
+      wedding: 'france',
+      time: '3:00 PM',
+      location: 'Village de Sully',
+      showOnWebsite: true,
+    },
+    {
+      id: 'dev-france-dinner',
+      name: 'Dinner & Dancing',
+      type: 'Core',
+      wedding: 'france',
+      time: '7:00 PM',
+      location: 'Courtyard Pavilion',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [
+    {
+      id: 'dev-france-brunch',
+      name: 'Sunday Brunch',
+      type: 'Optional',
+      wedding: 'france',
+      time: '11:00 AM',
+      location: 'Garden Terrace',
+      showOnWebsite: true,
+    },
+  ];
+  existingRSVP = {
+    id: 'dev-france-rsvp',
+    guestId: 'dev-primary',
+    event: 'france',
+    submittedAt: new Date().toISOString(),
+    status: 'Partial',
+    guestsAttending: guest,
+    dietary: 'Shellfish allergy noted.',
+    message: 'We are arranging trains now and should be there all weekend.',
+    details: {
+      accommodation: 'yes',
+      allergens: 'Shellfish allergy noted.',
+      transport: 'unsure',
+    },
+    eventsAttending: ['dev-france-ceremony', 'dev-france-dinner'],
+  };
+} else if (guestId) {
   try {
     party = await getGuestParty(guestId);
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'france');
@@ -90,7 +162,7 @@ function transportLabel(value?: string): string {
       <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
     </div>
 
-    {!guestId ? (
+    {!guestId && !isDevMock ? (
       <div class="error-card" data-testid="notion-required">
         <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
         <p>{t(strings.france.rsvp.unavailable.text)}</p>
@@ -107,23 +179,19 @@ function transportLabel(value?: string): string {
       </div>
     ) : (
       <>
-        <section class="calendar-subscribe calendar-subscribe--confirmed">
-          <p class="section-note">{t(strings.france.schedule.calendarNote)}</p>
-          {calendarToken ? (
-            <a
-              href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
-              class="calendar-btn"
-              data-testid="calendar-confirmation-link"
-            >
-              {t(strings.france.schedule.calendarBtn)}
-            </a>
-          ) : (
-            <>
-              <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
-              <p class="section-note">{t(strings.nyc.calendar.unavailableNote)}</p>
-            </>
-          )}
-        </section>
+        {isDevMock && (
+          <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
+            <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+          </aside>
+        )}
+
+        <FranceCalendarCta
+          token={calendarToken}
+          label={t(strings.france.schedule.calendarBtn)}
+          compact={true}
+          showNote={false}
+          testId="calendar-confirmation-link"
+        />
 
         <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
           <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
@@ -131,12 +199,17 @@ function transportLabel(value?: string): string {
 
         <section class="form-section">
           <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
-          <p class="section-note">{t(strings.france.rsvp.form.whosComing.note)}</p>
           {party.map((partyGuest) => {
             const isAttending = attendingNames.has(partyGuest.name);
             return (
-              <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row>
-                <span class:list={['guest-indicator', isAttending && 'guest-indicator--attending']}></span>
+              <div
+                class:list={[
+                  'guest-row',
+                  partyGuest.isPlusOne && 'plus-one',
+                  !isAttending && 'guest-row--not-attending',
+                ]}
+                data-guest-row
+              >
                 <div class="guest-info">
                   <span class="guest-name-static">{partyGuest.name}</span>
                   <span class="guest-status">
@@ -150,7 +223,6 @@ function transportLabel(value?: string): string {
 
         <section class="form-section">
           <h2>{t(strings.france.rsvp.form.coreEvents.heading)}</h2>
-          <p class="section-note">{t(strings.france.rsvp.form.coreEvents.note)}</p>
           {coreEvents.length === 0 ? (
             <p class="placeholder-note">{t(strings.france.rsvp.form.coreEvents.empty)}</p>
           ) : (
@@ -178,7 +250,6 @@ function transportLabel(value?: string): string {
         {optionalEvents.length > 0 && (
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.optionalEvents.heading)}</h2>
-            <p class="section-note">{t(strings.france.rsvp.form.optionalEvents.note)}</p>
             <div class="event-list">
               {optionalEvents.map((event) => {
                 const isSelected = selectedEventIds.has(event.id);
@@ -200,7 +271,6 @@ function transportLabel(value?: string): string {
 
         <section class="form-section">
           <h2>{t(strings.france.rsvp.form.dietary.heading)}</h2>
-          <p class="section-note">{t(strings.france.rsvp.form.dietary.note)}</p>
           <div class="static-card">
             {details.allergens ?? existingRSVP.dietary ?? t(strings.france.rsvp.confirmation.emptyValue)}
           </div>
@@ -209,13 +279,11 @@ function transportLabel(value?: string): string {
         <section class="form-section two-column">
           <div>
             <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
-            <p class="section-note">{t(strings.france.rsvp.form.accommodation.note)}</p>
             <div class="static-card">{accommodationLabel(details.accommodation)}</div>
           </div>
 
           <div>
             <h2>{t(strings.france.rsvp.form.transport.heading)}</h2>
-            <p class="section-note">{t(strings.france.rsvp.form.transport.note)}</p>
             <div class="static-card">{transportLabel(details.transport)}</div>
           </div>
         </section>
@@ -229,7 +297,6 @@ function transportLabel(value?: string): string {
 
         <section class="form-section">
           <h2>{t(strings.france.rsvp.form.email.heading)}</h2>
-          <p class="section-note">{t(strings.france.rsvp.form.email.note)}</p>
           <div class="group-email-list">
             {party.map((partyGuest) => (
               <div class="email-field group-email-row">
@@ -245,8 +312,13 @@ function transportLabel(value?: string): string {
         </section>
 
         <div class="confirmation-actions">
-          <a href="/france/rsvp" class="confirmation-edit-link">{t(strings.france.rsvp.confirmation.editLink)}</a>
-          <p class="form-note">{t(strings.france.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.france.rsvp.form.canUpdate)}</p>
+          <a href="/france/rsvp" class="confirmation-edit-link">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
+              <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+              <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+            </svg>
+            <span>{t(strings.france.rsvp.confirmation.editLink)}</span>
+          </a>
         </div>
       </>
     )}
@@ -302,37 +374,8 @@ function transportLabel(value?: string): string {
     color: var(--color-info);
   }
 
-  .calendar-subscribe {
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-
-  .calendar-btn {
-    display: inline-block;
-    min-height: 44px;
-    padding: 0 24px;
-    background: var(--color-accent);
-    color: var(--color-surface-text);
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    font-family: var(--font-display);
-    font-size: var(--font-size-caption);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    line-height: 44px;
-  }
-
-  .calendar-btn:hover {
-    color: var(--color-surface-text);
-    opacity: 0.85;
-  }
-
-  .calendar-btn:disabled {
-    background: color-mix(in srgb, var(--color-accent) 42%, white);
-    cursor: not-allowed;
-    opacity: 1;
+  .existing-rsvp-banner--preview {
+    margin-bottom: 1rem;
   }
 
   .form-section {
@@ -370,16 +413,9 @@ function transportLabel(value?: string): string {
     border-style: dashed;
   }
 
-  .guest-indicator {
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    background: var(--color-border);
-    flex-shrink: 0;
-  }
-
-  .guest-indicator--attending {
-    background: var(--color-text);
+  .guest-row--not-attending {
+    border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
+    background: color-mix(in srgb, var(--color-bg) 90%, var(--color-border));
   }
 
   .guest-info {
@@ -392,6 +428,11 @@ function transportLabel(value?: string): string {
   .guest-name-static {
     flex: 1;
     color: var(--color-text);
+  }
+
+  .guest-row--not-attending .guest-name-static,
+  .guest-row--not-attending .guest-status {
+    color: color-mix(in srgb, var(--color-text) 48%, white);
   }
 
   .guest-status {
@@ -492,27 +533,30 @@ function transportLabel(value?: string): string {
   }
 
   .confirmation-actions {
-    margin-top: 1rem;
+    margin-top: 0.35rem;
     text-align: center;
   }
 
   .confirmation-edit-link {
-    color: var(--color-text-muted);
-    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.22em;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-size: 0.85rem;
   }
 
   .confirmation-edit-link:hover {
-    color: var(--color-text);
+    opacity: 0.72;
   }
 
-  .form-note {
-    margin-top: 0.8rem;
-    color: var(--color-text-muted);
-    font-size: 0.85rem;
-    text-align: center;
+  .confirmation-edit-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 
   .error-card {

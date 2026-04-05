@@ -8,8 +8,10 @@ import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
+import NycCalendarCta from '../../../components/NycCalendarCta.astro';
 import type { GuestRecord } from '../../../types/guest';
 import type { EventRecord } from '../../../types/event';
+import type { RSVPResponse } from '../../../types/rsvp';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
@@ -17,14 +19,80 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
+const isDevMock = import.meta.env.DEV && Astro.url.searchParams.get('mock') === 'dev';
+const devCompanionName = guest === 'Margaux Ancel' ? 'Sam Gross' : 'Margaux Ancel';
 
 let party: GuestRecord[] = [];
 let coreEvents: EventRecord[] = [];
 let optionalEvents: EventRecord[] = [];
-let existingRSVP = null;
+let existingRSVP: RSVPResponse | null = null;
 let loadError: string | null = null;
 
-if (guestId) {
+if (isDevMock) {
+  party = [
+    {
+      id: 'dev-primary',
+      name: guest,
+      normalizedName: guest.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-companion'],
+      email: 'sam@example.com',
+    },
+    {
+      id: 'dev-companion',
+      name: devCompanionName,
+      normalizedName: devCompanionName.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-primary'],
+      email: 'margaux@example.com',
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'dev-nyc-welcome-dinner',
+      name: 'Welcome Dinner',
+      type: 'Core',
+      wedding: 'nyc',
+      time: '5:30 PM',
+      location: 'Bar Blondeau',
+      showOnWebsite: true,
+    },
+    {
+      id: 'dev-nyc-reception',
+      name: 'Reception',
+      type: 'Core',
+      wedding: 'nyc',
+      time: '8:30 PM',
+      location: 'Wythe Hotel',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [
+    {
+      id: 'dev-nyc-after-party',
+      name: 'After Party',
+      type: 'Optional',
+      wedding: 'nyc',
+      time: '11:00 PM',
+      location: 'The Ides Rooftop',
+      showOnWebsite: true,
+    },
+  ];
+  existingRSVP = {
+    id: 'dev-nyc-rsvp',
+    guestId: 'dev-primary',
+    event: 'nyc',
+    submittedAt: new Date().toISOString(),
+    status: 'Attending',
+    guestsAttending: `${guest}, ${devCompanionName}`,
+    dietary: 'One vegetarian meal, please.',
+    message: 'Counting down already. We cannot wait to celebrate with everyone in Brooklyn.',
+    details: {},
+    eventsAttending: ['dev-nyc-welcome-dinner', 'dev-nyc-reception', 'dev-nyc-after-party'],
+  };
+} else if (guestId) {
   try {
     party = await getGuestParty(guestId);
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
@@ -85,7 +153,7 @@ const submittedAt = existingRSVP?.submittedAt
       </div>
     </div>
 
-    {!guestId ? (
+    {!guestId && !isDevMock ? (
       <div class="page-content">
         <div class="rsvp-error-wrap">
           <div class="error-card" data-testid="notion-required">
@@ -114,25 +182,22 @@ const submittedAt = existingRSVP?.submittedAt
       </div>
     ) : (
       <>
-        <div class="rsvp-band">{t(strings.nyc.details.calendar.heading)}</div>
+        {isDevMock && (
+          <div class="page-content">
+            <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
+              <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+            </aside>
+          </div>
+        )}
+
         <section class="rsvp-section page-content confirmation-calendar-section">
-          <p class="section-note confirmation-calendar-note">{t(strings.nyc.details.calendar.note)}</p>
-          {calendarToken ? (
-            <a
-              href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
-              class="confirmation-calendar-link"
-              data-testid="calendar-confirmation-link"
-            >
-              {t(strings.nyc.calendar.addBtn)}
-            </a>
-          ) : (
-            <>
-              <button class="confirmation-calendar-link" disabled>
-                {t(strings.nyc.calendar.addBtn)}
-              </button>
-              <p class="confirmation-calendar-unavailable">{t(strings.nyc.calendar.unavailableNote)}</p>
-            </>
-          )}
+          <NycCalendarCta
+            token={calendarToken}
+            label={t(strings.nyc.calendar.addBtn)}
+            compact={true}
+            showNote={false}
+            testId="calendar-confirmation-link"
+          />
         </section>
 
         <div class="page-content">
@@ -145,13 +210,18 @@ const submittedAt = existingRSVP?.submittedAt
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
         <section class="rsvp-section page-content">
-          <p class="section-note">{t(strings.nyc.rsvp.form.whosComing.note)}</p>
           <div class="guest-list">
             {party.map((partyGuest) => {
               const isAttending = attendingNames.has(partyGuest.name);
               return (
-                <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row>
-                  <div class:list={['guest-indicator', isAttending && 'guest-indicator--attending']}></div>
+                <div
+                  class:list={[
+                    'guest-row',
+                    partyGuest.isPlusOne && 'plus-one',
+                    !isAttending && 'guest-row--not-attending',
+                  ]}
+                  data-guest-row
+                >
                   <div class="guest-info guest-info--static">
                     <span class="guest-name-static">{partyGuest.name}</span>
                     <span class="guest-status">
@@ -166,7 +236,6 @@ const submittedAt = existingRSVP?.submittedAt
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.coreEvents.heading)}</div>
         <section class="rsvp-section page-content">
-          <p class="section-note">{t(strings.nyc.rsvp.form.coreEvents.note)}</p>
           {coreEvents.length === 0 ? (
             <p class="placeholder-note">{t(strings.nyc.rsvp.form.coreEvents.empty)}</p>
           ) : (
@@ -195,7 +264,6 @@ const submittedAt = existingRSVP?.submittedAt
           <>
             <div class="rsvp-band">{t(strings.nyc.rsvp.form.optionalEvents.heading)}</div>
             <section class="rsvp-section page-content">
-              <p class="section-note">{t(strings.nyc.rsvp.form.optionalEvents.note)}</p>
               <div class="event-list">
                 {optionalEvents.map((event) => {
                   const isSelected = selectedEventIds.has(event.id);
@@ -218,7 +286,6 @@ const submittedAt = existingRSVP?.submittedAt
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.dietary.heading)}</div>
         <section class="rsvp-section page-content">
-          <p class="section-note">{t(strings.nyc.rsvp.form.dietary.note)}</p>
           <div class="static-card">
             {existingRSVP.dietary || t(strings.nyc.rsvp.confirmation.emptyValue)}
           </div>
@@ -233,7 +300,6 @@ const submittedAt = existingRSVP?.submittedAt
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.email.heading)}</div>
         <section class="rsvp-section page-content">
-          <p class="section-note">{t(strings.nyc.rsvp.form.email.note)}</p>
           <div class="group-email-list">
             {party.map((partyGuest) => (
               <div class="group-email-row">
@@ -249,11 +315,13 @@ const submittedAt = existingRSVP?.submittedAt
         </section>
 
         <div class="page-content rsvp-submit-zone confirmation-submit-zone">
-          <a href="/nyc/rsvp" class="confirmation-edit-link">{t(strings.nyc.rsvp.confirmation.editLink)}</a>
-          <p class="form-note">
-            {t(strings.nyc.rsvp.form.signedInAs)} <strong>{guest}</strong>.{' '}
-            {t(strings.nyc.rsvp.form.canUpdate)}
-          </p>
+          <a href="/nyc/rsvp" class="confirmation-edit-link">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
+              <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+              <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+            </svg>
+            <span>{t(strings.nyc.rsvp.confirmation.editLink)}</span>
+          </a>
         </div>
       </>
     )}
@@ -440,6 +508,10 @@ const submittedAt = existingRSVP?.submittedAt
     margin-top: var(--space-md);
   }
 
+  .existing-rsvp-banner--preview {
+    margin-bottom: calc(var(--space-sm) * -1);
+  }
+
   .rsvp-band {
     background: var(--color-surface);
     color: var(--color-surface-text);
@@ -475,45 +547,8 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .confirmation-calendar-section {
-    padding-top: var(--space-lg);
-  }
-
-  .confirmation-calendar-note,
-  .confirmation-calendar-unavailable {
-    text-align: center;
-  }
-
-  .confirmation-calendar-link {
-    display: block;
-    width: 100%;
-    max-width: 540px;
-    margin: 0 auto;
-    height: 56px;
-    background: var(--color-text);
-    color: var(--color-surface-text);
-    border: none;
-    border-radius: 4px;
-    font-family: var(--font-display);
-    font-size: var(--font-size-caption);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-heading);
-    font-feature-settings: "case" 1;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
-    line-height: 56px;
-    transition: opacity 0.15s;
-  }
-
-  .confirmation-calendar-link:hover {
-    opacity: 0.82;
-    color: var(--color-surface-text);
-  }
-
-  .confirmation-calendar-link:disabled {
-    opacity: 0.38;
-    cursor: not-allowed;
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-sm);
   }
 
   .guest-list,
@@ -538,16 +573,9 @@ const submittedAt = existingRSVP?.submittedAt
     border-style: dashed;
   }
 
-  .guest-indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 999px;
-    background: rgba(23, 50, 11, 0.15);
-    flex-shrink: 0;
-  }
-
-  .guest-indicator--attending {
-    background: var(--color-burnt-amber);
+  .guest-row--not-attending {
+    border-color: rgba(23, 50, 11, 0.14);
+    background: rgba(23, 50, 11, 0.04);
   }
 
   .guest-info {
@@ -563,6 +591,11 @@ const submittedAt = existingRSVP?.submittedAt
     min-width: 0;
     font-size: var(--font-size-body);
     color: var(--color-text);
+  }
+
+  .guest-row--not-attending .guest-name-static,
+  .guest-row--not-attending .guest-status {
+    color: rgba(23, 50, 11, 0.45);
   }
 
   .guest-status {
@@ -669,28 +702,31 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .confirmation-submit-zone {
-    padding-top: var(--space-lg);
-    padding-bottom: var(--space-2xl);
+    padding-top: var(--space-xs);
+    padding-bottom: var(--space-lg);
     text-align: center;
   }
 
   .confirmation-edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-size: 13px;
-    color: var(--color-text-muted);
-    text-decoration: none;
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.22em;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .confirmation-edit-link:hover {
-    color: var(--color-text);
+    opacity: 0.72;
   }
 
-  .form-note {
-    margin-top: var(--space-sm);
-    color: var(--color-text-muted);
-    font-size: 13px;
-    text-align: center;
+  .confirmation-edit-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -728,9 +764,6 @@ const submittedAt = existingRSVP?.submittedAt
       border-color: var(--color-text-muted);
     }
 
-    .confirmation-calendar-link {
-      color: var(--color-bg);
-    }
   }
 
   @media (max-width: 768px) {

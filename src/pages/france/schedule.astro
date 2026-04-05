@@ -5,6 +5,7 @@ import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import FranceCalendarCta from '../../components/FranceCalendarCta.astro';
 
 const guestId = Astro.locals.guestId;
 const t = createTranslator(Astro.locals.lang ?? 'en');
@@ -42,21 +43,12 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
       </div>
     </div>
 
-    <section class="calendar-subscribe">
-      {calendarToken ? (
-        <a
-          href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
-          class="calendar-btn"
-        >
-          {t(strings.france.schedule.calendarBtn)}
-        </a>
-      ) : (
-        <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
-      )}
-      <p class="calendar-note">
-        {calendarToken ? t(strings.france.schedule.calendarNote) : t(strings.nyc.calendar.unavailableNote)}
-      </p>
-    </section>
+    <FranceCalendarCta
+      token={calendarToken}
+      label={t(strings.france.schedule.calendarBtn)}
+      note={t(strings.france.schedule.calendarNote)}
+      unavailableNote={t(strings.nyc.calendar.unavailableNote)}
+    />
 
     <section class="days">
       <!-- Friday -->
@@ -225,48 +217,6 @@ main {
   }
 
   /* Calendar Subscribe */
-  .calendar-subscribe {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .calendar-btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    min-height: 44px;
-    font-family: var(--font-display);
-    font-size: var(--font-size-caption);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    line-height: 1;
-    background: var(--color-accent);
-    color: var(--color-surface-text);
-    border: none;
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-    text-decoration: none;
-  }
-
-  .calendar-btn:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: var(--color-surface-text);
-    opacity: 0.85;
-  }
-
-  .calendar-btn:disabled {
-    background: color-mix(in srgb, var(--color-accent) 42%, white);
-    color: var(--color-surface-text);
-    cursor: not-allowed;
-    opacity: 1;
-  }
-
-  .calendar-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
   /* Days */
   .days {
     display: flex;
