@@ -90,6 +90,21 @@ const lang = Astro.locals.lang ?? 'en';
         let _navFrom = null;
         let _navTo   = null;
 
+        const syncRootRouteAttributes = (sourceDocument) => {
+          const incomingRoot = sourceDocument?.documentElement;
+          if (!incomingRoot) return;
+
+          const currentRoot = document.documentElement;
+          for (const attr of ['lang', 'data-event', 'data-page']) {
+            const value = incomingRoot.getAttribute(attr);
+            if (value === null) {
+              currentRoot.removeAttribute(attr);
+            } else {
+              currentRoot.setAttribute(attr, value);
+            }
+          }
+        };
+
         document.addEventListener('astro:before-preparation', (e) => {
           _navFrom = e.from;
           _navTo   = e.to;
@@ -107,9 +122,13 @@ const lang = Astro.locals.lang ?? 'en';
           const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
+          const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
+          const useSafariMossFallback = isSafari && isNycIndexToSubpage;
 
           // Give old-page moss its own VT group before the old snapshot.
-          document.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+          if (!useSafariMossFallback) {
+            document.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+          }
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
           const suppressHeader = () => {
@@ -142,12 +161,15 @@ const lang = Astro.locals.lang ?? 'en';
           const fromDepth = from.split('/').length;
           const toDepth   = to.split('/').length;
 
+          // Astro swaps the incoming body/head during SPA navigation, but the
+          // live <html> element can momentarily keep the old route attributes.
+          // Sync them before the new snapshot so event-scoped CSS variables and
+          // selectors resolve against the incoming route immediately.
+          syncRootRouteAttributes(event.newDocument);
+
           if (isSafari) {
             event.newDocument.documentElement.dataset.safariVtFallback = 'true';
           }
-
-          // Give incoming moss its own VT group before the new snapshot.
-          event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
 
           const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
           const suppressHeaderOnDoc = (doc) => {
@@ -165,6 +187,16 @@ const lang = Astro.locals.lang ?? 'en';
             (from.startsWith('/nyc/') && to.startsWith('/nyc/'));
 
           const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
+          const useSafariMossFallback = isSafari && isNycIndexToSubpage;
+
+          // Safari uses a DOM animation fallback for the incoming moss zone.
+          // Leaving the VT name in place keeps the element in the compositor
+          // snapshot path, which is the branch that clips on the travel page.
+          if (!useSafariMossFallback) {
+            event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+          } else {
+            event.newDocument.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
+          }
 
           if (isNycSubpageNav) {
             suppressHeaderOnDoc(event.newDocument);
@@ -175,7 +207,7 @@ const lang = Astro.locals.lang ?? 'en';
             event.newDocument.querySelector('.nyc-page-main')?.style.setProperty('view-transition-name', 'nyc-subpage-hero');
           }
 
-          if (isSafari && isNycIndexToSubpage) {
+          if (useSafariMossFallback) {
             event.newDocument.querySelector('.nyc-page-moss')?.classList.add('nyc-page-moss-entering');
           }
 
@@ -193,6 +225,7 @@ const lang = Astro.locals.lang ?? 'en';
         document.addEventListener('astro:page-load', () => {
           document.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
           document.querySelector('.nyc-page-main')?.style.removeProperty('view-transition-name');
+          syncRootRouteAttributes(document);
 
           const enteringMoss = document.querySelector('.nyc-page-moss-entering');
           if (enteringMoss) {
@@ -291,6 +324,7 @@ const lang = Astro.locals.lang ?? 'en';
   ::view-transition-group(nyc-page-moss)    { z-index: 4; }
   ::view-transition-group(nyc-page-moss),
   ::view-transition-image-pair(nyc-page-moss),
+  ::view-transition-old(nyc-page-moss),
   ::view-transition-new(nyc-page-moss) {
     overflow: visible;
   }
@@ -317,6 +351,15 @@ const lang = Astro.locals.lang ?? 'en';
     z-index: 3;
   }
 
+  /* nyc-page-moss is the element whose VT snapshot slides upward. It needs a
+   * solid background on the wrapper itself so the early frames read as one
+   * continuous moss field, rather than appearing clipped at the first band. */
+  html[data-event="nyc"] .nyc-page-moss {
+    position: relative;
+    z-index: 4;
+    background: var(--color-dark-moss);
+  }
+
   html[data-event="nyc"] .nyc-moss,
   html[data-event="nyc"] .details-band {
     position: relative;
@@ -328,6 +371,10 @@ const lang = Astro.locals.lang ?? 'en';
    * color while their page-specific stylesheet is still applying after a swap.
    */
   @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] .nyc-page-moss {
+      background: var(--color-nyc-skyline-dark);
+    }
+
     html[data-event="nyc"] .nyc-page-moss .details-section,
     html[data-event="nyc"] .nyc-page-moss .details-venues,
     html[data-event="nyc"] .nyc-page-moss .nyc-footer {
@@ -388,7 +435,8 @@ const lang = Astro.locals.lang ?? 'en';
   }
 
   html[data-event="nyc"][data-safari-vt-fallback="true"] .nyc-page-moss-entering {
-    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    will-change: transform, opacity;
   }
 
 </style>
