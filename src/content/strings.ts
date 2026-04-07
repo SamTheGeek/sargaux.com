@@ -427,12 +427,12 @@ export const strings = {
           note:    s("Toggle each guest's attendance and edit names if needed.", 'Indiquez la présence de chaque invité et modifiez les noms si nécessaire.'),
         },
         coreEvents: {
-          heading: s('Core Events', 'Événements principaux'),
+          heading: s('Events', 'Événements'),
           note:    s('These events are part of your invitation.', 'Ces événements font partie de votre invitation.'),
           empty:   s('No core events are assigned to this invitation yet.', "Aucun événement principal n'est encore assigné à cette invitation."),
         },
         optionalEvents: {
-          heading: s('Optional Events', 'Événements optionnels'),
+          heading: s('Special Activities', 'Activités spéciales'),
           note:    s("Choose any extra celebrations you'd like to attend.", 'Choisissez les célébrations supplémentaires auxquelles vous souhaitez participer.'),
           empty:   s('No optional events are assigned right now.', "Aucun événement optionnel n'est assigné pour le moment."),
         },
@@ -822,12 +822,12 @@ export const strings = {
           note:    s("Toggle each guest's attendance and edit names if needed.", 'Indiquez la présence de chaque invité et modifiez les noms si nécessaire.'),
         },
         coreEvents: {
-          heading: s('Core Events', 'Événements principaux'),
+          heading: s('Events', 'Événements'),
           note:    s('These events are part of your invitation.', 'Ces événements font partie de votre invitation.'),
           empty:   s('No core events are assigned to this invitation yet.', "Aucun événement principal n'est encore assigné à cette invitation."),
         },
         optionalEvents: {
-          heading: s('Optional Events', 'Événements optionnels'),
+          heading: s('Special Activities', 'Activités spéciales'),
           note:    s("Choose any extra celebrations you'd like to attend.", 'Choisissez les célébrations supplémentaires auxquelles vous souhaitez participer.'),
           empty:   s('No optional events are assigned right now.', "Aucun événement optionnel n'est assigné pour le moment."),
         },
