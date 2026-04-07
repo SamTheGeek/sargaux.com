@@ -248,33 +248,39 @@ export const strings = {
       gettingAround: {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
-          heading: s('By Subway', 'En métro'),
-          intro:   s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue — à 5 minutes à pied du lieu."),
-          fare:    s('Single ride: $3 (set up Express Transit on your phone ahead of time)', "Trajet simple : 3 $ (configurez le transit express sur votre téléphone à l'avance)"),
-          maps:    s('Google Maps and Apple Maps have great subway directions', "Google Maps et Apple Plans proposent d'excellents itinéraires en métro"),
+          heading:        s('By Subway', 'En métro'),
+          intro:          s('Take the L train to Bedford Avenue - a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue - à 5 minutes à pied du lieu."),
+          fareBeforeLink: s('Single ride: $3 (set up ', "Trajet simple : 3 $ (configurez "),
+          fareLinkText:   s('Express Transit', 'Transit express'),
+          fareAfterLink:  s(' on your phone ahead of time)', " sur votre téléphone à l'avance)"),
+          maps:           s('Apple Maps and Google Maps have great subway directions', "Apple Plans et Google Maps proposent d'excellents itinéraires en métro"),
         },
-        parking: {
-          heading: s('Parking', 'Parking'),
+        bike: {
+          heading: s('By Bike', 'À vélo'),
+          text:    s('A Citi Bike station is located just steps from the Wythe Hotel.', "Une station Citi Bike se trouve à quelques pas du Wythe Hotel."),
+        },
+        car: {
+          heading: s('By Car', 'En voiture'),
           text:    s('Parking is available one block away at 25 Kent.', "Un parking est disponible à un pâté de maisons au 25 Kent Ave."),
         },
       },
       whileHere: {
         heading: s("While You're Here", 'À ne pas manquer'),
-        intro:   s("October is a wonderful time to explore NYC's world-class museums and exhibitions:", "Octobre est une période idéale pour découvrir les musées et expositions de classe mondiale de New York :"),
-        museums: {
-          heading:       s('Museums', 'Musées'),
-          met:           s('The Met — Fifth Avenue, suggested donation admission', 'Le Met — Cinquième Avenue, entrée aux dons suggérés'),
-          moma:          s('MoMA — Midtown, modern & contemporary art', 'MoMA — Midtown, art moderne et contemporain'),
-          whitney:       s('Whitney — Meatpacking District, American art', 'Whitney — Meatpacking District, art américain'),
-          naturalHistory: s('Natural History — Upper West Side, great for all ages', 'Histoire naturelle — Upper West Side, pour tous les âges'),
-          guggenheim:    s('Guggenheim — Upper East Side, iconic architecture', 'Guggenheim — Upper East Side, architecture iconique'),
+        upperEastSide: {
+          heading:    s('Museum Mile & Central Park', 'Museum Mile et Central Park'),
+          body:       s("Start with a visit to the newly renovated Frick Collection - reserve tickets in advance, and if you're lucky, snag a lunch reservation in the dining room. Afterward, take a leisurely walk through Central Park. For drinks, head to Bemelmans Bar in The Carlyle for one of the most iconic bar experiences in the city.", "Commencez par une visite de la Frick Collection, tout juste rénovée - réservez vos billets à l'avance et, avec un peu de chance, décrochez une réservation pour le déjeuner dans la salle à manger. Ensuite, faites une promenade tranquille dans Central Park. Pour prendre un verre, direction le Bemelmans Bar du Carlyle pour l'une des expériences de bar les plus emblématiques de la ville."),
+          alsoInArea: s('Also in the area: The Met, MoMA, the Jewish Museum (free on shabbos!), the American Museum of Natural History, and the Guggenheim.', 'Également dans le quartier : le Met, le MoMA, le Jewish Museum (gratuit le shabbat !), l\'American Museum of Natural History et le Guggenheim.'),
         },
-        exhibitions: {
-          heading:     s('Exhibitions & Experiences', 'Expositions & Expériences'),
-          placeholder: s("Current exhibitions for October 2026 TBD — check museum websites closer to date", "Expositions en octobre 2026 à confirmer — consultez les sites des musées à l'approche de la date"),
+        prospectHeights: {
+          heading: s('Follow in Our Footsteps', 'Sur nos traces'),
+          body:    s("This is our neighborhood, and we love it. Start your morning with a visit to the Brooklyn Botanic Garden or take a stroll (or bike ride) through Prospect Park. Wander down Vanderbilt Avenue for Unnameable Books, A.Mano decor, great people-watching, and continue our eternal debate between Van Leeuwen and Ample Hills ice cream. For food, brave the line at Radio Bakery for excellent pastries and focaccia, try brunch at Gertie or Cafe Mado, or grab a sandwich at Prospect Heights Butcher or Ciao Gloria and eat outside on the pedestrianized street. For dinner, some of our favorites: Leland, Nuaa Table, Alta Calidad, and Zaytoons.", "C'est notre quartier, et nous l'adorons. Commencez la matinée par le Brooklyn Botanic Garden ou une promenade, voire une balade à vélo, dans Prospect Park. Descendez Vanderbilt Avenue pour Unnameable Books, A.Mano decor, un excellent terrain d'observation, et poursuivez notre débat éternel entre les glaces Van Leeuwen et Ample Hills. Côté repas, affrontez la file de Radio Bakery pour d'excellentes pâtisseries et une focaccia, essayez le brunch chez Gertie ou Cafe Mado, ou prenez un sandwich chez Prospect Heights Butcher ou Ciao Gloria pour le manger dehors dans la rue piétonne. Pour le dîner, quelques-unes de nos adresses préférées : Leland, Nuaa Table, Alta Calidad et Zaytoons."),
+        },
+        dumbo: {
+          heading: s('Where It All Began', 'Là où tout a commencé'),
+          body:    s("A beautiful neighborhood where we kindled our relationship. Stroll through Brooklyn Bridge Park and up the bridge into Brooklyn Heights for some of the best views of the Manhattan skyline you'll find anywhere. We highly recommend making the trip by NYC Ferry - it runs from multiple points across Manhattan and Brooklyn, and the ride itself is half the fun. Check out the adaptive reuse of the Brooklyn docks abounding with quiet corners, play spaces, and sports facilities.", "Un très beau quartier où notre histoire a commencé. Promenez-vous dans Brooklyn Bridge Park puis montez jusqu'à Brooklyn Heights pour profiter de quelques-unes des plus belles vues sur la skyline de Manhattan. Nous recommandons vivement d'y aller en NYC Ferry : il part de plusieurs points de Manhattan et de Brooklyn, et le trajet fait déjà la moitié du plaisir. Découvrez aussi la réinvention des anciens docks de Brooklyn, pleins de coins tranquilles, d'espaces de jeux et d'installations sportives."),
         },
         cycling: {
-          heading:        s('Bicycle Rides', 'Balades à vélo'),
+          heading:        s('Sunday Morning Ride', 'Balade du dimanche matin'),
           body:           s('Cycling together is something Sam & Margaux often do together around the city. A quick loop of Prospect Park is a great way to get outdoors and enjoy Brooklyn. CitiBikes are plentiful, and rental shops abound when the weather is nice. For the more adventurous, October is also peak leaf-peeping season. You can follow Sam\'s typical', 'Le vélo est une activité que Sam & Margaux pratiquent souvent ensemble en ville. Un tour de Prospect Park est une excellente façon de profiter de Brooklyn. Les CitiBikes sont nombreux, et les loueurs de vélos abondent quand le temps le permet. Pour les plus aventureux, octobre est aussi la pleine saison des feuillages. Vous pouvez suivre la'),
           linkText:       s('Sunday morning ride', 'sortie dominicale de Sam'),
           bodyAfter:      s('to New Jersey.', 'jusqu\'au New Jersey.'),

@@ -344,13 +344,16 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
     width: 100%;
   }
 
-  html[data-event="nyc"] .details-back {
+  html[data-event="nyc"] .details-back,
+  html[data-event="nyc"] .details-back:link,
+  html[data-event="nyc"] .details-back:visited {
     display: inline-block;
     font-size: 13px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
     text-decoration: none;
     margin-bottom: 24px;
     transition: opacity 0.15s;
@@ -358,6 +361,8 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 
   html[data-event="nyc"] .details-back:hover {
     opacity: 0.6;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
   }
 
   html[data-event="nyc"] .details-hero h1 {
@@ -543,7 +548,9 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   /* Directions link — shown below map tile (or alone when no API key) */
-  html[data-event="nyc"] .venue-directions-link {
+  html[data-event="nyc"] .venue-directions-link,
+  html[data-event="nyc"] .venue-directions-link:link,
+  html[data-event="nyc"] .venue-directions-link:visited {
     display: inline-block;
     margin-top: 12px;
     font-size: var(--font-size-caption);
@@ -551,12 +558,15 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--color-burnt-amber);
+    -webkit-text-fill-color: var(--color-burnt-amber);
     text-decoration: none;
     transition: opacity 0.15s;
   }
 
   html[data-event="nyc"] .venue-directions-link:hover {
     opacity: 0.75;
+    color: var(--color-burnt-amber);
+    -webkit-text-fill-color: var(--color-burnt-amber);
   }
 
   html[data-event="nyc"] .venue-directions-link--disabled {
@@ -631,12 +641,17 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
       color: rgba(255, 249, 240, 0.78) !important;
     }
 
-    html[data-event="nyc"] .details-back {
+    html[data-event="nyc"] .details-back,
+    html[data-event="nyc"] .details-back:link,
+    html[data-event="nyc"] .details-back:visited {
       color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
     }
 
     html[data-event="nyc"] .details-back:hover {
       opacity: 0.6 !important;
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
     }
 
     html[data-event="nyc"] .nyc-moss {

@@ -427,11 +427,20 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     transition: color 0.15s;
   }
 
+  html[data-event="nyc"] .nyc-strip-link:link,
+  html[data-event="nyc"] .nyc-strip-link:visited {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+  }
+
   html[data-event="nyc"] .nyc-strip-link:first-child {
     border-top: 1px solid rgba(255, 249, 240, 0.15);
   }
 
-  html[data-event="nyc"] .nyc-strip-link:hover { color: var(--color-burnt-amber); }
+  html[data-event="nyc"] .nyc-strip-link:hover {
+    color: var(--color-burnt-amber);
+    -webkit-text-fill-color: var(--color-burnt-amber);
+  }
 
   html[data-event="nyc"] .nyc-strip-title {
     font-size: var(--font-size-h3);

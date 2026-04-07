@@ -435,13 +435,16 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     width: 100%;
   }
 
-  .rsvp-back {
+  .rsvp-back,
+  .rsvp-back:link,
+  .rsvp-back:visited {
     display: inline-block;
     font-size: 13px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
     text-decoration: none;
     margin-bottom: 24px;
     transition: opacity 0.15s;
@@ -450,6 +453,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   .rsvp-back:hover {
     opacity: 0.6;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
   }
 
   .rsvp-hero h1 {
@@ -975,12 +979,16 @@ const existingSubmittedAt = existingRSVP?.submittedAt
       color: var(--color-warm-cream);
     }
 
-    .rsvp-back {
+    .rsvp-back,
+    .rsvp-back:link,
+    .rsvp-back:visited {
       color: var(--color-warm-cream);
+      -webkit-text-fill-color: var(--color-warm-cream);
     }
 
     .rsvp-back:hover {
       color: var(--color-warm-cream);
+      -webkit-text-fill-color: var(--color-warm-cream);
     }
 
     .rsvp-section,

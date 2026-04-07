@@ -92,19 +92,30 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.subway.heading)}</span>
           <span class="nyc-info-val">
             {t(strings.nyc.travel.gettingAround.subway.intro)}
-            <span class="travel-list">
-              <span>{t(strings.nyc.travel.gettingAround.subway.fare)}</span>
-              <span>{t(strings.nyc.travel.gettingAround.subway.maps)}</span>
-            </span>
+            <ul class="travel-list">
+              <li>
+                {t(strings.nyc.travel.gettingAround.subway.fareBeforeLink)}
+                <a
+                  class="nyc-info-link--inline"
+                  href="https://support.apple.com/en-us/105123"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  {t(strings.nyc.travel.gettingAround.subway.fareLinkText)}
+                </a>
+                {t(strings.nyc.travel.gettingAround.subway.fareAfterLink)}
+              </li>
+              <li>{t(strings.nyc.travel.gettingAround.subway.maps)}</li>
+            </ul>
           </span>
         </div>
         <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.parking.heading)}</span>
-          <span class="nyc-info-val">{t(strings.nyc.travel.gettingAround.parking.text)}</span>
+          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.bike.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.gettingAround.bike.text)}</span>
         </div>
         <div class="nyc-info-row">
-          <span class="nyc-info-key">By Bike</span>
-          <span class="nyc-info-val">A CitiBike station is located just steps from the Wythe Hotel</span>
+          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.car.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.gettingAround.car.text)}</span>
         </div>
       </div>
     </div>
@@ -116,27 +127,27 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     <div class="page-content">
       <div class="nyc-info-table">
         <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.museums.heading)}</span>
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.upperEastSide.heading)}</span>
           <span class="nyc-info-val">
-            {t(strings.nyc.travel.whileHere.intro)}
-            <span class="travel-list">
-              <span>{t(strings.nyc.travel.whileHere.museums.met)}</span>
-              <span>{t(strings.nyc.travel.whileHere.museums.moma)}</span>
-              <span>{t(strings.nyc.travel.whileHere.museums.whitney)}</span>
-              <span>{t(strings.nyc.travel.whileHere.museums.naturalHistory)}</span>
-              <span>{t(strings.nyc.travel.whileHere.museums.guggenheim)}</span>
-            </span>
+            {t(strings.nyc.travel.whileHere.upperEastSide.body)}
+            <ul class="travel-list">
+              <li>{t(strings.nyc.travel.whileHere.upperEastSide.alsoInArea)}</li>
+            </ul>
           </span>
         </div>
         <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.exhibitions.heading)}</span>
-          <span class="nyc-info-val nyc-info-val--muted">{t(strings.nyc.travel.whileHere.exhibitions.placeholder)}</span>
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.prospectHeights.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.whileHere.prospectHeights.body)}</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.dumbo.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.whileHere.dumbo.body)}</span>
         </div>
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.cycling.heading)}</span>
           <span class="nyc-info-val">
             {t(strings.nyc.travel.whileHere.cycling.body)}{' '}
-            <a class="nyc-info-link" href="https://ridewithgps.com/routes/54409165?privacy_code=KshzTPHp7mi0yNFE4vWgB8nLIRlb69QY" target="_blank" rel="noopener">{t(strings.nyc.travel.whileHere.cycling.linkText)}</a>{' '}
+            <a class="nyc-info-link--inline" href="https://ridewithgps.com/routes/54409165?privacy_code=KshzTPHp7mi0yNFE4vWgB8nLIRlb69QY" target="_blank" rel="noopener">{t(strings.nyc.travel.whileHere.cycling.linkText)}</a>{' '}
             {t(strings.nyc.travel.whileHere.cycling.bodyAfter)}
           </span>
         </div>
@@ -253,13 +264,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     right: -8% !important;
   }
 
-  html[data-event="nyc"] .details-back {
+  html[data-event="nyc"] .details-back,
+  html[data-event="nyc"] .details-back:link,
+  html[data-event="nyc"] .details-back:visited {
     display: inline-block;
     font-size: 13px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
     text-decoration: none;
     margin-bottom: 24px;
     transition: opacity 0.15s;
@@ -267,6 +281,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .details-back:hover {
     opacity: 0.6;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
   }
 
   html[data-event="nyc"] .details-hero h1 {
@@ -369,64 +385,82 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     margin-top: 4px;
   }
 
-  html[data-event="nyc"] .nyc-info-address {
+  html[data-event="nyc"] .nyc-info-address,
+  html[data-event="nyc"] .nyc-info-address:link,
+  html[data-event="nyc"] .nyc-info-address:visited {
     color: rgba(255, 249, 240, 0.75);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.75);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
   html[data-event="nyc"] .nyc-info-address:hover {
     color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
   }
 
-  html[data-event="nyc"] .nyc-info-link {
+  html[data-event="nyc"] .nyc-info-link,
+  html[data-event="nyc"] .nyc-info-link:link,
+  html[data-event="nyc"] .nyc-info-link:visited {
     display: inline-block;
     margin-top: 6px;
     font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.6);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.6);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
   html[data-event="nyc"] .nyc-info-link:hover {
     color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
   }
 
-  html[data-event="nyc"] .nyc-info-link--cta {
+  html[data-event="nyc"] .nyc-info-link--inline,
+  html[data-event="nyc"] .nyc-info-link--inline:link,
+  html[data-event="nyc"] .nyc-info-link--inline:visited {
+    color: rgba(255, 249, 240, 0.75);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.75);
+    font-size: inherit;
+    line-height: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  html[data-event="nyc"] .nyc-info-link--inline:hover {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .nyc-info-link--cta,
+  html[data-event="nyc"] .nyc-info-link--cta:link,
+  html[data-event="nyc"] .nyc-info-link--cta:visited {
     display: block;
     color: var(--color-burnt-amber);
+    -webkit-text-fill-color: var(--color-burnt-amber);
     text-decoration: none;
     font-weight: 500;
   }
 
   html[data-event="nyc"] .nyc-info-link--cta:hover {
     color: #e87a30;
+    -webkit-text-fill-color: #e87a30;
   }
 
   /* ── Travel list (replaces <ul>) ─────────────────── */
 
   html[data-event="nyc"] .travel-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: 6px;
     margin-top: 10px;
+    margin-bottom: 0;
+    padding-left: 20px;
   }
 
-  html[data-event="nyc"] .travel-list span {
+  html[data-event="nyc"] .travel-list li {
     font-size: 16px;
     color: rgba(255, 249, 240, 0.7);
     line-height: 1.5;
-    padding-left: 12px;
-    position: relative;
-  }
-
-  html[data-event="nyc"] .travel-list span::before {
-    content: '—';
-    position: absolute;
-    left: 0;
-    color: rgba(255, 249, 240, 0.3);
-    font-size: var(--font-size-caption);
-    top: 3px;
   }
 
   /* ── Footer ──────────────────────────────────────── */
@@ -490,8 +524,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       color: rgba(255, 249, 240, 0.45) !important;
     }
 
-    html[data-event="nyc"] .details-back {
+    html[data-event="nyc"] .details-back,
+    html[data-event="nyc"] .details-back:link,
+    html[data-event="nyc"] .details-back:visited {
       color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .details-back:hover {
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
     }
 
     html[data-event="nyc"] .nyc-moss {

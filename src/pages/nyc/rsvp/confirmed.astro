@@ -401,13 +401,16 @@ const submittedAt = existingRSVP?.submittedAt
     width: 100%;
   }
 
-  .rsvp-back {
+  .rsvp-back,
+  .rsvp-back:link,
+  .rsvp-back:visited {
     display: inline-block;
     font-size: 13px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
     text-decoration: none;
     margin-bottom: 24px;
     transition: opacity 0.15s;
@@ -416,6 +419,7 @@ const submittedAt = existingRSVP?.submittedAt
   .rsvp-back:hover {
     opacity: 0.6;
     color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
   }
 
   .rsvp-hero h1 {
@@ -708,12 +712,15 @@ const submittedAt = existingRSVP?.submittedAt
     text-align: center;
   }
 
-  .confirmation-edit-link {
+  .confirmation-edit-link,
+  .confirmation-edit-link:link,
+  .confirmation-edit-link:visited {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 15px;
     color: var(--color-text);
+    -webkit-text-fill-color: var(--color-text);
     text-decoration: underline;
     text-underline-offset: 0.22em;
     text-transform: uppercase;
@@ -722,6 +729,8 @@ const submittedAt = existingRSVP?.submittedAt
 
   .confirmation-edit-link:hover {
     opacity: 0.72;
+    color: var(--color-text);
+    -webkit-text-fill-color: var(--color-text);
   }
 
   .confirmation-edit-icon {
@@ -749,8 +758,11 @@ const submittedAt = existingRSVP?.submittedAt
 
     .rsvp-hero h1,
     .rsvp-back,
+    .rsvp-back:link,
+    .rsvp-back:visited,
     .rsvp-back:hover {
       color: var(--color-warm-cream);
+      -webkit-text-fill-color: var(--color-warm-cream);
     }
 
     .rsvp-section,
