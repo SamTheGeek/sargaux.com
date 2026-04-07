@@ -86,9 +86,13 @@ frUrl.searchParams.set('lang', 'fr');
   /* ── French flag ─────────────────────── */
 
   .flag-fr {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
     height: 100%;
+    background: linear-gradient(
+      to right,
+      var(--color-prussian-blue) 0 33.3333%,
+      var(--color-warm-cream) 33.3333% 66.6667%,
+      var(--color-burgundy-red) 66.6667% 100%
+    );
   }
 
   .flag-fr-blue {
@@ -101,6 +105,12 @@ frUrl.searchParams.set('lang', 'fr');
 
   .flag-fr-red {
     background: var(--color-burgundy-red);
+  }
+
+  .flag-fr-blue,
+  .flag-fr-white,
+  .flag-fr-red {
+    display: none;
   }
 
   /* ── US flag ─────────────────────────── */

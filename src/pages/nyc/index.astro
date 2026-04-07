@@ -1,5 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/nyc-index.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
@@ -130,6 +131,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       <a href="/couple" class="nyc-strip-link">
         <span class="nyc-strip-title">{t(strings.nyc.nav.couple.title)}</span>
         <span class="nyc-strip-desc">{t(strings.nyc.nav.couple.desc)}</span>
+        <span class="nyc-strip-arrow">→</span>
+      </a>
+      <a href="/nyc/faq" class="nyc-strip-link">
+        <span class="nyc-strip-title">{t(strings.nyc.nav.faq.title)}</span>
+        <span class="nyc-strip-desc">{t(strings.nyc.nav.faq.desc)}</span>
         <span class="nyc-strip-arrow">→</span>
       </a>
       <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta">
@@ -455,8 +461,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-strip-arrow { color: var(--color-burnt-amber); }
-
-  html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title { color: var(--color-burnt-amber); }
 
   html[data-event="nyc"] .nyc-footer {
     border-top-color: rgba(255, 249, 240, 0.12) !important;

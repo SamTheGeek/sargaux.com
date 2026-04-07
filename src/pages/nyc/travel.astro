@@ -1,5 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/nyc-subpage-hero.css';
 import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
@@ -295,14 +296,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     white-space: nowrap;
   }
 
-  html[data-event="nyc"] .details-date {
-    font-size: 16px;
-    letter-spacing: 0.05em;
-    color: rgba(23, 50, 11, 0.55);
-    margin: 0;
-    text-transform: uppercase;
-  }
-
   /* ── Moss zone — z:4 ─────────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
@@ -518,10 +511,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     html[data-event="nyc"] .details-hero h1 {
       color: var(--color-warm-cream) !important;
-    }
-
-    html[data-event="nyc"] .details-date {
-      color: rgba(255, 249, 240, 0.45) !important;
     }
 
     html[data-event="nyc"] .details-back,

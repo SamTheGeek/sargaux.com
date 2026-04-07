@@ -1,5 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/nyc-subpage-hero.css';
 import { getLatestRSVP } from '../../lib/notion';
 import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
@@ -375,15 +376,6 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
     white-space: nowrap;
   }
 
-  html[data-event="nyc"] .details-date {
-    font-size: 18px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    color: rgba(23, 50, 11, 0.82);
-    margin: 0;
-    text-transform: uppercase;
-  }
-
   /* ── Moss zone — z:4 ─────────────────────────────── */
 
   html[data-event="nyc"] .nyc-moss {
@@ -635,10 +627,6 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 
     html[data-event="nyc"] .details-hero h1 {
       color: var(--color-warm-cream) !important;
-    }
-
-    html[data-event="nyc"] .details-date {
-      color: rgba(255, 249, 240, 0.78) !important;
     }
 
     html[data-event="nyc"] .details-back,

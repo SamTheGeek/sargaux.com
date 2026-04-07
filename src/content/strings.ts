@@ -138,6 +138,10 @@ export const strings = {
         title: s('Details', 'Détails'),
         desc:  s('Venues & what to expect', 'Lieux & programme'),
       },
+      faq: {
+        title: s('FAQ', 'FAQ'),
+        desc:  s('Questions & answers', 'Questions & réponses'),
+      },
       couple: {
         title: s('The Couple', 'Le Couple'),
         desc:  s('Read our story', 'Lire notre histoire'),
@@ -284,6 +288,100 @@ export const strings = {
           body:           s('Cycling together is something Sam & Margaux often do together around the city. A quick loop of Prospect Park is a great way to get outdoors and enjoy Brooklyn. CitiBikes are plentiful, and rental shops abound when the weather is nice. For the more adventurous, October is also peak leaf-peeping season. You can follow Sam\'s typical', 'Le vélo est une activité que Sam & Margaux pratiquent souvent ensemble en ville. Un tour de Prospect Park est une excellente façon de profiter de Brooklyn. Les CitiBikes sont nombreux, et les loueurs de vélos abondent quand le temps le permet. Pour les plus aventureux, octobre est aussi la pleine saison des feuillages. Vous pouvez suivre la'),
           linkText:       s('Sunday morning ride', 'sortie dominicale de Sam'),
           bodyAfter:      s('to New Jersey.', 'jusqu\'au New Jersey.'),
+        },
+      },
+    },
+
+    // /nyc/faq
+    faq: {
+      pageTitle: s('NYC FAQ', 'FAQ New York'),
+      heading:   s('FAQ', 'FAQ'),
+      subtitle:  s('Questions & answers for the weekend', 'Questions & réponses pour le week-end'),
+      moreQuestions: s('More questions? Email us at', 'D’autres questions ? Écrivez-nous à'),
+      links: {
+        lookbook: s('Lookbook coming soon.', 'Lookbook à venir.'),
+        travel:   s('Travel Page', 'Page Travel'),
+        travelPrefix: s('See the', 'Voir la'),
+        travelSuffix: s('for details and booking links.', 'pour les détails et les liens de réservation.'),
+        registry: s('Visit the registry.', 'Voir la liste de mariage.'),
+      },
+      items: {
+        dressCode: {
+          question: s('What is the dress code?', 'Quel est le code vestimentaire ?'),
+          answer:   s(
+            'Festive cocktail attire!',
+            'Tenue cocktail festive !',
+          ),
+        },
+        rsvpDeadline: {
+          question: s('When is the RSVP deadline?', 'Quelle est la date limite pour répondre ?'),
+          answer:   s(
+            'Please RSVP by September 1, 2026.',
+            'Merci de répondre avant le 1er septembre 2026.',
+          ),
+        },
+        venue: {
+          question: s('Where is the venue?', 'Où se trouve le lieu ?'),
+          answer:   s(
+            'The celebration is held at Bar Blondeau, located on the 6th floor of the Wythe Hotel in Williamsburg, Brooklyn. The bar is accessible through the hotel lobby and by elevator. The space has both indoor and outdoor areas, with seating available including banquettes and outdoor benches, though most of the evening will be a standing cocktail party. We recommend comfortable shoes!',
+            'La célébration aura lieu au Bar Blondeau, situé au 6e étage du Wythe Hotel à Williamsburg, Brooklyn. Le bar est accessible par le lobby de l’hôtel et par ascenseur. L’espace comprend des zones intérieures et extérieures, avec des assises disponibles, notamment des banquettes et des bancs extérieurs, même si la majeure partie de la soirée se déroulera debout autour d’un cocktail. Nous recommandons des chaussures confortables !',
+          ),
+        },
+        parking: {
+          question: s('Is there parking nearby?', 'Y a-t-il un parking à proximité ?'),
+          answer:   s(
+            'Yes, parking is available near the venue at 25 Kent Avenue.',
+            'Oui, un parking est disponible près du lieu au 25 Kent Avenue.',
+          ),
+        },
+        weather: {
+          question: s('What will the weather be like?', 'Quel temps fera-t-il ?'),
+          answer:   s(
+            'New York in October is beautiful. Expect mild autumn weather, typically in the 60s or even 70s during the day. Evenings can cool down to the 50s, so we recommend bringing a layer.',
+            'New York en octobre est magnifique. Attendez-vous à une météo automnale douce, généralement autour de 15 à 25 °C en journée. Les soirées peuvent descendre autour de 10 à 15 °C, donc nous vous recommandons d’apporter une petite couche supplémentaire.',
+          ),
+        },
+        foodDrinks: {
+          question: s('What food and drinks will be served?', 'Quels plats et boissons seront servis ?'),
+          answer:   s(
+            "We'll have a full bar with wine, cocktails, and non-alcoholic options, along with passed hors d'oeuvres and small plates throughout the evening. The food will be pescatarian and vegetarian friendly, but will not come from a kosher kitchen. If you have a serious allergy, please let us know when you RSVP.",
+            "Nous aurons un bar complet avec vin, cocktails et options sans alcool, ainsi que des hors-d'oeuvres passés et des petites assiettes tout au long de la soirée. Le menu conviendra aux pescétariens et végétariens, mais ne viendra pas d’une cuisine casher. Si vous avez une allergie sérieuse, merci de nous le signaler au moment du RSVP.",
+          ),
+        },
+        ceremony: {
+          question: s('Will there be a ceremony?', 'Y aura-t-il une cérémonie ?'),
+          answer:   s(
+            'There will be no ceremony at this event. Our wedding ceremony and reception will be held separately as an intimate gathering.',
+            'Il n’y aura pas de cérémonie lors de cet événement. Notre cérémonie de mariage et la réception auront lieu séparément dans un cadre plus intime.',
+          ),
+        },
+        program: {
+          question: s('Will there be speeches or a formal program?', 'Y aura-t-il des discours ou un programme formel ?'),
+          answer:   s(
+            "This evening is primarily about mingling and celebrating together. We'll have a brief toast from the parents, but no formal program.",
+            'Cette soirée sera avant tout consacrée aux retrouvailles et à la fête ensemble. Il y aura un bref toast des parents, mais pas de programme formel.',
+          ),
+        },
+        children: {
+          question: s('Are children invited?', 'Les enfants sont-ils invités ?'),
+          answer:   s(
+            'We love your little ones, but this is an adults-only celebration!',
+            'Nous adorons vos petits, mais cette célébration sera réservée aux adultes !',
+          ),
+        },
+        stay: {
+          question: s('Where should out-of-town guests stay?', 'Où les invités venant de l’extérieur devraient-ils loger ?'),
+          answer:   s(
+            "We have a few room blocks available in Williamsburg and NoMad. If you need additional suggestions, don't hesitate to reach out!",
+            'Nous avons quelques blocs de chambres disponibles à Williamsburg et NoMad. Si vous avez besoin d’autres suggestions, n’hésitez pas à nous contacter !',
+          ),
+        },
+        registry: {
+          question: s('Do you have a registry?', 'Avez-vous une liste de mariage ?'),
+          answer:   s(
+            "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something, contributions to our honeymoon fund are always welcome.",
+            'Votre présence est déjà un merveilleux cadeau, et nous sommes très reconnaissants que vous soyez là pour célébrer avec nous. Si vous souhaitez offrir quelque chose, une contribution à notre voyage de noces sera toujours la bienvenue.',
+          ),
         },
       },
     },
