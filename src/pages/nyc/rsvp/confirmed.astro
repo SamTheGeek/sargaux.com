@@ -274,7 +274,7 @@ const submittedAt = existingRSVP?.submittedAt
                       <div class="event-row-content">
                         <span class="event-row-name">{event.name}</span>
                         <span class="event-row-meta">
-                          {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                          {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                         </span>
                       </div>
                     </div>
@@ -496,7 +496,7 @@ const submittedAt = existingRSVP?.submittedAt
 
   .error-card p,
   .existing-rsvp-banner p {
-    font-size: 14px;
+    font-size: 16px;
     margin: 0;
   }
 
@@ -537,13 +537,13 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .section-note {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--color-text-muted);
     margin-bottom: var(--space-sm);
   }
 
   .placeholder-note {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--color-text-muted);
   }
 
@@ -662,7 +662,7 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .event-row-meta {
-    font-size: 13px;
+    font-size: 15px;
     color: var(--color-text-muted);
   }
 
@@ -697,7 +697,7 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .group-email-name {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     color: var(--color-text);
   }
@@ -712,7 +712,7 @@ const submittedAt = existingRSVP?.submittedAt
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--color-text);
     text-decoration: underline;
     text-underline-offset: 0.22em;

@@ -111,10 +111,10 @@
   --font-display: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-body: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-size-hero: 64px;
-  --font-size-h2: 32px;
-  --font-size-h3: 20px;
-  --font-size-body: 16px;
-  --font-size-caption: 12px;
+  --font-size-h2: 34px;
+  --font-size-h3: 22px;
+  --font-size-body: 18px;
+  --font-size-caption: 14px;
   --line-height-heading: 1.2;
   --line-height-body: 1.6;
   --tracking-heading: 0.08em;

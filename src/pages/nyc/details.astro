@@ -398,7 +398,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
     position: relative;
     z-index: 4;
     padding: 14px 64px;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -419,7 +419,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 
   html[data-event="nyc"] .nyc-info-row {
     display: grid;
-    grid-template-columns: 88px 1fr;
+    grid-template-columns: 112px 1fr;
     gap: 24px;
     padding: 16px 0;
     border-bottom: 1px solid rgba(255, 249, 240, 0.15);
@@ -435,7 +435,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   html[data-event="nyc"] .nyc-info-key {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -444,7 +444,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   html[data-event="nyc"] .nyc-info-val {
-    font-size: 16px;
+    font-size: var(--font-size-body);
     line-height: 1.6;
     color: var(--color-warm-cream);
   }
@@ -456,7 +456,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }
@@ -498,7 +498,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   html[data-event="nyc"] .venue-type {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -507,7 +507,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   html[data-event="nyc"] .venue-name {
-    font-size: 20px;
+    font-size: var(--font-size-h3);
     font-weight: 500;
     color: var(--color-warm-cream);
     margin: 0 0 6px;
@@ -515,7 +515,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   }
 
   html[data-event="nyc"] .venue-address {
-    font-size: 13px;
+    font-size: var(--font-size-body);
     color: rgba(255, 249, 240, 0.5);
     margin: 0 0 20px;
     line-height: 1.5;
@@ -546,7 +546,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   html[data-event="nyc"] .venue-directions-link {
     display: inline-block;
     margin-top: 12px;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;

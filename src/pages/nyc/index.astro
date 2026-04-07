@@ -54,7 +54,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     <h1>New York<br>With Love</h1>
     <p class="nyc-date">{t(strings.nyc.heroDate)}</p>
     <hr class="nyc-rule">
-    <p class="nyc-venue">{t(strings.nyc.where.dinner)} · Brooklyn</p>
+    <p class="nyc-venue">
+      <span>{t(strings.nyc.where.dinner)}</span><span class="nyc-venue-separator" aria-hidden="true">·</span><span>Brooklyn</span>
+    </p>
   </div>
 
   <!--
@@ -103,7 +105,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </div>
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.rsvpDeadline.heading)}</span>
-          <span class="nyc-info-val">{t(strings.nyc.rsvpDeadline.value)}</span>
+          <span class="nyc-info-val">
+            <a href="/nyc/rsvp" class="nyc-info-link-inline">{t(strings.nyc.rsvpDeadline.value)}</a>
+          </span>
         </div>
       </div>
     </div>
@@ -259,11 +263,28 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-venue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.18em;
     font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: rgba(23, 50, 11, 0.55);
     white-space: nowrap;
+  }
+
+  html[data-event="nyc"] .nyc-venue-separator {
+    display: inline-block;
+    width: 0.36em;
+    height: 0.36em;
+    border-radius: 50%;
+    background: currentColor;
+    vertical-align: middle;
+    transform: translateY(-0.06em);
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
   }
 
   /* ── Spacer ─────────────────────────────────── */
@@ -336,7 +357,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-info-row {
     display: grid;
-    grid-template-columns: 88px 1fr;
+    grid-template-columns: 112px 1fr;
     gap: 24px;
     padding: 16px 0;
     border-bottom: 1px solid rgba(255, 249, 240, 0.15);
@@ -344,7 +365,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-info-key {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -353,21 +374,36 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-info-val {
-    font-size: 16px;
+    font-size: var(--font-size-body);
     line-height: 1.6;
     color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }
 
+  html[data-event="nyc"] .nyc-info-link-inline,
+  html[data-event="nyc"] .nyc-info-link-inline:link,
+  html[data-event="nyc"] .nyc-info-link-inline:visited {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+    text-decoration-color: rgba(255, 249, 240, 0.35);
+    text-underline-offset: 0.2em;
+  }
+
+  html[data-event="nyc"] .nyc-info-link-inline:hover {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+    text-decoration-color: currentColor;
+  }
+
   html[data-event="nyc"] .nyc-explore-band {
     padding: 16px 64px;
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -398,13 +434,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-strip-link:hover { color: var(--color-burnt-amber); }
 
   html[data-event="nyc"] .nyc-strip-title {
-    font-size: 20px;
+    font-size: var(--font-size-h3);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
 
   html[data-event="nyc"] .nyc-strip-desc {
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.45);
     text-align: right;
   }

@@ -282,7 +282,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .event-time {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
@@ -438,7 +438,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     .programme-row {
-      grid-template-columns: 88px 1fr;
+      grid-template-columns: 104px 1fr;
     }
 
     .details-row {

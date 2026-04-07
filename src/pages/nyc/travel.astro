@@ -302,7 +302,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .details-band {
     padding: 14px 64px;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -335,7 +335,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-info-key {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -344,13 +344,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .nyc-info-val {
-    font-size: 16px;
+    font-size: var(--font-size-body);
     line-height: 1.6;
     color: var(--color-warm-cream);
   }
 
   html[data-event="nyc"] .nyc-info-val--muted {
-    font-size: 14px;
+    font-size: 16px;
     color: rgba(255, 249, 240, 0.4);
     font-style: italic;
   }
@@ -364,7 +364,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }
@@ -382,7 +382,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   html[data-event="nyc"] .nyc-info-link {
     display: inline-block;
     margin-top: 6px;
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: rgba(255, 249, 240, 0.6);
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -413,7 +413,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   html[data-event="nyc"] .travel-list span {
-    font-size: 14px;
+    font-size: 16px;
     color: rgba(255, 249, 240, 0.7);
     line-height: 1.5;
     padding-left: 12px;
@@ -425,7 +425,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     position: absolute;
     left: 0;
     color: rgba(255, 249, 240, 0.3);
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     top: 3px;
   }
 
