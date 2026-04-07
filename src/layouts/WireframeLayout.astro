@@ -2,6 +2,8 @@
 import { ClientRouter } from 'astro:transitions';
 import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
+import '../styles/tokens.css';
+import '../styles/base.css';
 
 interface Props {
   title: string;
@@ -297,9 +299,6 @@ const lang = Astro.locals.lang ?? 'en';
 </html>
 
 <style is:global>
-  @import '../styles/tokens.css';
-  @import '../styles/base.css';
-
   * {
     margin: 0;
     padding: 0;

@@ -70,6 +70,29 @@ forward/backward/sibling NYC navigations were merged into one broad
 the incoming document before the new snapshot. Otherwise incoming transition CSS
 can resolve against the old route for one frame and produce incorrect layering.
 
+## Shared CSS loading rule
+
+Shared site CSS must not be loaded into `WireframeLayout.astro` via inline-style
+`@import`.
+
+Use module imports instead:
+
+- `import '../styles/tokens.css';`
+- `import '../styles/base.css';`
+
+Why this matters:
+
+- with inline `@import`, Astro/Vite can leave a stale layout style block in the
+  document during client-side navigation
+- that stale block can coexist with the new route styles and produce
+  transition-only regressions
+- this specifically caused `/nyc/details -> /nyc` to reuse old typography tokens
+  after the transition while direct `/nyc` loads stayed correct
+
+If a transition-only visual bug appears again, compare direct-load vs SPA
+navigation computed styles and inspect `style[data-vite-dev-id]` in DevTools for
+duplicate route or layout style tags.
+
 ## Verification
 
 When touching this area, verify:
