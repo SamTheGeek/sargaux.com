@@ -1,3 +1,4 @@
+import type { EventRecord } from '../types/event';
 import type { RSVPResponse } from '../types/rsvp';
 
 export function getAttendingNames(rsvp: RSVPResponse | null): Set<string> {
@@ -16,4 +17,12 @@ export function redactEmail(email?: string): string | undefined {
   if (!localPart || !domain) return undefined;
 
   return `${localPart[0]}***@${domain}`;
+}
+
+export function getDisplayEventTime(event: EventRecord, nycTimeRange?: string): string | undefined {
+  if (event.wedding === 'nyc' && nycTimeRange) {
+    return nycTimeRange;
+  }
+
+  return event.time;
 }

@@ -4,9 +4,10 @@ import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
 import mBulletSrc from '../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../assets/nyc/subway-bullet-sf.svg?url';
 import { features } from '../../config/features';
-import { strings } from '../../content/strings';
+import { NYC_EVENT_TIME, strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { getDisplayEventTime } from '../../lib/rsvp-display';
 import type { GuestRecord } from '../../types/guest';
 import type { EventRecord } from '../../types/event';
 import type { RSVPResponse } from '../../types/rsvp';
@@ -51,7 +52,7 @@ if (isPreview) {
       name: 'Dinner',
       type: 'Core',
       wedding: 'nyc',
-      time: '5:00 PM',
+      time: NYC_EVENT_TIME.en,
       location: 'Bar Blondeau at the Wythe Hotel',
       showOnWebsite: true,
     },
@@ -60,7 +61,7 @@ if (isPreview) {
       name: 'Dancing',
       type: 'Core',
       wedding: 'nyc',
-      time: '9:00 PM',
+      time: NYC_EVENT_TIME.en,
       location: 'Location TBA',
       showOnWebsite: true,
     },
@@ -90,6 +91,7 @@ const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
+const nycEventTimeRange = t(strings.nyc.timeRange);
 const confirmationEmailRequired = t(strings.nyc.rsvp.form.email.requireOne);
 const existingSubmittedAt = existingRSVP?.submittedAt
   ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
@@ -225,7 +227,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                     <div class="event-row-content">
                       <span class="event-row-name">{event.name}</span>
                       <span class="event-row-meta">
-                        {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                       </span>
                     </div>
                   </label>
@@ -254,7 +256,7 @@ const existingSubmittedAt = existingRSVP?.submittedAt
                       <div class="event-row-content">
                         <span class="event-row-name">{event.name}</span>
                         <span class="event-row-meta">
-                          {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                          {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                         </span>
                       </div>
                     </label>

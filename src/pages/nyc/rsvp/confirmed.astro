@@ -2,10 +2,10 @@
 import WireframeLayout from '../../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
 import { generateTokenIfPossible } from '../../../lib/calendar';
-import { getAttendingNames, redactEmail } from '../../../lib/rsvp-display';
+import { getAttendingNames, getDisplayEventTime, redactEmail } from '../../../lib/rsvp-display';
 import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
-import { strings } from '../../../content/strings';
+import { NYC_EVENT_TIME, strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
 import NycCalendarCta from '../../../components/NycCalendarCta.astro';
@@ -55,7 +55,7 @@ if (isDevMock) {
       name: 'Welcome Dinner',
       type: 'Core',
       wedding: 'nyc',
-      time: '5:30 PM',
+      time: NYC_EVENT_TIME.en,
       location: 'Bar Blondeau',
       showOnWebsite: true,
     },
@@ -64,7 +64,7 @@ if (isDevMock) {
       name: 'Reception',
       type: 'Core',
       wedding: 'nyc',
-      time: '8:30 PM',
+      time: NYC_EVENT_TIME.en,
       location: 'Wythe Hotel',
       showOnWebsite: true,
     },
@@ -108,6 +108,7 @@ if (isDevMock) {
 const attendingNames = getAttendingNames(existingRSVP);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
+const nycEventTimeRange = t(strings.nyc.timeRange);
 const submittedAt = existingRSVP?.submittedAt
   ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
@@ -250,7 +251,7 @@ const submittedAt = existingRSVP?.submittedAt
                     <div class="event-row-content">
                       <span class="event-row-name">{event.name}</span>
                       <span class="event-row-meta">
-                        {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                       </span>
                     </div>
                   </div>

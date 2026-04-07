@@ -27,6 +27,7 @@ function s(en: string, fr: string): T {
 /** RSVP deadline dates — single source of truth for each event */
 export const RSVP_DEADLINE_NYC    = { en: 'September 1, 2026',  fr: '1er septembre 2026' } satisfies T;
 export const RSVP_DEADLINE_FRANCE = { en: 'April 15, 2027',     fr: '15 avril 2027'      } satisfies T;
+export const NYC_EVENT_TIME       = { en: '5:30 PM - 9 PM',     fr: '17h30 - 21h00'      } satisfies T;
 
 export const strings = {
   // ─────────────────────────────────────────
@@ -102,10 +103,11 @@ export const strings = {
     heroDate:        s('October 11, 2026', '11 octobre 2026'),
     heroDateTentative: s('', ''),
     heroEventType:   s('Dinner & Dancing', 'Dîner & Dancing'),
+    timeRange:       NYC_EVENT_TIME,
     when: {
       heading:  s('When', 'Quand'),
       date:     s('Sunday, October 11, 2026', 'Dimanche 11 octobre 2026'),
-      time:     s('5:15 PM – 9:15 PM', '17h15 – 21h15'),
+      time:     NYC_EVENT_TIME,
       weekend:  s('', ''),
       note:     s('', ''),
     },
@@ -162,13 +164,13 @@ export const strings = {
       schedule: {
         heading: s('Schedule', 'Programme'),
         dinner: {
-          time:  s('5:00 PM', '17h00'),
+          time:  s('5:30 PM', '17h30'),
           title: s('Cocktails & Bites', 'Cocktails & Bouchées'),
           desc:  s("Cocktails, passed hors d'oeuvres, and small plates", "Cocktails, hors-d'oeuvres passés et petites assiettes"),
         },
         sunset: s('Sunset behind the Manhattan skyline', 'Coucher de soleil derrière la skyline de Manhattan'),
         dancing: {
-          time:  s('9:00 PM', '21h00'),
+          time:  s('9:30 PM', '21h30'),
           title: s('Dancing', 'Dancing'),
           desc:  s(
             'Join us as we head to a nearby venue and keep the night going. No reservations, just dancing and continued celebration.',
