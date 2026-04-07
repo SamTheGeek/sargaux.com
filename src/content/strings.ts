@@ -163,13 +163,17 @@ export const strings = {
         heading: s('Schedule', 'Programme'),
         dinner: {
           time:  s('5:00 PM', '17h00'),
-          title: s('Cocktails & Dinner', 'Cocktail & Dîner'),
-          desc:  s('Join us for an evening of celebration', 'Rejoignez-nous pour une soirée de célébration'),
+          title: s('Cocktails & Bites', 'Cocktails & Bouchées'),
+          desc:  s("Cocktails, passed hors d'oeuvres, and small plates", "Cocktails, hors-d'oeuvres passés et petites assiettes"),
         },
+        sunset: s('Sunset behind the Manhattan skyline', 'Coucher de soleil derrière la skyline de Manhattan'),
         dancing: {
           time:  s('9:00 PM', '21h00'),
           title: s('Dancing', 'Dancing'),
-          desc:  s('Continue the celebration with us later in the evening', 'Continuez la fête dans notre second lieu'),
+          desc:  s(
+            'Join us as we head to a nearby venue and keep the night going. No reservations, just dancing and continued celebration.',
+            'Retrouvez-nous ensuite dans un lieu voisin pour prolonger la soirée. Sans réservation, juste de la danse et la fête qui continue.',
+          ),
         },
       },
       venues: {
@@ -189,8 +193,8 @@ export const strings = {
       whatToExpect: {
         heading: s('What to Expect', 'Programme de la soirée'),
         text:    s(
-          "The evening will begin with dinner and cocktails at Bar Blondeau. Later, we'll move to a second location for dancing and continued celebration.",
-          "La soirée commencera par un cocktail et un dîner debout dans notre premier lieu. Ensuite, nous nous retrouverons dans un second endroit pour danser et continuer la fête.",
+          "Celebrate our upcoming marriage with an evening of cocktails, passed hors d'oeuvres, and small plates, with a front-row seat to the New York City sunset.\n\nOur wedding ceremony will be held as an intimate gathering next spring. This evening is our celebration with you!",
+          "Célébrez notre futur mariage autour d'une soirée de cocktails, d'hors-d'oeuvres passés et de petites assiettes, avec une place de choix face au coucher de soleil sur New York.\n\nNotre cérémonie de mariage aura lieu lors d'un rassemblement intime au printemps prochain. Cette soirée est notre célébration avec vous !",
         ),
       },
       dressCode: {

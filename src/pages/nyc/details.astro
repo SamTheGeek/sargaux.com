@@ -90,6 +90,27 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   <!-- ═══════ Moss zone ═══════ -->
   <div class="nyc-page-moss">
 
+  <!-- Section band: Details -->
+  <div class="nyc-moss details-band">{t(strings.nyc.nav.details.title)}</div>
+
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.dressCode.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.details.dressCode.value)}
+            <span class="nyc-info-secondary">{t(strings.nyc.details.dressCode.note)}</span>
+          </span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.details.whatToExpect.heading)}</span>
+          <span class="nyc-info-val nyc-info-val--prose">{t(strings.nyc.details.whatToExpect.text)}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Section band: Schedule -->
   <div class="nyc-moss details-band">{t(strings.nyc.details.schedule.heading)}</div>
 
@@ -105,7 +126,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
         </div>
         <div class="nyc-info-row">
           <span class="nyc-info-key">6:23 PM</span>
-          <span class="nyc-info-val">Sunset</span>
+          <span class="nyc-info-val">{t(strings.nyc.details.schedule.sunset)}</span>
         </div>
         <div class="nyc-info-row">
           <span class="nyc-info-key">{t(strings.nyc.details.schedule.dancing.time)}</span>
@@ -143,7 +164,7 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
           </div>
           <div class="venue-body">
             <div class="venue-text">
-              <p class="venue-type">Cocktails, Dinner, & Celebration</p>
+              <p class="venue-type">Celebration</p>
               <h3 class="venue-name">{t(strings.nyc.details.venues.dinner.name)}</h3>
               <p class="venue-address">{t(strings.nyc.details.venues.dinner.address)}</p>
             </div>
@@ -222,27 +243,6 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
           </div>
         </div>
 
-      </div>
-    </div>
-  </section>
-
-  <!-- Section band: Details -->
-  <div class="nyc-moss details-band">{t(strings.nyc.nav.details.title)}</div>
-
-  <section class="nyc-moss details-section">
-    <div class="page-content">
-      <div class="nyc-info-table">
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.details.dressCode.heading)}</span>
-          <span class="nyc-info-val">
-            {t(strings.nyc.details.dressCode.value)}
-            <span class="nyc-info-secondary">{t(strings.nyc.details.dressCode.note)}</span>
-          </span>
-        </div>
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.details.whatToExpect.heading)}</span>
-          <span class="nyc-info-val">{t(strings.nyc.details.whatToExpect.text)}</span>
-        </div>
       </div>
     </div>
   </section>
@@ -446,6 +446,11 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
     font-size: 16px;
     line-height: 1.6;
     color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .nyc-info-val--prose {
+    white-space: pre-line;
+    max-width: 760px;
   }
 
   html[data-event="nyc"] .nyc-info-secondary {
