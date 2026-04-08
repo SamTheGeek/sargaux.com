@@ -716,25 +716,29 @@ export const strings = {
       subtitle:  s('Getting to Village De Sully', 'Comment se rendre au Village De Sully'),
       toFrance: {
         heading: s('Getting to France', 'Comment venir en France'),
-        note:    s('For guests traveling from abroad.', "Pour les invités venant de l'étranger."),
         air: {
           heading: s('By Air', 'En avion'),
           intro:   s('Paris has two major international airports:', 'Paris possède deux grands aéroports internationaux :'),
           cdg:     s(
-            'Paris CDG (Charles de Gaulle) — Most international flights arrive here. Well connected to central Paris via RER B train (~35 min).',
-            "Paris CDG (Charles de Gaulle) — La plupart des vols internationaux y arrivent. Bien connecté au centre de Paris via le RER B (~35 min).",
+            "Paris CDG (Charles de Gaulle) — Most American flights arrive here. It is easy to reach central Paris by bus, taxi, RER train and — if we're lucky — the express train will begin operations just before we all arrive.",
+            "Paris CDG (Charles de Gaulle) — La plupart des vols en provenance des États-Unis y arrivent. Il est facile de rejoindre le centre de Paris en bus, en taxi, en RER et, avec un peu de chance, la liaison express sera mise en service juste avant notre arrivée.",
           ),
           orly:    s(
-            'Paris Orly — Closer to the city center, serves European and some international flights. Orlyval + RER B or Tram T7 to reach Paris.',
-            "Paris Orly — Plus proche du centre-ville, dessert les vols européens et certains vols internationaux. Orlyval + RER B ou Tram T7 pour rejoindre Paris.",
+            'Paris Orly — Low-cost airlines from the US and some European domestic flights arrive here. The Paris Metro has recently been expanded to ORY and runs directly to the city center.',
+            "Paris Orly — Certaines compagnies low cost depuis les États-Unis et des vols intérieurs européens y arrivent. Le métro parisien dessert désormais ORY directement jusqu'au centre-ville.",
           ),
         },
         eurostar: {
           heading: s('By Train (Eurostar)', 'En train (Eurostar)'),
           text:    s(
-            'From London, the Eurostar runs to Paris Gare du Nord in ~2h15. Book early for the best fares.',
-            "Au départ de Londres, l'Eurostar rejoint Paris Gare du Nord en ~2h15. Réservez tôt pour les meilleurs tarifs.",
+            'From London and Amsterdam, the Eurostar runs to Paris Gare du Nord. Book early for the best fares.',
+            "Depuis Londres et Amsterdam, l'Eurostar dessert Paris Gare du Nord. Réservez tôt pour les meilleurs tarifs.",
           ),
+        },
+        metroTickets: {
+          beforeLink: s('You can now buy your Metro and RER tickets directly', 'Vous pouvez désormais acheter directement vos billets de métro et de RER'),
+          linkText:   s('on your phone', 'sur votre téléphone'),
+          afterLink:  s('for convenience.', 'pour plus de simplicité.'),
         },
       },
       toVenue: {
@@ -743,22 +747,25 @@ export const strings = {
         train: {
           heading: s('By Train', 'En train'),
           step1:   s(
-            'Take a Transilien train (Line J or N) from Paris Saint-Lazare to Mantes-la-Jolie station (~45 min)',
-            "Prenez un train Transilien (ligne J ou N) depuis Paris Saint-Lazare jusqu'à la gare de Mantes-la-Jolie (~45 min)",
+            'Take a Transilien train (Line J or N) or the TER Normandie from Paris Saint-Lazare to Mantes-la-Jolie. The trip takes 40 to 50 minutes depending on which route you use.',
+            "Prenez un train Transilien (ligne J ou N) ou le TER Normandie depuis Paris Saint-Lazare jusqu'à Mantes-la-Jolie. Le trajet dure entre 40 et 50 minutes selon l'itinéraire.",
           ),
           step2:   s(
-            'From Mantes-la-Jolie, the venue is a short drive (~15 min)',
-            'Depuis Mantes-la-Jolie, le lieu est à une courte distance en voiture (~15 min)',
+            'Many SNCF trains also stop at Mantes-la-Jolie.',
+            'De nombreux trains SNCF desservent également Mantes-la-Jolie.',
           ),
-          note:    s(
-            'Ubers are available around Mantes-la-Jolie station. Taxis are right in front of the station.',
-            "Des Uber sont disponibles autour de la gare de Mantes-la-Jolie. Des taxis sont juste devant la gare.",
+          step3:   s(
+            'From Mantes-la-Jolie, the venue is only a 10 minute drive. Ubers are available around the station, and taxis are right in front.',
+            "Depuis Mantes-la-Jolie, le lieu n'est qu'à 10 minutes en voiture. Des Uber sont disponibles autour de la gare et des taxis se trouvent juste devant.",
           ),
         },
         car: {
-          heading:     s('By Car', 'En voiture'),
-          text:        s('From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.', "Depuis le centre de Paris : ~1 heure via l'autoroute A13. Parking gratuit disponible au village."),
-          placeholder: s('Detailed driving directions will be provided closer to the event.', "Des instructions détaillées seront fournies à l'approche de l'événement."),
+          heading:              s('By Car', 'En voiture'),
+          text:                 s('From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.', "Depuis le centre de Paris : ~1 heure via l'autoroute A13. Parking gratuit disponible au village."),
+          directionsBeforeLink: s('Driving directions are available', 'Les indications routières sont disponibles'),
+          directionsLinkText:   s('here', 'ici'),
+          directionsAfterLink:  s('.', '.'),
+          tolls:                s('French highways use automated tolling and have frequent speed cameras.', 'Les autoroutes françaises utilisent un péage automatisé et comportent de nombreux radars.'),
         },
       },
       practical: {
@@ -772,17 +779,17 @@ export const strings = {
         currency: {
           heading: s('Currency', 'Monnaie'),
           value:   s('Euro (€)', 'Euro (€)'),
-          note:    s('Cards widely accepted; some small shops prefer cash', 'Cartes bancaires largement acceptées ; certains petits commerces préfèrent le liquide'),
+          note:    s('Tap-to-pay and chip cards are widely accepted but magstripe is not. Cash is rarely used and only preferred by some smaller shops.', 'Les cartes sans contact et à puce sont largement acceptées, mais pas la bande magnétique. Les espèces sont rarement utilisées et seulement préférées par quelques petits commerces.'),
         },
         language: {
           heading: s('Language', 'Langue'),
           value:   s('French', 'Français'),
-          note:    s("English understood in Paris and tourist areas", "L'anglais est compris à Paris et dans les zones touristiques"),
+          note:    s('English is widely understood but outside of Paris and tourist areas people will strongly prefer French.', "L'anglais est largement compris, mais en dehors de Paris et des zones touristiques, les gens préféreront nettement le français."),
         },
         weather: {
           heading: s('Weather', 'Météo'),
-          value:   s('Late May', 'Fin mai'),
-          note:    s('Typically 15–22°C (60–72°F), pleasant and sunny. Light layers recommended for evenings.', 'Généralement 15–22°C, agréable et ensoleillé. Des couches légères sont recommandées pour les soirées.'),
+          value:   s('Late May: 60–72°F (15–22°C)', 'Fin mai : 15–22°C (60–72°F)'),
+          note:    s('Spring weather varies widely and changes quickly. Layers are recommended to deal with the evening chill.', "Le temps printanier varie beaucoup et change vite. Des couches sont recommandées pour faire face à la fraîcheur du soir."),
         },
       },
     },

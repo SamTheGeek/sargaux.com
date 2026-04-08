@@ -1,0 +1,230 @@
+/*
+ * Keep France travel overrides out of inline Astro <style> blocks.
+ * The page relies on a named view transition for the France disc, and
+ * external page-scoped CSS avoids stale duplicate style tags during SPA nav.
+ */
+
+html[data-event="france"][data-page="travel"] .site-header {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+html[data-event="france"][data-page="travel"] main {
+  position: relative;
+  flex: 1;
+  padding-bottom: 3rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 249, 240, 0.1) 0%, rgba(255, 249, 240, 0) 42%),
+    linear-gradient(180deg, rgba(230, 90, 23, 0.08) 0%, rgba(230, 90, 23, 0) 28%);
+  pointer-events: none;
+}
+
+html[data-event="france"][data-page="travel"] .travel-disc-stage {
+  position: fixed;
+  top: 8rem;
+  left: clamp(1.25rem, 6vw, 5rem);
+  width: clamp(22rem, 38vw, 36rem);
+  height: clamp(22rem, 38vw, 36rem);
+  pointer-events: none;
+  z-index: 2;
+}
+
+html[data-event="france"][data-page="travel"] .travel-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 34%, rgba(255, 249, 240, 0.28) 0%, rgba(255, 249, 240, 0) 30%),
+    var(--color-accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 249, 240, 0.14),
+    0 24px 64px rgba(13, 36, 77, 0.16);
+}
+
+html[data-event="france"][data-page="travel"] .travel-shell {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding-top: 3rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-intro,
+html[data-event="france"][data-page="travel"] .travel-sections {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+html[data-event="france"][data-page="travel"] h1 {
+  font-size: clamp(2.75rem, 5vw, 4.5rem);
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+html[data-event="france"][data-page="travel"] .subtitle {
+  max-width: 32rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  text-align: left;
+}
+
+html[data-event="france"][data-page="travel"] .travel-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card {
+  border: 1px solid rgba(13, 36, 77, 0.16);
+  background: rgba(255, 249, 240, 0.9);
+  box-shadow: 0 18px 52px rgba(13, 36, 77, 0.08);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card h2 {
+  font-size: 1.625rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="travel"] .travel-card h3 {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--color-text);
+}
+
+html[data-event="france"][data-page="travel"] .travel-card h3:first-of-type {
+  margin-top: 0.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card p {
+  margin: 0 0 0.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card li {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  margin-bottom: 0.75rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-card li:last-child {
+  margin-bottom: 0;
+}
+
+html[data-event="france"][data-page="travel"] .travel-inline-link {
+  color: var(--color-accent);
+}
+
+html[data-event="france"][data-page="travel"] .travel-subrule {
+  border: none;
+  border-top: 1px solid rgba(13, 36, 77, 0.18);
+  margin: 1rem 0 0.75rem;
+}
+
+html[data-event="france"][data-page="travel"] .travel-footnote {
+  margin-top: 0;
+}
+
+html[data-event="france"][data-page="travel"] .date-ref {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+html[data-event="france"][data-page="travel"] .info-item {
+  border: 1px solid rgba(13, 36, 77, 0.16);
+  background: rgba(255, 249, 240, 0.78);
+  padding: 1rem;
+}
+
+html[data-event="france"][data-page="travel"] .info-item h3 {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.5rem;
+}
+
+html[data-event="france"][data-page="travel"] .info-item p {
+  margin: 0 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+html[data-event="france"][data-page="travel"] .info-item p:last-child {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+html[data-event="france"][data-page="travel"] footer {
+  padding: 2rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+html[data-event="france"][data-page="travel"] .footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+}
+
+html[data-event="france"][data-page="travel"] .footer-row p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  html[data-event="france"][data-page="travel"] .travel-disc-stage {
+    position: absolute;
+    top: 7.5rem;
+    left: 50%;
+    width: min(72vw, 25rem);
+    height: min(72vw, 25rem);
+    transform: translateX(-50%);
+    opacity: 0.26;
+  }
+
+  html[data-event="france"][data-page="travel"] .travel-intro,
+  html[data-event="france"][data-page="travel"] .travel-sections {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  html[data-event="france"][data-page="travel"] .travel-shell {
+    padding-top: 11rem;
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-event="france"][data-page="travel"] .travel-shell {
+    padding-top: 10rem;
+  }
+
+  html[data-event="france"][data-page="travel"] .travel-card {
+    padding: 1.25rem;
+  }
+
+  html[data-event="france"][data-page="travel"] .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
