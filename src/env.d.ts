@@ -28,6 +28,7 @@ declare namespace NodeJS {
 interface ImportMetaEnv {
   // Feature flags (all optional, override defaults in src/config/features.ts)
   readonly FEATURE_GLOBAL_WEDDING_SITE_ENABLED?: string;
+  readonly FEATURE_DEV_LOGIN_DELAY?: string;
   readonly FEATURE_GLOBAL_NOTION_BACKEND?: string;
   readonly FEATURE_GLOBAL_I18N?: string;
   readonly FEATURE_GLOBAL_CONTENT_LABELS_REMOVED?: string;

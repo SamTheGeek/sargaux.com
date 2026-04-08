@@ -26,6 +26,9 @@ type FeatureFlags = {
     contentLabelsRemoved: boolean;
     emailEnabled: boolean;
   };
+  dev: {
+    loginDelay: boolean; // Adds 2s artificial delay to login so the loading animation is visible
+  };
   homepage: {
     teaser: boolean;
   };
@@ -67,6 +70,9 @@ const features: FeatureFlags = {
     i18n: flag(import.meta.env.FEATURE_GLOBAL_I18N, false),
     contentLabelsRemoved: flag(import.meta.env.FEATURE_GLOBAL_CONTENT_LABELS_REMOVED, false),
     emailEnabled: flag(import.meta.env.FEATURE_GLOBAL_EMAIL_ENABLED, false),
+  },
+  dev: {
+    loginDelay: flag(import.meta.env.FEATURE_DEV_LOGIN_DELAY, false),
   },
   homepage: {
     teaser: flag(import.meta.env.FEATURE_HOMEPAGE_TEASER, false),

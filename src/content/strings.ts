@@ -74,7 +74,7 @@ export const strings = {
       nameLabel:    s('Your name', 'Votre nom'),
       namePlaceholder: s('Your name', 'Votre prénom et nom'),
       submitBtn:    s('Continuer', 'Continuer'),
-      checkingBtn:  s('Checking...', 'Vérification...'),
+      checkingBtn:  s('Checking', 'Vérification'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
     },

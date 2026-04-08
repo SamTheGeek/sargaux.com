@@ -3,7 +3,7 @@ import WireframeLayout from '../layouts/WireframeLayout.astro';
 import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
 import { getAuthenticatedGuest } from '../lib/auth';
-import { isSiteEnabled } from '../config/features';
+import { isSiteEnabled, features } from '../config/features';
 import { getPrimaryEventRoute } from '../lib/event-routing';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
@@ -23,6 +23,7 @@ const emptyError = t(strings.home.modal.errorEmpty);
 const defaultError = t(strings.home.modal.errorDefault);
 const checkingLabel = t(strings.home.modal.checkingBtn);
 const submitLabel = t(strings.home.modal.submitBtn);
+const loginDelay = features.dev.loginDelay;
 ---
 
 {isSiteEnabled() ? (
@@ -59,7 +60,8 @@ const submitLabel = t(strings.home.modal.submitBtn);
                   />
                   <span class="inline-progress-label" aria-hidden="true">{checkingLabel}</span>
                   <button type="submit" class="inline-submit-btn" id="inline-submit" aria-label="Submit name">
-                    <span aria-hidden="true" id="inline-submit-symbol">→</span>
+                    <span aria-hidden="true" class="submit-arrow">→</span>
+                    <span class="submit-dots" aria-hidden="true"><span class="submit-dot">.</span><span class="submit-dot">.</span><span class="submit-dot">.</span></span>
                   </button>
                 </div>
               </div>
@@ -300,14 +302,45 @@ const submitLabel = t(strings.home.modal.submitBtn);
         justify-content: center;
         padding: 12px 64px;
         color: var(--color-surface-text-loading);
-        font-size: 0.75rem;
-        letter-spacing: var(--tracking-caption);
+        font-size: var(--font-size-body);
+        letter-spacing: var(--tracking-h3);
+        font-weight: 500;
         text-transform: uppercase;
         pointer-events: none;
         opacity: 0;
         transition: opacity 140ms ease;
         z-index: 1;
       }
+
+      .submit-dots {
+        display: none;
+      }
+
+      .inline-entry-control.is-loading .submit-arrow {
+        display: none;
+      }
+
+      .inline-entry-control.is-loading .submit-dots {
+        display: inline;
+      }
+
+      @keyframes submit-dot {
+        0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-2px); }
+      }
+
+      .submit-dot {
+        display: inline-block;
+        opacity: 0.2;
+      }
+
+      .inline-entry-control.is-loading .submit-dot {
+        animation: submit-dot 1.2s infinite ease-in-out;
+        animation-fill-mode: both;
+      }
+
+      .inline-entry-control.is-loading .submit-dot:nth-child(2) { animation-delay: 0.16s; }
+      .inline-entry-control.is-loading .submit-dot:nth-child(3) { animation-delay: 0.32s; }
 
       .inline-entry-control.is-loading .inline-progress-label {
         opacity: 1;
@@ -394,7 +427,8 @@ const submitLabel = t(strings.home.modal.submitBtn);
         /* In dark mode, --color-text (background) and --color-surface-text
            both resolve to warm-cream — use --color-bg for legible text. */
         .login-trigger-panel,
-        input.inline-name-input {
+        input.inline-name-input,
+        .inline-progress-label {
           color: var(--color-bg);
           -webkit-text-fill-color: var(--color-bg);
         }
@@ -453,7 +487,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
     </style>
   </WireframeLayout>
 
-  <script is:inline data-astro-rerun define:vars={{ emptyError, defaultError, checkingLabel, submitLabel }}>
+  <script is:inline data-astro-rerun define:vars={{ emptyError, defaultError, checkingLabel, submitLabel, loginDelay }}>
     (() => {
       window.__homeLoginController?.abort?.();
 
@@ -468,7 +502,6 @@ const submitLabel = t(strings.home.modal.submitBtn);
       const errorMessage = document.getElementById('error-message');
       const submitBtn = document.getElementById('submit-btn');
       const inlineSubmit = document.getElementById('inline-submit');
-      const inlineSubmitSymbol = document.getElementById('inline-submit-symbol');
 
       if (!form || !entryControl || !trigger || !nameInput || !errorMessage || !submitBtn || !inlineSubmit) {
         return;
@@ -503,11 +536,6 @@ const submitLabel = t(strings.home.modal.submitBtn);
         inlineSubmit.disabled = submitting;
         submitBtn.disabled = submitting;
         submitBtn.textContent = submitting ? checkingLabel : submitLabel;
-
-        if (inlineSubmitSymbol) {
-          inlineSubmitSymbol.textContent = submitting ? '…' : '→';
-        }
-
         inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
       };
 
@@ -576,6 +604,7 @@ const submitLabel = t(strings.home.modal.submitBtn);
 
           if (response.ok) {
             shouldResetState = false;
+            if (loginDelay) await new Promise((r) => setTimeout(r, 2000));
             navigateWithTransition(data.redirectPath || '/nyc');
             return;
           }
