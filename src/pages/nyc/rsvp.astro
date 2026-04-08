@@ -16,6 +16,7 @@ const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const PREVIEW_SUBMITTED_AT = '2025-12-13T20:21:00-05:00';
 
 let party: GuestRecord[] = [];
 let coreEvents: EventRecord[] = [];
@@ -67,7 +68,18 @@ if (isPreview) {
     },
   ];
   optionalEvents = [];
-  existingRSVP = null;
+  existingRSVP = {
+    id: 'preview-nyc-rsvp',
+    guestId: 'preview-sam',
+    event: 'nyc',
+    submittedAt: PREVIEW_SUBMITTED_AT,
+    status: 'Attending',
+    guestsAttending: 'Sam Gross, Margaux Ancel',
+    dietary: '',
+    message: '',
+    details: {},
+    eventsAttending: ['preview-event-dinner', 'preview-event-dancing'],
+  };
 } else if (guestId) {
   try {
     party = await getGuestParty(guestId);
@@ -93,15 +105,38 @@ const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const nycEventTimeRange = t(strings.nyc.timeRange);
 const confirmationEmailRequired = t(strings.nyc.rsvp.form.email.requireOne);
-const existingSubmittedAt = existingRSVP?.submittedAt
-  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+
+function formatSubmittedAt(dateString: string, locale: string): string {
+  const date = new Date(dateString);
+
+  if (locale === 'fr') {
+    const datePart = new Intl.DateTimeFormat('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    }).format(date);
+    const timePart = new Intl.DateTimeFormat('fr-FR', {
       hour: 'numeric',
       minute: '2-digit',
-    })
-  : null;
+    }).format(date);
+    return `${datePart} à ${timePart}`;
+  }
+
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date).replace(' AM', 'AM').replace(' PM', 'PM');
+
+  return `${datePart} at ${timePart}`;
+}
+
+const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRSVP.submittedAt, lang) : null;
 ---
 
 <WireframeLayout title={t(strings.nyc.rsvp.pageTitle)} event="nyc">
@@ -138,7 +173,9 @@ const existingSubmittedAt = existingRSVP?.submittedAt
     <!-- ── Deadline band (full-width) ── -->
     <div class="rsvp-deadline-band">
       <div class="page-content rsvp-deadline-inner">
-        <span class="deadline-label">{t(strings.nyc.rsvp.deadline)}</span>
+        <span class="deadline-label">
+          {existingRSVP ? t(strings.nyc.rsvp.existingBanner.prefix) : t(strings.nyc.rsvp.deadline)}
+        </span>
         <strong class="deadline-date">{t(strings.nyc.rsvp.deadlineDate)}</strong>
       </div>
     </div>
@@ -163,17 +200,6 @@ const existingSubmittedAt = existingRSVP?.submittedAt
       </div>
     ) : (
       <>
-        {existingRSVP && (
-          <div class="page-content">
-            <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-              <p>
-                {t(strings.nyc.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.{' '}
-                {t(strings.nyc.rsvp.existingBanner.suffix)}
-              </p>
-            </aside>
-          </div>
-        )}
-
         <form class="rsvp-form" id="rsvp-form" data-event="nyc">
 
           <!-- ── Who's Coming ── -->
@@ -328,6 +354,11 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
           <!-- ── Submit ── -->
           <div class="page-content rsvp-submit-zone">
+            {existingRSVP && lastSubmittedAt && (
+              <p class="last-submitted-note">
+                {t(strings.nyc.rsvp.form.lastSubmittedLabel)} <strong>{lastSubmittedAt}</strong>
+              </p>
+            )}
             <button type="submit" class="rsvp-submit-btn">
               {existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}
             </button>
@@ -538,22 +569,6 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   }
 
   .error-card p {
-    font-size: 16px;
-    margin: 0;
-  }
-
-  /* ── Existing RSVP notice ──────────────────── */
-
-  .existing-rsvp-banner {
-    background: var(--color-info-bg);
-    border: 1px solid var(--color-info-border);
-    padding: var(--space-sm) var(--space-md);
-    border-radius: 6px;
-    color: var(--color-info);
-    margin-top: var(--space-md);
-  }
-
-  .existing-rsvp-banner p {
     font-size: 16px;
     margin: 0;
   }
@@ -904,6 +919,13 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   .rsvp-submit-zone {
     padding-top: var(--space-sm);
     padding-bottom: var(--space-lg);
+  }
+
+  .last-submitted-note {
+    margin: 0 0 var(--space-xs);
+    color: var(--color-text-muted);
+    font-size: 15px;
+    text-align: center;
   }
 
   .rsvp-submit-btn {

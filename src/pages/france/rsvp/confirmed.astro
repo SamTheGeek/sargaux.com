@@ -147,7 +147,7 @@ function accommodationLabel(value?: string): string {
       <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
 
       <div class="deadline-banner">
-        <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
+        <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
       </div>
 
       {!guestId && !isDevMock ? (
@@ -180,10 +180,6 @@ function accommodationLabel(value?: string): string {
             showNote={false}
             testId="calendar-confirmation-link"
           />
-
-          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-            <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
-          </aside>
 
           <section class="form-section">
           <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>

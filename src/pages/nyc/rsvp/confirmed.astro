@@ -149,8 +149,10 @@ const submittedAt = existingRSVP?.submittedAt
 
     <div class="rsvp-deadline-band">
       <div class="page-content rsvp-deadline-inner">
-        <span class="deadline-label">{t(strings.nyc.rsvp.deadline)}</span>
-        <strong class="deadline-date">{t(strings.nyc.rsvp.deadlineDate)}</strong>
+        <span class="deadline-label">
+          {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
+        </span>
+        <strong class="deadline-date">{existingRSVP ? submittedAt : t(strings.nyc.rsvp.deadlineDate)}</strong>
       </div>
     </div>
 
@@ -200,14 +202,6 @@ const submittedAt = existingRSVP?.submittedAt
             testId="calendar-confirmation-link"
           />
         </section>
-
-        <div class="page-content">
-          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-            <p>
-              {t(strings.nyc.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.
-            </p>
-          </aside>
-        </div>
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
         <section class="rsvp-section page-content">
