@@ -17,11 +17,11 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
-    "@astrojs/netlify": "^7.0.0",
+    "@astrojs/netlify": "^7.0.6",
     "@astrojs/node": "^10.0.0",
-    "@notionhq/client": "^5.15.0",
-    "astro": "^6.1.1",
-    "resend": "^6.9.4"
+    "@notionhq/client": "^5.16.0",
+    "astro": "^6.1.4",
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
