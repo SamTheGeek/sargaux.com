@@ -17,132 +17,134 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </header>
 
   <main>
-    <h1>{t(strings.france.details.heading)}</h1>
-    <p class="subtitle">{t(strings.france.details.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-details-content">
+      <h1>{t(strings.france.details.heading)}</h1>
+      <p class="subtitle">{t(strings.france.details.subtitle)}</p>
 
-    <section class="hero-venue">
-      <div class="venue-image-frame venue-image-frame--hero">
-        <img
-          src="/images/france/fromabove.jpg"
-          alt="Aerial view of the France venue"
-          class="venue-image"
-        />
-      </div>
-    </section>
+      <section class="hero-venue">
+        <div class="venue-image-frame venue-image-frame--hero">
+          <img
+            src="/images/france/fromabove.jpg"
+            alt="Aerial view of the France venue"
+            class="venue-image"
+          />
+        </div>
+      </section>
 
-    <section class="venue-info">
-      <h2>{t(strings.france.details.about.heading)}</h2>
-      <p><strong>{t(strings.france.details.about.name)}</strong></p>
-      <p>{t(strings.france.details.about.location)}</p>
-      <div class="venue-links">
-        <a
-          href="https://maps.apple/p/dHL2e4qibM7MGE"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="venue-link"
-        >
-          {t(strings.france.details.about.appleMapLink)}
-        </a>
-        <a
-          href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="venue-link"
-        >
-          {t(strings.france.details.about.googleMapLink)}
-        </a>
-        <a
-          href="https://www.groupeamadeus.com/le-village-de-sully"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="venue-link"
-        >
-          {t(strings.france.details.about.websiteLink)}
-        </a>
-      </div>
-      <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
-    </section>
+      <section class="venue-info">
+        <h2>{t(strings.france.details.about.heading)}</h2>
+        <p><strong>{t(strings.france.details.about.name)}</strong></p>
+        <p>{t(strings.france.details.about.location)}</p>
+        <div class="venue-links">
+          <a
+            href="https://maps.apple/p/dHL2e4qibM7MGE"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.appleMapLink)}
+          </a>
+          <a
+            href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.googleMapLink)}
+          </a>
+          <a
+            href="https://www.groupeamadeus.com/le-village-de-sully"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.websiteLink)}
+          </a>
+        </div>
+        <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
+      </section>
 
-    <section class="venue-spaces">
-      <h2>{t(strings.france.details.spaces.heading)}</h2>
-      <div class="spaces-grid">
-        <div class="space-card">
-          <div class="venue-image-frame venue-image-frame--card">
-            <img
-              src="/images/france/aubonmarche.jpeg"
-              alt="The grounds at the France venue"
-              class="venue-image"
-            />
+      <section class="venue-spaces">
+        <h2>{t(strings.france.details.spaces.heading)}</h2>
+        <div class="spaces-grid">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/aubonmarche.jpeg"
+                alt="The grounds at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
+            <p>{t(strings.france.details.spaces.grounds.desc)}</p>
           </div>
-          <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
-          <p>{t(strings.france.details.spaces.grounds.desc)}</p>
-        </div>
-        <div class="space-card">
-          <div class="venue-image-frame venue-image-frame--card">
-            <img
-              src="/images/france/mairie.jpg"
-              alt="Ceremony space at the France venue"
-              class="venue-image"
-            />
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/mairie.jpg"
+                alt="Ceremony space at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
+            <p>{t(strings.france.details.spaces.ceremony.desc)}</p>
           </div>
-          <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
-          <p>{t(strings.france.details.spaces.ceremony.desc)}</p>
-        </div>
-        <div class="space-card">
-          <div class="venue-image-frame venue-image-frame--card">
-            <img
-              src="/images/france/accommodation.jpg"
-              alt="Guest accommodations at the France venue"
-              class="venue-image"
-            />
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/accommodation.jpg"
+                alt="Guest accommodations at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
+            <p>{t(strings.france.details.spaces.accommodation.desc)}</p>
           </div>
-          <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
-          <p>{t(strings.france.details.spaces.accommodation.desc)}</p>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="accommodation-details">
-      <h2>{t(strings.france.details.staying.heading)}</h2>
+      <section class="accommodation-details">
+        <h2>{t(strings.france.details.staying.heading)}</h2>
 
-      <div class="recommendation-banner">
-        <strong>{t(strings.france.details.staying.recommendation)}</strong>
-        <p>{t(strings.france.details.staying.recommendationNote)}</p>
-      </div>
-
-      <div class="accommodation-info">
-        <h3>{t(strings.france.details.staying.roomDetails.heading)}</h3>
-        <ul>
-          <li><strong>{t(strings.france.details.staying.roomDetails.price)}</strong></li>
-          <li>{t(strings.france.details.staying.roomDetails.breakfast)}</li>
-          <li>{t(strings.france.details.staying.roomDetails.checkin)}</li>
-          <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
-        </ul>
-        <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
-        <p class="booking-meta"><strong>{t(strings.france.details.staying.rsvpDeadline.heading)}</strong> {t(strings.france.details.staying.rsvpDeadline.value)}</p>
-      </div>
-    </section>
-
-    <section class="dress-code">
-      <h2>{t(strings.france.details.dressCode.heading)}</h2>
-      <div class="dress-events">
-        <div class="dress-event">
-          <h3>{t(strings.france.details.dressCode.friday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.friday.code)}</p>
-          <p class="dress-note">{t(strings.france.details.dressCode.friday.note)}</p>
+        <div class="recommendation-banner">
+          <strong>{t(strings.france.details.staying.recommendation)}</strong>
+          <p>{t(strings.france.details.staying.recommendationNote)}</p>
         </div>
-        <div class="dress-event highlight">
-          <h3>{t(strings.france.details.dressCode.saturday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.saturday.code)}</p>
-          <p class="dress-note">{t(strings.france.details.dressCode.saturday.note)}</p>
+
+        <div class="accommodation-info">
+          <h3>{t(strings.france.details.staying.roomDetails.heading)}</h3>
+          <ul>
+            <li><strong>{t(strings.france.details.staying.roomDetails.price)}</strong></li>
+            <li>{t(strings.france.details.staying.roomDetails.breakfast)}</li>
+            <li>{t(strings.france.details.staying.roomDetails.checkin)}</li>
+            <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
+          </ul>
+          <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
+          <p class="booking-meta"><strong>{t(strings.france.details.staying.rsvpDeadline.heading)}</strong> {t(strings.france.details.staying.rsvpDeadline.value)}</p>
         </div>
-        <div class="dress-event">
-          <h3>{t(strings.france.details.dressCode.sunday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.sunday.code)}</p>
-          <p class="dress-note">{t(strings.france.details.dressCode.sunday.note)}</p>
+      </section>
+
+      <section class="dress-code">
+        <h2>{t(strings.france.details.dressCode.heading)}</h2>
+        <div class="dress-events">
+          <div class="dress-event">
+            <h3>{t(strings.france.details.dressCode.friday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.friday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.friday.note)}</p>
+          </div>
+          <div class="dress-event highlight">
+            <h3>{t(strings.france.details.dressCode.saturday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.saturday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.saturday.note)}</p>
+          </div>
+          <div class="dress-event">
+            <h3>{t(strings.france.details.dressCode.sunday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.sunday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.sunday.note)}</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
   <footer>

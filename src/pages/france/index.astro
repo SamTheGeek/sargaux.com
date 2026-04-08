@@ -31,15 +31,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     <!-- Destination Header — travel poster style -->
     <section class="france-hero">
-      <div class="destination-header">
+      <div class="destination-header" transition:name="france-index-hero-content">
         <p class="event-location">{t(strings.france.heroLocation)}</p>
         <h1 class="destination-name">{t(strings.france.heroTitle)}</h1>
         <p class="event-dates">{t(strings.france.heroDate)}</p>
         <p class="event-type">Margaux Marie Ancel please tell me what to put here</p>
       </div>
-      <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc" transition:persist="france-hero-disc"></div>
+      <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc"></div>
     </section>
 
+    <div class="france-index-body" transition:name="france-index-body-content">
     <!-- Band: Programme of Events -->
     <div class="band-header">Programme of Events</div>
     <section class="programme-section page-content">
@@ -172,6 +173,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </a>
       </nav>
     </section>
+    </div>
 
   </main>
 

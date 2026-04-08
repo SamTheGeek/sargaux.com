@@ -155,49 +155,50 @@ function transportLabel(value?: string): string {
   </header>
 
   <main>
-    <h1>{t(strings.france.rsvp.confirmation.heading)}</h1>
-    <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-rsvp-confirmed-content">
+      <h1>{t(strings.france.rsvp.confirmation.heading)}</h1>
+      <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
 
-    <div class="deadline-banner">
-      <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
-    </div>
+      <div class="deadline-banner">
+        <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
+      </div>
 
-    {!guestId && !isDevMock ? (
-      <div class="error-card" data-testid="notion-required">
-        <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
-        <p>{t(strings.france.rsvp.unavailable.text)}</p>
-      </div>
-    ) : loadError ? (
-      <div class="error-card" data-testid="rsvp-load-error">
-        <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
-        <p>{loadError}</p>
-      </div>
-    ) : !existingRSVP ? (
-      <div class="error-card" data-testid="missing-rsvp">
-        <h2>{t(strings.france.rsvp.confirmation.missing.heading)}</h2>
-        <p>{t(strings.france.rsvp.confirmation.missing.text)}</p>
-      </div>
-    ) : (
-      <>
-        {isDevMock && (
-          <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
-            <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+      {!guestId && !isDevMock ? (
+        <div class="error-card" data-testid="notion-required">
+          <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
+          <p>{t(strings.france.rsvp.unavailable.text)}</p>
+        </div>
+      ) : loadError ? (
+        <div class="error-card" data-testid="rsvp-load-error">
+          <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
+          <p>{loadError}</p>
+        </div>
+      ) : !existingRSVP ? (
+        <div class="error-card" data-testid="missing-rsvp">
+          <h2>{t(strings.france.rsvp.confirmation.missing.heading)}</h2>
+          <p>{t(strings.france.rsvp.confirmation.missing.text)}</p>
+        </div>
+      ) : (
+        <>
+          {isDevMock && (
+            <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
+              <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+            </aside>
+          )}
+
+          <FranceCalendarCta
+            token={calendarToken}
+            label={t(strings.france.schedule.calendarBtn)}
+            compact={true}
+            showNote={false}
+            testId="calendar-confirmation-link"
+          />
+
+          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
+            <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
           </aside>
-        )}
 
-        <FranceCalendarCta
-          token={calendarToken}
-          label={t(strings.france.schedule.calendarBtn)}
-          compact={true}
-          showNote={false}
-          testId="calendar-confirmation-link"
-        />
-
-        <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-          <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
-        </aside>
-
-        <section class="form-section">
+          <section class="form-section">
           <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
           {party.map((partyGuest) => {
             const isAttending = attendingNames.has(partyGuest.name);
@@ -219,7 +220,7 @@ function transportLabel(value?: string): string {
               </div>
             );
           })}
-        </section>
+          </section>
 
         <section class="form-section">
           <h2>{t(strings.france.rsvp.form.coreEvents.heading)}</h2>
@@ -320,8 +321,9 @@ function transportLabel(value?: string): string {
             <span>{t(strings.france.rsvp.confirmation.editLink)}</span>
           </a>
         </div>
-      </>
-    )}
+        </>
+      )}
+    </div>
   </main>
 
   <footer>

@@ -117,35 +117,36 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   </header>
 
   <main>
-    <h1>{t(strings.france.rsvp.heading)}</h1>
-    <p class="subtitle">{t(strings.france.rsvp.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-rsvp-content">
+      <h1>{t(strings.france.rsvp.heading)}</h1>
+      <p class="subtitle">{t(strings.france.rsvp.subtitle)}</p>
 
-    <div class="deadline-banner">
-      <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
-    </div>
-
-    {!guestId && !isPreview ? (
-      <div class="error-card" data-testid="notion-required">
-        <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
-        <p>{t(strings.france.rsvp.unavailable.text)}</p>
+      <div class="deadline-banner">
+        <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
       </div>
-    ) : loadError ? (
-      <div class="error-card" data-testid="rsvp-load-error">
-        <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
-        <p>{loadError}</p>
-      </div>
-    ) : (
-      <>
-        {existingRSVP && (
-          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-            <p>
-              {t(strings.france.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.
-              {t(strings.france.rsvp.existingBanner.suffix)}
-            </p>
-          </aside>
-        )}
 
-        <form class="rsvp-form" id="rsvp-form" data-event="france">
+      {!guestId && !isPreview ? (
+        <div class="error-card" data-testid="notion-required">
+          <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
+          <p>{t(strings.france.rsvp.unavailable.text)}</p>
+        </div>
+      ) : loadError ? (
+        <div class="error-card" data-testid="rsvp-load-error">
+          <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
+          <p>{loadError}</p>
+        </div>
+      ) : (
+        <>
+          {existingRSVP && (
+            <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
+              <p>
+                {t(strings.france.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.
+                {t(strings.france.rsvp.existingBanner.suffix)}
+              </p>
+            </aside>
+          )}
+
+          <form class="rsvp-form" id="rsvp-form" data-event="france">
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
             <p class="section-note">{t(strings.france.rsvp.form.whosComing.note)}</p>
@@ -314,9 +315,10 @@ const existingSubmittedAt = existingRSVP?.submittedAt
           </div>
 
           <p class="form-note">{t(strings.france.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.france.rsvp.form.canUpdate)}</p>
-        </form>
-      </>
-    )}
+          </form>
+        </>
+      )}
+    </div>
   </main>
 
   <footer>

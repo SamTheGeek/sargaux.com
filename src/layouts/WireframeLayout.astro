@@ -55,6 +55,7 @@ const lang = Astro.locals.lang ?? 'en';
       // its own VT group:
       //   - Landing page .hero-grid (landing-content) → z:3
       //   - Couple page .couple-grid (couple-content) → z:3
+      //   - France page content wrappers              → z:3
       //
       // NYC index/sub-page navigations use a hybrid approach:
       //   - Forward (/nyc -> /nyc/*): leave the disc active on both documents
@@ -340,6 +341,13 @@ const lang = Astro.locals.lang ?? 'en';
    */
   ::view-transition-group(landing-content)  { z-index: 3; }
   ::view-transition-group(couple-content)   { z-index: 3; }
+  ::view-transition-group(france-index-hero-content)      { z-index: 3; }
+  ::view-transition-group(france-index-body-content)      { z-index: 3; }
+  ::view-transition-group(france-details-content)         { z-index: 3; }
+  ::view-transition-group(france-schedule-content)        { z-index: 3; }
+  ::view-transition-group(france-travel-content)          { z-index: 3; }
+  ::view-transition-group(france-rsvp-content)            { z-index: 3; }
+  ::view-transition-group(france-rsvp-confirmed-content)  { z-index: 3; }
   ::view-transition-group(nyc-subpage-hero) { z-index: 3; }
   ::view-transition-group(nyc-page-moss)    { z-index: 4; }
   ::view-transition-group(nyc-page-moss),
@@ -364,6 +372,19 @@ const lang = Astro.locals.lang ?? 'en';
   html[data-event="nyc"] .nyc-disc {
     position: fixed;
     z-index: 2;
+  }
+
+  html[data-event="france"] .sun-disc-large,
+  html[data-event="france"] .travel-disc-stage {
+    z-index: 2;
+  }
+
+  html[data-event="france"] .destination-header,
+  html[data-event="france"] .france-index-body,
+  html[data-event="france"] .france-page-content,
+  html[data-event="france"] .travel-shell {
+    position: relative;
+    z-index: 3;
   }
 
   html[data-event="nyc"] .details-hero {

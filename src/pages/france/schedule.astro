@@ -27,30 +27,31 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
   </header>
 
   <main>
-    <h1>{t(strings.france.schedule.heading)}</h1>
-    <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-schedule-content">
+      <h1>{t(strings.france.schedule.heading)}</h1>
+      <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
 
-    <!-- Check-in/Check-out Info -->
-    <div class="stay-info">
-      <div class="stay-time">
-        <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
-        <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
+      <!-- Check-in/Check-out Info -->
+      <div class="stay-info">
+        <div class="stay-time">
+          <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
+          <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
+        </div>
+        <div class="stay-divider"></div>
+        <div class="stay-time">
+          <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
+          <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
+        </div>
       </div>
-      <div class="stay-divider"></div>
-      <div class="stay-time">
-        <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
-        <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
-      </div>
-    </div>
 
-    <FranceCalendarCta
-      token={calendarToken}
-      label={t(strings.france.schedule.calendarBtn)}
-      note={t(strings.france.schedule.calendarNote)}
-      unavailableNote={t(strings.nyc.calendar.unavailableNote)}
-    />
+      <FranceCalendarCta
+        token={calendarToken}
+        label={t(strings.france.schedule.calendarBtn)}
+        note={t(strings.france.schedule.calendarNote)}
+        unavailableNote={t(strings.nyc.calendar.unavailableNote)}
+      />
 
-    <section class="days">
+      <section class="days">
       <!-- Friday -->
       <div class="day-section">
         <h2>{t(strings.france.schedule.friday.heading)}</h2>
@@ -143,7 +144,8 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
 
   </main>
 
