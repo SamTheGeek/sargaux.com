@@ -320,43 +320,51 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
     return [];
   }
 
-  // Fetch each event page
+  // Fetch all event pages in parallel
+  const eventPages = await Promise.all(
+    eventIds.map(async (eventId) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
+      } catch (error) {
+        console.error(`Failed to fetch event ${eventId}:`, error);
+        return null;
+      }
+    })
+  );
+
   const events: EventRecord[] = [];
-  for (const eventId of eventIds) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
-      const eventProps = eventPage.properties;
+  for (const result of eventPages) {
+    if (!result) continue;
+    const { id: eventId, page: eventPage } = result;
+    const eventProps = eventPage.properties;
 
-      const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
-      if (!name) continue;
+    const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
+    if (!name) continue;
 
-      const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
-      const wedding = weddingProp === 'france' ? 'france' : 'nyc';
+    const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
+    const wedding = weddingProp === 'france' ? 'france' : 'nyc';
 
-      const typeProp = eventProps['Event Type']?.select?.name;
-      const type = typeProp === 'Optional' ? 'Optional' : 'Core';
+    const typeProp = eventProps['Event Type']?.select?.name;
+    const type = typeProp === 'Optional' ? 'Optional' : 'Core';
 
-      const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
-      const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
-      const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
-      const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
-      const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
+    const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
+    const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
+    const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
+    const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
+    const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
 
-      events.push({
-        id: eventId,
-        name,
-        type,
-        wedding,
-        time,
-        location,
-        description,
-        dayId,
-        showOnWebsite,
-      });
-    } catch (error) {
-      console.error(`Failed to fetch event ${eventId}:`, error);
-    }
+    events.push({
+      id: eventId,
+      name,
+      type,
+      wedding,
+      time,
+      location,
+      description,
+      dayId,
+      showOnWebsite,
+    });
   }
 
   return events;

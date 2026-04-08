@@ -82,11 +82,16 @@ if (isPreview) {
   };
 } else if (guestId) {
   try {
-    party = await getGuestParty(guestId);
-    const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
+    const [partyResult, allEvents, rsvpResult] = await Promise.all([
+      getGuestParty(guestId),
+      getGuestEvents(guestId),
+      getLatestRSVP(guestId, 'nyc'),
+    ]);
+    party = partyResult;
+    const events = allEvents.filter((event) => event.wedding === 'nyc');
     coreEvents = events.filter((event) => event.type === 'Core');
     optionalEvents = events.filter((event) => event.type === 'Optional');
-    existingRSVP = await getLatestRSVP(guestId, 'nyc');
+    existingRSVP = rsvpResult;
   } catch (error) {
     console.error('Failed to load NYC RSVP data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
