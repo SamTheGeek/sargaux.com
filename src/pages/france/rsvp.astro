@@ -245,24 +245,18 @@ const existingSubmittedAt = existingRSVP?.submittedAt
             >{existingDetails.allergens ?? existingRSVP?.dietary ?? ''}</textarea>
           </section>
 
-          <section class="form-section two-column">
+          <section class="form-section">
             <div>
               <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
+              <div class="recommendation-banner">
+                <strong>{t(strings.france.details.staying.recommendation)}</strong>
+                <p>{t(strings.france.details.staying.recommendationNote)}</p>
+              </div>
               <p class="section-note">{t(strings.france.rsvp.form.accommodation.note)}</p>
               <select name="accommodation" class="single-line-input">
                 <option value="unsure" selected={existingDetails.accommodation === undefined || existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
                 <option value="yes" selected={existingDetails.accommodation === 'yes'}>{t(strings.france.rsvp.form.accommodation.yes)}</option>
                 <option value="no" selected={existingDetails.accommodation === 'no'}>{t(strings.france.rsvp.form.accommodation.no)}</option>
-              </select>
-            </div>
-
-            <div>
-              <h2>{t(strings.france.rsvp.form.transport.heading)}</h2>
-              <p class="section-note">{t(strings.france.rsvp.form.transport.note)}</p>
-              <select name="transport" class="single-line-input">
-                <option value="unsure" selected={existingDetails.transport === undefined || existingDetails.transport === 'unsure'}>{t(strings.france.rsvp.form.transport.unsure)}</option>
-                <option value="yes" selected={existingDetails.transport === 'yes'}>{t(strings.france.rsvp.form.transport.yes)}</option>
-                <option value="no" selected={existingDetails.transport === 'no'}>{t(strings.france.rsvp.form.transport.no)}</option>
               </select>
             </div>
           </section>
@@ -398,6 +392,26 @@ main {
     font-size: 1.025rem;
     color: var(--color-text-muted);
     margin-bottom: 0.9rem;
+  }
+
+  .recommendation-banner {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-accent);
+    padding: 1.25rem;
+    margin: 0 0 1rem;
+  }
+
+  .recommendation-banner strong {
+    display: block;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .recommendation-banner p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    line-height: 1.5;
   }
 
   .guest-row {
@@ -776,7 +790,6 @@ main {
         details: {
           accommodation: form.querySelector('select[name="accommodation"]')?.value || undefined,
           allergens: allergens || undefined,
-          transport: form.querySelector('select[name="transport"]')?.value || undefined,
         },
         sendConfirmation: sendConfirmationCheckbox?.checked === true,
       };

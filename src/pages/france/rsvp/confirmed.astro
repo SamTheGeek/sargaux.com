@@ -88,7 +88,6 @@ if (isDevMock) {
     details: {
       accommodation: 'yes',
       allergens: 'Shellfish allergy noted.',
-      transport: 'unsure',
     },
     eventsAttending: ['dev-france-ceremony', 'dev-france-dinner'],
   };
@@ -132,18 +131,6 @@ function accommodationLabel(value?: string): string {
   }
 }
 
-function transportLabel(value?: string): string {
-  switch (value) {
-    case 'yes':
-      return t(strings.france.rsvp.form.transport.yes);
-    case 'no':
-      return t(strings.france.rsvp.form.transport.no);
-    case 'unsure':
-      return t(strings.france.rsvp.form.transport.unsure);
-    default:
-      return t(strings.france.rsvp.confirmation.emptyValue);
-  }
-}
 ---
 
 <WireframeLayout title={t(strings.france.rsvp.confirmation.pageTitle)} event="france">
@@ -277,16 +264,9 @@ function transportLabel(value?: string): string {
           </div>
         </section>
 
-        <section class="form-section two-column">
-          <div>
-            <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
-            <div class="static-card">{accommodationLabel(details.accommodation)}</div>
-          </div>
-
-          <div>
-            <h2>{t(strings.france.rsvp.form.transport.heading)}</h2>
-            <div class="static-card">{transportLabel(details.transport)}</div>
-          </div>
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
+          <div class="static-card">{accommodationLabel(details.accommodation)}</div>
         </section>
 
         <section class="form-section">
