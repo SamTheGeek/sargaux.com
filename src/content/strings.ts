@@ -641,7 +641,7 @@ export const strings = {
         googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
         websiteLink:   s('Venue Website ↗', 'Site du lieu ↗'),
         desc:          s(
-          'A charming village property with beautiful grounds, perfect for a weekend celebration with family and friends.',
+          'Clos de Malassis was a small farming village that appeared on the first map of France, published in 1744. Now restored as an event space, Le Village de Sully offers a charming, throwback atmosphere nestled in the French countryside.',
           'Un charmant domaine champêtre avec de beaux jardins, parfait pour un week-end de célébration en famille et entre amis.',
         ),
       },
@@ -649,15 +649,15 @@ export const strings = {
         heading: s('The Spaces', 'Les Espaces'),
         grounds: {
           title: s('The Grounds', 'Le Domaine'),
-          desc:  s('Beautiful gardens and outdoor spaces for gathering throughout the weekend.', 'De beaux jardins et espaces extérieurs pour se retrouver tout au long du week-end.'),
+          desc:  s('A reproduction of a village square, with indoor and outdoor spaces for gathering, socializing, and celebrating', 'De beaux jardins et espaces extérieurs pour se retrouver tout au long du week-end.'),
         },
         ceremony: {
           title: s('Ceremony Space', 'Espace cérémonie'),
-          desc:  s('An outdoor ceremony surrounded by nature on the village grounds.', 'Une cérémonie en plein air entourée par la nature dans le domaine.'),
+          desc:  s('An outdoor, paved space for our ceremony with seating for all guests.', 'Une cérémonie en plein air entourée par la nature dans le domaine.'),
         },
         accommodation: {
           title: s('Accommodations', 'Hébergements'),
-          desc:  s('Comfortable guest rooms within the village property.', 'Des chambres confortables au sein du domaine.'),
+          desc:  s('Comfortable guest rooms with ensuite bathrooms and a variety of sleeping arrangements', 'Des chambres confortables au sein du domaine.'),
         },
       },
       staying: {
@@ -687,19 +687,24 @@ export const strings = {
         heading: s('Dress Code', 'Code vestimentaire'),
         friday: {
           event: s('Friday Welcome Dinner', 'Dîner de bienvenue du vendredi'),
-          code:  s('Smart Casual', 'Smart Casual'),
+          code:  s('Garden Party', 'Smart Casual'),
+          note:  s(
+            'The dinner will be outdoors on the village square, which is paved. Guests should expect some walking and standing, though seating will be available.',
+            '',
+          ),
         },
         saturday: {
           event: s('Saturday Ceremony & Reception', 'Cérémonie & réception du samedi'),
-          code:  s('Garden Party Attire', 'Tenue de garden party'),
+          code:  s('Cocktail Attire', 'Tenue de garden party'),
           note:  s(
-            'The ceremony is outdoors — comfortable shoes recommended for grass and garden paths.',
+            'The outdoor ceremony will be on paved ground. No worries about sharp heels or grass.',
             "La cérémonie est en extérieur — chaussures confortables recommandées pour marcher sur l'herbe et les allées du jardin.",
           ),
         },
         sunday: {
           event: s('Sunday Brunch', 'Brunch du dimanche'),
-          code:  s('Casual', 'Décontracté'),
+          code:  s('Very Casual', 'Décontracté'),
+          note:  s('Street clothes for relaxing.', ''),
         },
       },
     },
