@@ -779,7 +779,7 @@ export const strings = {
         currency: {
           heading: s('Currency', 'Monnaie'),
           value:   s('Euro (€)', 'Euro (€)'),
-          note:    s('Tap-to-pay and chip cards are widely accepted but magstripe is not. Cash is rarely used and only preferred by some smaller shops.', 'Les cartes sans contact et à puce sont largement acceptées, mais pas la bande magnétique. Les espèces sont rarement utilisées et seulement préférées par quelques petits commerces.'),
+          note:    s('Tap-to-pay and chip cards are widely accepted but swipes are not. Cash is rarely required and usually only used for transactions less than €10-20. American Express is usually only accepted at large chains, tourist attractions, and luxury retailers.', 'Les cartes sans contact et à puce sont largement acceptées, mais pas le glissement. Les espèces sont rarement nécessaires et généralement utilisées uniquement pour les transactions inférieures à 10-20 €. American Express est généralement accepté uniquement dans les grandes chaînes, les attractions touristiques et les commerces de luxe.'),
         },
         language: {
           heading: s('Language', 'Langue'),
