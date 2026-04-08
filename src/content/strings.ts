@@ -471,7 +471,7 @@ export const strings = {
     // Landing page
     pageTitle:     s('France Event', 'Événement France'),
     heroLocation:  s('France', 'France'),
-    heroTitle:     s('Village de Sully', 'Village de Sully'),
+    heroTitle:     s('Village de\u00A0Sully', 'Village de\u00A0Sully'),
     heroDate:      s('28–30 May 2027', '28–30 mai 2027'),
     heroEventType: s('A Weekend Celebration', 'Un week-end de célébration'),
     when: {
