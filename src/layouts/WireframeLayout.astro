@@ -4,6 +4,7 @@ import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/wireframe-transition-fixes.css';
 
 interface Props {
   title: string;
@@ -428,6 +429,7 @@ const lang = Astro.locals.lang ?? 'en';
       color: rgba(255, 249, 240, 0.4) !important;
       border-top-color: rgba(255, 249, 240, 0.06) !important;
     }
+
   }
 
   /* Content box styling (legacy — use .card for new code) */
