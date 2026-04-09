@@ -14,9 +14,9 @@ declare namespace App {
 declare namespace NodeJS {
   interface ProcessEnv {
     NOTION_API_KEY?: string;
-    NOTION_GUEST_LIST_DB?: string; // Notion data source ID (not database ID)
-    NOTION_EVENT_CATALOG_DB?: string; // Event Catalog data source ID
-    NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses data source ID
+    NOTION_GUEST_LIST_DB?: string; // Guest List database page ID
+    NOTION_EVENT_CATALOG_DB?: string; // Event Catalog database page ID
+    NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses database page ID
     CALENDAR_HMAC_SECRET?: string; // Signing secret for personalized calendar tokens (never commit)
     RESEND_API_KEY?: string; // Resend transactional email API key (never commit)
     RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
