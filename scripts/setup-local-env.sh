@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE=".env.local"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="$REPO_ROOT/.env.local"
+
+cd "$REPO_ROOT"
 
 if [[ -f "$ENV_FILE" ]]; then
   echo "$ENV_FILE already exists."
@@ -12,14 +16,18 @@ if [[ -f "$ENV_FILE" ]]; then
   fi
 fi
 
-read -r -p "Notion API key (starts with secret_): " NOTION_API_KEY
-read -r -p "Guest List data source ID: " NOTION_GUEST_LIST_DB
-read -r -p "Event Catalog data source ID: " NOTION_EVENT_CATALOG_DB
-read -r -p "RSVP Responses data source ID: " NOTION_RSVP_RESPONSES_DB
+echo "Enter the Notion database page IDs used by the app."
+echo "Do not use Notion data source/collection IDs here."
+
+read -r -p "Notion API key: " NOTION_API_KEY
+read -r -p "Guest List database page ID: " NOTION_GUEST_LIST_DB
+read -r -p "Event Catalog database page ID: " NOTION_EVENT_CATALOG_DB
+read -r -p "RSVP Responses database page ID: " NOTION_RSVP_RESPONSES_DB
 
 cat > "$ENV_FILE" <<EOT
 FEATURE_GLOBAL_WEDDING_SITE_ENABLED=true
 FEATURE_GLOBAL_NOTION_BACKEND=true
+FEATURE_GLOBAL_I18N=true
 FEATURE_NYC_RSVP_ENABLED=true
 FEATURE_FRANCE_RSVP_ENABLED=true
 
