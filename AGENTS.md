@@ -10,3 +10,10 @@
 - If a page is correct on direct load but wrong only after SPA navigation, inspect the live `<style data-vite-dev-id>` tags in the browser and look for duplicated stale route or layout styles before changing page-level CSS.
 - If a transition fix works only on the first navigation but fails on repeated back/forward or sibling navigations, move the transition-critical override out of the layout's inline `<style>` block and into a module-level shared stylesheet imported by the layout. This fixed the France Travel dark-mode info boxes on repeated `/france <-> /france/travel` navigations.
 - For repeated-navigation debugging, compare the count/order of `style[data-vite-dev-id]` tags for the page stylesheet versus the shared stylesheet after the first and second visit. A stable shared fix should remain mounted once across navigations even when the route stylesheet is duplicated or replaced.
+
+## Typography Flicker
+
+- If styled text flickers on first load, treat font loading as a likely cause before changing layout CSS.
+- In this codebase, branded custom fonts in `src/styles/tokens.css` should use `font-display: block`, not `swap`, when visible fallback text causes a noticeable first-paint flicker.
+- When debugging a text flicker, delay the font request in Playwright and compare the text geometry before and after `document.fonts.ready`. A width or height change confirms a font-swap regression.
+- Preload the exact custom font files used above the fold for a route. Do not assume a single preload covers neighboring weights.

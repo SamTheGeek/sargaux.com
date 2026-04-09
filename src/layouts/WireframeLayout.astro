@@ -36,8 +36,11 @@ const lang = Astro.locals.lang ?? 'en';
     )}
     {event === 'france' && (
       <>
+        <link rel="preload" href="/fonts/Peignot 400.ttf" as="font" type="font/ttf" crossorigin />
         <link rel="preload" href="/fonts/peignot-bold.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTBook.otf" as="font" type="font/otf" crossorigin />
         <link rel="preload" href="/fonts/futura/FuturaPTMedium.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTDemi.otf" as="font" type="font/otf" crossorigin />
       </>
     )}
     <ClientRouter />

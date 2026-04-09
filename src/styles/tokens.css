@@ -10,12 +10,17 @@
 
 /* === Fonts === */
 
+/*
+ * Branded fonts use block so first paint does not visibly swap from fallback
+ * metrics into the custom face. This avoids the text flicker seen on headers
+ * and event heroes when the font file arrives just after initial render.
+ */
 @font-face {
   font-family: 'Helvetica Now Display';
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -23,7 +28,7 @@
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -31,7 +36,7 @@
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -39,7 +44,7 @@
   src: url('/fonts/futura/FuturaPTBook.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -47,7 +52,7 @@
   src: url('/fonts/futura/FuturaPTMedium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -55,7 +60,7 @@
   src: url('/fonts/futura/FuturaPTDemi.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -63,7 +68,7 @@
   src: url('/fonts/Peignot 400.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -71,7 +76,7 @@
   src: url('/fonts/peignot-bold.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -79,7 +84,7 @@
   src: url('/fonts/peignot-bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 /* === Base Tokens (NYC / Default) — Light Mode === */
