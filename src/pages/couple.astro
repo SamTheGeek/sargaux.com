@@ -31,7 +31,7 @@ function toWebp(src: string): string {
   return src.replace(/\.jpeg$/i, '.webp');
 }
 
-const allPhotos = Array.from({ length: 16 }, (_, i) => `/images/couple/couple - ${i + 1}.jpeg`);
+const allPhotos = Array.from({ length: 38 }, (_, i) => `/images/couple/couple - ${i + 1}.jpeg`);
 
 const exifDates = await Promise.all(
   allPhotos.map(async (src) => {
