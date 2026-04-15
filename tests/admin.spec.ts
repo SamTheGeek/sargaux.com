@@ -18,7 +18,7 @@ const notionRequired =
   !process.env.NOTION_API_KEY ||
   !process.env.NOTION_GUEST_LIST_DB;
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'test-secret-not-set';
+const ADMIN_SECRET = process.env.RESEND_ADMIN_SECRET ?? 'test-secret-not-set';
 
 test.describe('Admin: send-stds', () => {
   test.skip(notionRequired, 'Notion backend required for admin endpoint tests');

@@ -20,7 +20,7 @@ declare namespace NodeJS {
     CALENDAR_HMAC_SECRET?: string; // Signing secret for personalized calendar tokens (never commit)
     RESEND_API_KEY?: string; // Resend transactional email API key (never commit)
     RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
-    ADMIN_SECRET?: string; // Secret for protecting admin endpoints (never commit)
+    RESEND_ADMIN_SECRET?: string; // Secret for protecting admin endpoints (never commit)
     GOOGLE_MAPS_STATIC_API_KEY?: string; // Google Maps Static API key (domain-restricted, visible in HTML)
   }
 }
