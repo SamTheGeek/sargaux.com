@@ -1,7 +1,10 @@
 ---
+import fs from 'node:fs';
+import path from 'node:path';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpage-hero.css';
-import '../../styles/nyc-faq.css';
+import '../../styles/nyc-lookbook.css';
+import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
@@ -11,38 +14,17 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
-const faqItems = [
-  {
-    ...strings.nyc.faq.items.dressCode,
-    href: '/nyc/lookbook',
-    linkLabel: strings.nyc.faq.links.lookbook,
-  },
-  strings.nyc.faq.items.rsvpDeadline,
-  strings.nyc.faq.items.venue,
-  strings.nyc.faq.items.parking,
-  strings.nyc.faq.items.weather,
-  strings.nyc.faq.items.foodDrinks,
-  strings.nyc.faq.items.ceremony,
-  strings.nyc.faq.items.program,
-  strings.nyc.faq.items.children,
-  {
-    ...strings.nyc.faq.items.stay,
-    href: '/nyc/travel',
-    linkLabel: strings.nyc.faq.links.travel,
-    linkPrefix: strings.nyc.faq.links.travelPrefix,
-    linkSuffix: strings.nyc.faq.links.travelSuffix,
-  },
-  {
-    ...strings.nyc.faq.items.registry,
-    href: '/registry',
-    linkLabel: strings.nyc.faq.links.registry,
-  },
-];
+const dir = path.join(process.cwd(), 'public/images/nyc/lookbook');
+const images = fs.readdirSync(dir)
+  .filter(f => /^pinterest_nyc_\d+\.jpg$/i.test(f))
+  .sort()
+  .map(f => ({
+    jpg:  `/images/nyc/lookbook/${f}`,
+    webp: `/images/nyc/lookbook/${f.replace(/\.jpg$/i, '.webp')}`,
+  }));
 ---
 
-<WireframeLayout title={t(strings.nyc.faq.pageTitle)} fullTitle="Chez Sargaux | NYC — FAQ" event="nyc" page="faq">
-
-  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+<WireframeLayout title={t(strings.nyc.lookbook.pageTitle)} fullTitle="Chez Sargaux | NYC — Lookbook" event="nyc" page="lookbook">
 
   <header class="site-header nyc-header" transition:name="site-header">
     <nav class="site-nav">
@@ -61,52 +43,24 @@ const faqItems = [
   </header>
 
   <div class="nyc-page-main">
-    <div class="details-hero faq-hero">
-      <div class="page-content faq-hero-inner">
+    <div class="details-hero lookbook-hero">
+      <div class="page-content lookbook-hero-inner">
         <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
-        <h1>{t(strings.nyc.faq.heading)}</h1>
-        <p class="details-date">{t(strings.nyc.faq.subtitle)}</p>
+        <h1 class="lookbook-heading" aria-label={t(strings.nyc.lookbook.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="nyc-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
+        <p class="details-date">{t(strings.nyc.lookbook.subtitle)}</p>
       </div>
     </div>
   </div>
 
   <div class="nyc-page-moss">
-    <section class="nyc-moss details-section">
-      <div class="page-content">
-        <div class="faq-list">
-          {faqItems.map((item, index) => (
-            <details class="faq-item" open={index === 0}>
-              <summary class="faq-trigger">
-                <span class="faq-trigger-inner">
-                  <span class="faq-question">{t(item.question)}</span>
-                  <span class="faq-indicator" aria-hidden="true"></span>
-                </span>
-              </summary>
-              <div class="faq-answer">
-                <div class="faq-answer-body">
-                  <p>
-                    {t(item.answer)}{' '}
-                    {'href' in item && item.href && 'linkPrefix' in item && 'linkSuffix' in item ? (
-                      <>
-                        <span>{t(item.linkPrefix)} </span>
-                        <a href={item.href} class="faq-answer-link">{t(item.linkLabel)}</a>
-                        <span> {t(item.linkSuffix)}</span>
-                      </>
-                    ) : 'href' in item && item.href ? (
-                      <a href={item.href} class="faq-answer-link">{t(item.linkLabel)}</a>
-                    ) : 'linkLabel' in item ? (
-                      <span class="faq-answer-note">{t(item.linkLabel)}</span>
-                    ) : null}
-                  </p>
-                </div>
-              </div>
-            </details>
-          ))}
-        </div>
-        <p class="faq-contact">
-          <span>{t(strings.nyc.faq.moreQuestions)}</span>{' '}
-          <a href="mailto:hello@sargaux.com" class="faq-contact-link">hello@sargaux.com</a>
-        </p>
+    <section class="nyc-moss details-section lookbook-section">
+      <div class="lookbook-grid">
+        {images.map(img => (
+          <picture class="lookbook-item">
+            <source srcset={img.webp} type="image/webp" />
+            <img src={img.jpg} alt="" loading="lazy" decoding="async" />
+          </picture>
+        ))}
       </div>
     </section>
 
@@ -181,7 +135,7 @@ const faqItems = [
     padding-bottom: 48px;
   }
 
-  html[data-event="nyc"] .faq-hero-inner {
+  html[data-event="nyc"] .lookbook-hero-inner {
     width: 100%;
   }
 
@@ -225,30 +179,6 @@ const faqItems = [
   html[data-event="nyc"] .nyc-footer {
     background: var(--color-dark-moss) !important;
     color: var(--color-warm-cream) !important;
-  }
-
-  html[data-event="nyc"] .details-band {
-    padding: 14px 64px;
-    font-size: var(--font-size-caption);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    background: var(--color-warm-cream) !important;
-    color: rgba(23, 50, 11, 0.5) !important;
-    border-top: 1px solid rgba(23, 50, 11, 0.1);
-  }
-
-  html[data-event="nyc"] .details-section {
-    padding: 40px 0 48px;
-  }
-
-  html[data-event="nyc"] .faq-list {
-    margin: 0;
-    border-top: 1px solid rgba(255, 249, 240, 0.15);
-  }
-
-  html[data-event="nyc"] .faq-item {
-    border-bottom: 1px solid rgba(255, 249, 240, 0.15);
   }
 
   html[data-event="nyc"] .nyc-footer {
@@ -320,17 +250,6 @@ const faqItems = [
     html[data-event="nyc"] .nyc-footer {
       background: var(--color-nyc-skyline-dark) !important;
     }
-
-    html[data-event="nyc"] .details-band {
-      background: var(--color-dark-moss) !important;
-      color: rgba(255, 249, 240, 0.4) !important;
-      border-top-color: rgba(255, 249, 240, 0.06) !important;
-    }
-
-    html[data-event="nyc"] .faq-list,
-    html[data-event="nyc"] .faq-item {
-      border-color: rgba(255, 249, 240, 0.08) !important;
-    }
   }
 
   @media (max-width: 768px) {
@@ -343,11 +262,5 @@ const faqItems = [
       font-size: clamp(40px, 12vw, 64px);
       white-space: normal;
     }
-
-    html[data-event="nyc"] .details-band {
-      padding-left: 24px;
-      padding-right: 24px;
-    }
-
   }
 </style>

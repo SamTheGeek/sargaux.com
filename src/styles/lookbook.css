@@ -1,0 +1,42 @@
+/*
+ * Lookbook gallery grid — shared by NYC and France lookbook pages.
+ *
+ * CSS multi-column masonry: images display at their natural aspect ratios,
+ * packed into columns. Photos are the focus — layout gets out of the way.
+ */
+
+.lookbook-grid {
+  columns: 4;
+  column-gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.lookbook-item {
+  display: block;
+  break-inside: avoid;
+  margin-bottom: 6px;
+}
+
+.lookbook-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 960px) {
+  .lookbook-grid {
+    columns: 3;
+  }
+}
+
+@media (max-width: 600px) {
+  .lookbook-grid {
+    columns: 2;
+    column-gap: 4px;
+  }
+
+  .lookbook-item {
+    margin-bottom: 4px;
+  }
+}

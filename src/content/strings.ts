@@ -150,6 +150,10 @@ export const strings = {
         title: s('Travel', 'Voyager'),
         desc:  s('Hotels & getting around', 'Hôtels & déplacements'),
       },
+      lookbook: {
+        title: s('Lookbook', 'Lookbook'),
+        desc:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+      },
       rsvp: {
         title: s('RSVP', 'RSVP'),
         desc:  s("Let us know you're coming", 'Confirmez votre venue'),
@@ -299,7 +303,7 @@ export const strings = {
       subtitle:  s('Questions & answers for the weekend', 'Questions & réponses pour le week-end'),
       moreQuestions: s('More questions? Email us at', 'D’autres questions ? Écrivez-nous à'),
       links: {
-        lookbook: s('Lookbook coming soon.', 'Lookbook à venir.'),
+        lookbook: s('See the lookbook →', 'Voir le lookbook →'),
         travel:   s('Travel Page', 'Page Travel'),
         travelPrefix: s('See the', 'Voir la'),
         travelSuffix: s('for details and booking links.', 'pour les détails et les liens de réservation.'),
@@ -384,6 +388,13 @@ export const strings = {
           ),
         },
       },
+    },
+
+    // /nyc/lookbook
+    lookbook: {
+      pageTitle: s('NYC Lookbook', 'Lookbook New York'),
+      heading:   s('Lookbook', 'Lookbook'),
+      subtitle:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
     },
 
     // /nyc/rsvp
@@ -547,10 +558,21 @@ export const strings = {
         title: s('Travel', 'Voyager'),
         desc:  s('Getting there & around', 'Comment venir & se déplacer'),
       },
+      lookbook: {
+        title: s('Lookbook', 'Lookbook'),
+        desc:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+      },
       rsvp: {
         title: s('RSVP', 'RSVP'),
         desc:  s('Confirm & request accommodation', "Confirmer & réserver l'hébergement"),
       },
+    },
+
+    // /france/lookbook
+    lookbook: {
+      pageTitle: s('France Lookbook', 'Lookbook France'),
+      heading:   s('Lookbook', 'Lookbook'),
+      subtitle:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
     },
 
     // /france/schedule

@@ -158,6 +158,12 @@ const lang = Astro.locals.lang ?? 'en';
 
           if (isNycForwardNav) {
             suppressHeader();
+            // Give the outgoing NYC index hero text its own VT group at z:3 so
+            // the content renders above the disc (z:2) during the FLIP animation.
+            // Only the /nyc index page has .nyc-hero-text; on sub-pages this is a no-op.
+            if (isNycIndexToSubpage) {
+              document.querySelector('.nyc-hero-text')?.style.setProperty('view-transition-name', 'nyc-hero-text');
+            }
           } else if (isNycBackwardNav) {
             // Returning to /nyc must recreate a two-sided event-disc pair.
             document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
@@ -353,6 +359,7 @@ const lang = Astro.locals.lang ?? 'en';
   ::view-transition-group(france-rsvp-content)            { z-index: 3; }
   ::view-transition-group(france-rsvp-confirmed-content)  { z-index: 3; }
   ::view-transition-group(nyc-subpage-hero) { z-index: 3; }
+  ::view-transition-group(nyc-hero-text)    { z-index: 3; }
   ::view-transition-group(nyc-page-moss)    { z-index: 4; }
   ::view-transition-group(nyc-page-moss),
   ::view-transition-image-pair(nyc-page-moss),

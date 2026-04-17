@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "0.8.6",
+  "version": "0.9.0",
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
@@ -14,6 +14,7 @@
     "test:ui": "playwright test --ui",
     "test:quick": "playwright test tests/accessibility.spec.ts",
     "test:install": "playwright install --with-deps chromium",
+    "gen:lookbook-webp": "tsx scripts/generate-lookbook-webp.ts",
     "verify": "npm run build && npm test"
   },
   "dependencies": {
