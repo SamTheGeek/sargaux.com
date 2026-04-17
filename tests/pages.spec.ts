@@ -33,12 +33,14 @@ test.describe('Back links ("Return to event")', () => {
 
   const subPages: Array<{ path: string; selector: string }> = [
     // NYC pages — hero uses .details-back, RSVP uses .back-link
-    { path: '/nyc/details', selector: '.details-back' },
-    { path: '/nyc/travel',  selector: '.details-back' },
-    { path: '/nyc/rsvp',    selector: '.back-link'    },
+    { path: '/nyc/details',  selector: '.details-back' },
+    { path: '/nyc/travel',   selector: '.details-back' },
+    { path: '/nyc/lookbook', selector: '.details-back' },
+    { path: '/nyc/rsvp',     selector: '.back-link'    },
     // France pages — all use .back-link in the header nav
     { path: '/france/details',  selector: '.back-link' },
     { path: '/france/travel',   selector: '.back-link' },
+    { path: '/france/lookbook', selector: '.back-link' },
     { path: '/france/rsvp',     selector: '.back-link' },
     { path: '/france/schedule', selector: '.back-link' },
   ];
@@ -169,7 +171,178 @@ test.describe('RSVP preview mode — NYC', () => {
   });
 });
 
-// ── 4. Couple page — scattered gallery ────────────────────────────────────────
+// ── 4. Lookbook pages — disc-as-O heading ─────────────────────────────────────
+
+test.describe('Lookbook pages — disc-as-O heading', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for lookbook disc tests');
+  test.describe.configure({ mode: 'serial' });
+
+  let context: BrowserContext;
+  let page: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    page = await context.newPage();
+    await login(page);
+  });
+
+  test.afterAll(async () => {
+    await context.close();
+  });
+
+  // ── NYC lookbook ────────────────────────────────────────────────────────────
+
+  test('NYC: h1 contains .lookbook-disc-slot with disc and ghost O', async () => {
+    await page.goto('/nyc/lookbook');
+    await expect(page.locator('h1 .lookbook-disc-slot')).toBeVisible();
+    await expect(page.locator('h1 .lookbook-disc-slot .nyc-disc')).toBeAttached();
+    await expect(page.locator('h1 .lookbook-disc-slot .lookbook-o-ghost')).toBeAttached();
+  });
+
+  test('NYC: ghost O is visibility:hidden', async () => {
+    await page.goto('/nyc/lookbook');
+    const visibility = await page.locator('.lookbook-o-ghost').evaluate(
+      (el) => window.getComputedStyle(el).visibility
+    );
+    expect(visibility).toBe('hidden');
+  });
+
+  test('NYC: disc has position:absolute', async () => {
+    await page.goto('/nyc/lookbook');
+    const position = await page.locator('.lookbook-disc-slot .nyc-disc').evaluate(
+      (el) => window.getComputedStyle(el).position
+    );
+    expect(position).toBe('absolute');
+  });
+
+  test('NYC: disc height is at least 90% of adjacent cap letter height', async () => {
+    await page.goto('/nyc/lookbook');
+    const { discHeight, capHeight } = await page.evaluate(() => {
+      const disc = document.querySelector('.lookbook-disc-slot .nyc-disc') as HTMLElement;
+      const h1 = document.querySelector('.lookbook-heading') as HTMLElement;
+
+      // Measure a cap letter span (e.g. "LO" or "KBOOK") for actual rendered height
+      const spans = Array.from(h1.querySelectorAll('span[aria-hidden="true"]'))
+        .filter((el) => (el as HTMLElement).textContent?.trim());
+      const capSpan = spans[0] as HTMLElement;
+
+      const capRect = capSpan.getBoundingClientRect();
+      const discRect = disc.getBoundingClientRect();
+
+      // Use canvas to measure actual cap height
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const style = window.getComputedStyle(h1);
+      ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const metrics = ctx.measureText('L');
+      const measuredCapHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+      return {
+        discHeight: discRect.height,
+        capHeight: measuredCapHeight > 0 ? measuredCapHeight : capRect.height,
+      };
+    });
+
+    expect(discHeight).toBeGreaterThan(0);
+    expect(discHeight).toBeGreaterThanOrEqual(capHeight * 0.9);
+  });
+
+  test('NYC: disc vertical center is within ±8px of adjacent cap letter vertical center', async () => {
+    await page.goto('/nyc/lookbook');
+    const { discMidY, capMidY } = await page.evaluate(() => {
+      const disc = document.querySelector('.lookbook-disc-slot .nyc-disc') as HTMLElement;
+      const h1 = document.querySelector('.lookbook-heading') as HTMLElement;
+      const capSpan = Array.from(h1.querySelectorAll('span[aria-hidden="true"]'))
+        .find((el) => (el as HTMLElement).textContent?.trim()) as HTMLElement;
+
+      const discRect = disc.getBoundingClientRect();
+      const capRect = capSpan.getBoundingClientRect();
+
+      return {
+        discMidY: discRect.top + discRect.height / 2,
+        capMidY: capRect.top + capRect.height / 2,
+      };
+    });
+
+    expect(Math.abs(discMidY - capMidY)).toBeLessThanOrEqual(8);
+  });
+
+  // ── France lookbook ─────────────────────────────────────────────────────────
+
+  test('France: h1 contains .lookbook-disc-slot with disc and ghost O', async () => {
+    await page.goto('/france/lookbook');
+    await expect(page.locator('h1 .lookbook-disc-slot')).toBeVisible();
+    await expect(page.locator('h1 .lookbook-disc-slot .lookbook-disc')).toBeAttached();
+    await expect(page.locator('h1 .lookbook-disc-slot .lookbook-o-ghost')).toBeAttached();
+  });
+
+  test('France: ghost O is visibility:hidden', async () => {
+    await page.goto('/france/lookbook');
+    const visibility = await page.locator('.lookbook-o-ghost').evaluate(
+      (el) => window.getComputedStyle(el).visibility
+    );
+    expect(visibility).toBe('hidden');
+  });
+
+  test('France: disc has position:absolute', async () => {
+    await page.goto('/france/lookbook');
+    const position = await page.locator('.lookbook-disc-slot .lookbook-disc').evaluate(
+      (el) => window.getComputedStyle(el).position
+    );
+    expect(position).toBe('absolute');
+  });
+
+  test('France: disc height is at least 90% of adjacent cap letter height', async () => {
+    await page.goto('/france/lookbook');
+    const { discHeight, capHeight } = await page.evaluate(() => {
+      const disc = document.querySelector('.lookbook-disc-slot .lookbook-disc') as HTMLElement;
+      const h1 = document.querySelector('.lookbook-heading') as HTMLElement;
+
+      const capSpan = Array.from(h1.querySelectorAll('span[aria-hidden="true"]'))
+        .find((el) => (el as HTMLElement).textContent?.trim()) as HTMLElement;
+
+      const capRect = capSpan.getBoundingClientRect();
+      const discRect = disc.getBoundingClientRect();
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const style = window.getComputedStyle(h1);
+      ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const metrics = ctx.measureText('L');
+      const measuredCapHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+      return {
+        discHeight: discRect.height,
+        capHeight: measuredCapHeight > 0 ? measuredCapHeight : capRect.height,
+      };
+    });
+
+    expect(discHeight).toBeGreaterThan(0);
+    expect(discHeight).toBeGreaterThanOrEqual(capHeight * 0.9);
+  });
+
+  test('France: disc vertical center is within ±8px of adjacent cap letter vertical center', async () => {
+    await page.goto('/france/lookbook');
+    const { discMidY, capMidY } = await page.evaluate(() => {
+      const disc = document.querySelector('.lookbook-disc-slot .lookbook-disc') as HTMLElement;
+      const h1 = document.querySelector('.lookbook-heading') as HTMLElement;
+      const capSpan = Array.from(h1.querySelectorAll('span[aria-hidden="true"]'))
+        .find((el) => (el as HTMLElement).textContent?.trim()) as HTMLElement;
+
+      const discRect = disc.getBoundingClientRect();
+      const capRect = capSpan.getBoundingClientRect();
+
+      return {
+        discMidY: discRect.top + discRect.height / 2,
+        capMidY: capRect.top + capRect.height / 2,
+      };
+    });
+
+    expect(Math.abs(discMidY - capMidY)).toBeLessThanOrEqual(8);
+  });
+});
+
+// ── 5. Couple page — scattered gallery ────────────────────────────────────────
 
 test.describe('Couple page — scattered gallery', () => {
   test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for couple page tests');
