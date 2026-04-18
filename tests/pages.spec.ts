@@ -374,9 +374,9 @@ test.describe('Couple page — scattered gallery', () => {
     await expect(page.locator('.couple-gallery')).toBeVisible();
   });
 
-  test('exactly 6 .gallery-scatter-card elements are rendered', async () => {
+  test('exactly 8 .gallery-scatter-card elements are rendered', async () => {
     const count = await page.locator('.gallery-scatter-card').count();
-    expect(count).toBe(6);
+    expect(count).toBe(8);
   });
 
   test('all gallery card images have non-empty alt attributes', async () => {

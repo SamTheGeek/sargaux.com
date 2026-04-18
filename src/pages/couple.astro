@@ -64,35 +64,45 @@ try {
 
 heroPhotoDate ??= couplePhotoDateFallbacks[heroPhotoSrc] ?? null;
 
-const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 6);
-const scattered = shuffled.map(({ jpeg, webp, date }) => ({
-  jpeg,
-  webp,
-  alt: 'Sam and Margaux',
-  date,
-  rotate: (Math.random() * 6 - 3).toFixed(1),
-  ty: (Math.random() * 24 - 12).toFixed(0),
-}));
-
-const storyPlaceholders = [
-  [
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.',
-    'Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.',
-  ],
-  [
-    'Nullam quis risus eget urna mollis ornare vel eu leo. Sed posuere consectetur est at lobortis.',
-    'Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Aenean lacinia bibendum nulla sed consectetur.',
-  ],
-  [
-    'Etiam porta sem malesuada magna mollis euismod. Vestibulum id ligula porta felis euismod semper.',
-    'Cras justo odio, dapibus ac facilisis in, egestas eget quam. Curabitur blandit tempus porttitor.',
-  ],
+const storyRows = [
+  {
+    copy: [
+      'After meeting through Hinge during the early weeks of Lockdown, Sam and Margaux went on a whirlwind series of pandemic-tinged dates in Brooklyn \u2014 sharing a synced viewing of Casablanca, picking up to-go cocktails and watching the sun set over Manhattan, and picnicking in the park.',
+      'For the past 6 years, they\u2019ve shared a passion for exploring \u2014 from Brooklyn to cities around the world \u2014 looking at modern & contemporary art, collecting vinyls & city magnets, and watching visually arresting films. They\u2019ve visited countries across North America and Europe, and bonded over their nearly-identical trips to Japan just before they met. Last December, they organized a three-day long date in Amsterdam, where they became engaged.',
+    ],
+    doublePhotos: true,
+  },
+  {
+    copy: [
+      'Sam was born and raised in the suburbs of Washington, D.C. before attending the University of Maryland. He moved to New York in 2015 and never wants to live anywhere else.',
+      'Margaux was born in the suburbs of Lille before moving to Paris, and later to Connecticut. She attended the University of Connecticut for undergraduate & graduate studies. She moved to New York in 2019 and never wants to live anywhere else.',
+    ],
+    doublePhotos: false,
+  },
 ];
 
-const galleryRows = storyPlaceholders.map((copy, index) => {
-  const [leftPhoto, rightPhoto] = scattered.slice(index * 2, index * 2 + 2);
-  return { copy, leftPhoto, rightPhoto };
+const closingLine = 'They are both so excited to celebrate with you!';
+
+// 10 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row
+const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 10);
+
+function makeCard(photo: (typeof photosWithDates)[0]) {
+  return {
+    ...photo,
+    alt: 'Sam and Margaux' as const,
+    rotate: (Math.random() * 6 - 3).toFixed(1),
+    ty: (Math.random() * 24 - 12).toFixed(0),
+  };
+}
+
+let idx = 0;
+const galleryRows = storyRows.map(({ copy, doublePhotos }) => {
+  const count = doublePhotos ? 2 : 1;
+  const left = shuffled.slice(idx, idx + count).map(makeCard); idx += count;
+  const right = shuffled.slice(idx, idx + count).map(makeCard); idx += count;
+  return { copy, left, right, doublePhotos };
 });
+const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
 ---
 
 <WireframeLayout title={t(strings.couple.pageTitle)} description="Shared page for Sam and Margaux" event="nyc">
@@ -123,7 +133,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
         <div class="couple-copy">
           <p class="couple-eyebrow">{t(strings.couple.eyebrow)}</p>
           <h1>{t(strings.couple.heroTitle)}</h1>
-          <p class="couple-subtitle">{t(strings.couple.subtitle)}</p>
+          <p class="couple-subtitle">Margaux Ancel &amp;<br />Sam Gross</p>
           <hr class="section-rule couple-rule" />
         </div>
 
@@ -148,53 +158,103 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
 
     <section class="couple-gallery" aria-label="Photos">
       <div class="couple-gallery-shell page-content">
-        {galleryRows.map(({ copy, leftPhoto, rightPhoto }) => (
-          <div class="gallery-row">
-            {leftPhoto && (
-              <article
-                class="photo-card gallery-scatter-card gallery-scatter-card--left"
-                style={`--rotate: ${leftPhoto.rotate}deg; --ty: ${leftPhoto.ty}px;`}
-              >
-                <div class="photo-card-inner">
-                  <div class="photo-label-row">
-                    <span class="photo-label photo-label--muted">{leftPhoto.date ?? 'Chez Sargaux'}</span>
+        {galleryRows.map(({ copy, left, right, doublePhotos }) => (
+          <div class={`gallery-row ${doublePhotos ? 'gallery-row--double' : 'gallery-row--single'}`}>
+            <div class="photo-column photo-column--left">
+              {left.map((photo) => (
+                <article
+                  class="photo-card gallery-scatter-card"
+                  style={`--rotate: ${photo.rotate}deg; --ty: ${photo.ty}px;`}
+                >
+                  <div class="photo-card-inner">
+                    <div class="photo-label-row">
+                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                    </div>
+                    <figure class="couple-photo-frame">
+                      <picture class="couple-photo-picture">
+                        <source srcset={photo.webp} type="image/webp" />
+                        <img src={photo.jpeg} alt={photo.alt} loading="lazy" decoding="async" class="couple-photo" />
+                      </picture>
+                    </figure>
                   </div>
-                  <figure class="couple-photo-frame">
-                    <picture class="couple-photo-picture">
-                      <source srcset={leftPhoto.webp} type="image/webp" />
-                      <img src={leftPhoto.jpeg} alt={leftPhoto.alt} loading="lazy" decoding="async" class="couple-photo" />
-                    </picture>
-                  </figure>
-                </div>
-              </article>
-            )}
+                </article>
+              ))}
+            </div>
 
-            <article class="story-card" aria-label="Story placeholder">
+            <article class="story-card" aria-label="Story">
               {copy.map((paragraph) => (
                 <p>{paragraph}</p>
               ))}
             </article>
 
-            {rightPhoto && (
+            <div class="photo-column photo-column--right">
+              {right.map((photo) => (
+                <article
+                  class="photo-card gallery-scatter-card"
+                  style={`--rotate: ${photo.rotate}deg; --ty: ${photo.ty}px;`}
+                >
+                  <div class="photo-card-inner">
+                    <div class="photo-label-row">
+                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                    </div>
+                    <figure class="couple-photo-frame">
+                      <picture class="couple-photo-picture">
+                        <source srcset={photo.webp} type="image/webp" />
+                        <img src={photo.jpeg} alt={photo.alt} loading="lazy" decoding="async" class="couple-photo" />
+                      </picture>
+                    </figure>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div class="gallery-row closing-row">
+          <div class="photo-column photo-column--left">
+            {closingCards[0] && (
               <article
-                class="photo-card gallery-scatter-card gallery-scatter-card--right"
-                style={`--rotate: ${rightPhoto.rotate}deg; --ty: ${rightPhoto.ty}px;`}
+                class="photo-card gallery-scatter-card"
+                style={`--rotate: ${closingCards[0].rotate}deg; --ty: ${closingCards[0].ty}px;`}
               >
                 <div class="photo-card-inner">
                   <div class="photo-label-row">
-                    <span class="photo-label photo-label--muted">{rightPhoto.date ?? 'Chez Sargaux'}</span>
+                    <span class="photo-label photo-label--muted">{closingCards[0].date ?? 'Chez Sargaux'}</span>
                   </div>
                   <figure class="couple-photo-frame">
                     <picture class="couple-photo-picture">
-                      <source srcset={rightPhoto.webp} type="image/webp" />
-                      <img src={rightPhoto.jpeg} alt={rightPhoto.alt} loading="lazy" decoding="async" class="couple-photo" />
+                      <source srcset={closingCards[0].webp} type="image/webp" />
+                      <img src={closingCards[0].jpeg} alt="Sam and Margaux" loading="lazy" decoding="async" class="couple-photo" />
                     </picture>
                   </figure>
                 </div>
               </article>
             )}
           </div>
-        ))}
+
+          <p class="closing-line">{closingLine}</p>
+
+          <div class="photo-column photo-column--right">
+            {closingCards[1] && (
+              <article
+                class="photo-card gallery-scatter-card"
+                style={`--rotate: ${closingCards[1].rotate}deg; --ty: ${closingCards[1].ty}px;`}
+              >
+                <div class="photo-card-inner">
+                  <div class="photo-label-row">
+                    <span class="photo-label photo-label--muted">{closingCards[1].date ?? 'Chez Sargaux'}</span>
+                  </div>
+                  <figure class="couple-photo-frame">
+                    <picture class="couple-photo-picture">
+                      <source srcset={closingCards[1].webp} type="image/webp" />
+                      <img src={closingCards[1].jpeg} alt="Sam and Margaux" loading="lazy" decoding="async" class="couple-photo" />
+                    </picture>
+                  </figure>
+                </div>
+              </article>
+            )}
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -268,7 +328,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     position: relative;
     z-index: 3;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 384px);
+    grid-template-columns: minmax(0, 1.15fr) minmax(400px, 480px);
     gap: var(--space-xl);
     align-items: start;
   }
@@ -296,8 +356,10 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
   .couple-subtitle {
     max-width: 32rem;
     color: var(--color-text-muted);
-    font-size: 20px;
-    line-height: var(--line-height-body);
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
   .couple-rule {
@@ -342,9 +404,10 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     display: grid;
     gap: var(--space-sm);
     min-height: 100%;
-    padding: 14px;
+    padding: 12px 0 0;
     background: var(--color-bg);
     border-radius: 22px 22px 16px 16px;
+    overflow: hidden;
   }
 
   .photo-label-row {
@@ -352,6 +415,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-sm);
+    padding: 0 12px;
   }
 
   .photo-label {
@@ -370,7 +434,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     aspect-ratio: 4 / 5;
     overflow: hidden;
     background: var(--color-surface);
-    border-radius: 18px 18px 14px 14px;
+    border-radius: 8px 8px 0 0;
   }
 
   .couple-photo-picture {
@@ -398,23 +462,33 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
 
   .gallery-row {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: var(--space-lg) var(--space-md);
+    grid-template-columns: 5fr 3fr 5fr;
+    gap: var(--space-xl) var(--space-lg);
     align-items: stretch;
   }
 
-  .gallery-scatter-card--left {
-    grid-column: 1 / span 4;
+  .photo-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    justify-content: center;
+  }
+
+  .gallery-row--double .photo-column {
+    justify-content: space-between;
+  }
+
+  /* Double-photo rows use a shorter aspect ratio so two fit comfortably */
+  .gallery-row--double .couple-photo-frame {
+    aspect-ratio: 3 / 4;
   }
 
   .story-card {
-    grid-column: 5 / span 4;
     display: grid;
     align-content: center;
     gap: var(--space-md);
     padding: var(--space-lg) 0;
     border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
     min-height: 100%;
   }
 
@@ -422,8 +496,16 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     color: var(--color-text-muted);
   }
 
-  .gallery-scatter-card--right {
-    grid-column: 9 / span 4;
+  .closing-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-style: italic;
+    font-size: clamp(17px, 1.5vw, 20px);
   }
 
   .gallery-scatter-card {
@@ -466,18 +548,17 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
       justify-items: center;
     }
 
-    .gallery-scatter-card--left,
-    .gallery-scatter-card--right {
-      grid-column: auto;
-    }
+    .photo-column--left { order: 1; }
+    .photo-column--right { order: 2; }
 
     .gallery-scatter-card {
       width: min(100%, 320px);
     }
 
-    .story-card {
-      grid-column: 1 / -1;
+    .story-card,
+    .closing-line {
       order: 3;
+      grid-column: 1 / -1;
       min-height: 0;
       width: min(100%, 36rem);
       margin-inline: auto;
@@ -524,7 +605,7 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     }
 
     .couple-subtitle {
-      font-size: var(--font-size-body);
+      font-size: clamp(22px, 6vw, 32px);
     }
 
     .photo-card {
@@ -533,8 +614,12 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     }
 
     .photo-card-inner {
-      padding: 10px;
+      padding: 10px 0 0;
       border-radius: 18px 18px 14px 14px;
+    }
+
+    .photo-label-row {
+      padding: 0 10px;
     }
 
   }
@@ -554,9 +639,11 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
       justify-items: center;
     }
 
-    .gallery-scatter-card,
-    .story-card {
+    .photo-column,
+    .story-card,
+    .closing-line {
       grid-column: 1 / -1;
+      order: 0;
     }
 
     .gallery-scatter-card {
@@ -568,6 +655,11 @@ const galleryRows = storyPlaceholders.map((copy, index) => {
     }
 
     .story-card {
+      order: 0;
+      padding: var(--space-md);
+    }
+
+    .closing-line {
       order: 0;
       padding: var(--space-md);
     }

@@ -87,7 +87,7 @@ export const strings = {
     pageTitle: s('The Couple', 'Le Couple'),
     eyebrow: s('Established May 2020', 'Established May 2020'),
     heroTitle: s('The Couple', 'Le Couple'),
-    subtitle: s('A first place for the two of us. We will build this out over time.', 'Un premier espace pour nous deux. Nous le développerons progressivement.'),
+    subtitle: s('Margaux Ancel &\nSam Gross', 'Margaux Ancel &\nSam Gross'),
     photoLabel: s('Photo One', 'Photo Un'),
     photoCaption: s('A first image from the archive.', "Une première image de l'archive."),
     navLabel: s('Event Pages', 'Pages événement'),
