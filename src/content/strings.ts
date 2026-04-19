@@ -62,7 +62,7 @@ export const strings = {
   home: {
     pageTitle:  s('Homepage', 'Accueil'),
     heroTitle:  s('Chez Sargaux', 'Chez Sargaux'),
-    tagline:    s('Sam & Margaux', 'Sam & Margaux'),
+    tagline:    s('Margaux and Sam are getting married!', 'Margaux and Sam are getting married!'),
     ctaEnter:   s('Entrée', 'Entrée'),
     inline: {
       prompt: s('Please enter your name', 'Veuillez entrer votre nom'),
