@@ -117,6 +117,21 @@ html[data-event="france"] .lookbook-disc-slot .lookbook-disc {
   }
 }
 
+/* ── Couple page: photo-card radii ─────────────────────────────────────────
+ * The hero .couple-photo-frame has transition:persist, and the scoped
+ * styles from couple.astro aren't guaranteed to apply to persisted elements
+ * at DOM-swap time during SPA navigations. These structural radii live in
+ * the shared bundle (already loaded on every source page) so the photo
+ * card stack renders consistently on transition entry AND reload.
+ *
+ * Nested radii stack: .photo-card (30/22) → .photo-card-inner (22/16) →
+ * .couple-photo-frame (16). All four photo-frame corners match the inner
+ * mat's bottom clipping radius so no background crescent shows.
+ */
+.couple-photo-frame {
+  border-radius: 16px;
+}
+
 @media (prefers-color-scheme: dark) {
   html[data-event="france"] .travel-card {
     background: var(--color-surface) !important;

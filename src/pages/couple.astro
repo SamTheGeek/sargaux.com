@@ -109,7 +109,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
   <header class="site-header couple-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
-      <div class="nav-actions couple-nav-actions">
+      <div class="nav-actions">
         {showEventToggle && (
           <div class="event-toggle" transition:name="event-toggle">
             <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
@@ -265,10 +265,6 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
 <style>
   .couple-header {
     background: var(--color-bg);
-  }
-
-  .couple-nav-actions {
-    gap: var(--space-sm);
   }
 
   .couple-event-nav-link {
@@ -434,7 +430,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
     aspect-ratio: 4 / 5;
     overflow: hidden;
     background: var(--color-surface);
-    border-radius: 8px 8px 0 0;
+    border-radius: 16px;
   }
 
   .couple-photo-picture {
@@ -458,11 +454,12 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
   .couple-gallery-shell {
     display: grid;
     gap: var(--space-2xl);
+    max-width: 1400px;
   }
 
   .gallery-row {
     display: grid;
-    grid-template-columns: 5fr 3fr 5fr;
+    grid-template-columns: 3fr 4fr 3fr;
     gap: var(--space-xl) var(--space-lg);
     align-items: stretch;
   }
@@ -489,7 +486,6 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
     gap: var(--space-md);
     padding: var(--space-lg) 0;
     border-top: 1px solid var(--color-border);
-    min-height: 100%;
   }
 
   .story-card p {
@@ -509,6 +505,8 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
   }
 
   .gallery-scatter-card {
+    width: 85%;
+    align-self: center;
     transform: rotate(var(--rotate)) translateY(var(--ty));
     transition: transform 0.2s ease;
   }
@@ -559,25 +557,17 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
     .closing-line {
       order: 3;
       grid-column: 1 / -1;
-      min-height: 0;
       width: min(100%, 36rem);
       margin-inline: auto;
       text-align: center;
     }
+
+    .story-card {
+      align-content: start;
+    }
   }
 
   @media (max-width: 768px) {
-    .couple-header .site-nav {
-      grid-template-columns: 1fr;
-      justify-items: center;
-      gap: 10px;
-    }
-
-    .couple-nav-actions {
-      flex-wrap: wrap;
-      justify-self: center;
-    }
-
     .couple-hero {
       padding: var(--space-xl) 0;
     }
