@@ -170,7 +170,7 @@
 
 [data-event="france"] {
   --color-text: var(--color-prussian-blue);
-  --color-text-muted: var(--color-dark-moss);
+  --color-text-muted: rgba(13, 36, 77, 0.58); /* muted prussian blue — replaces dark-moss green */
   --color-surface: var(--color-prussian-blue);
   --color-border: var(--color-prussian-blue);
 
