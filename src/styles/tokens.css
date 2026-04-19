@@ -10,12 +10,17 @@
 
 /* === Fonts === */
 
+/*
+ * Branded fonts use block so first paint does not visibly swap from fallback
+ * metrics into the custom face. This avoids the text flicker seen on headers
+ * and event heroes when the font file arrives just after initial render.
+ */
 @font-face {
   font-family: 'Helvetica Now Display';
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -23,7 +28,7 @@
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -31,7 +36,7 @@
   src: url('/fonts/helvetica-now/HelveticaNowDisplay-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -39,7 +44,7 @@
   src: url('/fonts/futura/FuturaPTBook.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -47,7 +52,7 @@
   src: url('/fonts/futura/FuturaPTMedium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -55,7 +60,7 @@
   src: url('/fonts/futura/FuturaPTDemi.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -63,7 +68,7 @@
   src: url('/fonts/Peignot 400.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -71,7 +76,7 @@
   src: url('/fonts/peignot-bold.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -79,18 +84,24 @@
   src: url('/fonts/peignot-bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 /* === Base Tokens (NYC / Default) — Light Mode === */
 
 :root {
   /* Brand colors — core palette */
-  --color-warm-cream: #F1ECE3;
-  --color-dark-moss: #2F3F36;
-  --color-burnt-amber: #D96A1E;
+  --color-warm-cream: #FFF9F0;
+  --color-dark-moss: #17320b;
+  --color-nyc-skyline-dark: #0c1a06;
+  --color-burnt-amber: #e65a17;
   --color-espresso: #3A2E26;
-  --color-prussian-blue: #1B3A6B;
+  --color-prussian-blue: #0d244d;
+  --color-mustard: #f49a28;
+  --color-shadow-mustard: #DA9419;
+  --color-burgundy-red: #980204;
+  --color-sage-green: #9CAD69;
+  --color-pale-green: #C5CF98;
 
   /* Semantic tokens — NYC light (default) */
   --color-bg: var(--color-warm-cream);
@@ -105,10 +116,10 @@
   --font-display: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-body: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-size-hero: 64px;
-  --font-size-h2: 32px;
-  --font-size-h3: 20px;
-  --font-size-body: 16px;
-  --font-size-caption: 12px;
+  --font-size-h2: 34px;
+  --font-size-h3: 22px;
+  --font-size-body: 18px;
+  --font-size-caption: 14px;
   --line-height-heading: 1.2;
   --line-height-body: 1.6;
   --tracking-heading: 0.08em;
@@ -143,6 +154,14 @@
   --color-info-bg: #EEF5F9;
   --color-info-border: #B7D4E8;
 
+  /* Flag colors — LangSwitcher only
+     Blues use --color-prussian-blue; whites use --color-warm-cream; reds use --color-burgundy-red */
+  --color-flag-us-stars: rgba(255, 249, 240, 0.95);
+
+  /* Semi-transparent surface text — used on dark (moss) surfaces */
+  --color-surface-text-placeholder: rgba(255, 249, 240, 0.68);
+  --color-surface-text-loading: rgba(255, 249, 240, 0.82);
+
   /* Color scheme hint for native controls */
   color-scheme: light dark;
 }
@@ -151,7 +170,7 @@
 
 [data-event="france"] {
   --color-text: var(--color-prussian-blue);
-  --color-text-muted: var(--color-dark-moss);
+  --color-text-muted: rgba(13, 36, 77, 0.58); /* muted prussian blue — replaces dark-moss green */
   --color-surface: var(--color-prussian-blue);
   --color-border: var(--color-prussian-blue);
 
@@ -172,7 +191,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #1A2420;
+    --color-bg: var(--color-nyc-skyline-dark);
     --color-text: var(--color-warm-cream);
     --color-text-muted: #8A9484;
     --color-surface: #243530;
@@ -196,4 +215,5 @@
     --color-surface: #162040;
     --color-border: #1A2844;
   }
+
 }

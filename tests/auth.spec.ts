@@ -18,12 +18,16 @@ test.describe('Authentication', () => {
 
   test('should switch homepage language to French from the footer switcher', async ({ page }) => {
     await page.goto('/');
+    await page.locator('.hero-disc').evaluate((element) => {
+      element.setAttribute('data-persist-probe', 'home-disc');
+    });
 
     await page.getByLabel('Passer en français').click();
 
     await expect(page).toHaveURL(/lang=fr/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('.panel-intro')).toContainText('Veuillez entrer votre nom');
+    await expect(page.locator('.hero-disc')).toHaveAttribute('data-persist-probe', 'home-disc');
   });
 
   test('should collapse inline name input when clicking outside with no text entered', async ({ page }) => {
@@ -47,7 +51,7 @@ test.describe('Authentication', () => {
     await page.press('#name', 'Enter');
 
     const errorMessage = page.locator('#error-message');
-    await expect(errorMessage).toContainText("Please enter your name as it appears on your invitation");
+    await expect(errorMessage).toContainText('Name not found, it must match exactly.');
     await expect(page).toHaveURL('/');
   });
 
@@ -68,6 +72,46 @@ test.describe('Authentication', () => {
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
     await page.click('#inline-submit');
+
+    await expect(page).toHaveURL('/nyc');
+  });
+
+  test('should show loading state while login is in progress', async ({ page }) => {
+    let resolveLogin: (() => void) | undefined;
+    const loginResponseReady = new Promise<void>((resolve) => {
+      resolveLogin = resolve;
+    });
+    const authCookieValue = Buffer.from(
+      JSON.stringify({
+        guest: 'Sam Gross',
+        eventInvitations: ['nyc'],
+        created: Date.now(),
+      })
+    ).toString('base64url');
+
+    await page.route('**/api/login', async (route) => {
+      await loginResponseReady;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Set-Cookie': `sargaux_auth=${authCookieValue}; Path=/; HttpOnly; SameSite=Lax`,
+        },
+        body: JSON.stringify({ success: true, guest: 'Sam Gross', redirectPath: '/nyc' }),
+      });
+    });
+
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.press('#name', 'Enter');
+
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-loading/);
+    await expect(page.locator('#inline-submit')).toBeDisabled();
+    await expect(page.locator('#name')).toBeDisabled();
+    await expect(page.locator('.inline-progress-label')).toContainText('Checking...');
+
+    resolveLogin?.();
 
     await expect(page).toHaveURL('/nyc');
   });
@@ -119,11 +163,41 @@ test.describe('Authentication', () => {
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
-    await page.goto('/api/logout');
+    await page.click('a[href="/api/logout"]');
     await expect(page).toHaveURL('/');
+
+    await page.click('#login-trigger');
+    await expect(page.locator('#inline-entry-control')).toHaveClass(/is-active/);
+    await expect(page.locator('#name')).toBeFocused();
 
     await page.goto('/nyc');
     await expect(page).toHaveURL('/');
+  });
+
+  test('should keep RSVP back links aligned to the right edge', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', 'Sam Gross');
+    await page.press('#name', 'Enter');
+    await expect(page).toHaveURL('/nyc');
+
+    for (const route of ['/nyc/rsvp', '/france/rsvp']) {
+      await page.goto(route);
+
+      const navBox = await page.locator('.site-nav').boundingBox();
+      const backLinkBox = await page.locator('.back-link').boundingBox();
+      const navPaddingRight = await page.locator('.site-nav').evaluate((element) => {
+        return Number.parseFloat(window.getComputedStyle(element).paddingRight || '0');
+      });
+
+      expect(navBox).toBeTruthy();
+      expect(backLinkBox).toBeTruthy();
+      expect(
+        Math.abs(
+          (navBox?.x ?? 0) + (navBox?.width ?? 0) - navPaddingRight - ((backLinkBox?.x ?? 0) + (backLinkBox?.width ?? 0))
+        )
+      ).toBeLessThan(2);
+    }
   });
 
   test('should keep inline name input open when it contains text', async ({ page }) => {
@@ -165,7 +239,7 @@ test.describe('Authentication', () => {
     });
 
     expect(response.status).toBe(401);
-    expect(response.body.error).toContain('your name as it appears on your invitation');
+    expect(response.body.error).toContain('Name not found, it must match exactly.');
   });
 
   test('login API returns 400 for empty name', async ({ page }) => {

@@ -1,0 +1,27 @@
+name: Cache Warmup
+
+on:
+  deployment_status:
+
+jobs:
+  warm:
+    name: Warm guest cache
+    runs-on: ubuntu-latest
+    # Only run when Netlify reports a successful deploy
+    if: github.event.deployment_status.state == 'success'
+
+    steps:
+      - name: Warm cache
+        env:
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          URL="${DEPLOY_URL}/api/warm"
+          echo "Warming cache at: $URL"
+          RESPONSE=$(curl -s -w "\n%{http_code}" "$URL")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: $BODY"
+          echo "Status: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Warning: warmup returned $HTTP_CODE (non-fatal)"
+          fi

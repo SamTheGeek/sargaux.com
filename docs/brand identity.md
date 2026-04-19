@@ -70,6 +70,7 @@ A perfect geometric circle, flat color, no texture, no gradient. Often cropped b
 - "Together with their families"
 - "Invite you to celebrate their marriage"
 - "Cocktail Attire"
+- Time formatting: English uses spaced uppercase meridiems (`5:30 PM`, `9:00 AM`); French uses 24-hour format with `h` (`17h30`, `09h00`)
 
 **Avoid**
 

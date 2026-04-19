@@ -1,0 +1,62 @@
+/*
+ * France Lookbook page — disc and layout styles.
+ * External file per the dark-mode-over-SPA-nav rule.
+ */
+
+html[data-event="france"][data-page="lookbook"] .site-header {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+html[data-event="france"][data-page="lookbook"] main {
+  position: relative;
+  flex: 1;
+  padding-bottom: 3rem;
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-shell {
+  position: relative;
+  z-index: 1;
+  padding-top: 3rem;
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-intro {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-margin) 2.5rem;
+}
+
+/* h1 margin — font/size/layout lives in wireframe-transition-fixes.css */
+html[data-event="france"][data-page="lookbook"] .lookbook-heading {
+  margin-bottom: var(--space-xs);
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-intro .subtitle {
+  font-size: var(--font-size-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caption);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-gallery {
+  padding: 0 var(--page-margin) var(--space-xl);
+}
+
+html[data-event="france"][data-page="lookbook"] .lookbook-empty {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caption);
+  padding: var(--space-lg) 0;
+}
+
+@media (max-width: 768px) {
+  html[data-event="france"][data-page="lookbook"] .france-lookbook-intro {
+    padding: 0 var(--page-margin-mobile) 2rem;
+  }
+
+  html[data-event="france"][data-page="lookbook"] .france-lookbook-gallery {
+    padding: 0 var(--page-margin-mobile) var(--space-lg);
+  }
+}

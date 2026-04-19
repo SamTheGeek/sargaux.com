@@ -1,0 +1,91 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e3]:
+    - navigation [ref=e4]:
+      - link "Chez Sargaux" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: NYC
+          - generic [ref=e9]: "|"
+          - link "France" [ref=e10] [cursor=pointer]:
+            - /url: /france
+        - link "RSVP" [ref=e11] [cursor=pointer]:
+          - /url: /nyc/rsvp
+  - generic [ref=e13]:
+    - link "← Return to event" [ref=e14] [cursor=pointer]:
+      - /url: /nyc
+    - heading "La Soirée" [level=1] [ref=e15]
+    - paragraph [ref=e16]: October 11, 2026
+  - generic [ref=e17]: Schedule
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]: 5:00 PM
+      - generic [ref=e23]:
+        - text: Cocktails & Dinner
+        - generic [ref=e24]: Join us for an evening of celebration
+    - generic [ref=e25]:
+      - generic [ref=e26]: 6:23 PM
+      - generic [ref=e27]: Sunset
+    - generic [ref=e28]:
+      - generic [ref=e29]: 9:00 PM
+      - generic [ref=e30]:
+        - text: Dancing
+        - generic [ref=e31]: Continue the celebration with us later in the evening
+  - generic [ref=e32]: Venues
+  - generic [ref=e35]:
+    - generic [ref=e36]:
+      - img "Interior of Bar Blondeau at the Wythe Hotel, Brooklyn" [ref=e38]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - paragraph [ref=e41]: Cocktails, Dinner, & Celebration
+          - heading "Bar Blondeau at the Wythe Hotel" [level=3] [ref=e42]
+          - paragraph [ref=e43]: 80 Wythe Ave, 6th Floor · Brooklyn, New York 11249
+        - link "Get Directions →" [ref=e45] [cursor=pointer]:
+          - /url: https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7
+    - generic [ref=e46]:
+      - img "Dancing venue" [ref=e48]
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - paragraph [ref=e51]: Dancing
+          - heading "Location TBA" [level=3] [ref=e52]
+          - paragraph [ref=e53]: Williamsburg, Brooklyn
+        - generic [ref=e54]:
+          - link "Get Directions →" [disabled]:
+            - /url: https://maps.google.com
+  - generic [ref=e55]: Details
+  - generic [ref=e58]:
+    - generic [ref=e59]:
+      - generic [ref=e60]: Dress Code
+      - generic [ref=e61]:
+        - text: Festive Attire
+        - generic [ref=e62]: Think jackets but no tie required. The couple will be in suits.
+    - generic [ref=e63]:
+      - generic [ref=e64]: What to Expect
+      - generic [ref=e65]: The evening will begin with dinner and cocktails at Bar Blondeau. Later, we'll move to a second location for dancing and continued celebration.
+  - contentinfo [ref=e66]:
+    - navigation [ref=e67]:
+      - link "Registry" [ref=e68] [cursor=pointer]:
+        - /url: /registry
+      - text: · Sam Gross ·
+      - link "Logout" [ref=e69] [cursor=pointer]:
+        - /url: /api/logout
+    - generic [ref=e70]:
+      - paragraph [ref=e71]: © 2026 Sam Gross
+      - generic "Language" [ref=e72]:
+        - link "Switch to English" [ref=e73] [cursor=pointer]:
+          - /url: /nyc/details?lang=en
+        - link "Passer en français" [ref=e90] [cursor=pointer]:
+          - /url: /nyc/details?lang=fr
+  - generic [ref=e97]:
+    - button "Menu" [ref=e98]:
+      - img [ref=e100]
+      - generic: Menu
+    - button "Inspect" [ref=e104]:
+      - img [ref=e106]
+      - generic: Inspect
+    - button "Audit" [ref=e108]:
+      - img [ref=e110]
+      - generic: Audit
+    - button "Settings" [ref=e113]:
+      - img [ref=e115]
+      - generic: Settings

@@ -1,0 +1,266 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/nyc-subpage-hero.css';
+import '../../styles/nyc-lookbook.css';
+import '../../styles/lookbook.css';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const guest = Astro.locals.guest;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const t = createTranslator(Astro.locals.lang ?? 'en');
+
+const dir = path.join(process.cwd(), 'public/images/nyc/lookbook');
+const images = fs.readdirSync(dir)
+  .filter(f => /^pinterest_nyc_\d+\.jpg$/i.test(f))
+  .sort()
+  .map(f => ({
+    jpg:  `/images/nyc/lookbook/${f}`,
+    webp: `/images/nyc/lookbook/${f.replace(/\.jpg$/i, '.webp')}`,
+  }));
+---
+
+<WireframeLayout title={t(strings.nyc.lookbook.pageTitle)} fullTitle="Chez Sargaux | NYC — Lookbook" event="nyc" page="lookbook">
+
+  <header class="site-header nyc-header" transition:name="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
+          </div>
+        )}
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="nyc-page-main">
+    <div class="details-hero lookbook-hero">
+      <div class="page-content lookbook-hero-inner">
+        <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
+        <h1 class="lookbook-heading" aria-label={t(strings.nyc.lookbook.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="nyc-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
+        <p class="details-date">{t(strings.nyc.lookbook.subtitle)}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="nyc-page-moss">
+    <section class="nyc-moss details-section lookbook-section">
+      <div class="lookbook-grid">
+        {images.map(img => (
+          <picture class="lookbook-item">
+            <source srcset={img.webp} type="image/webp" />
+            <img src={img.jpg} alt="" loading="lazy" decoding="async" />
+          </picture>
+        ))}
+      </div>
+    </section>
+
+    <footer class="nyc-moss nyc-footer site-footer">
+      <nav>
+        <a href="/registry">{t(strings.global.registry)}</a>
+        <span> · </span>
+        <span class="guest-name">{guest}</span>
+        <span> · </span>
+        <a href="/api/logout">{t(strings.global.logout)}</a>
+      </nav>
+      <div class="nyc-footer-meta">
+        <p class="copyright">{t(strings.global.copyright)}</p>
+        <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+      </div>
+    </footer>
+  </div>
+
+</WireframeLayout>
+
+<style is:global>
+  html[data-event="nyc"] body {
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
+    overflow-x: hidden;
+  }
+
+  html[data-event="nyc"] .nyc-header {
+    background: var(--color-warm-cream) !important;
+    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
+  }
+
+  html[data-event="nyc"] .nyc-header .site-logo,
+  html[data-event="nyc"] .nyc-header .site-logo:hover,
+  html[data-event="nyc"] .nyc-header .event-toggle .active,
+  html[data-event="nyc"] .nyc-header .event-toggle .divider {
+    color: var(--color-dark-moss) !important;
+  }
+
+  html[data-event="nyc"] .nyc-header .event-toggle a {
+    color: rgba(23, 50, 11, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-rsvp-btn {
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
+    height: 32px;
+    padding: 0 24px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    transition: opacity 0.15s;
+    border: none;
+  }
+
+  html[data-event="nyc"] .nyc-rsvp-btn:hover {
+    opacity: 0.85;
+    color: var(--color-warm-cream) !important;
+  }
+
+  html[data-event="nyc"] .details-hero {
+    position: relative;
+    z-index: 3;
+    min-height: 38vh;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 48px;
+  }
+
+  html[data-event="nyc"] .lookbook-hero-inner {
+    width: 100%;
+  }
+
+  html[data-event="nyc"] .details-back,
+  html[data-event="nyc"] .details-back:link,
+  html[data-event="nyc"] .details-back:visited {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: opacity 0.15s;
+  }
+
+  html[data-event="nyc"] .details-back:hover {
+    opacity: 0.6;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+  }
+
+  html[data-event="nyc"] .details-hero h1 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 500;
+    line-height: 0.93;
+    color: var(--color-dark-moss);
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    white-space: nowrap;
+  }
+
+  html[data-event="nyc"] .nyc-moss {
+    position: relative;
+    z-index: 4;
+  }
+
+  html[data-event="nyc"] .details-section,
+  html[data-event="nyc"] .nyc-footer {
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer {
+    border-top-color: rgba(255, 249, 240, 0.12) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a,
+  html[data-event="nyc"] .nyc-footer nav span,
+  html[data-event="nyc"] .nyc-footer .copyright {
+    color: rgba(255, 249, 240, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a:hover {
+    color: var(--color-warm-cream) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] body {
+      background: var(--color-dark-moss) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header {
+      background: var(--color-dark-moss) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .site-logo,
+    html[data-event="nyc"] .nyc-header .site-logo:hover,
+    html[data-event="nyc"] .nyc-header .event-toggle .active,
+    html[data-event="nyc"] .nyc-header .event-toggle .divider {
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .event-toggle a {
+      color: rgba(255, 249, 240, 0.45) !important;
+    }
+
+    html[data-event="nyc"] .nyc-rsvp-btn {
+      background: var(--color-burnt-amber) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-back,
+    html[data-event="nyc"] .details-back:link,
+    html[data-event="nyc"] .details-back:visited {
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .details-back:hover {
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .details-section,
+    html[data-event="nyc"] .nyc-footer {
+      background: var(--color-nyc-skyline-dark) !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    html[data-event="nyc"] .details-hero {
+      min-height: 28vh;
+      padding-bottom: 32px;
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      font-size: clamp(40px, 12vw, 64px);
+      white-space: normal;
+    }
+  }
+</style>

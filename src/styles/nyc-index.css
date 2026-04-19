@@ -1,0 +1,10 @@
+/*
+ * Keep transition-sensitive NYC index overrides out of inline Astro <style>
+ * blocks. During Astro SPA navigation, stale route style tags can briefly
+ * survive and cause direct-load-only styling differences.
+ */
+
+html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title {
+  color: var(--color-burnt-amber);
+  -webkit-text-fill-color: var(--color-burnt-amber);
+}
