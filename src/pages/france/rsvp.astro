@@ -5,9 +5,7 @@ import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import type { GuestRecord } from '../../types/guest';
-import type { EventRecord } from '../../types/event';
-import type { RSVPResponse } from '../../types/rsvp';
+import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
