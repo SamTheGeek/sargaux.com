@@ -13,6 +13,14 @@ Wedding website for Sam & Margaux
 
 ## Development
 
+On a fresh Mac, start with:
+
+```bash
+./scripts/setup.sh
+```
+
+That is the canonical onboarding entrypoint. It installs the toolchain, configures your shell for Homebrew and `nvm`, installs repo dependencies, and offers to create `.env.local` for local Notion-backed flows.
+
 ```bash
 # Install dependencies
 npm install
@@ -34,22 +42,18 @@ The dev server runs at `http://localhost:1213`.
 
 ### Local Notion/RSVP Environment
 
-Put local environment variables in:
-
-- `.env.local`
-
-For dynamic RSVP pages and Notion-backed flows in local dev:
+`./scripts/setup.sh` will offer to create `.env.local` for you. If you need to create or refresh it later, run:
 
 ```bash
 ./scripts/setup-local-env.sh
 ```
 
-This writes `.env.local` with the required values:
+This helper only manages `.env.local`. It writes:
 
 - `NOTION_API_KEY`
-- `NOTION_GUEST_LIST_DB`
-- `NOTION_EVENT_CATALOG_DB`
-- `NOTION_RSVP_RESPONSES_DB`
+- `NOTION_GUEST_LIST_DB` as the Guest List database page ID
+- `NOTION_EVENT_CATALOG_DB` as the Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` as the RSVP Responses database page ID
 - RSVP/Notion feature flags set to `true` for local usage
 
 ## Feature Flags
