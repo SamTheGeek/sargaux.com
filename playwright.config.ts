@@ -55,7 +55,7 @@ export default defineConfig({
       PORT: '1213',
       ASTRO_ADAPTER: 'node',
       ASTRO_CHECK_ORIGIN: 'false',
-      ADMIN_SECRET: process.env.ADMIN_SECRET ?? 'test-secret-not-set',
+      RESEND_ADMIN_SECRET: process.env.RESEND_ADMIN_SECRET ?? 'test-secret-not-set',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
       FEATURE_GLOBAL_I18N: process.env.FEATURE_GLOBAL_I18N ?? 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:

@@ -23,7 +23,7 @@ import { isEnabled } from '../../../config/features';
 export const POST: APIRoute = async ({ request }) => {
   // Auth check
   const authHeader = request.headers.get('Authorization');
-  const adminSecret = process.env.ADMIN_SECRET;
+  const adminSecret = process.env.RESEND_ADMIN_SECRET;
   if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,

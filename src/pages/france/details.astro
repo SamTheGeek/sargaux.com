@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../../components/ImagePlaceholder.astro';
+import '../../styles/france-details.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
@@ -8,112 +8,143 @@ import LangSwitcher from '../../components/LangSwitcher.astro';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.details.pageTitle)} event="france">
+<WireframeLayout title={t(strings.france.details.pageTitle)} event="france" page="details">
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>{t(strings.france.details.heading)}</h1>
-    <p class="subtitle">{t(strings.france.details.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-details-content">
+      <h1>{t(strings.france.details.heading)}</h1>
+      <p class="subtitle">{t(strings.france.details.subtitle)}</p>
 
-    <section class="hero-venue">
-      <ImagePlaceholder
-        name="france-hero"
-        folder="france"
-        description="Village De Sully main view — the full property or most impressive angle"
-        aspectRatio="16/9"
-      />
-    </section>
-
-    <section class="venue-info">
-      <h2>{t(strings.france.details.about.heading)}</h2>
-      <p><strong>{t(strings.france.details.about.name)}</strong></p>
-      <p>{t(strings.france.details.about.location)}</p>
-      <div class="venue-links">
-        <a href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank" class="venue-link">{t(strings.france.details.about.mapLink)}</a>
-        <a href="https://www.groupeamadeus.com/le-village-de-sully" target="_blank" class="venue-link">{t(strings.france.details.about.websiteLink)}</a>
-      </div>
-      <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
-    </section>
-
-    <section class="venue-spaces">
-      <h2>{t(strings.france.details.spaces.heading)}</h2>
-      <div class="spaces-grid">
-        <div class="space-card">
-          <ImagePlaceholder
-            name="france-grounds"
-            folder="france"
-            description="Village grounds, gardens, outdoor gathering spaces"
-            aspectRatio="4/3"
+      <section class="hero-venue">
+        <div class="venue-image-frame venue-image-frame--hero">
+          <img
+            src="/images/france/fromabove.jpg"
+            alt="Aerial view of the France venue"
+            class="venue-image"
           />
-          <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
-          <p>{t(strings.france.details.spaces.grounds.desc)}</p>
         </div>
-        <div class="space-card">
-          <ImagePlaceholder
-            name="france-ceremony"
-            folder="france"
-            description="Ceremony location — outdoor setting on the property"
-            aspectRatio="4/3"
-          />
-          <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
-          <p>{t(strings.france.details.spaces.ceremony.desc)}</p>
-        </div>
-        <div class="space-card">
-          <ImagePlaceholder
-            name="france-accommodation"
-            folder="france"
-            description="Guest accommodations at the village"
-            aspectRatio="4/3"
-          />
-          <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
-          <p>{t(strings.france.details.spaces.accommodation.desc)}</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="accommodation-details">
-      <h2>{t(strings.france.details.staying.heading)}</h2>
-
-      <div class="recommendation-banner">
-        <strong>{t(strings.france.details.staying.recommendation)}</strong>
-        <p>{t(strings.france.details.staying.recommendationNote)}</p>
-      </div>
-
-      <div class="accommodation-info">
-        <h3>{t(strings.france.details.staying.roomDetails.heading)}</h3>
-        <ul>
-          <li><strong>{t(strings.france.details.staying.roomDetails.price)}</strong></li>
-          <li>{t(strings.france.details.staying.roomDetails.breakfast)}</li>
-          <li>{t(strings.france.details.staying.roomDetails.checkin)}</li>
-          <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
-        </ul>
-        <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
-      </div>
-    </section>
-
-    <section class="dress-code">
-      <h2>{t(strings.france.details.dressCode.heading)}</h2>
-      <div class="dress-events">
-        <div class="dress-event">
-          <h3>{t(strings.france.details.dressCode.friday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.friday.code)}</p>
+      <section class="venue-info">
+        <h2>{t(strings.france.details.about.heading)}</h2>
+        <p><strong>{t(strings.france.details.about.name)}</strong></p>
+        <p>{t(strings.france.details.about.location)}</p>
+        <div class="venue-links">
+          <a
+            href="https://maps.apple/p/dHL2e4qibM7MGE"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.appleMapLink)}
+          </a>
+          <a
+            href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.googleMapLink)}
+          </a>
+          <a
+            href="https://www.groupeamadeus.com/le-village-de-sully"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="venue-link"
+          >
+            {t(strings.france.details.about.websiteLink)}
+          </a>
         </div>
-        <div class="dress-event highlight">
-          <h3>{t(strings.france.details.dressCode.saturday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.saturday.code)}</p>
-          <p class="dress-note">{t(strings.france.details.dressCode.saturday.note)}</p>
+        <p class="venue-desc">{t(strings.france.details.about.desc)}</p>
+      </section>
+
+      <section class="venue-spaces">
+        <h2>{t(strings.france.details.spaces.heading)}</h2>
+        <div class="spaces-grid">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/aubonmarche.jpeg"
+                alt="The grounds at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
+            <p>{t(strings.france.details.spaces.grounds.desc)}</p>
+          </div>
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/mairie.jpg"
+                alt="Ceremony space at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
+            <p>{t(strings.france.details.spaces.ceremony.desc)}</p>
+          </div>
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <img
+                src="/images/france/accommodation.jpg"
+                alt="Guest accommodations at the France venue"
+                class="venue-image"
+              />
+            </div>
+            <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
+            <p>{t(strings.france.details.spaces.accommodation.desc)}</p>
+          </div>
         </div>
-        <div class="dress-event">
-          <h3>{t(strings.france.details.dressCode.sunday.event)}</h3>
-          <p>{t(strings.france.details.dressCode.sunday.code)}</p>
+      </section>
+
+      <section class="accommodation-details">
+        <h2>{t(strings.france.details.staying.heading)}</h2>
+
+        <div class="recommendation-banner">
+          <strong>{t(strings.france.details.staying.recommendation)}</strong>
+          <p>{t(strings.france.details.staying.recommendationNote)}</p>
         </div>
-      </div>
-    </section>
+
+        <div class="accommodation-info">
+          <h3>{t(strings.france.details.staying.roomDetails.heading)}</h3>
+          <ul>
+            <li><strong>{t(strings.france.details.staying.roomDetails.price)}</strong></li>
+            <li>{t(strings.france.details.staying.roomDetails.breakfast)}</li>
+            <li>{t(strings.france.details.staying.roomDetails.checkin)}</li>
+            <li>{t(strings.france.details.staying.roomDetails.checkout)}</li>
+          </ul>
+          <p class="booking-note">{t(strings.france.details.staying.roomDetails.bookingNote)}</p>
+          <p class="booking-meta"><strong>{t(strings.france.details.staying.rsvpDeadline.heading)}</strong> {t(strings.france.details.staying.rsvpDeadline.value)}</p>
+        </div>
+      </section>
+
+      <section class="dress-code">
+        <h2>{t(strings.france.details.dressCode.heading)}</h2>
+        <div class="dress-events">
+          <div class="dress-event">
+            <h3>{t(strings.france.details.dressCode.friday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.friday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.friday.note)}</p>
+          </div>
+          <div class="dress-event highlight">
+            <h3>{t(strings.france.details.dressCode.saturday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.saturday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.saturday.note)}</p>
+          </div>
+          <div class="dress-event">
+            <h3>{t(strings.france.details.dressCode.sunday.event)}</h3>
+            <p>{t(strings.france.details.dressCode.sunday.code)}</p>
+            <p class="dress-note">{t(strings.france.details.dressCode.sunday.note)}</p>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <footer>
@@ -123,226 +154,3 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </div>
   </footer>
 </WireframeLayout>
-
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
-  }
-
-main {
-    flex: 1;
-    padding-bottom: 3rem;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-    text-align: center;
-    padding-top: 3rem;
-  }
-
-  .subtitle {
-    color: var(--color-text-muted);
-    margin-bottom: 2rem;
-    text-align: center;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .hero-venue {
-    margin-bottom: 2rem;
-  }
-
-  /* Venue Info */
-  .venue-info {
-    padding: 0 2rem 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .venue-info p {
-    margin-bottom: 0.5rem;
-  }
-
-  .venue-links {
-    display: flex;
-    gap: 1.5rem;
-    margin: 1rem 0;
-  }
-
-  .venue-link {
-    font-size: 0.875rem;
-    color: var(--color-text);
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--color-border);
-  }
-
-  .venue-link:hover {
-    background: var(--color-bg);
-  }
-
-  .venue-desc {
-    color: var(--color-text-muted);
-    line-height: 1.6;
-    margin-top: 1rem;
-  }
-
-  /* Venue Spaces */
-  .venue-spaces {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .spaces-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-  }
-
-  .space-card {
-    border: 1px solid var(--color-border);
-    overflow: hidden;
-  }
-
-  .space-card h3 {
-    margin: 1rem;
-    font-size: 1.125rem;
-    font-weight: 500;
-  }
-
-  .space-card p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0 1rem 1rem;
-    line-height: 1.5;
-  }
-
-  /* Accommodation Details */
-  .accommodation-details {
-    padding: 0 2rem 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .recommendation-banner {
-    background: var(--color-info-bg);
-    border: 1px solid var(--color-accent);
-    padding: 1.25rem;
-    margin: 1rem 0 1.5rem;
-  }
-
-  .recommendation-banner strong {
-    display: block;
-    color: var(--color-text-muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .recommendation-banner p {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 0.9375rem;
-    line-height: 1.5;
-  }
-
-  .accommodation-info {
-    border: 1px solid var(--color-border);
-    padding: 1.5rem;
-  }
-
-  .accommodation-info h3 {
-    font-size: 1.125rem;
-    font-weight: 500;
-    margin-bottom: 1rem;
-  }
-
-  .accommodation-info ul {
-    margin: 0 0 1rem;
-    padding-left: 1.5rem;
-  }
-
-  .accommodation-info li {
-    margin-bottom: 0.5rem;
-  }
-
-  .booking-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-    margin: 0;
-  }
-
-  /* Dress Code */
-  .dress-code {
-    padding: 0 2rem 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .dress-events {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-
-  .dress-event {
-    border: 1px solid var(--color-border);
-    padding: 1.25rem;
-    text-align: center;
-  }
-
-  .dress-event.highlight {
-    border-color: var(--color-text);
-    border-width: 2px;
-  }
-
-  .dress-event h3 {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: var(--color-text-muted);
-  }
-
-  .dress-event > p:first-of-type {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: var(--color-text);
-  }
-
-  .dress-note {
-    font-size: 0.8125rem;
-    color: var(--color-text-muted);
-    margin-top: 0.75rem;
-    font-style: italic;
-  }
-
-  /* Footer */
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-</style>

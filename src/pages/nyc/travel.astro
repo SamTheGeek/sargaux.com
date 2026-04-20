@@ -1,192 +1,588 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/nyc-subpage-hero.css';
+import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 
+const guest = Astro.locals.guest;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.nyc.travel.pageTitle)} event="nyc">
-  <header class="site-header">
+<WireframeLayout title={t(strings.nyc.travel.pageTitle)} fullTitle="Chez Sargaux | NYC — Travel" event="nyc" page="travel">
+
+  <!-- Amber disc — z:2. Sits behind .nyc-page-main (z:5) during transitions. -->
+  <div class="nyc-disc" aria-hidden="true" transition:name="event-disc"></div>
+
+  <!-- Sticky header -->
+  <header class="site-header nyc-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/nyc" class="back-link">{t(strings.nav.backToNyc)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
+          </div>
+        )}
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+      </div>
     </nav>
   </header>
 
-  <main>
-    <h1>{t(strings.nyc.travel.heading)}</h1>
-    <p class="subtitle">{t(strings.nyc.travel.subtitle)}</p>
-
-    <section class="travel-sections">
-      <!-- Hotels -->
-      <div class="travel-card">
-        <h2>{t(strings.nyc.travel.hotels.heading)}</h2>
-        <p>{t(strings.nyc.travel.hotels.intro)}</p>
-        <ul>
-          <li>{t(strings.nyc.travel.hotels.hotel1)}</li>
-          <li>{t(strings.nyc.travel.hotels.hotel2)}</li>
-        </ul>
-        <p class="placeholder-note">{t(strings.nyc.travel.hotels.roomBlock)}</p>
+  <div class="nyc-page-main">
+    <!-- Cream hero — right-aligned composition for travel -->
+    <div class="details-hero travel-hero">
+      <div class="page-content travel-hero-inner">
+        <a href="/nyc" class="details-back">{t(strings.nav.backToEvent)}</a>
+        <h1>{t(strings.nyc.travel.heading)}</h1>
+        <p class="details-date">{t(strings.nyc.travel.subtitle)}</p>
       </div>
+    </div>
+  </div>
 
-      <!-- Getting There -->
-      <div class="travel-card">
-        <h2>{t(strings.nyc.travel.gettingThere.heading)}</h2>
+  <!-- ═══════ Moss zone ═══════ -->
+  <div class="nyc-page-moss">
 
-        <h3>{t(strings.nyc.travel.gettingThere.air.heading)}</h3>
-        <ul>
-          <li>{t(strings.nyc.travel.gettingThere.air.jfk)}</li>
-          <li>{t(strings.nyc.travel.gettingThere.air.lga)}</li>
-          <li>{t(strings.nyc.travel.gettingThere.air.ewr)}</li>
-        </ul>
-
-        <h3>{t(strings.nyc.travel.gettingThere.train.heading)}</h3>
-        <p>{t(strings.nyc.travel.gettingThere.train.text)}</p>
-
-        <h3>{t(strings.nyc.travel.gettingThere.bus.heading)}</h3>
-        <p>{t(strings.nyc.travel.gettingThere.bus.intro)}</p>
-        <ul>
-          <li>{t(strings.nyc.travel.gettingThere.bus.vamoose)}</li>
-          <li>{t(strings.nyc.travel.gettingThere.bus.tripper)}</li>
-        </ul>
+  <!-- Hotels -->
+  <div class="nyc-moss details-band">{t(strings.nyc.travel.hotels.heading)}</div>
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        {!features.nyc.wytheSoldOut && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">Wythe Hotel</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel1)} <a class="nyc-info-address" href="https://maps.app.goo.gl/kYLuYNuMUKNwkGRQA" target="_blank" rel="noopener">80 Wythe Avenue, Brooklyn, NY 11249</a></span>
+              <a class="nyc-info-link--cta" href="https://app.mews.com/distributor/6b87e134-8c75-468a-82d4-aca900c43c70?mewsAvailabilityBlockId=81019661-425a-4bba-a1ff-b3fc0120bbfc&mewsStart=2026-10-10&mewsEnd=2026-10-12" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel1BookNow)}</a>
+            </span>
+          </div>
+        )}
+        {!features.nyc.arloSoldOut && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">Arlo Williamsburg</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel2)} <a class="nyc-info-address" href="https://maps.app.goo.gl/d65Gn17JYfJHy4hB6" target="_blank" rel="noopener">96 Wythe Avenue, Brooklyn</a></span>
+              <a class="nyc-info-link--cta" href="https://be.synxis.com/?Hotel=41850&Chain=19470&arrive=2026-10-10&depart=2026-10-12&adult=1&child=0&group=261010ANCE" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel2BookNow)}</a>
+            </span>
+          </div>
+        )}
+        {!features.nyc.sevilleSoldOut && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">Hotel Seville NoMad</span>
+            <span class="nyc-info-val nyc-info-val--stack">
+              <span>{t(strings.nyc.travel.hotels.hotel3)} <a class="nyc-info-address" href="https://maps.app.goo.gl/XtUmtf1KYhEVdCjt7" target="_blank" rel="noopener">22 E 29th St, New York, NY</a></span>
+              <a class="nyc-info-link--cta" href="https://www.hyatt.com/events/en-US/group-booking/NYCUD/G-MBO0" target="_blank" rel="noopener">{t(strings.nyc.travel.hotels.hotel3BookNow)}</a>
+            </span>
+          </div>
+        )}
       </div>
+    </div>
+  </section>
 
-      <!-- Getting Around -->
-      <div class="travel-card">
-        <h2>{t(strings.nyc.travel.gettingAround.heading)}</h2>
-
-        <h3>{t(strings.nyc.travel.gettingAround.subway.heading)}</h3>
-        <p>{t(strings.nyc.travel.gettingAround.subway.intro)}</p>
-        <ul>
-          <li>{t(strings.nyc.travel.gettingAround.subway.fare)}</li>
-          <li>{t(strings.nyc.travel.gettingAround.subway.maps)}</li>
-        </ul>
-
-        <h3>{t(strings.nyc.travel.gettingAround.parking.heading)}</h3>
-        <p>{t(strings.nyc.travel.gettingAround.parking.text)}</p>
+  <!-- Getting There (formerly Getting Around) -->
+  <div class="nyc-moss details-band">{t(strings.nyc.travel.gettingThere.heading)}</div>
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.subway.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.travel.gettingAround.subway.intro)}
+            <ul class="travel-list">
+              <li>
+                {t(strings.nyc.travel.gettingAround.subway.fareBeforeLink)}
+                <a
+                  class="nyc-info-link--inline"
+                  href="https://support.apple.com/en-us/105123"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  {t(strings.nyc.travel.gettingAround.subway.fareLinkText)}
+                </a>
+                {t(strings.nyc.travel.gettingAround.subway.fareAfterLink)}
+              </li>
+              <li>{t(strings.nyc.travel.gettingAround.subway.maps)}</li>
+            </ul>
+          </span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.bike.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.gettingAround.bike.text)}</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.gettingAround.car.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.gettingAround.car.text)}</span>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <!-- While You're Here -->
-      <div class="travel-card">
-        <h2>{t(strings.nyc.travel.whileHere.heading)}</h2>
-        <p>{t(strings.nyc.travel.whileHere.intro)}</p>
-
-        <h3>{t(strings.nyc.travel.whileHere.museums.heading)}</h3>
-        <ul>
-          <li>{t(strings.nyc.travel.whileHere.museums.met)}</li>
-          <li>{t(strings.nyc.travel.whileHere.museums.moma)}</li>
-          <li>{t(strings.nyc.travel.whileHere.museums.whitney)}</li>
-          <li>{t(strings.nyc.travel.whileHere.museums.naturalHistory)}</li>
-          <li>{t(strings.nyc.travel.whileHere.museums.guggenheim)}</li>
-        </ul>
-
-        <h3>{t(strings.nyc.travel.whileHere.exhibitions.heading)}</h3>
-        <p class="placeholder-note">{t(strings.nyc.travel.whileHere.exhibitions.placeholder)}</p>
-
+  <!-- While You're Here -->
+  <div class="nyc-moss details-band">{t(strings.nyc.travel.whileHere.heading)}</div>
+  <section class="nyc-moss details-section">
+    <div class="page-content">
+      <div class="nyc-info-table">
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.upperEastSide.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.travel.whileHere.upperEastSide.body)}
+            <ul class="travel-list">
+              <li>{t(strings.nyc.travel.whileHere.upperEastSide.alsoInArea)}</li>
+            </ul>
+          </span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.prospectHeights.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.whileHere.prospectHeights.body)}</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.dumbo.heading)}</span>
+          <span class="nyc-info-val">{t(strings.nyc.travel.whileHere.dumbo.body)}</span>
+        </div>
+        <div class="nyc-info-row">
+          <span class="nyc-info-key">{t(strings.nyc.travel.whileHere.cycling.heading)}</span>
+          <span class="nyc-info-val">
+            {t(strings.nyc.travel.whileHere.cycling.body)}{' '}
+            <a class="nyc-info-link--inline" href="https://ridewithgps.com/routes/54409165?privacy_code=KshzTPHp7mi0yNFE4vWgB8nLIRlb69QY" target="_blank" rel="noopener">{t(strings.nyc.travel.whileHere.cycling.linkText)}</a>{' '}
+            {t(strings.nyc.travel.whileHere.cycling.bodyAfter)}
+          </span>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
+  <!-- Footer -->
+  <footer class="nyc-moss nyc-footer site-footer">
+    <nav>
+      <a href="/registry">{t(strings.global.registry)}</a>
+      <span> · </span>
+      <span class="guest-name">{guest}</span>
+      <span> · </span>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
+    </nav>
+    <div class="nyc-footer-meta">
+      <p class="copyright">{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
     </div>
   </footer>
+
+  </div><!-- .nyc-page-moss -->
+
 </WireframeLayout>
 
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
+<style is:global>
+
+  /* ── Foundation ──────────────────────────────────── */
+
+  html[data-event="nyc"] body {
+    background: var(--color-warm-cream) !important;
+    color: var(--color-dark-moss) !important;
+    overflow-x: hidden;
   }
 
-main {
-    flex: 1;
-    padding: 3rem 2rem;
-    max-width: 900px;
-    margin: 0 auto;
+  /* ── Header ──────────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-header {
+    background: var(--color-warm-cream) !important;
+    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+  html[data-event="nyc"] .nyc-header .site-logo,
+  html[data-event="nyc"] .nyc-header .site-logo:hover,
+  html[data-event="nyc"] .nyc-header .event-toggle .active,
+  html[data-event="nyc"] .nyc-header .event-toggle .divider {
+    color: var(--color-dark-moss) !important;
   }
 
-  .subtitle {
-    color: var(--color-text-muted);
-    margin-bottom: 3rem;
+  html[data-event="nyc"] .nyc-header .event-toggle a {
+    color: rgba(23, 50, 11, 0.4) !important;
   }
 
-  .travel-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .travel-card {
-    border: 1px solid var(--color-border);
-    padding: 1.5rem;
-  }
-
-  .travel-card h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .travel-card h3 {
-    font-size: 1.125rem;
+  html[data-event="nyc"] .nyc-rsvp-btn {
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
+    height: 32px;
+    padding: 0 24px;
+    font-size: 12px;
     font-weight: 500;
-    margin: 1.5rem 0 0.75rem;
-    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    transition: opacity 0.15s;
+    border: none;
   }
 
-  .travel-card h3:first-of-type {
-    margin-top: 0.5rem;
+  html[data-event="nyc"] .nyc-rsvp-btn:hover {
+    opacity: 0.85;
+    color: var(--color-warm-cream) !important;
   }
 
-  .travel-card p {
-    margin-bottom: 0.5rem;
+  /* ── Amber disc — z:2 ────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-disc {
+    position: fixed;
+    width: clamp(300px, 50vh, 580px);
+    height: clamp(300px, 50vh, 580px);
+    background: var(--color-burnt-amber);
+    border-radius: 50%;
+    top: 3vh;
+    left: -14%;
+    z-index: 2;
+  }
+
+  /* ── Cream hero ──────────────────────────────────── */
+
+  html[data-event="nyc"] .details-hero {
+    position: relative;
+    z-index: 3;
+    min-height: 38vh;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 48px;
+  }
+
+  html[data-event="nyc"] .details-hero-inner {
+    width: 100%;
+  }
+
+  /* Travel hero: right-aligned stack */
+  html[data-event="nyc"] .travel-hero-inner {
+    width: 100%;
+    text-align: right;
+  }
+
+  /* Disc on the right for travel page */
+  html[data-event="nyc"][data-page="travel"] .nyc-disc {
+    left: auto !important;
+    right: -8% !important;
+  }
+
+  html[data-event="nyc"] .details-back,
+  html[data-event="nyc"] .details-back:link,
+  html[data-event="nyc"] .details-back:visited {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: opacity 0.15s;
+  }
+
+  html[data-event="nyc"] .details-back:hover {
+    opacity: 0.6;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+  }
+
+  html[data-event="nyc"] .details-hero h1 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 500;
+    line-height: 0.93;
+    color: var(--color-dark-moss);
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    white-space: nowrap;
+  }
+
+  /* ── Moss zone — z:4 ─────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-moss {
+    position: relative;
+    z-index: 4;
+  }
+
+  html[data-event="nyc"] .details-section,
+  html[data-event="nyc"] .nyc-footer {
+    background: var(--color-dark-moss) !important;
+    color: var(--color-warm-cream) !important;
+  }
+
+  html[data-event="nyc"] .details-band {
+    padding: 14px 64px;
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: var(--color-warm-cream) !important;
+    color: rgba(23, 50, 11, 0.5) !important;
+    border-top: 1px solid rgba(23, 50, 11, 0.1);
+  }
+
+  html[data-event="nyc"] .details-section {
+    padding: 40px 0 48px;
+  }
+
+  /* ── Info table ──────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-info-table {
+    margin: 0;
+  }
+
+  html[data-event="nyc"] .nyc-info-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 249, 240, 0.15);
+    align-items: baseline;
+  }
+
+  html[data-event="nyc"] .nyc-info-row:first-child {
+    border-top: 1px solid rgba(255, 249, 240, 0.15);
+  }
+
+  html[data-event="nyc"] .nyc-info-key {
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 249, 240, 0.45);
+    padding-top: 3px;
+  }
+
+  html[data-event="nyc"] .nyc-info-val {
+    font-size: var(--font-size-body);
     line-height: 1.6;
+    color: var(--color-warm-cream);
   }
 
-  .travel-card ul {
-    margin: 0.5rem 0 1rem;
-    padding-left: 1.5rem;
-  }
-
-  .travel-card li {
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
-  }
-
-  .placeholder-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+  html[data-event="nyc"] .nyc-info-val--muted {
+    font-size: 16px;
+    color: rgba(255, 249, 240, 0.4);
     font-style: italic;
   }
 
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
+  html[data-event="nyc"] .nyc-info-val--stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 
-  .footer-row {
+  html[data-event="nyc"] .nyc-info-secondary {
+    display: block;
+    font-size: var(--font-size-caption);
+    color: rgba(255, 249, 240, 0.45);
+    margin-top: 4px;
+  }
+
+  html[data-event="nyc"] .nyc-info-address,
+  html[data-event="nyc"] .nyc-info-address:link,
+  html[data-event="nyc"] .nyc-info-address:visited {
+    color: rgba(255, 249, 240, 0.75);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.75);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  html[data-event="nyc"] .nyc-info-address:hover {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .nyc-info-link,
+  html[data-event="nyc"] .nyc-info-link:link,
+  html[data-event="nyc"] .nyc-info-link:visited {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: var(--font-size-caption);
+    color: rgba(255, 249, 240, 0.6);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.6);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  html[data-event="nyc"] .nyc-info-link:hover {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .nyc-info-link--inline,
+  html[data-event="nyc"] .nyc-info-link--inline:link,
+  html[data-event="nyc"] .nyc-info-link--inline:visited {
+    color: rgba(255, 249, 240, 0.75);
+    -webkit-text-fill-color: rgba(255, 249, 240, 0.75);
+    font-size: inherit;
+    line-height: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  html[data-event="nyc"] .nyc-info-link--inline:hover {
+    color: var(--color-warm-cream);
+    -webkit-text-fill-color: var(--color-warm-cream);
+  }
+
+  html[data-event="nyc"] .nyc-info-link--cta,
+  html[data-event="nyc"] .nyc-info-link--cta:link,
+  html[data-event="nyc"] .nyc-info-link--cta:visited {
+    display: block;
+    color: var(--color-burnt-amber);
+    -webkit-text-fill-color: var(--color-burnt-amber);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  html[data-event="nyc"] .nyc-info-link--cta:hover {
+    color: #e87a30;
+    -webkit-text-fill-color: #e87a30;
+  }
+
+  /* ── Travel list (replaces <ul>) ─────────────────── */
+
+  html[data-event="nyc"] .travel-list {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+    margin-bottom: 0;
+    padding-left: 20px;
+  }
+
+  html[data-event="nyc"] .travel-list li {
+    font-size: 16px;
+    color: rgba(255, 249, 240, 0.7);
+    line-height: 1.5;
+  }
+
+  /* ── Footer ──────────────────────────────────────── */
+
+  html[data-event="nyc"] .nyc-footer {
+    border-top-color: rgba(255, 249, 240, 0.12) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a,
+  html[data-event="nyc"] .nyc-footer nav span,
+  html[data-event="nyc"] .nyc-footer .copyright {
+    color: rgba(255, 249, 240, 0.4) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer nav a:hover {
+    color: var(--color-warm-cream) !important;
+  }
+
+  html[data-event="nyc"] .nyc-footer-meta {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
+    gap: 8px;
+    margin-top: 8px;
   }
 
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
+  /* ── Dark mode ────────────────────────────────────── */
+
+  @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] body {
+      background: var(--color-dark-moss) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header {
+      background: var(--color-dark-moss) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .site-logo,
+    html[data-event="nyc"] .nyc-header .site-logo:hover,
+    html[data-event="nyc"] .nyc-header .event-toggle .active,
+    html[data-event="nyc"] .nyc-header .event-toggle .divider {
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-header .event-toggle a {
+      color: rgba(255, 249, 240, 0.45) !important;
+    }
+
+    html[data-event="nyc"] .nyc-rsvp-btn {
+      background: var(--color-burnt-amber) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-back,
+    html[data-event="nyc"] .details-back:link,
+    html[data-event="nyc"] .details-back:visited {
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .details-back:hover {
+      color: rgba(255, 249, 240, 0.7) !important;
+      -webkit-text-fill-color: rgba(255, 249, 240, 0.7) !important;
+    }
+
+    html[data-event="nyc"] .nyc-moss {
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .details-section,
+    html[data-event="nyc"] .nyc-footer {
+      background: var(--color-nyc-skyline-dark) !important;
+    }
+
+    html[data-event="nyc"] .details-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
+
+    html[data-event="nyc"] .nyc-info-row {
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+    }
+
+    html[data-event="nyc"] .nyc-info-row:first-child {
+      border-top-color: rgba(255, 249, 240, 0.08) !important;
+    }
   }
+
+  /* ── Mobile ───────────────────────────────────────── */
+
+  @media (max-width: 768px) {
+    html[data-event="nyc"] .nyc-disc {
+      width: clamp(160px, 50vw, 260px);
+      height: clamp(160px, 50vw, 260px);
+      left: -18%;
+      top: 72px;
+    }
+
+    html[data-event="nyc"] .details-hero {
+      min-height: 28vh;
+      padding-bottom: 32px;
+    }
+
+    html[data-event="nyc"] .details-hero h1 {
+      font-size: clamp(40px, 12vw, 64px);
+      white-space: normal;
+    }
+
+    html[data-event="nyc"][data-page="travel"] .nyc-disc {
+      left: auto !important;
+      right: -18% !important;
+    }
+
+    html[data-event="nyc"] .details-band {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    html[data-event="nyc"] .nyc-info-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
 </style>

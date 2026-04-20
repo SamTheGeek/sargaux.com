@@ -1,44 +1,58 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { getLatestRSVP } from '../../lib/notion';
+import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import FranceCalendarCta from '../../components/FranceCalendarCta.astro';
+import '../../styles/france-schedule.css';
 
+const guestId = Astro.locals.guestId;
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const latestRSVP = guestId
+  ? await getLatestRSVP(guestId, 'france').catch((error) => {
+      console.error('Failed to load France RSVP status for calendar CTA:', error);
+      return null;
+    })
+  : null;
+const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
 ---
 
-<WireframeLayout title={t(strings.france.schedule.pageTitle)} event="france">
+<WireframeLayout title={t(strings.france.schedule.pageTitle)} event="france" page="schedule">
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>{t(strings.france.schedule.heading)}</h1>
-    <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-schedule-content">
+      <h1>{t(strings.france.schedule.heading)}</h1>
+      <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
 
-    <!-- Check-in/Check-out Info -->
-    <div class="stay-info">
-      <div class="stay-time">
-        <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
-        <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
+      <!-- Check-in/Check-out Info -->
+      <div class="stay-info">
+        <div class="stay-time">
+          <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
+          <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
+        </div>
+        <div class="stay-divider"></div>
+        <div class="stay-time">
+          <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
+          <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
+        </div>
       </div>
-      <div class="stay-divider"></div>
-      <div class="stay-time">
-        <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
-        <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
-      </div>
-    </div>
 
-    <!-- Calendar Subscribe -->
-    <section class="calendar-subscribe">
-      <button class="calendar-btn" disabled>{t(strings.france.schedule.calendarBtn)}</button>
-      <p class="calendar-note">{t(strings.france.schedule.calendarNote)}</p>
-    </section>
+      <FranceCalendarCta
+        token={calendarToken}
+        label={t(strings.france.schedule.calendarBtn)}
+        note={t(strings.france.schedule.calendarNote)}
+        unavailableNote={t(strings.nyc.calendar.unavailableNote)}
+      />
 
-    <section class="days">
+      <section class="days">
       <!-- Friday -->
       <div class="day-section">
         <h2>{t(strings.france.schedule.friday.heading)}</h2>
@@ -120,7 +134,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             <div class="event">
               <h4>{t(strings.france.schedule.sunday.brunch.title)}</h4>
               <p class="location">{t(strings.france.schedule.sunday.brunch.location)}</p>
-              <p>{t(strings.france.schedule.sunday.brunch.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
@@ -132,7 +145,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
+
   </main>
 
   <footer>
@@ -186,7 +201,7 @@ main {
   }
 
   .stay-label {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text-muted);
@@ -204,36 +219,6 @@ main {
   }
 
   /* Calendar Subscribe */
-  .calendar-subscribe {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .calendar-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    background: var(--color-text);
-    color: white;
-    border: none;
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-  }
-
-  .calendar-btn:hover:not(:disabled) {
-    background: var(--color-text);
-  }
-
-  .calendar-btn:disabled {
-    background: var(--color-text-muted);
-    cursor: not-allowed;
-  }
-
-  .calendar-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
   /* Days */
   .days {
     display: flex;
@@ -242,7 +227,7 @@ main {
   }
 
   .day-section h2 {
-    font-size: 1.5rem;
+    font-size: 1.625rem;
     font-weight: 400;
     margin-bottom: 0.5rem;
     padding-bottom: 0.5rem;
@@ -254,7 +239,7 @@ main {
   }
 
   .day-note {
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: var(--color-text-muted);
     margin-bottom: 1rem;
     font-weight: 500;
@@ -282,7 +267,7 @@ main {
   }
 
   .time {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--color-text);
     min-width: 80px;
@@ -295,19 +280,19 @@ main {
 
   .event h4 {
     margin: 0 0 0.25rem 0;
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 500;
   }
 
   .event p {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: var(--color-text-muted);
   }
 
   .event .location {
     color: var(--color-text-muted);
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
     margin-bottom: 0.25rem;
   }
 

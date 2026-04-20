@@ -1,0 +1,255 @@
+/*
+ * Keep France details overrides out of inline Astro <style> blocks.
+ * During Astro SPA navigation, stale route style tags can survive a
+ * transition and make this page render differently from a direct load.
+ */
+
+html[data-event="france"][data-page="details"] .site-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="details"] main {
+  flex: 1;
+  padding-bottom: 3rem;
+}
+
+html[data-event="france"][data-page="details"] h1 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  padding-top: 3rem;
+}
+
+html[data-event="france"][data-page="details"] .subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+html[data-event="france"][data-page="details"] h2 {
+  font-size: 1.625rem;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="details"] .hero-venue {
+  margin-bottom: 2rem;
+}
+
+html[data-event="france"][data-page="details"] .venue-image-frame {
+  overflow: hidden;
+  width: 100%;
+}
+
+html[data-event="france"][data-page="details"] .venue-image-frame--hero {
+  aspect-ratio: 16 / 9;
+  width: min(50%, 42rem);
+  margin: 0 auto;
+}
+
+html[data-event="france"][data-page="details"] .venue-image-frame--card {
+  aspect-ratio: 4 / 3;
+}
+
+html[data-event="france"][data-page="details"] .venue-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html[data-event="france"][data-page="details"] .venue-info {
+  padding: 0 2rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+html[data-event="france"][data-page="details"] .venue-info p {
+  margin-bottom: 0.5rem;
+}
+
+html[data-event="france"][data-page="details"] .venue-links {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+html[data-event="france"][data-page="details"] .venue-link {
+  font-size: 1rem;
+  color: var(--color-text);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="details"] .venue-link:hover {
+  background: var(--color-bg);
+}
+
+html[data-event="france"][data-page="details"] .venue-desc {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-top: 1rem;
+}
+
+html[data-event="france"][data-page="details"] .venue-spaces {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+html[data-event="france"][data-page="details"] .spaces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+html[data-event="france"][data-page="details"] .space-card {
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+html[data-event="france"][data-page="details"] .space-card h3 {
+  margin: 1rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+html[data-event="france"][data-page="details"] .space-card p {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 0 1rem 1rem;
+  line-height: 1.5;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-details {
+  padding: 0 2rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+html[data-event="france"][data-page="details"] .recommendation-banner {
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-accent);
+  padding: 1.25rem;
+  margin: 1rem 0 1.5rem;
+}
+
+html[data-event="france"][data-page="details"] .recommendation-banner strong {
+  display: block;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+html[data-event="france"][data-page="details"] .recommendation-banner p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-info {
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-info h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-info ul {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-info li {
+  margin-bottom: 0.5rem;
+}
+
+html[data-event="france"][data-page="details"] .booking-note {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+html[data-event="france"][data-page="details"] .booking-meta {
+  margin: 1rem 0 0;
+  font-size: 1.0625rem;
+  color: var(--color-text);
+}
+
+html[data-event="france"][data-page="details"] .dress-code {
+  padding: 0 2rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+html[data-event="france"][data-page="details"] .dress-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+html[data-event="france"][data-page="details"] .dress-event {
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+html[data-event="france"][data-page="details"] .dress-event.highlight {
+  border-color: var(--color-text);
+  border-width: 2px;
+}
+
+html[data-event="france"][data-page="details"] .dress-event h3 {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-muted);
+}
+
+html[data-event="france"][data-page="details"] .dress-event > p:first-of-type {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+html[data-event="france"][data-page="details"] .dress-note {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+html[data-event="france"][data-page="details"] footer {
+  padding: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="details"] .footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+}
+
+html[data-event="france"][data-page="details"] .footer-row p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  html[data-event="france"][data-page="details"] .venue-image-frame--hero {
+    width: 100%;
+  }
+}

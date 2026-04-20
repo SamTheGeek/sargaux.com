@@ -1,0 +1,42 @@
+---
+import LangSwitcher from './LangSwitcher.astro';
+import { strings } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+interface Props {
+  className?: string;
+  guest?: string | null;
+  lang?: string;
+  showNav?: boolean;
+}
+
+const {
+  className = '',
+  guest = null,
+  lang = 'en',
+  showNav = true,
+} = Astro.props;
+
+const t = createTranslator(lang);
+const footerClassName = ['site-footer', className].filter(Boolean).join(' ');
+---
+
+<footer class={footerClassName}>
+  {showNav && (
+    <nav>
+      <a href="/registry">{t(strings.global.registry)}</a>
+      {guest && (
+        <>
+          <span> · </span>
+          <span class="guest-name">{guest}</span>
+        </>
+      )}
+      <span> · </span>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
+    </nav>
+  )}
+  <div class="site-footer-meta">
+    <p class="copyright">{t(strings.global.copyright)}</p>
+    <LangSwitcher lang={lang} />
+  </div>
+</footer>

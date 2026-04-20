@@ -1,0 +1,590 @@
+---
+import WireframeLayout from '../../../layouts/WireframeLayout.astro';
+import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
+import { generateTokenIfPossible } from '../../../lib/calendar';
+import { getAttendingNames, redactEmail } from '../../../lib/rsvp-display';
+import { strings } from '../../../content/strings';
+import { createTranslator } from '../../../lib/i18n';
+import LangSwitcher from '../../../components/LangSwitcher.astro';
+import FranceCalendarCta from '../../../components/FranceCalendarCta.astro';
+import type { GuestRecord } from '../../../types/guest';
+import type { EventRecord } from '../../../types/event';
+import type { RSVPResponse } from '../../../types/rsvp';
+
+const guest = Astro.locals.guest ?? 'Guest';
+const guestId = Astro.locals.guestId;
+const lang = Astro.locals.lang ?? 'en';
+const t = createTranslator(lang);
+const isDevMock = import.meta.env.DEV && Astro.url.searchParams.get('mock') === 'dev';
+const devCompanionName = guest === 'Margaux Ancel' ? 'Sam Gross' : 'Margaux Ancel';
+
+let party: GuestRecord[] = [];
+let coreEvents: EventRecord[] = [];
+let optionalEvents: EventRecord[] = [];
+let existingRSVP: RSVPResponse | null = null;
+let loadError: string | null = null;
+
+if (isDevMock) {
+  party = [
+    {
+      id: 'dev-primary',
+      name: guest,
+      normalizedName: guest.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-companion'],
+      eventInvitedIds: [],
+      email: 'sam@example.com',
+    },
+    {
+      id: 'dev-companion',
+      name: devCompanionName,
+      normalizedName: devCompanionName.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-primary'],
+      eventInvitedIds: [],
+      email: 'margaux@example.com',
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'dev-france-ceremony',
+      name: 'Ceremony',
+      type: 'Core',
+      wedding: 'france',
+      time: '3:00 PM',
+      location: 'Village de Sully',
+      showOnWebsite: true,
+    },
+    {
+      id: 'dev-france-dinner',
+      name: 'Dinner & Dancing',
+      type: 'Core',
+      wedding: 'france',
+      time: '7:00 PM',
+      location: 'Courtyard Pavilion',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [
+    {
+      id: 'dev-france-brunch',
+      name: 'Sunday Brunch',
+      type: 'Optional',
+      wedding: 'france',
+      time: '11:00 AM',
+      location: 'Garden Terrace',
+      showOnWebsite: true,
+    },
+  ];
+  existingRSVP = {
+    id: 'dev-france-rsvp',
+    guestId: 'dev-primary',
+    event: 'france',
+    submittedAt: new Date().toISOString(),
+    status: 'Partial',
+    guestsAttending: guest,
+    dietary: 'Shellfish allergy noted.',
+    message: 'We are arranging trains now and should be there all weekend.',
+    details: {
+      accommodation: 'yes',
+      allergens: 'Shellfish allergy noted.',
+    },
+    eventsAttending: ['dev-france-ceremony', 'dev-france-dinner'],
+  };
+} else if (guestId) {
+  try {
+    party = await getGuestParty(guestId);
+    const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'france');
+    coreEvents = events.filter((event) => event.type === 'Core');
+    optionalEvents = events.filter((event) => event.type === 'Optional');
+    existingRSVP = await getLatestRSVP(guestId, 'france');
+  } catch (error) {
+    console.error('Failed to load France RSVP confirmation data:', error);
+    loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
+  }
+}
+
+const attendingNames = getAttendingNames(existingRSVP);
+const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
+const details = existingRSVP?.details ?? {};
+const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
+const submittedAt = existingRSVP?.submittedAt
+  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  : null;
+
+function accommodationLabel(value?: string): string {
+  switch (value) {
+    case 'yes':
+      return t(strings.france.rsvp.form.accommodation.yes);
+    case 'no':
+      return t(strings.france.rsvp.form.accommodation.no);
+    case 'unsure':
+      return t(strings.france.rsvp.form.accommodation.unsure);
+    default:
+      return t(strings.france.rsvp.confirmation.emptyValue);
+  }
+}
+
+---
+
+<WireframeLayout title={t(strings.france.rsvp.confirmation.pageTitle)} event="france">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="france-page-content" transition:name="france-rsvp-confirmed-content">
+      <h1>{t(strings.france.rsvp.confirmation.heading)}</h1>
+      <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
+
+      <div class="deadline-banner">
+        <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
+      </div>
+
+      {!guestId && !isDevMock ? (
+        <div class="error-card" data-testid="notion-required">
+          <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
+          <p>{t(strings.france.rsvp.unavailable.text)}</p>
+        </div>
+      ) : loadError ? (
+        <div class="error-card" data-testid="rsvp-load-error">
+          <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
+          <p>{loadError}</p>
+        </div>
+      ) : !existingRSVP ? (
+        <div class="error-card" data-testid="missing-rsvp">
+          <h2>{t(strings.france.rsvp.confirmation.missing.heading)}</h2>
+          <p>{t(strings.france.rsvp.confirmation.missing.text)}</p>
+        </div>
+      ) : (
+        <>
+          {isDevMock && (
+            <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
+              <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+            </aside>
+          )}
+
+          <FranceCalendarCta
+            token={calendarToken}
+            label={t(strings.france.schedule.calendarBtn)}
+            compact={true}
+            showNote={false}
+            testId="calendar-confirmation-link"
+          />
+
+          <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
+          {party.map((partyGuest) => {
+            const isAttending = attendingNames.has(partyGuest.name);
+            return (
+              <div
+                class:list={[
+                  'guest-row',
+                  partyGuest.isPlusOne && 'plus-one',
+                  !isAttending && 'guest-row--not-attending',
+                ]}
+                data-guest-row
+              >
+                <div class="guest-info">
+                  <span class="guest-name-static">{partyGuest.name}</span>
+                  <span class="guest-status">
+                    {isAttending ? t(strings.global.attending) : t(strings.global.notAttending)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          </section>
+
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.coreEvents.heading)}</h2>
+          {coreEvents.length === 0 ? (
+            <p class="placeholder-note">{t(strings.france.rsvp.form.coreEvents.empty)}</p>
+          ) : (
+            <div class="event-list">
+              {coreEvents.map((event) => {
+                const isSelected = selectedEventIds.size > 0
+                  ? selectedEventIds.has(event.id)
+                  : attendingNames.size > 0;
+                return (
+                  <div class="event-checkbox event-checkbox--readonly">
+                    <span class:list={['checkbox-mark', isSelected && 'checkbox-mark--checked']}></span>
+                    <div class="event-details">
+                      <strong>{event.name}</strong>
+                      <span class="event-info">
+                        {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {optionalEvents.length > 0 && (
+          <section class="form-section">
+            <h2>{t(strings.france.rsvp.form.optionalEvents.heading)}</h2>
+            <div class="event-list">
+              {optionalEvents.map((event) => {
+                const isSelected = selectedEventIds.has(event.id);
+                return (
+                  <div class="event-checkbox event-checkbox--readonly optional-event">
+                    <span class:list={['checkbox-mark', isSelected && 'checkbox-mark--checked']}></span>
+                    <div class="event-details">
+                      <strong>{event.name}</strong>
+                      <span class="event-info">
+                        {[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.dietary.heading)}</h2>
+          <div class="static-card">
+            {details.allergens ?? existingRSVP.dietary ?? t(strings.france.rsvp.confirmation.emptyValue)}
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
+          <div class="static-card">{accommodationLabel(details.accommodation)}</div>
+        </section>
+
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.message.heading)}</h2>
+          <div class="static-card">
+            {existingRSVP.message || t(strings.france.rsvp.confirmation.emptyValue)}
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>{t(strings.france.rsvp.form.email.heading)}</h2>
+          <div class="group-email-list">
+            {party.map((partyGuest) => (
+              <div class="email-field group-email-row">
+                <div class="group-email-label">
+                  <span class="group-email-name">{partyGuest.name}</span>
+                </div>
+                <div class="static-card static-card--email">
+                  {redactEmail(partyGuest.email) || t(strings.france.rsvp.confirmation.emailMissing)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div class="confirmation-actions">
+          <a href="/france/rsvp" class="confirmation-edit-link">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
+              <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+              <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+            </svg>
+            <span>{t(strings.france.rsvp.confirmation.editLink)}</span>
+          </a>
+        </div>
+        </>
+      )}
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: var(--color-text-muted);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .deadline-banner {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .existing-rsvp-banner {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-info-border);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-info);
+  }
+
+  .existing-rsvp-banner--preview {
+    margin-bottom: 1rem;
+  }
+
+  .form-section {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .form-section h2 {
+    font-size: 1.325rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .section-note {
+    font-size: 1.025rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.9rem;
+  }
+
+  .guest-row {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.8rem;
+    border: 1px solid var(--color-border);
+    margin-bottom: 0.75rem;
+  }
+
+  .guest-row.plus-one {
+    border-style: dashed;
+  }
+
+  .guest-row--not-attending {
+    border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
+    background: color-mix(in srgb, var(--color-bg) 90%, var(--color-border));
+  }
+
+  .guest-info {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .guest-name-static {
+    flex: 1;
+    color: var(--color-text);
+  }
+
+  .guest-row--not-attending .guest-name-static,
+  .guest-row--not-attending .guest-status {
+    color: color-mix(in srgb, var(--color-text) 48%, white);
+  }
+
+  .guest-status {
+    font-size: 0.925rem;
+    color: var(--color-text-muted);
+    min-width: 90px;
+    text-align: right;
+  }
+
+  .event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .event-checkbox {
+    display: flex;
+    align-items: start;
+    gap: 0.65rem;
+    padding: 0.85rem;
+    border: 1px solid var(--color-border);
+  }
+
+  .event-checkbox.is-core {
+    background: var(--color-bg);
+  }
+
+  .checkbox-mark {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .checkbox-mark--checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid var(--color-text);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .event-details strong {
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+
+  .event-info,
+  .placeholder-note {
+    color: var(--color-text-muted);
+    font-size: 0.985rem;
+  }
+
+  .static-card {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    padding: 0.7rem 0.75rem;
+    font-size: 1.075rem;
+    font-family: inherit;
+    color: var(--color-text);
+    background: var(--color-bg);
+    white-space: pre-wrap;
+  }
+
+  .static-card--email {
+    font-size: 1.075rem;
+  }
+
+  .group-email-list {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 0.35rem;
+  }
+
+  .email-field {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .group-email-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .group-email-name {
+    color: var(--color-text);
+  }
+
+  .confirmation-actions {
+    margin-top: 0.35rem;
+    text-align: center;
+  }
+
+  .confirmation-edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.22em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.975rem;
+  }
+
+  .confirmation-edit-link:hover {
+    opacity: 0.72;
+  }
+
+  .confirmation-edit-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .error-card {
+    border: 1px solid var(--color-error-border);
+    background: var(--color-error-bg);
+    padding: 1rem;
+    color: var(--color-error);
+  }
+
+  footer {
+    padding: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    main {
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .guest-info {
+      flex-direction: column;
+      align-items: start;
+    }
+
+    .guest-status {
+      min-width: 0;
+      text-align: left;
+    }
+
+    .two-column {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

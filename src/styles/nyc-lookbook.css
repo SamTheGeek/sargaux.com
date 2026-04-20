@@ -1,0 +1,63 @@
+/*
+ * NYC Lookbook page — disc-as-letter and gallery section styles.
+ * The amber disc element is embedded inside the h1 and replaces the second O
+ * in "LOOKBOOK". The ghost O span preserves the correct letter width; the disc
+ * sits on top of it via absolute positioning within the slot.
+ */
+
+/* h1 becomes a flex row so the disc slot sits between letter spans.
+ * These rules duplicate wireframe-transition-fixes.css (shared bundle) which
+ * handles the VT snapshot timing. This copy applies for direct page loads and
+ * cached navigations when nyc-lookbook.css has already been fetched. */
+html[data-event="nyc"] .lookbook-heading {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0;
+}
+
+/* Slot wrapper: inline-flex so it sizes to the ghost O and centers the disc */
+html[data-event="nyc"] .lookbook-disc-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Ghost O: invisible — visibility:hidden also in wireframe-transition-fixes.css */
+html[data-event="nyc"] .lookbook-o-ghost {
+  visibility: hidden;
+  user-select: none;
+}
+
+/* Disc visual properties — also in wireframe-transition-fixes.css for VT timing.
+ * !important overrides values from other pages' stylesheets persisting across SPA. */
+html[data-event="nyc"] .lookbook-disc-slot .nyc-disc {
+  /* 0.74em ≈ cap height in Helvetica Now Display (with optical overshoot) */
+  width: 0.74em !important;
+  height: 0.74em !important;
+  /* Explicit centering within the slot */
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: var(--color-burnt-amber) !important;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+/* Gallery section padding */
+html[data-event="nyc"] .lookbook-section {
+  padding: 32px var(--page-margin) 64px;
+}
+
+@media (max-width: 768px) {
+  html[data-event="nyc"] .lookbook-heading {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+
+  html[data-event="nyc"] .lookbook-section {
+    padding: 24px var(--page-margin-mobile) 48px;
+  }
+}
