@@ -25,3 +25,33 @@ export function getDisplayEventTime(event: EventRecord, nycTimeRange?: string): 
 
   return event.time;
 }
+
+export function formatSubmittedAt(dateString: string, locale: string): string {
+  const date = new Date(dateString);
+
+  if (locale === 'fr') {
+    const datePart = new Intl.DateTimeFormat('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+    const timePart = new Intl.DateTimeFormat('fr-FR', {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+    return `${datePart} à ${timePart}`;
+  }
+
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date).replace(' AM', 'AM').replace(' PM', 'PM');
+
+  return `${datePart} at ${timePart}`;
+}

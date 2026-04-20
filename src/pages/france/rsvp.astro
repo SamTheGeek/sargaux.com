@@ -5,6 +5,7 @@ import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { formatSubmittedAt } from '../../lib/rsvp-display';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
@@ -117,36 +118,6 @@ const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
 
-function formatSubmittedAt(dateString: string, locale: string): string {
-  const date = new Date(dateString);
-
-  if (locale === 'fr') {
-    const datePart = new Intl.DateTimeFormat('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
-    const timePart = new Intl.DateTimeFormat('fr-FR', {
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
-    return `${datePart} à ${timePart}`;
-  }
-
-  const datePart = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
-  const timePart = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(date).replace(' AM', 'AM').replace(' PM', 'PM');
-
-  return `${datePart} at ${timePart}`;
-}
-
 const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRSVP.submittedAt, lang) : null;
 ---
 
@@ -179,7 +150,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
         </div>
       ) : (
         <>
-          <form class="rsvp-form" id="rsvp-form" data-event="france">
+          <form class="rsvp-form" id="rsvp-form" data-event="france" data-email-required={confirmationEmailRequired}>
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
             <p class="section-note">{t(strings.france.rsvp.form.whosComing.note)}</p>
@@ -741,129 +712,6 @@ main {
   }
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
-  const form = document.getElementById('rsvp-form');
-
-  if (form) {
-    const submitButton = form.querySelector('button[type="submit"]');
-    const successMessage = document.getElementById('form-success');
-    const errorMessage = document.getElementById('form-error');
-    const defaultErrorMessage = errorMessage?.textContent || 'We could not submit your RSVP. Please try again.';
-
-    const showError = (message) => {
-      if (!errorMessage) return;
-      errorMessage.textContent = message;
-      errorMessage.hidden = false;
-    };
-
-    const updateGuestStatus = (row) => {
-      const checkbox = row.querySelector('.guest-attending');
-      const status = row.querySelector('.guest-status');
-      if (status && checkbox) {
-        status.textContent = checkbox.checked ? 'Attending' : 'Not attending';
-      }
-    };
-
-    const guestRows = form.querySelectorAll('[data-guest-row]');
-    guestRows.forEach((row) => {
-      updateGuestStatus(row);
-      row.querySelector('.guest-attending')?.addEventListener('change', () => updateGuestStatus(row));
-    });
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const originalButtonText = submitButton?.textContent || 'Submit RSVP';
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = 'Saving...';
-      }
-      if (successMessage) successMessage.hidden = true;
-      if (errorMessage) {
-        errorMessage.hidden = true;
-        errorMessage.textContent = defaultErrorMessage;
-      }
-
-      const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
-
-      const guestsAttending = Array.from(form.querySelectorAll('[data-guest-row]')).map((row) => {
-        const nameInput = row.querySelector('.guest-name');
-        const checkbox = row.querySelector('.guest-attending');
-        return {
-          name: nameInput?.value?.trim() || 'Guest',
-          attending: checkbox?.checked === true,
-        };
-      });
-
-      const optionalEvents = Array.from(form.querySelectorAll('.event-attending[data-event-type="optional"]'));
-      const coreEventIds = Array.from(form.querySelectorAll('.event-attending[data-event-type="core"]')).map((input) => input.dataset.eventId).filter(Boolean);
-      const optionalEventIds = optionalEvents
-        .filter((input) => input.checked)
-        .map((input) => input.dataset.eventId)
-        .filter(Boolean);
-
-      const allergens = form.querySelector('textarea[name="allergens"]')?.value?.trim();
-
-      const sendConfirmationCheckbox = form.querySelector('input[name="sendConfirmation"]');
-      const guestEmails = Array.from(form.querySelectorAll('[data-guest-email-id]')).map((input) => ({
-        guestId: input.dataset.guestEmailId,
-        name: input.dataset.guestEmailName || 'Guest',
-        email: input.value?.trim() || undefined,
-      }));
-
-      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
-        showError(confirmationEmailRequired);
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = originalButtonText;
-        }
-        return;
-      }
-
-      const payload = {
-        event: form.dataset.event,
-        guestsAttending,
-        guestEmails,
-        eventsAttending: anyAttending ? [...coreEventIds, ...optionalEventIds] : [],
-        dietary: allergens || undefined,
-        message: form.querySelector('textarea[name="message"]')?.value?.trim() || undefined,
-        details: {
-          accommodation: form.querySelector('select[name="accommodation"]')?.value || undefined,
-          allergens: allergens || undefined,
-        },
-        sendConfirmation: sendConfirmationCheckbox?.checked === true,
-      };
-
-      try {
-        const response = await fetch('/api/rsvp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error || defaultErrorMessage);
-        }
-
-        window.location.href = '/france/rsvp/confirmed';
-      } catch (error) {
-        showError(error instanceof Error ? error.message : defaultErrorMessage);
-
-        if (isLocalDev) {
-          window.setTimeout(() => {
-            window.location.href = '/france/rsvp/confirmed?mock=dev';
-          }, 1600);
-          return;
-        }
-
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = originalButtonText;
-        }
-      }
-    });
-  }
+<script>
+  import '../../scripts/rsvp-form';
 </script>
