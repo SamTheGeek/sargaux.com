@@ -6,7 +6,7 @@ import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import NycCalendarCta from '../../components/NycCalendarCta.astro';
+import CalendarCta from '../../components/CalendarCta.astro';
 
 const guest = Astro.locals.guest;
 const guestId = Astro.locals.guestId;
@@ -137,7 +137,8 @@ const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
           </span>
         </div>
       </div>
-      <NycCalendarCta
+      <CalendarCta
+        event="nyc"
         token={calendarToken}
         label={t(strings.nyc.calendar.addBtn)}
         note={t(strings.nyc.details.calendar.note)}
