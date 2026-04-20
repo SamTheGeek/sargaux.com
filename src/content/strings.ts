@@ -314,7 +314,7 @@ export const strings = {
           question: s('What is the dress code?', 'Quel est le code vestimentaire ?'),
           answer:   s(
             'Festive cocktail attire!',
-            'Tenue cocktail festive !',
+            'Tenue cocktail festive!',
           ),
         },
         rsvpDeadline: {
@@ -355,14 +355,14 @@ export const strings = {
         ceremony: {
           question: s('Will there be a ceremony?', 'Y aura-t-il une cérémonie ?'),
           answer:   s(
-            'There will be no ceremony at this event. Our wedding ceremony and reception will be held separately as an intimate gathering.',
-            'Il n’y aura pas de cérémonie lors de cet événement. Notre cérémonie de mariage et la réception auront lieu séparément dans un cadre plus intime.',
+            'In lieu of a ceremony, we\'ll have a toast from our parents. Our wedding ceremony and reception will be held separately as an intimate gathering.',
+            'Il n\'y aura pas de cérémonie lors de cet événement. Notre cérémonie de mariage et la réception auront lieu séparément dans un cadre plus intime.',
           ),
         },
         program: {
           question: s('Will there be speeches or a formal program?', 'Y aura-t-il des discours ou un programme formel ?'),
           answer:   s(
-            "This evening is primarily about mingling and celebrating together. We'll have a brief toast from the parents, but no formal program.",
+            "We\'ll have speeches from our parents, but this evening is primarily about celebrating with you.",
             'Cette soirée sera avant tout consacrée aux retrouvailles et à la fête ensemble. Il y aura un bref toast des parents, mais pas de programme formel.',
           ),
         },
