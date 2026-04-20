@@ -22,6 +22,7 @@ test.describe('RSVP API Endpoints', () => {
   test.describe.configure({ mode: 'serial' });
 
   let authCookie: string | undefined;
+  let partyGuestIds: string[] = [];
 
   // Skip all tests if Notion backend is not enabled
   // This is detected by checking if the login redirects to /nyc (Notion enabled) or stays on / (hardcoded list)
@@ -39,12 +40,19 @@ test.describe('RSVP API Endpoints', () => {
     await page.goto(`${BASE_URL}/`);
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
-    await page.click('#submit-btn');
+    await page.press('#name', 'Enter');
     await page.waitForURL(`${BASE_URL}/nyc`);
 
     const cookies = await context.cookies();
     const auth = cookies.find(c => c.name === 'sargaux_auth');
     authCookie = auth?.value;
+
+    await page.goto(`${BASE_URL}/nyc/rsvp`);
+    partyGuestIds = await page.locator('[data-guest-email-id]').evaluateAll((inputs) =>
+      inputs
+        .map((input) => input.getAttribute('data-guest-email-id'))
+        .filter((value): value is string => Boolean(value))
+    );
 
     // Clean up any existing RSVPs for the test guest to ensure a clean slate.
     // Loop until all RSVPs are deleted (there may be multiple from prior test runs).
@@ -115,6 +123,26 @@ test.describe('RSVP API Endpoints', () => {
     expect(body.error).toContain('guestsAttending must be an array');
   });
 
+  test('POST /api/rsvp - requires at least one email when confirmation is requested', async ({ request }) => {
+    const response = await request.post(`${BASE_URL}/api/rsvp`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        guestEmails: partyGuestIds.map((guestId) => ({ guestId, name: TEST_GUEST_NAME, email: '' })),
+        eventsAttending: [],
+        sendConfirmation: true,
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain('Add at least one email address');
+  });
+
   test('POST /api/rsvp - submits new RSVP successfully', async ({ request }) => {
     // First, delete ALL existing NYC RSVPs to ensure a clean state
     for (let i = 0; i < 10; i++) {
@@ -136,9 +164,7 @@ test.describe('RSVP API Endpoints', () => {
         eventsAttending: [],
         dietary: 'Vegetarian',
         message: 'Excited to celebrate!',
-        details: {
-          songRequest: 'Dancing Queen - ABBA',
-        },
+        details: {},
       },
     });
 
@@ -238,9 +264,7 @@ test.describe('RSVP API Endpoints', () => {
         eventsAttending: [],
         dietary: 'Gluten-free',
         message: 'Can\'t wait!',
-        details: {
-          songRequest: 'September - Earth Wind & Fire',
-        },
+        details: {},
       },
     });
 
@@ -256,7 +280,7 @@ test.describe('RSVP API Endpoints', () => {
     expect(body.rsvp.status).toBe('Attending');
     expect(body.rsvp.dietary).toBe('Gluten-free');
     expect(body.rsvp.message).toBe('Can\'t wait!');
-    expect(body.rsvp.details?.songRequest).toBe('September - Earth Wind & Fire');
+    expect(body.rsvp.details?.eventsAttending ?? []).toEqual([]);
   });
 
   test('DELETE /api/rsvp - requires authentication', async ({ request }) => {

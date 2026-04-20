@@ -173,6 +173,12 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
 
       const email: string | undefined = props['Guest Email']?.email ?? undefined;
 
+      // Event Invited IDs (relation to Event Catalog) — stored to avoid extra
+      // pages.retrieve() calls in getGuestEvents on the RSVP page
+      const eventInvitedIds: string[] = (
+        props['Events Invited']?.relation || []
+      ).map((r: { id: string }) => r.id);
+
       guests.push({
         id: page.id,
         name: fullName,
@@ -180,6 +186,7 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
         eventInvitations,
         isPlusOne,
         relatedGuestIds,
+        eventInvitedIds,
         email,
       });
     }
@@ -200,10 +207,112 @@ export function clearGuestCache(): void {
 }
 
 /**
+ * Find a single guest by name for login validation.
+ *
+ * Uses the in-memory cache when warm (fast path).
+ * On a cold start, does a targeted Notion title-filter query — one API call
+ * instead of a full paginated DB scan — so login is fast even after idle.
+ *
+ * Falls back to fetchAllGuests() if the targeted query fails.
+ */
+export async function findGuestByName(name: string): Promise<GuestRecord | null> {
+  const normalized = normalizeName(name);
+
+  // Fast path: cache already warm
+  if (guestCache) {
+    return guestCache.find(g => g.normalizedName === normalized) ?? null;
+  }
+
+  // Cold path: targeted title-filter query (avoids full DB scan)
+  const apiKey = process.env.NOTION_API_KEY;
+  const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
+
+  if (!apiKey || !dataSourceId) {
+    throw new Error('Missing Notion credentials');
+  }
+
+  try {
+    // Filter by the first word of the name (Name of Guest is a filterable title property)
+    const firstWord = name.trim().split(/\s+/)[0];
+    const response = await fetch(`https://api.notion.com/v1/databases/${dataSourceId}/query`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify({
+        page_size: 10,
+        filter: {
+          property: 'Name of Guest',
+          title: { contains: firstWord },
+        },
+      }),
+    });
+
+    if (!response.ok) throw new Error(`Notion query failed: ${response.status}`);
+
+    const data: { results: any[] } = await response.json();
+
+    for (const page of data.results) {
+      if (page.object !== 'page') continue;
+
+      const props = page.properties;
+      const fullName =
+        props['Full Name']?.formula?.string ||
+        props['Name of Guest']?.title?.[0]?.plain_text ||
+        '';
+
+      if (!fullName || normalizeName(fullName) !== normalized) continue;
+
+      const country = props['Country']?.select?.name || null;
+      const isPlusOne = props['+1']?.checkbox === true;
+      const relatedGuestIds: string[] = (props['Related Guests']?.relation || []).map(
+        (r: { id: string }) => r.id
+      );
+      const eventInvitedIds: string[] = (props['Events Invited']?.relation || []).map(
+        (r: { id: string }) => r.id
+      );
+
+      let eventInvitations: ('nyc' | 'france')[];
+      const eventInvProp = props['Event Invitations'];
+      if (eventInvProp?.multi_select?.length > 0) {
+        eventInvitations = eventInvProp.multi_select
+          .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
+          .filter((e: string) => e === 'nyc' || e === 'france');
+      } else {
+        eventInvitations = deriveEventInvitations(country);
+      }
+
+      const email: string | undefined = props['Guest Email']?.email ?? undefined;
+
+      return {
+        id: page.id,
+        name: fullName,
+        normalizedName: normalizeName(fullName),
+        eventInvitations,
+        isPlusOne,
+        relatedGuestIds,
+        eventInvitedIds,
+        email,
+      };
+    }
+
+    // Not found in targeted query — could be a schema mismatch; fall back to full scan
+    const allGuests = await fetchAllGuests();
+    return allGuests.find(g => g.normalizedName === normalized) ?? null;
+  } catch (err) {
+    console.error('findGuestByName targeted query failed, falling back to fetchAllGuests:', err);
+    const allGuests = await fetchAllGuests();
+    return allGuests.find(g => g.normalizedName === normalized) ?? null;
+  }
+}
+
+/**
  * Write an email address back to a guest's Notion page.
  * Invalidates the in-memory guest cache so subsequent requests see the update.
  */
-export async function updateGuestEmail(guestId: string, email: string): Promise<void> {
+export async function updateGuestEmail(guestId: string, email: string | null): Promise<void> {
   const notion = getClient();
   await notion.pages.update({
     page_id: guestId,
@@ -302,61 +411,66 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
 
 /**
  * Fetch events that a specific guest is invited to.
+ * Uses the in-memory guest cache (eventInvitedIds) to avoid an extra
+ * pages.retrieve() call — the cache is populated by fetchAllGuests().
  */
 export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
   const notion = getClient();
 
-  // Fetch the guest page to get Events Invited relation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const guestPage: any = await notion.pages.retrieve({ page_id: guestId });
-  const props = guestPage.properties;
-
-  // Events Invited (relation to Event Catalog)
-  const eventIds: string[] = (props['Events Invited']?.relation || []).map(
-    (r: { id: string }) => r.id
-  );
+  // Get event IDs from the guest cache — avoids an extra pages.retrieve() call
+  const allGuests = await fetchAllGuests();
+  const guest = allGuests.find(g => g.id === guestId);
+  const eventIds = guest?.eventInvitedIds ?? [];
 
   if (eventIds.length === 0) {
     return [];
   }
 
-  // Fetch each event page
+  // Fetch all event pages in parallel
+  const eventPages = await Promise.all(
+    eventIds.map(async (eventId) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
+      } catch (error) {
+        console.error(`Failed to fetch event ${eventId}:`, error);
+        return null;
+      }
+    })
+  );
+
   const events: EventRecord[] = [];
-  for (const eventId of eventIds) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
-      const eventProps = eventPage.properties;
+  for (const result of eventPages) {
+    if (!result) continue;
+    const { id: eventId, page: eventPage } = result;
+    const eventProps = eventPage.properties;
 
-      const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
-      if (!name) continue;
+    const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
+    if (!name) continue;
 
-      const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
-      const wedding = weddingProp === 'france' ? 'france' : 'nyc';
+    const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
+    const wedding = weddingProp === 'france' ? 'france' : 'nyc';
 
-      const typeProp = eventProps['Event Type']?.select?.name;
-      const type = typeProp === 'Optional' ? 'Optional' : 'Core';
+    const typeProp = eventProps['Event Type']?.select?.name;
+    const type = typeProp === 'Optional' ? 'Optional' : 'Core';
 
-      const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
-      const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
-      const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
-      const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
-      const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
+    const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
+    const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
+    const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
+    const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
+    const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
 
-      events.push({
-        id: eventId,
-        name,
-        type,
-        wedding,
-        time,
-        location,
-        description,
-        dayId,
-        showOnWebsite,
-      });
-    } catch (error) {
-      console.error(`Failed to fetch event ${eventId}:`, error);
-    }
+    events.push({
+      id: eventId,
+      name,
+      type,
+      wedding,
+      time,
+      location,
+      description,
+      dayId,
+      showOnWebsite,
+    });
   }
 
   return events;
@@ -481,6 +595,7 @@ export async function submitRSVP(
     },
   };
 
+  let responseId: string;
   if (existingRSVP) {
     // Update existing page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -488,7 +603,7 @@ export async function submitRSVP(
       page_id: existingRSVP.id,
       properties,
     });
-    return existingRSVP.id;
+    responseId = existingRSVP.id;
   } else {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -496,8 +611,32 @@ export async function submitRSVP(
       parent: { type: 'database_id', database_id: dataSourceId },
       properties,
     });
-    return response.id;
+    responseId = response.id;
   }
+
+  // Sync RSVP status back to the Guest List record.
+  // For dual-invite guests, combine this event's status with the other event's
+  // latest response: all positive → Attending, all declined → Declined, mixed → Partial.
+  const otherEvents = (guest?.eventInvitations ?? []).filter(e => e !== submission.event);
+  let guestListStatus: 'Attending' | 'Declined' | 'Partial';
+
+  if (otherEvents.length === 0) {
+    guestListStatus = status === 'Declined' ? 'Declined' : 'Attending';
+  } else {
+    const otherRSVPs = await Promise.all(otherEvents.map(e => getLatestRSVP(guestId, e)));
+    const allStatuses = [status, ...otherRSVPs.filter(Boolean).map(r => r!.status)];
+    const anyPositive = allStatuses.some(s => s !== 'Declined');
+    const anyNegative = allStatuses.some(s => s === 'Declined');
+    guestListStatus = anyPositive && anyNegative ? 'Partial' : anyPositive ? 'Attending' : 'Declined';
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await notion.pages.update({
+    page_id: guestId,
+    properties: { RSVP: { status: { name: guestListStatus } } } as any,
+  });
+
+  return responseId;
 }
 
 /**

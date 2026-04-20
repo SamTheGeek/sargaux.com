@@ -58,6 +58,19 @@ export function generateToken(guestId: string): string {
 }
 
 /**
+ * Generate a calendar token when runtime config allows it.
+ * Returns null instead of throwing when the signing secret is unavailable.
+ */
+export function generateTokenIfPossible(guestId?: string | null): string | null {
+  if (!guestId) return null;
+  try {
+    return generateToken(guestId);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Verify a calendar token and return the guestId, or null if invalid.
  */
 export function verifyToken(token: string): string | null {

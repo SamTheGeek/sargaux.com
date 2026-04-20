@@ -15,7 +15,7 @@ async function login(page: Page) {
   await page.goto('/');
   await page.click('#login-trigger');
   await page.fill('#name', TEST_GUEST_NAME);
-  await page.click('#submit-btn');
+  await page.press('#name', 'Enter');
   await page.waitForURL(/\/(nyc|france)$/);
 }
 
@@ -66,7 +66,27 @@ test.describe('RSVP Dynamic Forms', () => {
     await expect(status).not.toHaveText(initialStatus ?? '');
   });
 
-  test('NYC submit sends expected payload and redirects to the event page', async ({ page }) => {
+  test('calendar CTA is removed from the NYC main page and shown on the details page', async ({ page }) => {
+    await login(page);
+
+    await page.goto('/nyc');
+    await expect(page.locator('.nyc-calendar')).toHaveCount(0);
+
+    await page.goto('/nyc/details');
+    await expect(page.locator('.details-calendar-inline')).toBeVisible();
+  });
+
+  test('calendar CTA is removed from the France main page and shown on the schedule page', async ({ page }) => {
+    await login(page);
+
+    await page.goto('/france');
+    await expect(page.locator('.calendar-prominent-section')).toHaveCount(0);
+
+    await page.goto('/france/schedule');
+    await expect(page.locator('.calendar-subscribe')).toBeVisible();
+  });
+
+  test('NYC submit sends expected payload and redirects to the confirmation page', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
 
     let capturedPayload: any = null;
@@ -80,10 +100,9 @@ test.describe('RSVP Dynamic Forms', () => {
     });
 
     await page.fill('textarea[name="dietary"]', 'Vegetarian');
-    await page.fill('input[name="songRequest"]', 'Dancing Queen - ABBA');
     await page.fill('textarea[name="message"]', 'Excited to celebrate!');
     await Promise.all([
-      page.waitForURL('/nyc'),
+      page.waitForURL('/nyc/rsvp/confirmed'),
       page.click('button[type="submit"]'),
     ]);
 
@@ -93,7 +112,7 @@ test.describe('RSVP Dynamic Forms', () => {
     expect(capturedPayload.guestsAttending.length).toBeGreaterThan(0);
     expect(capturedPayload.dietary).toBe('Vegetarian');
     expect(capturedPayload.message).toBe('Excited to celebrate!');
-    expect(capturedPayload.details.songRequest).toBe('Dancing Queen - ABBA');
+    expect(capturedPayload.details).toEqual({});
   });
 
   test('NYC shows error message when API submission fails', async ({ page }) => {
@@ -148,7 +167,7 @@ test.describe('RSVP Dynamic Forms', () => {
     await expect(page.locator('select[name="transport"]')).toHaveValue('no');
   });
 
-  test('France form submits France-specific details and redirects to the event page', async ({ page }) => {
+  test('France form submits France-specific details and redirects to the confirmation page', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'france');
 
     let capturedPayload: any = null;
@@ -166,7 +185,7 @@ test.describe('RSVP Dynamic Forms', () => {
     await page.selectOption('select[name="transport"]', 'no');
     await page.fill('textarea[name="message"]', 'Merci!');
     await Promise.all([
-      page.waitForURL('/france'),
+      page.waitForURL('/france/rsvp/confirmed'),
       page.click('button[type="submit"]'),
     ]);
 
@@ -185,6 +204,14 @@ test.describe('RSVP Dynamic Forms', () => {
     const checkbox = page.locator('[data-testid="send-confirmation-checkbox"]');
     await expect(checkbox).toBeVisible();
     await expect(checkbox).not.toBeChecked();
+  });
+
+  test('NYC form shows editable email fields for each guest in the party', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    await expect(page.locator('[data-testid="group-email-input"]')).toHaveCount(
+      await page.locator('[data-guest-row]').count()
+    );
   });
 
   test('France form has send-confirmation checkbox unchecked by default', async ({ page }) => {
@@ -208,11 +235,13 @@ test.describe('RSVP Dynamic Forms', () => {
     });
 
     await Promise.all([
-      page.waitForURL('/nyc'),
+      page.waitForURL('/nyc/rsvp/confirmed'),
       page.click('button[type="submit"]'),
     ]);
 
     expect(capturedPayload.sendConfirmation).toBe(false);
+    expect(Array.isArray(capturedPayload.guestEmails)).toBe(true);
+    expect(capturedPayload.guestEmails.length).toBeGreaterThan(0);
   });
 
   test('NYC payload includes sendConfirmation:true when checkbox checked', async ({ page }) => {
@@ -228,12 +257,28 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
-    await page.check('[data-testid="send-confirmation-checkbox"]');
+    await page.locator('[data-testid="send-confirmation-checkbox"]').check({ force: true });
     await Promise.all([
-      page.waitForURL('/nyc'),
+      page.waitForURL('/nyc/rsvp/confirmed'),
       page.click('button[type="submit"]'),
     ]);
 
     expect(capturedPayload.sendConfirmation).toBe(true);
+  });
+
+  test('NYC requires at least one group email when confirmation is requested', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    await page.locator('[data-testid="group-email-input"]').evaluateAll((inputs) => {
+      for (const input of inputs) {
+        (input as HTMLInputElement).value = '';
+      }
+    });
+
+    await page.locator('[data-testid="send-confirmation-checkbox"]').check({ force: true });
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('#form-error')).toContainText('Add at least one email address to receive a confirmation.');
+    await expect(page).toHaveURL(/\/nyc\/rsvp$/);
   });
 });

@@ -81,7 +81,7 @@ a:hover {
   }
 
   h2 {
-    font-size: 24px; /* 3 * 8px */
+    font-size: 26px;
   }
 }
 
@@ -145,13 +145,32 @@ a:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
-::view-transition-group(site-header) {
-  z-index: 120;
+/* Extend header background above viewport to cover springy overscroll bleed */
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: -25px;
+  left: 0;
+  right: 0;
+  height: 25px;
+  background: inherit;
 }
 
-::view-transition-group(event-disc) {
-  z-index: 20;
-}
+/* ── Global view-transition z-index scale ───────────────────────────────────
+ * VT group z-indices MUST mirror element z-indices exactly. Any mismatch
+ * causes a visible snap when VT ends and the element returns to its CSS layer.
+ *
+ * Scale: root:1  disc:2  content/skyline:3  moss:4  header:100
+ *
+ * DO NOT raise individual groups above this scale (e.g. to z:20+) to "see"
+ * a FLIP — that creates the mismatch. Instead, give the covering content its
+ * own VT group so the disc can be z:2 and still be visible below content:z:4.
+ */
+::view-transition-group(root)       { z-index: 1; }
+::view-transition-group(event-disc) { z-index: 2; }
+::view-transition-group(rsvp-disc-s){ z-index: 3; }
+::view-transition-group(nyc-skyline){ z-index: 3; }
+::view-transition-group(site-header){ z-index: 100; }
 
 .site-nav {
   display: grid;
@@ -165,7 +184,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-display);
-  font-size: var(--font-size-h3);
+  font-size: 20px;
   font-weight: 500;
   letter-spacing: var(--tracking-heading);
   text-transform: uppercase;
@@ -189,6 +208,12 @@ a:hover {
   justify-self: end;
 }
 
+.back-link {
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+}
+
 @media (max-width: 768px) {
   .site-nav {
     grid-template-columns: minmax(0, 1fr) max-content;
@@ -204,6 +229,10 @@ a:hover {
 
   .nav-actions {
     gap: var(--space-xs);
+  }
+
+  .back-link {
+    grid-column: 2;
   }
 }
 
@@ -239,9 +268,24 @@ a:hover {
   color: var(--color-text-muted);
 }
 
+.site-footer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.site-footer nav + .site-footer-meta {
+  margin-top: var(--space-xs);
+}
+
 @media (max-width: 768px) {
   .site-footer {
     padding: var(--space-lg) var(--page-margin-mobile);
+  }
+
+  .site-footer-meta {
+    flex-wrap: wrap;
   }
 }
 

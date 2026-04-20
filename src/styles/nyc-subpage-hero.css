@@ -1,0 +1,14 @@
+html[data-event="nyc"] .details-date {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: rgba(23, 50, 11, 0.82);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="nyc"] .details-date {
+    color: rgba(255, 249, 240, 0.78) !important;
+  }
+}

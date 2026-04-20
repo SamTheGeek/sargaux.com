@@ -1,25 +1,124 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
 import { strings } from '../content/strings';
+import { couplePhotoDateFallbacks } from '../content/couplePhotoDates';
 import { createTranslator } from '../lib/i18n';
-import LangSwitcher from '../components/LangSwitcher.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import exifr from 'exifr';
+import path from 'path';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const singleEventHref = eventInvitations.includes('nyc')
+  ? '/nyc'
+  : eventInvitations.includes('france')
+    ? '/france'
+    : null;
+const singleEventLabel = eventInvitations.includes('nyc')
+  ? 'NYC'
+  : eventInvitations.includes('france')
+    ? 'France'
+    : null;
+const heroPhotoSrc = '/images/couple/photo_1.jpeg';
+
+function formatExifDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+function toWebp(src: string): string {
+  return src.replace(/\.jpeg$/i, '.webp');
+}
+
+const allPhotos = Array.from({ length: 38 }, (_, i) => `/images/couple/couple - ${i + 1}.jpeg`);
+
+const exifDates = await Promise.all(
+  allPhotos.map(async (src) => {
+    try {
+      const filePath = path.join(process.cwd(), 'public', src);
+      const data = await exifr.parse(filePath, ['DateTimeOriginal']);
+      if (data?.DateTimeOriginal) {
+        return formatExifDate(data.DateTimeOriginal);
+      }
+    } catch {
+      // Fall through to the checked-in fallback when metadata is missing.
+    }
+
+    return couplePhotoDateFallbacks[src] ?? null;
+  })
+);
+
+const photosWithDates = allPhotos.map((src, i) => ({ jpeg: src, webp: toWebp(src), date: exifDates[i] }));
+
+let heroPhotoDate: string | null = null;
+try {
+  const heroFilePath = path.join(process.cwd(), 'public', heroPhotoSrc);
+  const data = await exifr.parse(heroFilePath, ['DateTimeOriginal']);
+  if (data?.DateTimeOriginal) {
+    heroPhotoDate = formatExifDate(data.DateTimeOriginal);
+  }
+} catch {
+  // Fall through to the checked-in fallback when metadata is missing.
+}
+
+heroPhotoDate ??= couplePhotoDateFallbacks[heroPhotoSrc] ?? null;
+
+const storyRows = [
+  {
+    copy: [
+      'After meeting through Hinge during the early weeks of Lockdown, Sam and Margaux went on a whirlwind series of pandemic-tinged dates in Brooklyn \u2014 sharing a synced viewing of Casablanca, picking up to-go cocktails and watching the sun set over Manhattan, and picnicking in the park.',
+      'For the past 6 years, they\u2019ve shared a passion for exploring \u2014 from Brooklyn to cities around the world \u2014 looking at modern & contemporary art, collecting vinyls & city magnets, and watching visually arresting films. They\u2019ve visited countries across North America and Europe, and bonded over their nearly-identical trips to Japan just before they met. Last December, they organized a three-day long date in Amsterdam, where they became engaged.',
+    ],
+    doublePhotos: true,
+  },
+  {
+    copy: [
+      'Sam was born and raised in the suburbs of Washington, D.C. before attending the University of Maryland. He moved to New York in 2015 and never wants to live anywhere else.',
+      'Margaux was born in the suburbs of Lille before moving to Paris, and later to Connecticut. She attended the University of Connecticut for undergraduate & graduate studies. She moved to New York in 2019 and never wants to live anywhere else.',
+    ],
+    doublePhotos: false,
+  },
+];
+
+const closingLine = 'They are both so excited to celebrate with you!';
+
+// 10 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row
+const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 10);
+
+function makeCard(photo: (typeof photosWithDates)[0]) {
+  return {
+    ...photo,
+    alt: 'Sam and Margaux' as const,
+    rotate: (Math.random() * 6 - 3).toFixed(1),
+    ty: (Math.random() * 24 - 12).toFixed(0),
+  };
+}
+
+let idx = 0;
+const galleryRows = storyRows.map(({ copy, doublePhotos }) => {
+  const count = doublePhotos ? 2 : 1;
+  const left = shuffled.slice(idx, idx + count).map(makeCard); idx += count;
+  const right = shuffled.slice(idx, idx + count).map(makeCard); idx += count;
+  return { copy, left, right, doublePhotos };
+});
+const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
 ---
 
 <WireframeLayout title={t(strings.couple.pageTitle)} description="Shared page for Sam and Margaux" event="nyc">
-  <header class="site-header couple-header">
+  <header class="site-header couple-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <div class="nav-actions couple-nav-actions">
-        <span class="couple-nav-label">{t(strings.couple.navLabel)}</span>
-        {eventInvitations.includes('nyc') && (
-          <a href="/nyc" class="couple-event-link">NYC</a>
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle" transition:name="event-toggle">
+            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">France</a>
+          </div>
         )}
-        {eventInvitations.includes('france') && (
-          <a href="/france" class="couple-event-link">France</a>
+        {!showEventToggle && singleEventHref && singleEventLabel && (
+          <a href={singleEventHref} class="couple-event-nav-link">{singleEventLabel}</a>
         )}
       </div>
     </nav>
@@ -27,16 +126,14 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 
   <main class="couple-shell">
     <section class="couple-hero">
-      <div class="couple-disc couple-disc--amber" aria-hidden="true"></div>
-      <div class="couple-disc couple-disc--blue" aria-hidden="true"></div>
-      <div class="couple-ribbon couple-ribbon--moss" aria-hidden="true"></div>
-      <div class="couple-ribbon couple-ribbon--espresso" aria-hidden="true"></div>
+      <div class="couple-disc couple-disc--amber" aria-hidden="true" transition:name="event-disc" transition:persist="couple-disc-amber"></div>
+      <div class="couple-disc couple-disc--blue" aria-hidden="true" transition:persist="couple-disc-blue"></div>
 
-      <div class="couple-grid page-content">
+      <div class="couple-grid page-content" transition:name="couple-content">
         <div class="couple-copy">
           <p class="couple-eyebrow">{t(strings.couple.eyebrow)}</p>
           <h1>{t(strings.couple.heroTitle)}</h1>
-          <p class="couple-subtitle">{t(strings.couple.subtitle)}</p>
+          <p class="couple-subtitle">Margaux Ancel &amp;<br />Sam Gross</p>
           <hr class="section-rule couple-rule" />
         </div>
 
@@ -44,188 +141,226 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
           <div class="photo-card">
             <div class="photo-card-inner">
               <div class="photo-label-row">
-                <span class="photo-label" id="couple-panel-title">{t(strings.couple.photoLabel)}</span>
+                <span class="photo-label" id="couple-panel-title">{heroPhotoDate ?? t(strings.couple.photoLabel)}</span>
                 <span class="photo-label photo-label--muted">Chez Sargaux</span>
               </div>
-              <figure class="couple-photo-frame">
-                <img src="/images/couple/photo_1.jpeg" alt="Sam and Margaux together" class="couple-photo" />
+              <figure class="couple-photo-frame" transition:persist="couple-photo-frame">
+                <picture class="couple-photo-picture">
+                  <source srcset={toWebp(heroPhotoSrc)} type="image/webp" />
+                  <img src={heroPhotoSrc} alt="Sam and Margaux together" class="couple-photo" />
+                </picture>
               </figure>
-              <p class="photo-caption">{t(strings.couple.photoCaption)}</p>
             </div>
           </div>
         </aside>
       </div>
     </section>
+
+    <section class="couple-gallery" aria-label="Photos">
+      <div class="couple-gallery-shell page-content">
+        {galleryRows.map(({ copy, left, right, doublePhotos }) => (
+          <div class={`gallery-row ${doublePhotos ? 'gallery-row--double' : 'gallery-row--single'}`}>
+            <div class="photo-column photo-column--left">
+              {left.map((photo) => (
+                <article
+                  class="photo-card gallery-scatter-card"
+                  style={`--rotate: ${photo.rotate}deg; --ty: ${photo.ty}px;`}
+                >
+                  <div class="photo-card-inner">
+                    <div class="photo-label-row">
+                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                    </div>
+                    <figure class="couple-photo-frame">
+                      <picture class="couple-photo-picture">
+                        <source srcset={photo.webp} type="image/webp" />
+                        <img src={photo.jpeg} alt={photo.alt} loading="lazy" decoding="async" class="couple-photo" />
+                      </picture>
+                    </figure>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <article class="story-card" aria-label="Story">
+              {copy.map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
+            </article>
+
+            <div class="photo-column photo-column--right">
+              {right.map((photo) => (
+                <article
+                  class="photo-card gallery-scatter-card"
+                  style={`--rotate: ${photo.rotate}deg; --ty: ${photo.ty}px;`}
+                >
+                  <div class="photo-card-inner">
+                    <div class="photo-label-row">
+                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                    </div>
+                    <figure class="couple-photo-frame">
+                      <picture class="couple-photo-picture">
+                        <source srcset={photo.webp} type="image/webp" />
+                        <img src={photo.jpeg} alt={photo.alt} loading="lazy" decoding="async" class="couple-photo" />
+                      </picture>
+                    </figure>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div class="gallery-row closing-row">
+          <div class="photo-column photo-column--left">
+            {closingCards[0] && (
+              <article
+                class="photo-card gallery-scatter-card"
+                style={`--rotate: ${closingCards[0].rotate}deg; --ty: ${closingCards[0].ty}px;`}
+              >
+                <div class="photo-card-inner">
+                  <div class="photo-label-row">
+                    <span class="photo-label photo-label--muted">{closingCards[0].date ?? 'Chez Sargaux'}</span>
+                  </div>
+                  <figure class="couple-photo-frame">
+                    <picture class="couple-photo-picture">
+                      <source srcset={closingCards[0].webp} type="image/webp" />
+                      <img src={closingCards[0].jpeg} alt="Sam and Margaux" loading="lazy" decoding="async" class="couple-photo" />
+                    </picture>
+                  </figure>
+                </div>
+              </article>
+            )}
+          </div>
+
+          <p class="closing-line">{closingLine}</p>
+
+          <div class="photo-column photo-column--right">
+            {closingCards[1] && (
+              <article
+                class="photo-card gallery-scatter-card"
+                style={`--rotate: ${closingCards[1].rotate}deg; --ty: ${closingCards[1].ty}px;`}
+              >
+                <div class="photo-card-inner">
+                  <div class="photo-label-row">
+                    <span class="photo-label photo-label--muted">{closingCards[1].date ?? 'Chez Sargaux'}</span>
+                  </div>
+                  <figure class="couple-photo-frame">
+                    <picture class="couple-photo-picture">
+                      <source srcset={closingCards[1].webp} type="image/webp" />
+                      <img src={closingCards[1].jpeg} alt="Sam and Margaux" loading="lazy" decoding="async" class="couple-photo" />
+                    </picture>
+                  </figure>
+                </div>
+              </article>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <footer class="site-footer couple-footer">
-    <nav>
-      <a href="/registry">{t(strings.global.registry)}</a>
-      {guest && (
-        <>
-          <span> · </span>
-          <span class="guest-name">{guest}</span>
-        </>
-      )}
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div class="footer-row">
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} />
 </WireframeLayout>
 
 <style>
   .couple-header {
-    background:
-      linear-gradient(90deg, rgba(241, 236, 227, 0.98), rgba(241, 236, 227, 0.9)),
-      linear-gradient(120deg, rgba(217, 106, 30, 0.12), rgba(27, 58, 107, 0.1));
-    border-bottom: 1px solid rgba(47, 63, 54, 0.18);
-    backdrop-filter: blur(14px);
+    background: var(--color-bg);
   }
 
-  .couple-nav-actions {
-    gap: 12px;
-  }
-
-  .couple-nav-label {
-    font-size: var(--font-size-caption);
-    letter-spacing: var(--tracking-caption);
-    text-transform: uppercase;
-    color: rgba(58, 46, 38, 0.7);
-  }
-
-  .couple-event-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 72px;
-    min-height: 32px;
-    padding: 0 16px;
-    border-radius: 999px;
+  .couple-event-nav-link {
+    color: var(--color-text-muted);
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     font-size: var(--font-size-caption);
-    border: 1px solid rgba(47, 63, 54, 0.18);
-    background: rgba(241, 236, 227, 0.72);
-    color: var(--color-text);
+    font-weight: 500;
   }
 
-  .couple-event-link:hover {
+  .couple-event-nav-link:hover {
     color: var(--color-text);
-    border-color: rgba(217, 106, 30, 0.4);
-    background: rgba(241, 236, 227, 0.94);
   }
 
   .couple-shell {
     position: relative;
     overflow: clip;
     flex: 1;
+    background: var(--color-bg);
   }
 
   .couple-hero {
     position: relative;
-    min-height: min(840px, calc(100vh - 112px));
-    padding: var(--space-xl) 0 var(--space-lg);
-    display: flex;
-    align-items: center;
-    background:
-      radial-gradient(circle at 16% 20%, rgba(217, 106, 30, 0.16), transparent 32%),
-      radial-gradient(circle at 88% 14%, rgba(27, 58, 107, 0.16), transparent 28%),
-      linear-gradient(150deg, rgba(241, 236, 227, 1) 0%, rgba(241, 236, 227, 0.96) 48%, rgba(58, 46, 38, 0.08) 100%);
+    padding: var(--space-2xl) 0 var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
   }
 
   .couple-disc {
     position: absolute;
     border-radius: 50%;
-    filter: blur(0.2px);
+    background: var(--color-accent);
+    pointer-events: none;
   }
 
   .couple-disc--amber {
-    width: clamp(220px, 28vw, 420px);
-    height: clamp(220px, 28vw, 420px);
-    left: clamp(-72px, -4vw, -24px);
-    top: 72px;
-    background: rgba(217, 106, 30, 0.9);
+    width: clamp(240px, 28vw, 360px);
+    height: clamp(240px, 28vw, 360px);
+    top: calc(var(--space-xl) * -1);
+    left: clamp(-140px, -10vw, -56px);
+    opacity: 0.92;
+    z-index: 1;
   }
 
   .couple-disc--blue {
-    width: clamp(180px, 20vw, 280px);
-    height: clamp(180px, 20vw, 280px);
-    right: clamp(16px, 6vw, 120px);
-    top: clamp(40px, 10vw, 120px);
-    background: rgba(27, 58, 107, 0.88);
-  }
-
-  .couple-ribbon {
-    position: absolute;
-    border-radius: 999px;
-    transform: rotate(-12deg);
-    opacity: 0.76;
-  }
-
-  .couple-ribbon--moss {
-    width: min(480px, 58vw);
-    height: 24px;
-    right: -40px;
-    bottom: 120px;
-    background: rgba(47, 63, 54, 0.9);
-  }
-
-  .couple-ribbon--espresso {
-    width: min(340px, 46vw);
-    height: 18px;
-    left: 18%;
-    bottom: 88px;
-    background: rgba(58, 46, 38, 0.72);
+    width: clamp(120px, 14vw, 184px);
+    height: clamp(120px, 14vw, 184px);
+    right: clamp(24px, 8vw, 120px);
+    bottom: calc(var(--space-xl) * -0.5);
+    background: var(--color-prussian-blue);
+    opacity: 0.88;
+    z-index: 1;
   }
 
   .couple-grid {
     position: relative;
-    z-index: 1;
+    z-index: 3;
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
+    grid-template-columns: minmax(0, 1.15fr) minmax(400px, 480px);
     gap: var(--space-xl);
-    align-items: center;
+    align-items: start;
   }
 
   .couple-copy {
-    max-width: 720px;
-    padding-top: var(--space-2xl);
+    max-width: 38rem;
+    padding-top: var(--space-md);
   }
 
   .couple-eyebrow {
     margin-bottom: var(--space-sm);
     font-size: var(--font-size-caption);
-    text-transform: uppercase;
     letter-spacing: var(--tracking-heading);
-    color: rgba(58, 46, 38, 0.8);
-    max-width: 28rem;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
 
   .couple-copy h1 {
-    font-size: clamp(60px, 10vw, 140px);
-    line-height: 0.9;
     max-width: 6ch;
     margin-bottom: var(--space-sm);
+    font-size: clamp(64px, 10vw, 128px);
+    line-height: 0.88;
   }
 
   .couple-subtitle {
-    max-width: 34rem;
-    font-size: clamp(18px, 2.5vw, 30px);
-    line-height: 1.24;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: rgba(47, 63, 54, 0.82);
+    max-width: 32rem;
+    color: var(--color-text-muted);
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
   .couple-rule {
     width: min(100%, 320px);
-    margin: var(--space-md) 0 0;
-    border-top-color: rgba(47, 63, 54, 0.22);
+    margin: var(--space-lg) 0 0;
   }
 
   .couple-panel {
@@ -235,49 +370,73 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 
   .photo-card {
     position: relative;
-    border-radius: 32px;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--color-text);
+    border-radius: 30px 30px 22px 22px;
     padding: 14px;
-    background:
-      linear-gradient(135deg, rgba(27, 58, 107, 0.18), rgba(217, 106, 30, 0.2) 54%, rgba(47, 63, 54, 0.18));
-    box-shadow:
-      0 28px 70px rgba(58, 46, 38, 0.16),
-      inset 0 0 0 1px rgba(241, 236, 227, 0.4);
+  }
+
+  .photo-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 12px;
+    background: var(--color-accent);
+    border-radius: 0 0 22px 22px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .photo-card::after {
+    display: none;
   }
 
   .photo-card-inner {
-    border-radius: 24px;
-    padding: 18px;
-    background: rgba(241, 236, 227, 0.92);
-    border: 1px solid rgba(58, 46, 38, 0.12);
-    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-sm);
+    min-height: 100%;
+    padding: 12px 0 0;
+    background: var(--color-bg);
+    border-radius: 22px 22px 16px 16px;
+    overflow: hidden;
   }
 
   .photo-label-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: var(--space-sm);
+    padding: 0 12px;
   }
 
   .photo-label {
+    color: var(--color-text);
     font-size: var(--font-size-caption);
     letter-spacing: var(--tracking-caption);
     text-transform: uppercase;
-    color: var(--color-text);
   }
 
   .photo-label--muted {
-    color: rgba(58, 46, 38, 0.6);
+    color: var(--color-text-muted);
   }
 
   .couple-photo-frame {
     margin: 0;
-    border-radius: 18px;
-    overflow: hidden;
-    background: rgba(27, 58, 107, 0.08);
-    border: 1px solid rgba(27, 58, 107, 0.12);
     aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: var(--color-surface);
+    border-radius: 16px;
+  }
+
+  .couple-photo-picture {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .couple-photo {
@@ -287,179 +446,212 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
     object-fit: cover;
   }
 
-  .photo-caption {
-    margin-top: 14px;
-    font-size: var(--font-size-caption);
-    line-height: 1.6;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    color: rgba(58, 46, 38, 0.72);
+  .couple-gallery {
+    padding: var(--space-2xl) 0;
+    background: var(--color-bg);
   }
 
-  .couple-footer {
-    border-top-color: rgba(47, 63, 54, 0.12);
+  .couple-gallery-shell {
+    display: grid;
+    gap: var(--space-2xl);
+    max-width: 1400px;
   }
 
-  .footer-row {
+  .gallery-row {
+    display: grid;
+    grid-template-columns: 3fr 4fr 3fr;
+    gap: var(--space-xl) var(--space-lg);
+    align-items: stretch;
+  }
+
+  .photo-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    justify-content: center;
+  }
+
+  .gallery-row--double .photo-column {
+    justify-content: space-between;
+  }
+
+  /* Double-photo rows use a shorter aspect ratio so two fit comfortably */
+  .gallery-row--double .couple-photo-frame {
+    aspect-ratio: 3 / 4;
+  }
+
+  .story-card {
+    display: grid;
+    align-content: center;
+    gap: var(--space-md);
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .story-card p {
+    color: var(--color-text-muted);
+  }
+
+  .closing-line {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: var(--space-xs);
+    text-align: center;
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-style: italic;
+    font-size: clamp(17px, 1.5vw, 20px);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .couple-header {
-      background:
-        linear-gradient(90deg, rgba(15, 26, 46, 0.96), rgba(26, 36, 32, 0.9)),
-        linear-gradient(120deg, rgba(217, 106, 30, 0.14), rgba(27, 58, 107, 0.18));
-      border-bottom-color: rgba(241, 236, 227, 0.1);
-    }
-
-    .couple-nav-label {
-      color: rgba(241, 236, 227, 0.6);
-    }
-
-    .couple-event-link {
-      background: rgba(22, 32, 64, 0.72);
-      border-color: rgba(241, 236, 227, 0.12);
-      color: var(--color-surface-text);
-    }
-
-    .couple-event-link:hover {
-      color: var(--color-surface-text);
-      border-color: rgba(217, 106, 30, 0.42);
-      background: rgba(22, 32, 64, 0.92);
-    }
-
-    .couple-hero {
-      background:
-        radial-gradient(circle at 16% 18%, rgba(217, 106, 30, 0.18), transparent 32%),
-        radial-gradient(circle at 84% 16%, rgba(27, 58, 107, 0.28), transparent 30%),
-        linear-gradient(145deg, #131d1a 0%, #101b31 56%, #1d2836 100%);
-    }
-
-    .couple-eyebrow {
-      color: rgba(241, 236, 227, 0.72);
-    }
-
-    .couple-subtitle {
-      color: rgba(241, 236, 227, 0.82);
-    }
-
-    .couple-rule {
-      border-top-color: rgba(241, 236, 227, 0.16);
-    }
-
-    .photo-card {
-      background:
-        linear-gradient(135deg, rgba(27, 58, 107, 0.34), rgba(217, 106, 30, 0.28) 54%, rgba(47, 63, 54, 0.32));
-      box-shadow:
-        0 28px 80px rgba(0, 0, 0, 0.32),
-        inset 0 0 0 1px rgba(241, 236, 227, 0.08);
-    }
-
-    .photo-card-inner {
-      background: rgba(20, 28, 40, 0.9);
-      border-color: rgba(241, 236, 227, 0.08);
-    }
-
-    .photo-label {
-      color: rgba(241, 236, 227, 0.92);
-    }
-
-    .photo-label--muted,
-    .photo-caption {
-      color: rgba(241, 236, 227, 0.56);
-    }
-
-    .couple-photo-frame {
-      background: rgba(241, 236, 227, 0.04);
-      border-color: rgba(241, 236, 227, 0.08);
-    }
+  .gallery-scatter-card {
+    width: 85%;
+    align-self: center;
+    transform: rotate(var(--rotate)) translateY(var(--ty));
+    transition: transform 0.2s ease;
   }
 
-  @media (max-width: 900px) {
+  .gallery-scatter-card:hover {
+    transform: rotate(var(--rotate)) translateY(calc(var(--ty) - 4px));
+  }
+
+  .couple-panel .photo-card {
+    background: var(--color-prussian-blue);
+  }
+
+  @media (max-width: 960px) {
     .couple-grid {
       grid-template-columns: 1fr;
       gap: var(--space-lg);
     }
 
     .couple-copy {
-      padding-top: var(--space-xl);
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .couple-copy h1,
+    .couple-subtitle,
+    .couple-rule {
+      margin-inline: auto;
     }
 
     .couple-panel {
-      justify-self: stretch;
-      max-width: 440px;
+      justify-self: center;
+      max-width: 420px;
+    }
+
+    .gallery-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-items: center;
+    }
+
+    .photo-column--left { order: 1; }
+    .photo-column--right { order: 2; }
+
+    .gallery-scatter-card {
+      width: min(100%, 320px);
+    }
+
+    .story-card,
+    .closing-line {
+      order: 3;
+      grid-column: 1 / -1;
+      width: min(100%, 36rem);
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .story-card {
+      align-content: start;
     }
   }
 
   @media (max-width: 768px) {
-    .couple-header .site-nav {
-      grid-template-columns: 1fr;
-      justify-items: start;
-      gap: 10px;
-    }
-
-    .couple-nav-actions {
-      flex-wrap: wrap;
-      justify-self: start;
-    }
-
     .couple-hero {
-      min-height: auto;
-      padding: var(--space-lg) 0;
+      padding: var(--space-xl) 0;
     }
 
     .couple-disc--amber {
-      width: 180px;
-      height: 180px;
-      left: -36px;
-      top: 96px;
+      width: 192px;
+      height: 192px;
+      top: -72px;
+      left: -72px;
     }
 
     .couple-disc--blue {
-      width: 132px;
-      height: 132px;
+      width: 120px;
+      height: 120px;
       right: -24px;
-      top: 44px;
+      bottom: 56px;
     }
 
-    .couple-ribbon--moss {
-      height: 18px;
-      width: 240px;
-      right: -70px;
-      bottom: 104px;
-    }
-
-    .couple-ribbon--espresso {
-      width: 180px;
-      height: 14px;
-      left: 8%;
-      bottom: 78px;
+    .couple-copy {
+      padding-top: 0;
     }
 
     .couple-copy h1 {
-      font-size: clamp(44px, 16vw, 76px);
+      font-size: clamp(48px, 16vw, 80px);
     }
 
     .couple-subtitle {
-      font-size: 18px;
+      font-size: clamp(22px, 6vw, 32px);
     }
 
     .photo-card {
-      border-radius: 24px;
-      padding: 10px;
+      padding: 12px;
+      border-radius: 26px 26px 20px 20px;
     }
 
     .photo-card-inner {
-      border-radius: 18px;
-      padding: 14px;
+      padding: 10px 0 0;
+      border-radius: 18px 18px 14px 14px;
     }
 
-    .footer-row {
-      flex-wrap: wrap;
+    .photo-label-row {
+      padding: 0 10px;
+    }
+
+  }
+
+  @media (max-width: 640px) {
+    .couple-gallery {
+      padding: var(--space-xl) 0;
+    }
+
+    .couple-gallery-shell {
+      gap: var(--space-xl);
+    }
+
+    .gallery-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+      justify-items: center;
+    }
+
+    .photo-column,
+    .story-card,
+    .closing-line {
+      grid-column: 1 / -1;
+      order: 0;
+    }
+
+    .gallery-scatter-card {
+      transform: rotate(var(--rotate));
+    }
+
+    .gallery-scatter-card:hover {
+      transform: rotate(var(--rotate));
+    }
+
+    .story-card {
+      order: 0;
+      padding: var(--space-md);
+    }
+
+    .closing-line {
+      order: 0;
+      padding: var(--space-md);
     }
   }
 </style>

@@ -3,86 +3,121 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import '../../styles/france-travel.css';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.travel.pageTitle)} event="france">
+<WireframeLayout title={t(strings.france.travel.pageTitle)} event="france" page="travel">
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
-  <main>
-    <h1>{t(strings.france.travel.heading)}</h1>
-    <p class="subtitle">{t(strings.france.travel.subtitle)}</p>
+  <main class="travel-page">
+    <div class="travel-disc-stage" aria-hidden="true">
+      <div class="travel-disc" transition:name="event-disc"></div>
+    </div>
 
-    <section class="travel-sections">
-      <!-- Getting to France (will be conditionally hidden for French guests via i18n/Notion) -->
-      <div class="travel-card">
-        <h2>{t(strings.france.travel.toFrance.heading)}</h2>
-        <p class="section-note">{t(strings.france.travel.toFrance.note)}</p>
-
-        <h3>{t(strings.france.travel.toFrance.air.heading)}</h3>
-        <p>{t(strings.france.travel.toFrance.air.intro)}</p>
-        <ul>
-          <li>{t(strings.france.travel.toFrance.air.cdg)}</li>
-          <li>{t(strings.france.travel.toFrance.air.orly)}</li>
-        </ul>
-
-        <h3>{t(strings.france.travel.toFrance.eurostar.heading)}</h3>
-        <p>{t(strings.france.travel.toFrance.eurostar.text)}</p>
+    <div class="travel-shell page-content" transition:name="france-travel-content">
+      <div class="travel-intro">
+        <h1>{t(strings.france.travel.heading)}</h1>
+        <p class="subtitle">{t(strings.france.travel.subtitle)}</p>
       </div>
 
-      <!-- Getting to the Venue from Paris (shown to everyone) -->
-      <div class="travel-card">
-        <h2>{t(strings.france.travel.toVenue.heading)}</h2>
-        <p>{t(strings.france.travel.toVenue.intro)}</p>
+      <section class="travel-sections">
+        <!-- Getting to France (will be conditionally hidden for French guests via i18n/Notion) -->
+        <article class="travel-card">
+          <h2>{t(strings.france.travel.toFrance.heading)}</h2>
 
-        <h3>{t(strings.france.travel.toVenue.train.heading)}</h3>
-        <ul>
-          <li>{t(strings.france.travel.toVenue.train.step1)}</li>
-          <li>{t(strings.france.travel.toVenue.train.step2)}</li>
-        </ul>
-        <p class="transport-note">{t(strings.france.travel.toVenue.train.note)}</p>
+          <h3>{t(strings.france.travel.toFrance.air.heading)}</h3>
+          <p>{t(strings.france.travel.toFrance.air.intro)}</p>
+          <ul>
+            <li>{t(strings.france.travel.toFrance.air.cdg)}</li>
+            <li>{t(strings.france.travel.toFrance.air.orly)}</li>
+          </ul>
 
-        <h3>{t(strings.france.travel.toVenue.car.heading)}</h3>
-        <p>{t(strings.france.travel.toVenue.car.text)}</p>
-        <p class="placeholder-note">{t(strings.france.travel.toVenue.car.placeholder)}</p>
-      </div>
+          <h3>{t(strings.france.travel.toFrance.eurostar.heading)}</h3>
+          <p>{t(strings.france.travel.toFrance.eurostar.text)}</p>
+          <hr class="travel-subrule" />
+          <p class="travel-footnote">
+            {t(strings.france.travel.toFrance.metroTickets.beforeLink)}
+            {' '}
+            <a
+              class="travel-inline-link"
+              href="https://www.iledefrance-mobilites.fr/en/application"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{t(strings.france.travel.toFrance.metroTickets.linkText)}</a>
+            {' '}
+            {t(strings.france.travel.toFrance.metroTickets.afterLink)}
+          </p>
+        </article>
 
+        <!-- Getting to the Venue from Paris (shown to everyone) -->
+        <article class="travel-card">
+          <h2>{t(strings.france.travel.toVenue.heading)}</h2>
 
-      <!-- Practical Info -->
-      <div class="travel-card">
-        <h2>{t(strings.france.travel.practical.heading)}</h2>
-        <p class="date-ref">{t(strings.france.travel.practical.dateRef)}</p>
+          <h3>{t(strings.france.travel.toVenue.train.heading)}</h3>
+          <ul>
+            <li>{t(strings.france.travel.toVenue.train.step1)}</li>
+            <li>{t(strings.france.travel.toVenue.train.step2)}</li>
+            <li>{t(strings.france.travel.toVenue.train.step3)}</li>
+          </ul>
 
-        <div class="info-grid">
-          <div class="info-item">
-            <h3>{t(strings.france.travel.practical.timezone.heading)}</h3>
-            <p><strong>{t(strings.france.travel.practical.timezone.value)}</strong></p>
-            <p>{t(strings.france.travel.practical.timezone.note)}</p>
+          <h3>{t(strings.france.travel.toVenue.car.heading)}</h3>
+          <p>{t(strings.france.travel.toVenue.car.text)}</p>
+          <ul>
+            <li>
+              {t(strings.france.travel.toVenue.car.directionsBeforeLink)}
+              {' '}
+              <a
+                class="travel-inline-link"
+                href="https://maps.app.goo.gl/sx7w6MoXXfBftkLe9"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(strings.france.travel.toVenue.car.directionsLinkText)}
+              </a>
+              {' '}
+              {t(strings.france.travel.toVenue.car.directionsAfterLink)}
+            </li>
+            <li>{t(strings.france.travel.toVenue.car.tolls)}</li>
+          </ul>
+        </article>
+
+        <!-- Practical Info -->
+        <article class="travel-card">
+          <h2>{t(strings.france.travel.practical.heading)}</h2>
+          <p class="date-ref">{t(strings.france.travel.practical.dateRef)}</p>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <h3>{t(strings.france.travel.practical.timezone.heading)}</h3>
+              <p><strong>{t(strings.france.travel.practical.timezone.value)}</strong></p>
+              <p>{t(strings.france.travel.practical.timezone.note)}</p>
+            </div>
+            <div class="info-item">
+              <h3>{t(strings.france.travel.practical.currency.heading)}</h3>
+              <p><strong>{t(strings.france.travel.practical.currency.value)}</strong></p>
+              <p>{t(strings.france.travel.practical.currency.note)}</p>
+            </div>
+            <div class="info-item">
+              <h3>{t(strings.france.travel.practical.language.heading)}</h3>
+              <p><strong>{t(strings.france.travel.practical.language.value)}</strong></p>
+              <p>{t(strings.france.travel.practical.language.note)}</p>
+            </div>
+            <div class="info-item">
+              <h3>{t(strings.france.travel.practical.weather.heading)}</h3>
+              <p><strong>{t(strings.france.travel.practical.weather.value)}</strong></p>
+              <p>{t(strings.france.travel.practical.weather.note)}</p>
+            </div>
           </div>
-          <div class="info-item">
-            <h3>{t(strings.france.travel.practical.currency.heading)}</h3>
-            <p><strong>{t(strings.france.travel.practical.currency.value)}</strong></p>
-            <p>{t(strings.france.travel.practical.currency.note)}</p>
-          </div>
-          <div class="info-item">
-            <h3>{t(strings.france.travel.practical.language.heading)}</h3>
-            <p><strong>{t(strings.france.travel.practical.language.value)}</strong></p>
-            <p>{t(strings.france.travel.practical.language.note)}</p>
-          </div>
-          <div class="info-item">
-            <h3>{t(strings.france.travel.practical.weather.heading)}</h3>
-            <p><strong>{t(strings.france.travel.practical.weather.value)}</strong></p>
-            <p>{t(strings.france.travel.practical.weather.note)}</p>
-          </div>
-        </div>
-      </div>
-    </section>
+        </article>
+      </section>
+    </div>
   </main>
 
   <footer>
@@ -92,154 +127,3 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </div>
   </footer>
 </WireframeLayout>
-
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
-  }
-
-main {
-    flex: 1;
-    padding: 3rem 2rem;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-  }
-
-  .subtitle {
-    color: var(--color-text-muted);
-    margin-bottom: 3rem;
-  }
-
-  .travel-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .travel-card {
-    border: 1px solid var(--color-border);
-    padding: 1.5rem;
-  }
-
-  .travel-card h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .travel-card h3 {
-    font-size: 1.125rem;
-    font-weight: 500;
-    margin: 1.5rem 0 0.75rem;
-    color: var(--color-text);
-  }
-
-  .travel-card h3:first-of-type {
-    margin-top: 0.5rem;
-  }
-
-  .travel-card p {
-    margin-bottom: 0.5rem;
-    line-height: 1.6;
-  }
-
-  .travel-card ul {
-    margin: 0.5rem 0 1rem;
-    padding-left: 1.5rem;
-  }
-
-  .travel-card li {
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
-  }
-
-  .section-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-    margin-bottom: 1rem;
-  }
-
-  .transport-note {
-    font-size: 0.9375rem;
-    color: var(--color-text-muted);
-    background: var(--color-bg);
-    padding: 0.75rem 1rem;
-    margin: 0.75rem 0;
-  }
-
-  .placeholder-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
-  .date-ref {
-    font-size: 0.9375rem;
-    color: var(--color-text-muted);
-    margin-bottom: 1.5rem;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .info-item {
-    border: 1px solid var(--color-border);
-    padding: 1rem;
-  }
-
-  .info-item h3 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text-muted);
-    margin: 0 0 0.5rem;
-  }
-
-  .info-item p {
-    margin: 0 0 0.25rem;
-    font-size: 0.9375rem;
-  }
-
-  .info-item p:last-child {
-    font-size: 0.8125rem;
-    color: var(--color-text-muted);
-  }
-
-  /* Footer */
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-
-  @media (max-width: 480px) {
-    .info-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>

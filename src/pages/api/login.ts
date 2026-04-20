@@ -1,12 +1,11 @@
 import type { APIRoute } from 'astro';
 import {
   validateGuest,
-  validateGuestFromRecords,
   createSessionToken,
   AUTH_COOKIE_NAME,
 } from '../../lib/auth';
 import { features } from '../../config/features';
-import { fetchAllGuests } from '../../lib/notion';
+import { findGuestByName } from '../../lib/notion';
 import type { EventInvitation } from '../../lib/auth';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
 
@@ -27,8 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (features.global.notionBackend) {
     try {
-      const guests = await fetchAllGuests();
-      const record = validateGuestFromRecords(name, guests);
+      const record = await findGuestByName(name);
       if (record) {
         guestName = record.name;
         notionId = record.id;
@@ -45,7 +43,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!guestName) {
     return new Response(
       JSON.stringify({
-        error: 'Please enter your name as it appears on your invitation.',
+        error: 'Name not found, it must match exactly.',
       }),
       {
         status: 401,
