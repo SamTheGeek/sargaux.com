@@ -253,3 +253,13 @@ html[data-event="france"][data-page="details"] .footer-row p {
     width: 100%;
   }
 }
+
+/* ── Schedule page ───────────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="france"][data-page="schedule"] button[disabled] {
+    background: var(--color-accent);
+    color: var(--color-surface-text);
+    opacity: 0.42;
+  }
+}
