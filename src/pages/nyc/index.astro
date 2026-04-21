@@ -171,10 +171,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   /* ── Foundation ─────────────────────────────── */
 
+  html[data-event="nyc"] {
+    overflow-x: clip; /* clip (not hidden) avoids implicit overflow-y:auto that breaks position:sticky */
+  }
+
   html[data-event="nyc"] body {
     background: var(--color-warm-cream) !important;
     color: var(--color-dark-moss) !important;
-    overflow-x: hidden; /* prevents horizontal scroll from skyline bleed */
+    touch-action: pan-y; /* iOS Safari ignores overflow-x:clip for touch momentum scroll */
   }
 
   /* ── Header ─────────────────────────────────── */
