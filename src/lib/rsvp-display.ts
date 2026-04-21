@@ -1,5 +1,4 @@
-import type { EventRecord } from '../types/event';
-import type { RSVPResponse } from '../types/rsvp';
+import type { EventRecord, RSVPResponse } from '../types';
 
 export function getAttendingNames(rsvp: RSVPResponse | null): Set<string> {
   return new Set(

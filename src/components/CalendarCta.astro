@@ -1,0 +1,196 @@
+---
+interface Props {
+  event: 'nyc' | 'france';
+  token?: string | null;
+  label: string;
+  note?: string;
+  unavailableNote?: string;
+  showNote?: boolean;
+  compact?: boolean;
+  testId?: string;
+}
+
+const {
+  event,
+  token = null,
+  label,
+  note = '',
+  unavailableNote = '',
+  showNote = true,
+  compact = false,
+  testId,
+} = Astro.props;
+
+const isNyc = event === 'nyc';
+---
+
+{isNyc ? (
+  <div
+    class:list={['details-calendar-inline', compact && 'details-calendar-inline--compact']}
+    style="text-align:center"
+  >
+    {token ? (
+      <a
+        href={`webcal://sargaux.com/api/calendar/${token}.ics`}
+        class="details-calendar-btn"
+        data-testid={testId}
+      >
+        {label}
+      </a>
+    ) : (
+      <button class="details-calendar-btn" type="button" disabled data-testid={testId}>
+        {label}
+      </button>
+    )}
+    {showNote && (
+      <p class="details-calendar-note">
+        {token ? note : unavailableNote}
+      </p>
+    )}
+  </div>
+) : (
+  <section class:list={['calendar-subscribe', compact && 'calendar-subscribe--compact']}>
+    {token ? (
+      <a
+        href={`webcal://sargaux.com/api/calendar/${token}.ics`}
+        class:list={['calendar-btn', !showNote && 'calendar-btn--standalone']}
+        data-testid={testId}
+      >
+        {label}
+      </a>
+    ) : (
+      <button class:list={['calendar-btn', !showNote && 'calendar-btn--standalone']} type="button" disabled data-testid={testId}>
+        {label}
+      </button>
+    )}
+    {showNote && (
+      <p class="calendar-note">
+        {token ? note : unavailableNote}
+      </p>
+    )}
+  </section>
+)}
+
+<style>
+  /* NYC variant */
+  .details-calendar-inline {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .details-calendar-inline--compact {
+    margin-top: 0;
+  }
+
+  .details-calendar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 32px;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    background: var(--color-burnt-amber);
+    color: var(--color-warm-cream);
+    font-style: normal;
+    line-height: 1;
+    border: none;
+    transition: opacity 0.15s;
+  }
+
+  .details-calendar-btn:hover {
+    opacity: 0.82;
+    color: var(--color-warm-cream);
+  }
+
+  .details-calendar-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  .details-calendar-note {
+    margin: 0;
+    font-size: var(--font-size-caption);
+    color: rgba(255, 249, 240, 0.55);
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .details-calendar-inline {
+      margin-top: 24px;
+    }
+
+    .details-calendar-inline--compact {
+      margin-top: 0;
+    }
+
+    .details-calendar-note {
+      max-width: 320px;
+    }
+  }
+
+  /* France variant */
+  .calendar-subscribe {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .calendar-subscribe--compact {
+    margin-bottom: 1.5rem;
+  }
+
+  .calendar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    min-height: 44px;
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    line-height: 1;
+    background: var(--color-accent);
+    color: var(--color-surface-text);
+    border: none;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    text-decoration: none;
+  }
+
+  .calendar-btn--standalone {
+    margin-bottom: 0;
+  }
+
+  .calendar-btn:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: var(--color-surface-text);
+    opacity: 0.85;
+  }
+
+  .calendar-btn:disabled {
+    background: color-mix(in srgb, var(--color-accent) 42%, white);
+    color: var(--color-surface-text);
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .calendar-note {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin: 0;
+  }
+</style>

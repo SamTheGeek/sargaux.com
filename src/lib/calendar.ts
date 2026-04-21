@@ -9,7 +9,7 @@
  */
 
 import { createHmac } from 'crypto';
-import type { EventRecord } from '../types/event';
+import type { EventRecord } from '../types';
 
 /**
  * Encode a string as URL-safe base64 (no padding).
