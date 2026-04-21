@@ -7,7 +7,7 @@ import { features } from '../../config/features';
 import { NYC_EVENT_TIME, strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import { getDisplayEventTime } from '../../lib/rsvp-display';
+import { getDisplayEventTime, formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
@@ -54,6 +54,7 @@ if (isPreview) {
       type: 'Core',
       wedding: 'nyc',
       time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
       location: 'Bar Blondeau at the Wythe Hotel',
       showOnWebsite: true,
     },
@@ -63,6 +64,7 @@ if (isPreview) {
       type: 'Core',
       wedding: 'nyc',
       time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
       location: 'Location TBA',
       showOnWebsite: true,
     },
@@ -89,8 +91,8 @@ if (isPreview) {
     ]);
     party = partyResult;
     const events = allEvents.filter((event) => event.wedding === 'nyc');
-    coreEvents = events.filter((event) => event.type === 'Core');
-    optionalEvents = events.filter((event) => event.type === 'Optional');
+    coreEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Core'));
+    optionalEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Optional'));
     existingRSVP = rsvpResult;
   } catch (error) {
     console.error('Failed to load NYC RSVP data:', error);
@@ -108,7 +110,6 @@ const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
-const nycEventTimeRange = t(strings.nyc.timeRange);
 const confirmationEmailRequired = t(strings.nyc.rsvp.form.email.requireOne);
 const confirmationEmailAllRequired = t(strings.nyc.rsvp.form.email.requireAll);
 const requireAllEmails = features.global.rsvpRequireAllEmails;
@@ -268,7 +269,7 @@ const submittedAtFallback = submittedAtISO
                     <div class="event-row-content">
                       <span class="event-row-name">{event.name}</span>
                       <span class="event-row-meta">
-                        {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                       </span>
                     </div>
                   </label>
@@ -297,7 +298,7 @@ const submittedAtFallback = submittedAtISO
                       <div class="event-row-content">
                         <span class="event-row-name">{event.name}</span>
                         <span class="event-row-meta">
-                          {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                          {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                         </span>
                       </div>
                     </label>
