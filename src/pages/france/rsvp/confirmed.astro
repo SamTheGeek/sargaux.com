@@ -114,7 +114,6 @@ const submittedAtFallback = submittedAtISO
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      timeZone: 'Europe/Paris',
     })
   : null;
 
@@ -147,7 +146,19 @@ function accommodationLabel(value?: string): string {
       <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
 
       <div class="deadline-banner">
-        <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong><time datetime={submittedAtISO ?? ''} data-local-timestamp>{submittedAtFallback}</time></strong>.</p>
+        <div class="deadline-banner-inner">
+          <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong><time datetime={submittedAtISO ?? ''} data-local-timestamp>{submittedAtFallback}</time></strong>.</p>
+          {existingRSVP && (
+            <CalendarCta
+              event="france"
+              token={calendarToken}
+              label={t(strings.france.schedule.calendarBtn)}
+              compact={true}
+              showNote={false}
+              testId="calendar-confirmation-link"
+            />
+          )}
+        </div>
       </div>
 
       {!guestId && !isDevMock ? (
@@ -172,15 +183,6 @@ function accommodationLabel(value?: string): string {
               <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
             </aside>
           )}
-
-          <CalendarCta
-            event="france"
-            token={calendarToken}
-            label={t(strings.france.schedule.calendarBtn)}
-            compact={true}
-            showNote={false}
-            testId="calendar-confirmation-link"
-          />
 
           <section class="form-section">
           <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
@@ -324,6 +326,22 @@ function accommodationLabel(value?: string): string {
       minute: '2-digit',
     });
   });
+
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
 </script>
 
 <style>
@@ -356,8 +374,19 @@ function accommodationLabel(value?: string): string {
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     padding: 1rem;
-    text-align: center;
     margin-bottom: 1.5rem;
+  }
+
+  .deadline-banner-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .deadline-banner-inner p {
+    margin: 0;
   }
 
   .existing-rsvp-banner {
@@ -576,6 +605,25 @@ function accommodationLabel(value?: string): string {
     font-size: 0.875rem;
     color: var(--color-text-muted);
     margin: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .deadline-banner {
+      background: var(--color-dark-moss) !important;
+      border-color: transparent;
+    }
+
+    .deadline-banner-inner p {
+      color: rgba(255, 249, 240, 0.4) !important;
+    }
+
+    .form-section {
+      border-color: var(--color-text-muted);
+    }
+
+    .form-section h2 {
+      color: var(--color-text);
+    }
   }
 
   @media (max-width: 768px) {

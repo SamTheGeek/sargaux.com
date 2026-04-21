@@ -115,7 +115,6 @@ const submittedAtFallback = submittedAtISO
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      timeZone: 'America/New_York',
     })
   : null;
 ---
@@ -149,15 +148,29 @@ const submittedAtFallback = submittedAtISO
 
     <div class="rsvp-deadline-band">
       <div class="page-content rsvp-deadline-inner">
-        <span class="deadline-label">
-          {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
-        </span>
-        <strong class="deadline-date">
-          {existingRSVP
-            ? <time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time>
-            : t(strings.nyc.rsvp.deadlineDate)
-          }
-        </strong>
+        <div class="deadline-info">
+          <span class="deadline-label">
+            {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
+          </span>
+          <strong class="deadline-date">
+            {existingRSVP
+              ? <time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time>
+              : t(strings.nyc.rsvp.deadlineDate)
+            }
+          </strong>
+        </div>
+        {existingRSVP && (
+          <div class="deadline-calendar">
+            <CalendarCta
+              event="nyc"
+              token={calendarToken}
+              label={t(strings.nyc.calendar.addBtn)}
+              compact={true}
+              showNote={false}
+              testId="calendar-confirmation-link"
+            />
+          </div>
+        )}
       </div>
     </div>
 
@@ -197,17 +210,6 @@ const submittedAtFallback = submittedAtISO
             </aside>
           </div>
         )}
-
-        <section class="rsvp-section page-content confirmation-calendar-section">
-          <CalendarCta
-            event="nyc"
-            token={calendarToken}
-            label={t(strings.nyc.calendar.addBtn)}
-            compact={true}
-            showNote={false}
-            testId="calendar-confirmation-link"
-          />
-        </section>
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
         <section class="rsvp-section page-content">
@@ -356,6 +358,22 @@ const submittedAtFallback = submittedAtISO
       minute: '2-digit',
     });
   });
+
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
 </script>
 
 <style is:global>
@@ -367,7 +385,7 @@ const submittedAtFallback = submittedAtISO
 
   .nyc-header {
     background: var(--color-warm-cream) !important;
-    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
+    border-bottom: 1px solid var(--color-border) !important;
   }
 
   .nyc-header .site-logo,
@@ -378,7 +396,7 @@ const submittedAtFallback = submittedAtISO
   }
 
   .nyc-header .event-toggle a {
-    color: rgba(23, 50, 11, 0.4) !important;
+    color: var(--color-text-muted) !important;
   }
 
   .rsvp-disc-m {
@@ -472,8 +490,18 @@ const submittedAtFallback = submittedAtISO
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: var(--space-md);
     text-align: center;
+  }
+
+  .deadline-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .deadline-calendar {
+    white-space: nowrap;
   }
 
   .deadline-label {
@@ -564,11 +592,6 @@ const submittedAtFallback = submittedAtISO
   .placeholder-note {
     font-size: 16px;
     color: var(--color-text-muted);
-  }
-
-  .confirmation-calendar-section {
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
   }
 
   .guest-list,
@@ -768,7 +791,7 @@ const submittedAtFallback = submittedAtISO
     }
 
     .nyc-header .event-toggle a {
-      color: rgba(255, 249, 240, 0.45) !important;
+      color: var(--color-text-muted) !important;
     }
 
     .rsvp-hero h1,
@@ -778,6 +801,17 @@ const submittedAtFallback = submittedAtISO
     .rsvp-back:hover {
       color: var(--color-warm-cream);
       -webkit-text-fill-color: var(--color-warm-cream);
+    }
+
+    .rsvp-deadline-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+    }
+
+    .rsvp-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
     }
 
     .rsvp-section,
@@ -826,6 +860,7 @@ const submittedAtFallback = submittedAtISO
     .rsvp-deadline-inner {
       padding-top: var(--space-sm);
       padding-bottom: var(--space-sm);
+      gap: var(--space-sm);
     }
 
     .guest-status {

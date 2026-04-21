@@ -142,6 +142,14 @@ function formatSubmittedAt(dateString: string, locale: string): string {
 }
 
 const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRSVP.submittedAt, lang) : null;
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  : null;
 ---
 
 <WireframeLayout title={t(strings.nyc.rsvp.pageTitle)} event="nyc">
@@ -359,9 +367,9 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
 
           <!-- ── Submit ── -->
           <div class="page-content rsvp-submit-zone">
-            {existingRSVP && lastSubmittedAt && (
+            {existingRSVP && submittedAtFallback && (
               <p class="last-submitted-note">
-                {t(strings.nyc.rsvp.form.lastSubmittedLabel)} <strong>{lastSubmittedAt}</strong>
+                {t(strings.nyc.rsvp.form.lastSubmittedLabel)} <strong><time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time></strong>
               </p>
             )}
             <button type="submit" class="rsvp-submit-btn">
@@ -710,7 +718,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   .toggle-slider {
     position: absolute;
     inset: 0;
-    background: rgba(23, 50, 11, 0.15);
+    background: var(--color-border);
     border-radius: 999px;
     transition: background 0.2s;
   }
@@ -988,7 +996,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   @media (prefers-color-scheme: dark) {
     .nyc-header {
       background: var(--color-dark-moss) !important;
-      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+      border-bottom-color: var(--color-border) !important;
     }
 
     .nyc-header .site-logo,
@@ -999,7 +1007,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
     }
 
     .nyc-header .event-toggle a {
-      color: rgba(255, 249, 240, 0.45) !important;
+      color: var(--color-text-muted) !important;
     }
 
     .rsvp-hero h1 {
@@ -1018,15 +1026,23 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
       -webkit-text-fill-color: var(--color-warm-cream);
     }
 
+    .rsvp-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
+
+    .rsvp-deadline-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+    }
+
     .rsvp-section,
     .rsvp-submit-zone,
     .rsvp-page > .page-content {
       background: var(--color-bg);
     }
 
-    .toggle-slider {
-      background: rgba(255, 249, 240, 0.1);
-    }
 
     .toggle-slider::before {
       background: var(--color-text);
@@ -1215,4 +1231,22 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
       }
     });
   }
+</script>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
 </script>
