@@ -129,7 +129,7 @@ export const strings = {
     },
     calendar: {
       heading:         s('Save the Date', 'Notez la date'),
-      subtext:         s("Add the events to your calendar app.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
+      subtext:         s('Covers all your events — subscribe once and it stays up to date automatically.', 'Couvre tous vos événements — abonnez-vous une fois et il se met à jour automatiquement.'),
       addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
       unavailableNote: s('Your calendar will be available after you RSVP.', 'Votre calendrier sera disponible après votre RSVP.'),
     },
@@ -214,8 +214,8 @@ export const strings = {
       },
       calendar: {
         heading: s('Add to Calendar', "Ajouter à l'agenda"),
-        btn:     s('Subscribe to Calendar', "S'abonner au calendrier"),
-        note:    s('Personalized calendar link based on your RSVP', 'Lien de calendrier personnalisé selon votre RSVP'),
+        btn:     s('Add to Calendar', "Ajouter à l'agenda"),
+        note:    s('Covers all your events — subscribe once and it stays up to date automatically.', 'Couvre tous vos événements — abonnez-vous une fois et il se met à jour automatiquement.'),
       },
     },
 
@@ -584,8 +584,8 @@ export const strings = {
       checkinValue:   s('Friday, 5:00 PM', 'Vendredi, 17h00'),
       checkout:       s('Check-out', 'Départ'),
       checkoutValue:  s('Sunday, 3:00 PM', 'Dimanche, 15h00'),
-      calendarBtn:    s('Add Weekend to Calendar', "Ajouter le week-end à l'agenda"),
-      calendarNote:   s("Personalized calendar with your RSVP'd events", 'Calendrier personnalisé avec vos événements RSVP'),
+      calendarBtn:    s('Add to Calendar', "Ajouter à l'agenda"),
+      calendarNote:   s('Covers all your events — subscribe once and it stays up to date automatically.', 'Couvre tous vos événements — abonnez-vous une fois et il se met à jour automatiquement.'),
       friday: {
         heading: s('Friday, May 28', 'Vendredi 28 mai'),
         checkin: {
