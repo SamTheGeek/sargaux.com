@@ -241,7 +241,7 @@ export function buildICS(events: EventWithDate[]): string {
     .filter(Boolean)
     .join('\r\n');
 
-  return [
+  const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Sargaux Wedding//sargaux.com//EN',
@@ -249,7 +249,10 @@ export function buildICS(events: EventWithDate[]): string {
     "X-WR-CALDESC:Your personal schedule for Sam & Margaux's wedding",
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    vevents,
-    'END:VCALENDAR',
-  ].map(foldLine).join('\r\n');
+  ].map(foldLine);
+
+  if (vevents) lines.push(vevents);
+  lines.push('END:VCALENDAR');
+
+  return lines.join('\r\n');
 }
