@@ -169,3 +169,6 @@ sargaux.com.code-workspace
 # Generated icons (produced by scripts/generate-icons.ts at build time)
 public/apple-touch-icon.png
 public/apple-touch-icon-precomposed.png
+
+# Generated map tiles (produced by scripts/fetch-maps.ts at build time)
+public/assets/maps/

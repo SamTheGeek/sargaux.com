@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'fs';
+import { join } from 'path';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpage-hero.css';
 import { getLatestRSVP } from '../../lib/notion';
@@ -14,38 +16,21 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
-const MAPS_KEY = process.env.GOOGLE_MAPS_STATIC_API_KEY;
-
-const DINNER_LAT = 40.72235;
-const DINNER_LNG = -73.95709;
-
-function buildStaticMapUrl(lat: number, lng: number, zoom = 15): string {
-  const u = new URL('https://maps.googleapis.com/maps/api/staticmap');
-  u.searchParams.set('center', `${lat},${lng}`);
-  u.searchParams.set('zoom', String(zoom));
-  u.searchParams.set('size', '600x280');
-  u.searchParams.set('scale', '2');
-  u.searchParams.set('maptype', 'roadmap');
-  u.searchParams.set('markers', `color:0xD96A1E|${lat},${lng}`);
-  u.searchParams.set('key', MAPS_KEY!);
-  return u.toString();
-}
-
-function buildMapsLink(lat: number, lng: number): string {
-  const u = new URL('https://www.google.com/maps/search/');
-  u.searchParams.set('api', '1');
-  u.searchParams.set('query', `${lat},${lng}`);
-  return u.toString();
-}
-
 const DANCING_LAT = 40.7131;
 const DANCING_LNG = -73.9620;
 
-const dinnerMapSrc = MAPS_KEY ? buildStaticMapUrl(DINNER_LAT, DINNER_LNG) : null;
-const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
+// Map tiles are pre-fetched at build time by scripts/fetch-maps.ts
+const mapsDir = join(process.cwd(), 'public', 'assets', 'maps');
+const dinnerMapSrc  = existsSync(join(mapsDir, 'dinner.png'))  ? '/assets/maps/dinner.png'  : null;
+const dancingMapSrc = existsSync(join(mapsDir, 'dancing.png')) ? '/assets/maps/dancing.png' : null;
 
-const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14) : null;
-const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
+const dinnerMapsHref  = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
+const dancingMapsHref = (() => {
+  const u = new URL('https://www.google.com/maps/search/');
+  u.searchParams.set('api', '1');
+  u.searchParams.set('query', `${DANCING_LAT},${DANCING_LNG}`);
+  return u.toString();
+})();
 const latestRSVP = guestId
   ? await getLatestRSVP(guestId, 'nyc').catch((error) => {
       console.error('Failed to load NYC RSVP status for calendar CTA:', error);

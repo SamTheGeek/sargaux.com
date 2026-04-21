@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
-    "prebuild": "tsx scripts/generate-icons.ts",
+    "prebuild": "tsx scripts/generate-icons.ts && tsx scripts/fetch-maps.ts",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
