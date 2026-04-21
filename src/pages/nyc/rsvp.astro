@@ -710,7 +710,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   .toggle-slider {
     position: absolute;
     inset: 0;
-    background: rgba(23, 50, 11, 0.15);
+    background: var(--color-border);
     border-radius: 999px;
     transition: background 0.2s;
   }
@@ -988,7 +988,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   @media (prefers-color-scheme: dark) {
     .nyc-header {
       background: var(--color-dark-moss) !important;
-      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+      border-bottom-color: var(--color-border) !important;
     }
 
     .nyc-header .site-logo,
@@ -999,7 +999,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
     }
 
     .nyc-header .event-toggle a {
-      color: rgba(255, 249, 240, 0.45) !important;
+      color: var(--color-text-muted) !important;
     }
 
     .rsvp-hero h1 {
@@ -1018,15 +1018,18 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
       -webkit-text-fill-color: var(--color-warm-cream);
     }
 
+    .rsvp-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
+
     .rsvp-section,
     .rsvp-submit-zone,
     .rsvp-page > .page-content {
       background: var(--color-bg);
     }
 
-    .toggle-slider {
-      background: rgba(255, 249, 240, 0.1);
-    }
 
     .toggle-slider::before {
       background: var(--color-text);
