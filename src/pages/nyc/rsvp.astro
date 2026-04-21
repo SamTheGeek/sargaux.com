@@ -148,7 +148,6 @@ const submittedAtFallback = submittedAtISO
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      timeZone: 'America/New_York',
     })
   : null;
 ---
@@ -1232,4 +1231,20 @@ const submittedAtFallback = submittedAtISO
       }
     });
   }
+</script>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
 </script>
