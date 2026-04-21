@@ -172,12 +172,19 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   /* ── Foundation ─────────────────────────────── */
 
   html[data-event="nyc"] {
-    overflow-x: hidden; /* must be on html, not body, to truly block the scroll container */
+    overflow-x: hidden;
   }
 
   html[data-event="nyc"] body {
     background: var(--color-warm-cream) !important;
     color: var(--color-dark-moss) !important;
+    overflow-x: hidden;
+    /*
+      Restrict touch handling to vertical panning only.
+      overflow-x:hidden alone does not prevent iOS Safari from allowing horizontal
+      momentum/rubber-band scroll when position:fixed elements are present.
+    */
+    touch-action: pan-y;
   }
 
   /* ── Header ─────────────────────────────────── */
