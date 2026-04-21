@@ -149,6 +149,7 @@ vite.config.ts.timestamp-*
 test-results/
 playwright-report/
 playwright/.cache/
+output/
 sargaux.com.code-workspace
 .DS_Store
 
@@ -160,3 +161,11 @@ sargaux.com.code-workspace
 
 # Git worktrees
 .worktrees/
+
+# Local Codex and Playwright MCP state
+.codex/environments/
+.playwright-mcp/
+
+# Generated icons (produced by scripts/generate-icons.ts at build time)
+public/apple-touch-icon.png
+public/apple-touch-icon-precomposed.png

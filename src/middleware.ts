@@ -8,12 +8,13 @@ import type { Lang } from './content/strings';
 const PROTECTED_ROUTES = [
   '/nyc',
   '/france',
-  '/registry',
+  '/couple',
 ];
 
 // Routes that are always public
 const PUBLIC_ROUTES = [
   '/',
+  '/registry',
   '/api/login',
   '/api/logout',
 ];

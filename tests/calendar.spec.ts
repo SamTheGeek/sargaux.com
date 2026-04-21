@@ -14,9 +14,9 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { TEST_GUEST_NAME } from './fixtures';
 
 const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
-const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
 
 const notionEnabled =
   process.env.FEATURE_GLOBAL_NOTION_BACKEND === 'true' &&
@@ -35,7 +35,7 @@ test.describe('Calendar ICS Endpoint', () => {
   );
 
   test.beforeAll(async ({ browser }) => {
-    // Log in as Sam Gross and extract the calendar token from the page
+    // Log in as Sam Gross, submit an RSVP, and extract the token from the confirmation page
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -45,10 +45,14 @@ test.describe('Calendar ICS Endpoint', () => {
     await page.click('#submit-btn');
     await page.waitForURL(`${BASE_URL}/nyc`);
 
-    // Extract the webcal:// href from the Add to Calendar link
-    const href = await page.locator('a.calendar-btn-prominent').getAttribute('href');
+    await page.goto(`${BASE_URL}/nyc/rsvp`);
+    await Promise.all([
+      page.waitForURL(`${BASE_URL}/nyc/rsvp/confirmed`),
+      page.click('button[type="submit"]'),
+    ]);
+
+    const href = await page.locator('[data-testid="calendar-confirmation-link"]').getAttribute('href');
     if (href) {
-      // href = "webcal://sargaux.com/api/calendar/TOKEN.ics"
       const match = href.match(/\/api\/calendar\/(.+)\.ics$/);
       calendarToken = match?.[1];
     }

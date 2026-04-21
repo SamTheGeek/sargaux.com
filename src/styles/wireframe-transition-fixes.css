@@ -1,0 +1,144 @@
+/*
+ * Transition-critical route overrides that must survive repeated SPA
+ * navigations without relying on inline Astro <style> blocks.
+ *
+ * These rules are imported at the layout module level so Vite/Astro keeps
+ * them in the shared stylesheet bundle instead of duplicating transient
+ * route-era inline style tags during client-side transitions.
+ */
+
+/* ── NYC Lookbook: disc embedded as the second O in "LOOKBOOK" ─────────────────
+ * ALL structural and visual disc-as-O rules must live in this shared bundle.
+ * Page-specific CSS (nyc-lookbook.css) is fetched on first visit only — the VT
+ * snapshot is taken before it loads, leaving the disc 0×0, unstyled, and the
+ * ghost O visible as text. The shared bundle is already loaded on every source
+ * page, so these rules are guaranteed to apply at DOM-swap time.
+ *
+ * IMPORTANT: Do NOT scope these rules with [data-page="lookbook"]. The data-page
+ * attribute is written to <html> during the DOM swap and may not be present when
+ * these rules first need to apply (same pattern as WireframeLayout z-index rules).
+ * Class names (.lookbook-heading, .lookbook-disc-slot, .lookbook-o-ghost) are
+ * unique to the lookbook pages and provide sufficient scope without data-page.
+ */
+
+/* h1 becomes a flex row so the disc slot aligns with the letter spans */
+html[data-event="nyc"] .lookbook-heading {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0;
+}
+
+/* Slot wrapper: contains the ghost O (for width) and the absolutely-placed disc */
+html[data-event="nyc"] .lookbook-disc-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Ghost O preserves letter width but must be invisible */
+html[data-event="nyc"] .lookbook-o-ghost {
+  visibility: hidden;
+  user-select: none;
+}
+
+/* Disc: switch from fixed (layout default) to absolute, size to cap height, center */
+html[data-event="nyc"] .lookbook-disc-slot .nyc-disc {
+  position: absolute !important;
+  width: 0.74em !important;
+  height: 0.74em !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: var(--color-burnt-amber) !important;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+/* ── France Lookbook: disc embedded as the second O in "LOOKBOOK" ──────────────
+ * Same pattern as the NYC lookbook above. Scoped by class names only (no
+ * data-page qualifier) for reliable VT snapshot timing.
+ */
+
+html[data-event="france"] .lookbook-heading {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0;
+  /* Font properties here (not in france-lookbook.css) so the em-based disc
+   * size is calculated against the correct font metrics during VT snapshots,
+   * before france-lookbook.css has been fetched on a first visit. */
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 0.93;
+  font-family: var(--font-display);
+  font-weight: 400; /* Peignot Regular */
+  text-transform: uppercase;
+}
+
+html[data-event="france"] .lookbook-disc-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+html[data-event="france"] .lookbook-o-ghost {
+  visibility: hidden;
+  user-select: none;
+}
+
+/* Disc: absolute within the slot, sized to match cap height optically.
+ * Peignot Regular O glyph is 0.686em tall, but flat caps (L, K, B) render at
+ * 0.65em. A circle needs ~17% overshoot over the cap height to appear the same
+ * visual height as adjacent straight-sided letters (the edges of a circle taper
+ * whereas cap strokes maintain full width). 0.76em achieves this. */
+html[data-event="france"] .lookbook-disc-slot .lookbook-disc {
+  position: absolute !important;
+  width: 0.76em !important;
+  height: 0.76em !important;
+  top: 50% !important;
+  left: 50% !important;
+  /* Shift up 0.04em: cap letters have no descent, so equal overshoot above/below
+   * reads as "too low". Nudging up puts the disc bottom ~1px above the cap
+   * baseline and distributes the visual overshoot symmetrically. */
+  transform: translate(-50%, calc(-50% - 0.04em)) !important;
+  border-radius: 50% !important;
+  background: var(--color-accent) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+  html[data-event="france"] .lookbook-heading {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Couple page: photo-card radii ─────────────────────────────────────────
+ * The hero .couple-photo-frame has transition:persist, and the scoped
+ * styles from couple.astro aren't guaranteed to apply to persisted elements
+ * at DOM-swap time during SPA navigations. These structural radii live in
+ * the shared bundle (already loaded on every source page) so the photo
+ * card stack renders consistently on transition entry AND reload.
+ *
+ * Nested radii stack: .photo-card (30/22) → .photo-card-inner (22/16) →
+ * .couple-photo-frame (16). All four photo-frame corners match the inner
+ * mat's bottom clipping radius so no background crescent shows.
+ */
+.couple-photo-frame {
+  border-radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="france"] .travel-card {
+    background: var(--color-surface) !important;
+    box-shadow: 0 18px 52px rgba(0, 0, 0, 0.24);
+  }
+
+  html[data-event="france"] .info-item {
+    background: rgba(22, 32, 64, 0.8) !important;
+  }
+}

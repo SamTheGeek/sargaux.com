@@ -7,20 +7,25 @@ export interface RSVPSubmission {
     name: string;
     attending: boolean;
   }[];
+  guestEmails?: RSVPGuestEmail[];
   eventsAttending: string[]; // Event IDs (for optional events)
   dietary?: string;
   message?: string;
   email?: string; // Capture email if not already on file
+  sendConfirmation?: boolean;
   details?: RSVPDetails; // Event-specific fields
+}
+
+export interface RSVPGuestEmail {
+  guestId: string;
+  name: string;
+  email?: string;
 }
 
 /**
  * Event-specific RSVP details stored as JSON
  */
 export interface RSVPDetails {
-  // NYC-specific
-  songRequest?: string;
-
   // France-specific
   accommodation?: 'yes' | 'no' | 'unsure';
   allergens?: string; // EU allergen requirements

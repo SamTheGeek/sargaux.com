@@ -1,33 +1,109 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
+import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
+const PREVIEW_SUBMITTED_AT = '2025-12-13T20:21:00-05:00';
 
-let party: Awaited<ReturnType<typeof getGuestParty>> = [];
-let coreEvents: Awaited<ReturnType<typeof getGuestEvents>> = [];
-let optionalEvents: Awaited<ReturnType<typeof getGuestEvents>> = [];
-let existingRSVP: Awaited<ReturnType<typeof getLatestRSVP>> = null;
+let party: GuestRecord[] = [];
+let coreEvents: EventRecord[] = [];
+let optionalEvents: EventRecord[] = [];
+let existingRSVP: RSVPResponse | null = null;
 let loadError: string | null = null;
 
-if (guestId) {
+const isPreview = features.nyc.rsvpPreview && !guestId;
+
+if (isPreview) {
+  party = [
+    {
+      id: 'preview-sam',
+      name: 'Sam Gross',
+      normalizedName: 'sam gross',
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['preview-margaux'],
+      eventInvitedIds: [],
+      email: 'sam@samthegeek.net',
+    },
+    {
+      id: 'preview-margaux',
+      name: 'Margaux Ancel',
+      normalizedName: 'margaux ancel',
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['preview-sam'],
+      eventInvitedIds: [],
+      email: undefined,
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'preview-event-ceremony',
+      name: 'Ceremony',
+      type: 'Core',
+      wedding: 'france',
+      time: 'May 29, 2027',
+      location: 'Village De Sully',
+      showOnWebsite: true,
+    },
+    {
+      id: 'preview-event-reception',
+      name: 'Reception',
+      type: 'Core',
+      wedding: 'france',
+      time: 'May 29, 2027',
+      location: 'Village De Sully',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [
+    {
+      id: 'preview-event-excursion',
+      name: 'Sunday Excursion',
+      type: 'Optional',
+      wedding: 'france',
+      time: 'May 30, 2027',
+      location: 'TBD',
+      showOnWebsite: true,
+    },
+  ];
+  existingRSVP = {
+    id: 'preview-france-rsvp',
+    guestId: 'preview-sam',
+    event: 'france',
+    submittedAt: PREVIEW_SUBMITTED_AT,
+    status: 'Attending',
+    guestsAttending: 'Sam Gross, Margaux Ancel',
+    dietary: '',
+    message: '',
+    details: {
+      accommodation: 'yes',
+    },
+    eventsAttending: ['preview-event-ceremony', 'preview-event-reception'],
+  };
+} else if (guestId) {
   try {
-    party = await getGuestParty(guestId);
-    const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'france');
+    const [partyResult, allEvents, rsvpResult] = await Promise.all([
+      getGuestParty(guestId),
+      getGuestEvents(guestId),
+      getLatestRSVP(guestId, 'france'),
+    ]);
+    party = partyResult;
+    const events = allEvents.filter((event) => event.wedding === 'france');
     coreEvents = events.filter((event) => event.type === 'Core');
     optionalEvents = events.filter((event) => event.type === 'Optional');
-    existingRSVP = await getLatestRSVP(guestId, 'france');
+    existingRSVP = rsvpResult;
   } catch (error) {
     console.error('Failed to load France RSVP data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
   }
 }
-
-const primaryGuestEmail = party[0]?.email;
 
 const attendingNames = new Set(
   (existingRSVP?.guestsAttending ?? '')
@@ -39,13 +115,47 @@ const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
-const existingSubmittedAt = existingRSVP?.submittedAt
-  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
+const confirmationEmailAllRequired = t(strings.france.rsvp.form.email.requireAll);
+const requireAllEmails = features.global.rsvpRequireAllEmails;
+
+function formatSubmittedAt(dateString: string, locale: string): string {
+  const date = new Date(dateString);
+
+  if (locale === 'fr') {
+    const datePart = new Intl.DateTimeFormat('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    }).format(date);
+    const timePart = new Intl.DateTimeFormat('fr-FR', {
       hour: 'numeric',
       minute: '2-digit',
+    }).format(date);
+    return `${datePart} à ${timePart}`;
+  }
+
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date).replace(' AM', 'AM').replace(' PM', 'PM');
+
+  return `${datePart} at ${timePart}`;
+}
+
+const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRSVP.submittedAt, lang) : null;
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     })
   : null;
 ---
@@ -54,40 +164,32 @@ const existingSubmittedAt = existingRSVP?.submittedAt
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
-      <a href="/france" class="back-link">{t(strings.nav.backToFrance)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
   <main>
-    <h1>{t(strings.france.rsvp.heading)}</h1>
-    <p class="subtitle">{t(strings.france.rsvp.subtitle)}</p>
+    <div class="france-page-content" transition:name="france-rsvp-content">
+      <h1>{t(strings.france.rsvp.heading)}</h1>
+      <p class="subtitle">{t(strings.france.rsvp.subtitle)}</p>
 
-    <div class="deadline-banner">
-      <p>{t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
-    </div>
-
-    {!guestId ? (
-      <div class="error-card" data-testid="notion-required">
-        <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
-        <p>{t(strings.france.rsvp.unavailable.text)}</p>
+      <div class="deadline-banner">
+        <p>{existingRSVP ? t(strings.france.rsvp.existingBanner.prefix) : t(strings.france.rsvp.deadline)} <strong>{t(strings.france.rsvp.deadlineDate)}</strong></p>
       </div>
-    ) : loadError ? (
-      <div class="error-card" data-testid="rsvp-load-error">
-        <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
-        <p>{loadError}</p>
-      </div>
-    ) : (
-      <>
-        {existingRSVP && (
-          <aside class="existing-rsvp-banner" data-testid="existing-rsvp-banner">
-            <p>
-              {t(strings.france.rsvp.existingBanner.prefix)} <strong>{existingSubmittedAt}</strong>.
-              {t(strings.france.rsvp.existingBanner.suffix)}
-            </p>
-          </aside>
-        )}
 
-        <form class="rsvp-form" id="rsvp-form" data-event="france">
+      {!guestId && !isPreview ? (
+        <div class="error-card" data-testid="notion-required">
+          <h2>{t(strings.france.rsvp.unavailable.heading)}</h2>
+          <p>{t(strings.france.rsvp.unavailable.text)}</p>
+        </div>
+      ) : loadError ? (
+        <div class="error-card" data-testid="rsvp-load-error">
+          <h2>{t(strings.france.rsvp.loadError.heading)}</h2>
+          <p>{loadError}</p>
+        </div>
+      ) : (
+        <>
+          <form class="rsvp-form" id="rsvp-form" data-event="france">
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.whosComing.heading)}</h2>
             <p class="section-note">{t(strings.france.rsvp.form.whosComing.note)}</p>
@@ -186,24 +288,18 @@ const existingSubmittedAt = existingRSVP?.submittedAt
             >{existingDetails.allergens ?? existingRSVP?.dietary ?? ''}</textarea>
           </section>
 
-          <section class="form-section two-column">
+          <section class="form-section">
             <div>
               <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
+              <div class="recommendation-banner">
+                <strong>{t(strings.france.details.staying.recommendation)}</strong>
+                <p>{t(strings.france.details.staying.recommendationNote)}</p>
+              </div>
               <p class="section-note">{t(strings.france.rsvp.form.accommodation.note)}</p>
               <select name="accommodation" class="single-line-input">
                 <option value="unsure" selected={existingDetails.accommodation === undefined || existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
                 <option value="yes" selected={existingDetails.accommodation === 'yes'}>{t(strings.france.rsvp.form.accommodation.yes)}</option>
                 <option value="no" selected={existingDetails.accommodation === 'no'}>{t(strings.france.rsvp.form.accommodation.no)}</option>
-              </select>
-            </div>
-
-            <div>
-              <h2>{t(strings.france.rsvp.form.transport.heading)}</h2>
-              <p class="section-note">{t(strings.france.rsvp.form.transport.note)}</p>
-              <select name="transport" class="single-line-input">
-                <option value="unsure" selected={existingDetails.transport === undefined || existingDetails.transport === 'unsure'}>{t(strings.france.rsvp.form.transport.unsure)}</option>
-                <option value="yes" selected={existingDetails.transport === 'yes'}>{t(strings.france.rsvp.form.transport.yes)}</option>
-                <option value="no" selected={existingDetails.transport === 'no'}>{t(strings.france.rsvp.form.transport.no)}</option>
               </select>
             </div>
           </section>
@@ -220,37 +316,51 @@ const existingSubmittedAt = existingRSVP?.submittedAt
 
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.email.heading)}</h2>
-            {!primaryGuestEmail && (
-              <div class="email-field">
-                <label for="guest-email" class="section-note">{t(strings.france.rsvp.form.email.label)} <span class="optional-label">{t(strings.france.rsvp.form.email.optional)}</span></label>
-                <input
-                  type="email"
-                  id="guest-email"
-                  name="email"
-                  class="single-line-input"
-                  placeholder={t(strings.france.rsvp.form.email.placeholder)}
-                  autocomplete="email"
-                  data-testid="email-input"
-                />
-              </div>
-            )}
             <label class="checkbox-label">
               <input type="checkbox" id="send-confirmation" name="sendConfirmation" data-testid="send-confirmation-checkbox" />
               <span>{t(strings.france.rsvp.form.email.sendConfirmation)}</span>
             </label>
+            <p class="section-note confirmation-note">{t(strings.france.rsvp.form.email.note)}</p>
+            <div class="group-email-list">
+              {party.map((partyGuest) => (
+                <div class="email-field group-email-row">
+                  <label for={`guest-email-${partyGuest.id}`} class="section-note group-email-label">
+                    <span class="group-email-name">{partyGuest.name}</span>
+                  </label>
+                  <input
+                    type="email"
+                    id={`guest-email-${partyGuest.id}`}
+                    class="single-line-input group-email-input"
+                    placeholder={t(strings.france.rsvp.form.email.placeholder)}
+                    autocomplete="email"
+                    value={partyGuest.email ?? ''}
+                    data-testid="group-email-input"
+                    data-guest-email-id={partyGuest.id}
+                    data-guest-email-name={partyGuest.name}
+                  />
+                  <p class="group-email-error" hidden></p>
+                </div>
+              ))}
+            </div>
           </section>
+
+          {existingRSVP && submittedAtFallback && (
+            <p class="last-submitted-note">
+              {t(strings.france.rsvp.form.lastSubmittedLabel)} <strong><time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time></strong>
+            </p>
+          )}
+          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.france.rsvp.form.updateBtn) : t(strings.france.rsvp.form.submitBtn)}</button>
 
           <div class="feedback" aria-live="polite">
             <p id="form-success" class="success-message" hidden>{t(strings.france.rsvp.form.successMsg)}</p>
             <p id="form-error" class="error-message" hidden>{t(strings.france.rsvp.form.errorMsg)}</p>
           </div>
 
-          <button type="submit" class="submit-btn">{existingRSVP ? t(strings.france.rsvp.form.updateBtn) : t(strings.france.rsvp.form.submitBtn)}</button>
-
           <p class="form-note">{t(strings.france.rsvp.form.signedInAs)} <strong>{guest}</strong>. {t(strings.france.rsvp.form.canUpdate)}</p>
-        </form>
-      </>
-    )}
+          </form>
+        </>
+      )}
+    </div>
   </main>
 
   <footer>
@@ -296,15 +406,6 @@ main {
     margin-bottom: 2rem;
   }
 
-  .existing-rsvp-banner {
-    background: var(--color-info-bg);
-    border: 1px solid var(--color-info-border);
-
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    color: var(--color-info);
-  }
-
   .rsvp-form {
     display: flex;
     flex-direction: column;
@@ -315,8 +416,12 @@ main {
     border-bottom: 1px solid var(--color-border);
   }
 
+  .form-section:last-of-type {
+    border-bottom: none;
+  }
+
   .form-section h2 {
-    font-size: 1.2rem;
+    font-size: 1.325rem;
     margin-bottom: 0.5rem;
   }
 
@@ -327,9 +432,29 @@ main {
   }
 
   .section-note {
-    font-size: 0.9rem;
+    font-size: 1.025rem;
     color: var(--color-text-muted);
     margin-bottom: 0.9rem;
+  }
+
+  .recommendation-banner {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-accent);
+    padding: 1.25rem;
+    margin: 0 0 1rem;
+  }
+
+  .recommendation-banner strong {
+    display: block;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .recommendation-banner p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    line-height: 1.5;
   }
 
   .guest-row {
@@ -399,11 +524,11 @@ main {
     border: 1px solid var(--color-border);
     border-radius: 0.4rem;
     padding: 0.5rem 0.6rem;
-    font-size: 0.95rem;
+    font-size: 1.075rem;
   }
 
   .guest-status {
-    font-size: 0.8rem;
+    font-size: 0.925rem;
     color: var(--color-text-muted);
     min-width: 90px;
     text-align: right;
@@ -464,12 +589,12 @@ main {
 
   .event-info {
     color: var(--color-text-muted);
-    font-size: 0.86rem;
+    font-size: 0.985rem;
   }
 
   .placeholder-note {
     color: var(--color-text-muted);
-    font-size: 0.9rem;
+    font-size: 1.025rem;
   }
 
   .single-line-input,
@@ -478,27 +603,28 @@ main {
     border: 1px solid var(--color-border);
 
     padding: 0.7rem 0.75rem;
-    font-size: 0.95rem;
+    font-size: 1.075rem;
     font-family: inherit;
   }
 
   .feedback {
-    margin-top: 1rem;
+    margin-top: 0.4rem;
     min-height: 1.5rem;
+    text-align: center;
   }
 
   .success-message {
     color: var(--color-success);
-    font-size: 0.9rem;
+    font-size: 1.025rem;
   }
 
   .error-message {
     color: var(--color-error);
-    font-size: 0.9rem;
+    font-size: 1.025rem;
   }
 
   .submit-btn {
-    margin-top: 0.75rem;
+    margin-top: 0.2rem;
     padding: 0.95rem 1.2rem;
     border: none;
 
@@ -513,10 +639,18 @@ main {
     cursor: not-allowed;
   }
 
-  .form-note {
-    margin-top: 0.8rem;
+  .last-submitted-note {
+    margin: 0 0 var(--space-xs);
     color: var(--color-text-muted);
-    font-size: 0.85rem;
+    font-size: 15px;
+    text-align: center;
+  }
+
+  .form-note {
+    margin-top: 0.3rem;
+    margin-bottom: 0;
+    color: var(--color-text-muted);
+    font-size: 0.975rem;
     text-align: center;
   }
 
@@ -527,16 +661,57 @@ main {
     gap: 0.35rem;
   }
 
+  .confirmation-note {
+    margin-top: 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .group-email-list {
+    display: grid;
+    gap: 22px;
+    margin-top: 0.35rem;
+  }
+
+  .group-email-row {
+    position: relative;
+    margin-bottom: 0;
+  }
+
+  .group-email-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .group-email-name {
+    color: var(--color-text);
+  }
+
   .optional-label {
     color: var(--color-text-muted);
-    font-size: 0.85rem;
+    font-size: 0.975rem;
+  }
+
+  .group-email-input.has-error {
+    border-color: var(--color-error);
+  }
+
+  .group-email-error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    color: var(--color-error);
+    font-size: 12px;
+    line-height: 1;
+    margin: 0;
   }
 
   .checkbox-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.95rem;
+    font-size: 1.075rem;
     cursor: pointer;
   }
 
@@ -591,13 +766,20 @@ main {
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
     const submitButton = form.querySelector('button[type="submit"]');
     const successMessage = document.getElementById('form-success');
     const errorMessage = document.getElementById('form-error');
+    const defaultErrorMessage = errorMessage?.textContent || 'We could not submit your RSVP. Please try again.';
+
+    const showError = (message) => {
+      if (!errorMessage) return;
+      errorMessage.textContent = message;
+      errorMessage.hidden = false;
+    };
 
     const updateGuestStatus = (row) => {
       const checkbox = row.querySelector('.guest-attending');
@@ -622,7 +804,12 @@ main {
         submitButton.textContent = 'Saving...';
       }
       if (successMessage) successMessage.hidden = true;
-      if (errorMessage) errorMessage.hidden = true;
+      if (errorMessage) {
+        errorMessage.hidden = true;
+        errorMessage.textContent = defaultErrorMessage;
+      }
+      form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
+      form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -644,21 +831,58 @@ main {
 
       const allergens = form.querySelector('textarea[name="allergens"]')?.value?.trim();
 
-      const emailInput = form.querySelector('input[name="email"]');
       const sendConfirmationCheckbox = form.querySelector('input[name="sendConfirmation"]');
+      const guestEmails = Array.from(form.querySelectorAll('[data-guest-email-id]')).map((input) => ({
+        guestId: input.dataset.guestEmailId,
+        name: input.dataset.guestEmailName || 'Guest',
+        email: input.value?.trim() || undefined,
+      }));
+
+      const markEmailError = (guestId, message = 'Required') => {
+        const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
+        if (!input) return;
+        input.classList.add('has-error');
+        const errorEl = input.parentElement?.querySelector('.group-email-error');
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.hidden = false;
+        }
+      };
+
+      if (guestEmails.every((guest) => !guest.email)) {
+        guestEmails.forEach((guest) => markEmailError(guest.guestId));
+        showError(confirmationEmailRequired);
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalButtonText;
+        }
+        return;
+      }
+
+      if (requireAllEmails) {
+        const missing = guestEmails.find((guest) => !guest.email);
+        if (missing) {
+          markEmailError(missing.guestId);
+          showError(confirmationEmailAllRequired);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+      }
 
       const payload = {
         event: form.dataset.event,
         guestsAttending,
+        guestEmails,
         eventsAttending: anyAttending ? [...coreEventIds, ...optionalEventIds] : [],
         dietary: allergens || undefined,
         message: form.querySelector('textarea[name="message"]')?.value?.trim() || undefined,
         details: {
           accommodation: form.querySelector('select[name="accommodation"]')?.value || undefined,
           allergens: allergens || undefined,
-          transport: form.querySelector('select[name="transport"]')?.value || undefined,
         },
-        email: emailInput?.value?.trim() || undefined,
         sendConfirmation: sendConfirmationCheckbox?.checked === true,
       };
 
@@ -672,12 +896,22 @@ main {
         });
 
         if (!response.ok) {
-          throw new Error('Request failed');
+          const data = await response.json().catch(() => null);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
+          throw new Error(data?.error || defaultErrorMessage);
         }
 
-        window.location.href = '/france';
+        window.location.href = '/france/rsvp/confirmed';
       } catch (error) {
-        if (errorMessage) errorMessage.hidden = false;
+        showError(error instanceof Error ? error.message : defaultErrorMessage);
+
+        if (isLocalDev) {
+          window.setTimeout(() => {
+            window.location.href = '/france/rsvp/confirmed?mock=dev';
+          }, 1600);
+          return;
+        }
+
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
@@ -685,4 +919,22 @@ main {
       }
     });
   }
+</script>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
 </script>

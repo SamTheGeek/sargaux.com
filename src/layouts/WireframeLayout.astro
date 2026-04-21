@@ -2,19 +2,24 @@
 import { ClientRouter } from 'astro:transitions';
 import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/wireframe-transition-fixes.css';
 
 interface Props {
   title: string;
   description?: string;
   event?: 'nyc' | 'france';
+  page?: string;
+  fullTitle?: string;
 }
 
-const { title, description = 'Wedding website for Sam & Margaux', event } = Astro.props;
+const { title, description = 'Wedding website for Sam & Margaux', event, page, fullTitle } = Astro.props;
 const lang = Astro.locals.lang ?? 'en';
 ---
 
 <!DOCTYPE html>
-<html lang={lang} data-event={event}>
+<html lang={lang} data-event={event} data-page={page}>
   <head>
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
@@ -31,12 +36,273 @@ const lang = Astro.locals.lang ?? 'en';
     )}
     {event === 'france' && (
       <>
+        <link rel="preload" href="/fonts/Peignot 400.ttf" as="font" type="font/ttf" crossorigin />
         <link rel="preload" href="/fonts/peignot-bold.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTBook.otf" as="font" type="font/otf" crossorigin />
         <link rel="preload" href="/fonts/futura/FuturaPTMedium.otf" as="font" type="font/otf" crossorigin />
+        <link rel="preload" href="/fonts/futura/FuturaPTDemi.otf" as="font" type="font/otf" crossorigin />
       </>
     )}
     <ClientRouter />
-    <title>{title} | Chez Sargaux</title>
+    <script>
+      // Page transition rules:
+      //
+      // In Astro 6, astro:after-preparation fires as a PLAIN Event (no from/to/
+      // newDocument). Navigation data is only available on astro:before-preparation
+      // (TransitionBeforePreparationEvent) and astro:before-swap
+      // (TransitionBeforeSwapEvent). We cache from/to on before-preparation and
+      // use that cache in after-preparation.
+      //
+      // The disc (event-disc) FLIPs naturally above the root group unless a
+      // route family explicitly suppresses that VT name. Content that must
+      // render above an independently animating disc during transitions uses
+      // its own VT group:
+      //   - Landing page .hero-grid (landing-content) → z:3
+      //   - Couple page .couple-grid (couple-content) → z:3
+      //   - France page content wrappers              → z:3
+      //
+      // NYC index/sub-page navigations use a hybrid approach:
+      //   - Forward (/nyc -> /nyc/*): leave the disc active on both documents
+      //     so it FLIPs into the sub-page position while the incoming moss zone
+      //     slides upward above it.
+      //   - Backward (/nyc/* -> /nyc): restore event-disc on the OLD sub-page
+      //     disc and leave the NEW /nyc disc active so the disc FLIPs back to
+      //     the main page instead of crossfading.
+      //   - Sibling (/nyc/* -> /nyc/*): suppress the disc on both sides.
+      //
+      // NYC index -> sub-page also TEMPORARILY gives the incoming sub-page hero
+      // its own VT group so the entering headline block sits above the exiting
+      // root snapshot. That VT name must be injected in before-swap and removed
+      // on page-load; leaving it in the markup would keep the hero promoted
+      // after the transition and break its normal z-index relationship with the
+      // disc while scrolling.
+      //
+      // Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
+      // only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
+      // we suppress those names on BOTH the old page and the incoming document
+      // to prevent one-sided orphaned VT groups that would fade independently.
+      //
+      // Any nav TO /nyc:
+      //   before-swap injects view-transition-name "nyc-skyline" onto the
+      //   incoming skyline element for its fade-in animation.
+      if (!window.__sargauxDiscTransitionSetup) {
+        window.__sargauxDiscTransitionSetup = true;
+
+        const isSafari =
+          navigator.userAgent.includes('Safari') &&
+          !navigator.userAgent.includes('Chrome') &&
+          !navigator.userAgent.includes('Chromium') &&
+          !navigator.userAgent.includes('CriOS') &&
+          !navigator.userAgent.includes('FxiOS') &&
+          !navigator.userAgent.includes('EdgiOS');
+
+        if (isSafari) {
+          document.documentElement.dataset.safariVtFallback = 'true';
+        }
+
+        let _navFrom = null;
+        let _navTo   = null;
+
+        const syncRootRouteAttributes = (sourceDocument) => {
+          const incomingRoot = sourceDocument?.documentElement;
+          if (!incomingRoot) return;
+
+          const currentRoot = document.documentElement;
+          for (const attr of ['lang', 'data-event', 'data-page']) {
+            const value = incomingRoot.getAttribute(attr);
+            if (value === null) {
+              currentRoot.removeAttribute(attr);
+            } else {
+              currentRoot.setAttribute(attr, value);
+            }
+          }
+        };
+
+        document.addEventListener('astro:before-preparation', (e) => {
+          _navFrom = e.from;
+          _navTo   = e.to;
+        });
+
+        // Set VT name on the OLD page's moss zone so it gets its own VT group
+        // (z:4) rather than being baked into the root screenshot (z:1). This
+        // lets the disc (z:2) FLIP visibly below content during the transition.
+        // The name is applied here (old page) and removed in astro:page-load
+        // (new page) so it never persists between navigations — persistence
+        // would promote the element to a compositor layer that bypasses CSS
+        // z-index during scrolling.
+        document.addEventListener('astro:after-preparation', () => {
+          const from      = _navFrom?.pathname?.replace(/\/$/, '') ?? '';
+          const to        = _navTo?.pathname?.replace(/\/$/, '')   ?? '';
+          const fromDepth = from.split('/').length;
+          const toDepth   = to.split('/').length;
+          const isNycForwardNav = toDepth > fromDepth && from.startsWith('/nyc');
+          const isNycBackwardNav = to === '/nyc' && from.startsWith('/nyc/');
+          const isNycSiblingNav = from.startsWith('/nyc/') && to.startsWith('/nyc/');
+          const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
+          const useSafariMossFallback = isSafari && isNycIndexToSubpage;
+
+          // Give old-page moss its own VT group before the old snapshot.
+          if (!useSafariMossFallback) {
+            document.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+          }
+
+          const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressHeader = () => {
+            suppress(document.querySelector('.site-logo'));
+            suppress(document.querySelector('.event-toggle'));
+            suppress(document.querySelector('.nyc-rsvp-btn'));
+          };
+          const suppressNycDisc = () => {
+            suppress(document.querySelector('.nyc-disc'));
+          };
+
+          if (isNycForwardNav) {
+            suppressHeader();
+            // Give the outgoing NYC index hero text its own VT group at z:3 so
+            // the content renders above the disc (z:2) during the FLIP animation.
+            // Only the /nyc index page has .nyc-hero-text; on sub-pages this is a no-op.
+            if (isNycIndexToSubpage) {
+              document.querySelector('.nyc-hero-text')?.style.setProperty('view-transition-name', 'nyc-hero-text');
+            }
+          } else if (isNycBackwardNav) {
+            // Returning to /nyc must recreate a two-sided event-disc pair.
+            document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
+            suppressHeader();
+          } else if (isNycSiblingNav) {
+            suppressHeader();
+            suppressNycDisc();
+          }
+        });
+
+        // Give the NEW page's moss its own VT group before the new snapshot,
+        // and handle header suppression and skyline fade-in.
+        // before-swap fires inside startViewTransition's callback — after the
+        // old snapshot, before the new snapshot.
+        document.addEventListener('astro:before-swap', (event) => {
+          const from      = event.from?.pathname?.replace(/\/$/, '') ?? '';
+          const to        = event.to?.pathname?.replace(/\/$/, '')   ?? '';
+          const fromDepth = from.split('/').length;
+          const toDepth   = to.split('/').length;
+
+          // Astro swaps the incoming body/head during SPA navigation, but the
+          // live <html> element can momentarily keep the old route attributes.
+          // Sync them before the new snapshot so event-scoped CSS variables and
+          // selectors resolve against the incoming route immediately.
+          syncRootRouteAttributes(event.newDocument);
+
+          if (isSafari) {
+            event.newDocument.documentElement.dataset.safariVtFallback = 'true';
+          }
+
+          const suppress = (el) => el?.style.setProperty('view-transition-name', 'none');
+          const suppressHeaderOnDoc = (doc) => {
+            suppress(doc?.querySelector('.site-logo'));
+            suppress(doc?.querySelector('.event-toggle'));
+            suppress(doc?.querySelector('.nyc-rsvp-btn'));
+          };
+          const suppressNycDiscOnDoc = (doc) => {
+            suppress(doc?.querySelector('.nyc-disc'));
+          };
+
+          const isNycForwardNav = toDepth > fromDepth && from.startsWith('/nyc');
+          const isNycBackwardNav = to === '/nyc' && from.startsWith('/nyc/');
+          const isNycSiblingNav = from.startsWith('/nyc/') && to.startsWith('/nyc/');
+          const isNycIndexToSubpage = from === '/nyc' && to.startsWith('/nyc/');
+          const useSafariMossFallback = isSafari && isNycIndexToSubpage;
+
+          // Safari uses a DOM animation fallback for the incoming moss zone.
+          // Leaving the VT name in place keeps the element in the compositor
+          // snapshot path, which is the branch that clips on the travel page.
+          if (!useSafariMossFallback) {
+            event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+          } else {
+            event.newDocument.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
+          }
+
+          if (isNycForwardNav) {
+            // Leave the incoming sub-page disc active so it can pair with the
+            // old /nyc disc and translate into place.
+            suppressHeaderOnDoc(event.newDocument);
+          } else if (isNycBackwardNav) {
+            // Leave the incoming /nyc disc active so it can pair with the old
+            // sub-page disc's restored event-disc name and FLIP home.
+            suppressHeaderOnDoc(event.newDocument);
+          } else if (isNycSiblingNav) {
+            suppressHeaderOnDoc(event.newDocument);
+            suppressNycDiscOnDoc(event.newDocument);
+          }
+
+          if (isNycIndexToSubpage) {
+            event.newDocument.querySelector('.nyc-page-main')?.style.setProperty('view-transition-name', 'nyc-subpage-hero');
+          }
+
+          if (useSafariMossFallback) {
+            event.newDocument.querySelector('.nyc-page-moss')?.classList.add('nyc-page-moss-entering');
+          }
+
+          // Skyline fade-in when arriving at /nyc.
+          if (to === '/nyc') {
+            event.newDocument.querySelector('.nyc-skyline-wrap')?.style.setProperty('view-transition-name', 'nyc-skyline');
+            event.viewTransition?.ready?.finally(() => {
+              document.querySelector('.nyc-skyline-wrap')?.style.removeProperty('view-transition-name');
+            });
+          }
+        });
+
+        // Remove the moss VT name after each transition so the compositor-layer
+        // promotion from view-transition-name doesn't persist to normal browsing.
+        document.addEventListener('astro:page-load', () => {
+          document.querySelector('.nyc-page-moss')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-page-main')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-disc')?.style.removeProperty('view-transition-name');
+          document.querySelector('.rsvp-disc-m')?.style.removeProperty('view-transition-name');
+          document.querySelector('.site-logo')?.style.removeProperty('view-transition-name');
+          document.querySelector('.event-toggle')?.style.removeProperty('view-transition-name');
+          document.querySelector('.nyc-rsvp-btn')?.style.removeProperty('view-transition-name');
+          syncRootRouteAttributes(document);
+
+          const enteringMoss = document.querySelector('.nyc-page-moss-entering');
+          if (enteringMoss) {
+            const cleanup = () => enteringMoss.classList.remove('nyc-page-moss-entering');
+            enteringMoss.addEventListener('animationend', cleanup, { once: true });
+            window.setTimeout(cleanup, 500);
+          }
+        });
+      }
+
+      if (!window.__sargauxLangTransitionSetup) {
+        window.__sargauxLangTransitionSetup = true;
+
+        const normalizeSearch = (url) => {
+          const params = [...url.searchParams.entries()]
+            .filter(([key]) => key !== 'lang')
+            .sort(([aKey, aValue], [bKey, bValue]) => {
+              if (aKey === bKey) return aValue.localeCompare(bValue);
+              return aKey.localeCompare(bKey);
+            });
+
+          return new URLSearchParams(params).toString();
+        };
+
+        const isLanguageOnlyNavigation = (from, to) => {
+          if (from.origin !== to.origin) return false;
+          if (from.pathname !== to.pathname) return false;
+          if (from.hash !== to.hash) return false;
+
+          const fromLang = from.searchParams.get('lang') ?? 'en';
+          const toLang = to.searchParams.get('lang') ?? 'en';
+          if (fromLang === toLang) return false;
+
+          return normalizeSearch(from) === normalizeSearch(to);
+        };
+
+        document.addEventListener('astro:before-swap', (event) => {
+          if (!isLanguageOnlyNavigation(event.from, event.to)) return;
+          event.viewTransition.skipTransition();
+        });
+      }
+    </script>
+    <title>{fullTitle ?? `${title} | Chez Sargaux`}</title>
   </head>
   <body>
     <slot />
@@ -44,9 +310,6 @@ const lang = Astro.locals.lang ?? 'en';
 </html>
 
 <style is:global>
-  @import '../styles/tokens.css';
-  @import '../styles/base.css';
-
   * {
     margin: 0;
     padding: 0;
@@ -67,6 +330,118 @@ const lang = Astro.locals.lang ?? 'en';
     line-height: var(--line-height-body);
   }
 
+  /* ── Overscroll protection for NYC ─────────────────────────────────────────
+   * Extend the header's background fill panel further above the viewport edge
+   * so elastic bounce can't expose the fixed disc peeking above the header.
+   * base.css provides 25px globally; NYC pages need more travel. */
+  html[data-event="nyc"] .site-header::before {
+    top: -100px;
+    height: 100px;
+  }
+
+  /* ── View-transition z-ordering (site-wide) ────────────────────────────────
+   * base.css establishes the global VT z-index scale that mirrors element CSS
+   * z-indices exactly (root:1, disc:2, content:3, moss:4, header:100).
+   *
+   * nyc-page-moss is NOT a static transition:name — it is applied dynamically
+   * via JS (astro:before-preparation / astro:before-swap) and removed after
+   * each transition (astro:page-load). This prevents the compositor-layer
+   * z-index bypass that occurs when view-transition-name persists on a fixed
+   * background element between navigations.
+   */
+  ::view-transition-group(landing-content)  { z-index: 3; }
+  ::view-transition-group(couple-content)   { z-index: 3; }
+  ::view-transition-group(france-index-hero-content)      { z-index: 3; }
+  ::view-transition-group(france-index-body-content)      { z-index: 3; }
+  ::view-transition-group(france-details-content)         { z-index: 3; }
+  ::view-transition-group(france-schedule-content)        { z-index: 3; }
+  ::view-transition-group(france-travel-content)          { z-index: 3; }
+  ::view-transition-group(france-rsvp-content)            { z-index: 3; }
+  ::view-transition-group(france-rsvp-confirmed-content)  { z-index: 3; }
+  ::view-transition-group(nyc-subpage-hero) { z-index: 3; }
+  ::view-transition-group(nyc-hero-text)    { z-index: 3; }
+  ::view-transition-group(nyc-page-moss)    { z-index: 4; }
+  ::view-transition-group(nyc-page-moss),
+  ::view-transition-image-pair(nyc-page-moss),
+  ::view-transition-old(nyc-page-moss),
+  ::view-transition-new(nyc-page-moss) {
+    overflow: visible;
+  }
+
+  /* ── NYC sub-page z-ordering ────────────────────────────────────────────────
+   * These positioning rules live in the layout (shared CSS bundle) so the
+   * stacking hierarchy is correct immediately after a SPA DOM swap, before
+   * the incoming page's own CSS file has finished loading.
+   * Visual styles (size, color, coordinates) remain in the page-specific files.
+   *
+   * NOTE: No [data-page] qualifier here — data-page is written to <html>
+   * during the DOM swap and may not be present when these rules first need to
+   * apply. The class names themselves are sufficient scope:
+   *   .details-hero / .details-band  only exist on sub-pages
+   *   .nyc-moss                       also on index, but already z:4 there
+   */
+  html[data-event="nyc"] .nyc-disc {
+    position: fixed;
+    z-index: 2;
+  }
+
+  html[data-event="france"] .sun-disc-large,
+  html[data-event="france"] .travel-disc-stage {
+    z-index: 2;
+  }
+
+  html[data-event="france"] .destination-header,
+  html[data-event="france"] .france-index-body,
+  html[data-event="france"] .france-page-content,
+  html[data-event="france"] .travel-shell {
+    position: relative;
+    z-index: 3;
+  }
+
+  html[data-event="nyc"] .details-hero {
+    position: relative;
+    z-index: 3;
+  }
+
+  /* nyc-page-moss is the element whose VT snapshot slides upward. It needs a
+   * solid background on the wrapper itself so the early frames read as one
+   * continuous moss field, rather than appearing clipped at the first band. */
+  html[data-event="nyc"] .nyc-page-moss {
+    position: relative;
+    z-index: 4;
+    background: var(--color-dark-moss);
+  }
+
+  html[data-event="nyc"] .nyc-moss,
+  html[data-event="nyc"] .details-band {
+    position: relative;
+    z-index: 4;
+  }
+
+  /* Critical dark-mode sub-page backgrounds live in the shared layout bundle
+   * so incoming NYC sub-pages don't momentarily keep the light/fallback moss
+   * color while their page-specific stylesheet is still applying after a swap.
+   */
+  @media (prefers-color-scheme: dark) {
+    html[data-event="nyc"] .nyc-page-moss {
+      background: var(--color-nyc-skyline-dark);
+    }
+
+    html[data-event="nyc"] .nyc-page-moss .details-section,
+    html[data-event="nyc"] .nyc-page-moss .details-venues,
+    html[data-event="nyc"] .nyc-page-moss .nyc-footer {
+      background: var(--color-nyc-skyline-dark) !important;
+      color: var(--color-warm-cream) !important;
+    }
+
+    html[data-event="nyc"] .nyc-page-moss .details-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
+
+  }
+
   /* Content box styling (legacy — use .card for new code) */
   .content-box {
     border: var(--border-hairline);
@@ -81,6 +456,40 @@ const lang = Astro.locals.lang ?? 'en';
     letter-spacing: var(--tracking-caption);
     color: var(--color-surface-text);
     margin-bottom: var(--space-xs);
+  }
+
+  /* ── NYC moss zone slide-up entrance ────────────────────────────────────────
+   * When the moss zone is entering (NYC→sub-page), it slides up from below
+   * the disc rather than crossfading, giving the content a distinct entrance.
+   * Slide-up only applies to the entering (new) image; the exiting image uses
+   * the default crossfade.
+   *
+   * The nyc-page-moss VT name is applied dynamically by JS (not via
+   * transition:name in HTML) so the compositor-layer promotion is transient
+   * and doesn't persist between navigations.
+   */
+  @keyframes nyc-moss-slide-up {
+    from {
+      transform: translateY(40%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  ::view-transition-new(nyc-page-moss) {
+    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  html[data-safari-vt-fallback="true"]::view-transition-new(nyc-page-moss) {
+    animation: none;
+  }
+
+  html[data-event="nyc"][data-safari-vt-fallback="true"] .nyc-page-moss-entering {
+    animation: nyc-moss-slide-up 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    will-change: transform, opacity;
   }
 
 </style>

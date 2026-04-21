@@ -25,6 +25,10 @@ type FeatureFlags = {
     i18n: boolean;
     contentLabelsRemoved: boolean;
     emailEnabled: boolean;
+    rsvpRequireAllEmails: boolean;
+  };
+  dev: {
+    loginDelay: boolean; // Adds 2s artificial delay to login so the loading animation is visible
   };
   homepage: {
     teaser: boolean;
@@ -38,7 +42,11 @@ type FeatureFlags = {
     travelBus: boolean;
     travelMta: boolean;
     travelMuseums: boolean;
+    wytheSoldOut: boolean;
+    arloSoldOut: boolean;
+    sevilleSoldOut: boolean;
     rsvpEnabled: boolean;
+    rsvpPreview: boolean;
   };
   france: {
     calendarSubscribe: boolean;
@@ -63,6 +71,10 @@ const features: FeatureFlags = {
     i18n: flag(import.meta.env.FEATURE_GLOBAL_I18N, false),
     contentLabelsRemoved: flag(import.meta.env.FEATURE_GLOBAL_CONTENT_LABELS_REMOVED, false),
     emailEnabled: flag(import.meta.env.FEATURE_GLOBAL_EMAIL_ENABLED, false),
+    rsvpRequireAllEmails: flag(import.meta.env.FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS, false),
+  },
+  dev: {
+    loginDelay: flag(import.meta.env.FEATURE_DEV_LOGIN_DELAY, false),
   },
   homepage: {
     teaser: flag(import.meta.env.FEATURE_HOMEPAGE_TEASER, false),
@@ -76,7 +88,11 @@ const features: FeatureFlags = {
     travelBus: flag(import.meta.env.FEATURE_NYC_TRAVEL_BUS, false),
     travelMta: flag(import.meta.env.FEATURE_NYC_TRAVEL_MTA, false),
     travelMuseums: flag(import.meta.env.FEATURE_NYC_TRAVEL_MUSEUMS, false),
+    wytheSoldOut: flag(import.meta.env.FEATURE_NYC_WYTHE_SOLD_OUT, false),
+    arloSoldOut: flag(import.meta.env.FEATURE_NYC_ARLO_SOLD_OUT, false),
+    sevilleSoldOut: flag(import.meta.env.FEATURE_NYC_SEVILLE_SOLD_OUT, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_NYC_RSVP_ENABLED, false),
+    rsvpPreview: flag(import.meta.env.FEATURE_NYC_RSVP_PREVIEW, false),
   },
   france: {
     calendarSubscribe: flag(import.meta.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE, false),

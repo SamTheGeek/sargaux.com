@@ -1,0 +1,872 @@
+---
+import WireframeLayout from '../../../layouts/WireframeLayout.astro';
+import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
+import { generateTokenIfPossible } from '../../../lib/calendar';
+import { getAttendingNames, getDisplayEventTime, formatEventDate, redactEmail, sortEventsByDateTime } from '../../../lib/rsvp-display';
+import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
+import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
+import { NYC_EVENT_TIME, strings } from '../../../content/strings';
+import { createTranslator } from '../../../lib/i18n';
+import LangSwitcher from '../../../components/LangSwitcher.astro';
+import CalendarCta from '../../../components/CalendarCta.astro';
+import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
+
+const guest = Astro.locals.guest ?? 'Guest';
+const guestId = Astro.locals.guestId;
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const lang = Astro.locals.lang ?? 'en';
+const t = createTranslator(lang);
+const isDevMock = import.meta.env.DEV && Astro.url.searchParams.get('mock') === 'dev';
+const devCompanionName = guest === 'Margaux Ancel' ? 'Sam Gross' : 'Margaux Ancel';
+
+let party: GuestRecord[] = [];
+let coreEvents: EventRecord[] = [];
+let optionalEvents: EventRecord[] = [];
+let existingRSVP: RSVPResponse | null = null;
+let loadError: string | null = null;
+
+if (isDevMock) {
+  party = [
+    {
+      id: 'dev-primary',
+      name: guest,
+      normalizedName: guest.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-companion'],
+      eventInvitedIds: [],
+      email: 'sam@example.com',
+    },
+    {
+      id: 'dev-companion',
+      name: devCompanionName,
+      normalizedName: devCompanionName.toLowerCase(),
+      eventInvitations: ['nyc', 'france'],
+      isPlusOne: false,
+      relatedGuestIds: ['dev-primary'],
+      eventInvitedIds: [],
+      email: 'margaux@example.com',
+    },
+  ];
+  coreEvents = [
+    {
+      id: 'dev-nyc-welcome-dinner',
+      name: 'Welcome Dinner',
+      type: 'Core',
+      wedding: 'nyc',
+      time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
+      location: 'Bar Blondeau',
+      showOnWebsite: true,
+    },
+    {
+      id: 'dev-nyc-reception',
+      name: 'Reception',
+      type: 'Core',
+      wedding: 'nyc',
+      time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
+      location: 'Wythe Hotel',
+      showOnWebsite: true,
+    },
+  ];
+  optionalEvents = [
+    {
+      id: 'dev-nyc-after-party',
+      name: 'After Party',
+      type: 'Optional',
+      wedding: 'nyc',
+      time: '11:00 PM',
+      location: 'The Ides Rooftop',
+      showOnWebsite: true,
+    },
+  ];
+  existingRSVP = {
+    id: 'dev-nyc-rsvp',
+    guestId: 'dev-primary',
+    event: 'nyc',
+    submittedAt: new Date().toISOString(),
+    status: 'Attending',
+    guestsAttending: `${guest}, ${devCompanionName}`,
+    dietary: 'One vegetarian meal, please.',
+    message: 'Counting down already. We cannot wait to celebrate with everyone in Brooklyn.',
+    details: {},
+    eventsAttending: ['dev-nyc-welcome-dinner', 'dev-nyc-reception', 'dev-nyc-after-party'],
+  };
+} else if (guestId) {
+  try {
+    party = await getGuestParty(guestId);
+    const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
+    coreEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Core'));
+    optionalEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Optional'));
+    existingRSVP = await getLatestRSVP(guestId, 'nyc');
+  } catch (error) {
+    console.error('Failed to load NYC RSVP confirmation data:', error);
+    loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
+  }
+}
+
+const attendingNames = getAttendingNames(existingRSVP);
+const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
+const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  : null;
+---
+
+<WireframeLayout title={t(strings.nyc.rsvp.confirmation.pageTitle)} event="nyc">
+  <header class="site-header nyc-header" transition:name="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <div class="nav-actions">
+        {showEventToggle && (
+          <div class="event-toggle">
+            <span class="active event-toggle-item event-toggle-item--nyc">{t(strings.global.toggle.nyc)}</span>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
+          </div>
+        )}
+      </div>
+    </nav>
+  </header>
+
+  <main class="rsvp-page">
+    <div class="rsvp-hero">
+      <img class="rsvp-disc-m" src={mBulletSrc} aria-hidden="true" transition:name="event-disc" alt="" />
+      <img class="rsvp-disc-s" src={sfBulletSrc} aria-hidden="true" alt="" />
+      <div class="page-content rsvp-hero-inner">
+        <a href="/nyc" class="back-link rsvp-back">{t(strings.nav.backToEvent)}</a>
+        <h1>{t(strings.nyc.rsvp.confirmation.heading)}</h1>
+        <p class="rsvp-subtitle">{t(strings.nyc.rsvp.confirmation.subtitle)}</p>
+      </div>
+    </div>
+
+    <div class="rsvp-deadline-band">
+      <div class="page-content rsvp-deadline-inner">
+        <div class="deadline-info">
+          <span class="deadline-label">
+            {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
+          </span>
+          <strong class="deadline-date">
+            {existingRSVP
+              ? <time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time>
+              : t(strings.nyc.rsvp.deadlineDate)
+            }
+          </strong>
+        </div>
+        {existingRSVP && (
+          <div class="deadline-calendar">
+            <CalendarCta
+              event="nyc"
+              token={calendarToken}
+              label={t(strings.nyc.calendar.addBtn)}
+              compact={true}
+              showNote={false}
+              testId="calendar-confirmation-link"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+
+    {!guestId && !isDevMock ? (
+      <div class="page-content">
+        <div class="rsvp-error-wrap">
+          <div class="error-card" data-testid="notion-required">
+            <h2>{t(strings.nyc.rsvp.unavailable.heading)}</h2>
+            <p>{t(strings.nyc.rsvp.unavailable.text)}</p>
+          </div>
+        </div>
+      </div>
+    ) : loadError ? (
+      <div class="page-content">
+        <div class="rsvp-error-wrap">
+          <div class="error-card" data-testid="rsvp-load-error">
+            <h2>{t(strings.nyc.rsvp.loadError.heading)}</h2>
+            <p>{loadError}</p>
+          </div>
+        </div>
+      </div>
+    ) : !existingRSVP ? (
+      <div class="page-content">
+        <div class="rsvp-error-wrap">
+          <div class="error-card" data-testid="missing-rsvp">
+            <h2>{t(strings.nyc.rsvp.confirmation.missing.heading)}</h2>
+            <p>{t(strings.nyc.rsvp.confirmation.missing.text)}</p>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <>
+        {isDevMock && (
+          <div class="page-content">
+            <aside class="existing-rsvp-banner existing-rsvp-banner--preview" data-testid="dev-rsvp-preview">
+              <p>Local dev preview. This confirmation is mocked because the RSVP backend is unavailable.</p>
+            </aside>
+          </div>
+        )}
+
+        <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
+        <section class="rsvp-section page-content">
+          <div class="guest-list">
+            {party.map((partyGuest) => {
+              const isAttending = attendingNames.has(partyGuest.name);
+              return (
+                <div
+                  class:list={[
+                    'guest-row',
+                    partyGuest.isPlusOne && 'plus-one',
+                    !isAttending && 'guest-row--not-attending',
+                  ]}
+                  data-guest-row
+                >
+                  <div class="guest-info guest-info--static">
+                    <span class="guest-name-static">{partyGuest.name}</span>
+                    <span class="guest-status">
+                      {isAttending ? t(strings.global.attending) : t(strings.global.notAttending)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <div class="rsvp-band">{t(strings.nyc.rsvp.form.coreEvents.heading)}</div>
+        <section class="rsvp-section page-content">
+          {coreEvents.length === 0 ? (
+            <p class="placeholder-note">{t(strings.nyc.rsvp.form.coreEvents.empty)}</p>
+          ) : (
+            <div class="event-list">
+              {coreEvents.map((event) => {
+                const isSelected = selectedEventIds.size > 0
+                  ? selectedEventIds.has(event.id)
+                  : attendingNames.size > 0;
+                return (
+                  <div class="event-row event-row--readonly">
+                    <span class:list={['event-check-mark', isSelected && 'event-check-mark--checked']}></span>
+                    <div class="event-row-content">
+                      <span class="event-row-name">{event.name}</span>
+                      <span class="event-row-meta">
+                        {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {optionalEvents.length > 0 && (
+          <>
+            <div class="rsvp-band">{t(strings.nyc.rsvp.form.optionalEvents.heading)}</div>
+            <section class="rsvp-section page-content">
+              <div class="event-list">
+                {optionalEvents.map((event) => {
+                  const isSelected = selectedEventIds.has(event.id);
+                  return (
+                    <div class="event-row event-row--readonly">
+                      <span class:list={['event-check-mark', isSelected && 'event-check-mark--checked']}></span>
+                      <div class="event-row-content">
+                        <span class="event-row-name">{event.name}</span>
+                        <span class="event-row-meta">
+                          {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        <div class="rsvp-band">{t(strings.nyc.rsvp.form.dietary.heading)}</div>
+        <section class="rsvp-section page-content">
+          <div class="static-card">
+            {existingRSVP.dietary || t(strings.nyc.rsvp.confirmation.emptyValue)}
+          </div>
+        </section>
+
+        <div class="rsvp-band">{t(strings.nyc.rsvp.form.message.heading)}</div>
+        <section class="rsvp-section page-content">
+          <div class="static-card">
+            {existingRSVP.message || t(strings.nyc.rsvp.confirmation.emptyValue)}
+          </div>
+        </section>
+
+        <div class="rsvp-band">{t(strings.nyc.rsvp.form.email.heading)}</div>
+        <section class="rsvp-section page-content">
+          <div class="group-email-list">
+            {party.map((partyGuest) => (
+              <div class="group-email-row">
+                <div class="group-email-label">
+                  <span class="group-email-name">{partyGuest.name}</span>
+                </div>
+                <div class="static-card static-card--email">
+                  {redactEmail(partyGuest.email) || t(strings.nyc.rsvp.confirmation.emailMissing)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div class="page-content rsvp-submit-zone confirmation-submit-zone">
+          <a href="/nyc/rsvp" class="confirmation-edit-link">
+            <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
+              <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+              <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+            </svg>
+            <span>{t(strings.nyc.rsvp.confirmation.editLink)}</span>
+          </a>
+        </div>
+      </>
+    )}
+  </main>
+
+  <footer class="site-footer">
+    <nav>
+      <a href="/registry">{t(strings.global.registry)}</a>
+      <span> · </span>
+      <span class="guest-name">{guest}</span>
+      <span> · </span>
+      <a href="/api/logout">{t(strings.global.logout)}</a>
+    </nav>
+    <div>
+      <p class="copyright">{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
+  </footer>
+</WireframeLayout>
+
+<script is:inline>
+  document.querySelectorAll('[data-local-timestamp]').forEach(function(el) {
+    var lang = document.documentElement.lang || 'en';
+    var locale = lang === 'fr' ? 'fr-FR' : 'en-US';
+    var dt = new Date(el.getAttribute('datetime'));
+    el.textContent = dt.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  });
+
+  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+    const isoStr = timeEl.getAttribute('datetime');
+    if (isoStr) {
+      const date = new Date(isoStr);
+      const lang = document.documentElement.lang || 'en';
+      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
+      timeEl.textContent = formatted;
+    }
+  });
+</script>
+
+<style is:global>
+  .rsvp-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .nyc-header {
+    background: var(--color-warm-cream) !important;
+    border-bottom: 1px solid var(--color-border) !important;
+  }
+
+  .nyc-header .site-logo,
+  .nyc-header .site-logo:hover,
+  .nyc-header .event-toggle .active,
+  .nyc-header .event-toggle .divider {
+    color: var(--color-dark-moss) !important;
+  }
+
+  .nyc-header .event-toggle a {
+    color: var(--color-text-muted) !important;
+  }
+
+  .rsvp-disc-m {
+    position: absolute;
+    width: clamp(260px, 46vh, 520px);
+    height: clamp(260px, 46vh, 520px);
+    right: -10%;
+    top: -5%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .rsvp-disc-s {
+    position: absolute;
+    width: clamp(150px, 27vh, 302px);
+    height: clamp(150px, 27vh, 302px);
+    right: 16%;
+    top: 40%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .rsvp-hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 44vh;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 48px;
+  }
+
+  .rsvp-hero-inner {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+  }
+
+  .rsvp-back,
+  .rsvp-back:link,
+  .rsvp-back:visited {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: opacity 0.15s;
+  }
+
+  .rsvp-back:hover {
+    opacity: 0.6;
+    color: var(--color-dark-moss);
+    -webkit-text-fill-color: var(--color-dark-moss);
+  }
+
+  .rsvp-hero h1 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 500;
+    line-height: 0.93;
+    color: var(--color-dark-moss);
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    white-space: nowrap;
+  }
+
+  .rsvp-subtitle {
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: rgba(23, 50, 11, 0.55);
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .rsvp-section,
+  .rsvp-submit-zone,
+  .rsvp-page > .page-content {
+    background: var(--color-warm-cream);
+  }
+
+  .rsvp-deadline-band {
+    background: var(--color-surface);
+    color: var(--color-surface-text);
+  }
+
+  .rsvp-deadline-inner {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    text-align: center;
+  }
+
+  .deadline-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .deadline-calendar {
+    white-space: nowrap;
+  }
+
+  .deadline-label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
+    opacity: 0.6;
+  }
+
+  .deadline-date {
+    font-family: var(--font-display);
+    font-size: var(--font-size-h3);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-h3);
+    font-feature-settings: "case" 1, "lnum" 1;
+  }
+
+  .rsvp-error-wrap {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
+  }
+
+  .error-card {
+    border: 1px solid var(--color-error-border);
+    background: var(--color-error-bg);
+    padding: var(--space-md);
+    border-radius: 8px;
+    color: var(--color-error);
+  }
+
+  .error-card h2 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--space-xs);
+  }
+
+  .error-card p,
+  .existing-rsvp-banner p {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .existing-rsvp-banner {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-info-border);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 6px;
+    color: var(--color-info);
+    margin-top: var(--space-md);
+  }
+
+  .existing-rsvp-banner--preview {
+    margin-bottom: calc(var(--space-sm) * -1);
+  }
+
+  .rsvp-band {
+    background: var(--color-surface);
+    color: var(--color-surface-text);
+    padding: 12px var(--page-margin);
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
+  }
+
+  .rsvp-section,
+  .rsvp-submit-zone {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .rsvp-section {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-lg);
+  }
+
+  .section-note {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+  }
+
+  .placeholder-note {
+    font-size: 16px;
+    color: var(--color-text-muted);
+  }
+
+  .guest-list,
+  .event-list,
+  .group-email-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .guest-row,
+  .event-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 14px var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+  }
+
+  .guest-row.plus-one {
+    border-style: dashed;
+  }
+
+  .guest-row--not-attending {
+    border-color: rgba(23, 50, 11, 0.14);
+    background: rgba(23, 50, 11, 0.04);
+  }
+
+  .guest-info {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+  }
+
+  .guest-name-static {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+  }
+
+  .guest-row--not-attending .guest-name-static,
+  .guest-row--not-attending .guest-status {
+    color: rgba(23, 50, 11, 0.45);
+  }
+
+  .guest-status {
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-text-muted);
+    width: 116px;
+    white-space: nowrap;
+    text-align: right;
+    flex-shrink: 0;
+    font-feature-settings: "case" 1;
+  }
+
+  .event-row {
+    align-items: flex-start;
+  }
+
+  .event-check-mark {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1.5px solid var(--color-border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+
+  .event-check-mark--checked {
+    background: var(--color-burnt-amber);
+    border-color: var(--color-burnt-amber);
+  }
+
+  .event-check-mark--checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: 2px solid var(--color-warm-cream);
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+  }
+
+  .event-row-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .event-row-name {
+    display: block;
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    color: var(--color-text);
+    margin-bottom: 5px;
+    font-feature-settings: "case" 1, "lnum" 1;
+  }
+
+  .event-row-meta {
+    font-size: 15px;
+    color: var(--color-text-muted);
+  }
+
+  .static-card {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    white-space: pre-wrap;
+  }
+
+  .static-card--email {
+    min-height: 0;
+  }
+
+  .group-email-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .group-email-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  .group-email-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .confirmation-submit-zone {
+    padding-top: var(--space-xs);
+    padding-bottom: var(--space-lg);
+    text-align: center;
+  }
+
+  .confirmation-edit-link,
+  .confirmation-edit-link:link,
+  .confirmation-edit-link:visited {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--color-text);
+    -webkit-text-fill-color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.22em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .confirmation-edit-link:hover {
+    opacity: 0.72;
+    color: var(--color-text);
+    -webkit-text-fill-color: var(--color-text);
+  }
+
+  .confirmation-edit-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .nyc-header {
+      background: var(--color-dark-moss) !important;
+      border-bottom-color: rgba(255, 249, 240, 0.08) !important;
+    }
+
+    .nyc-header .site-logo,
+    .nyc-header .site-logo:hover,
+    .nyc-header .event-toggle .active,
+    .nyc-header .event-toggle .divider {
+      color: var(--color-warm-cream) !important;
+    }
+
+    .nyc-header .event-toggle a {
+      color: var(--color-text-muted) !important;
+    }
+
+    .rsvp-hero h1,
+    .rsvp-back,
+    .rsvp-back:link,
+    .rsvp-back:visited,
+    .rsvp-back:hover {
+      color: var(--color-warm-cream);
+      -webkit-text-fill-color: var(--color-warm-cream);
+    }
+
+    .rsvp-deadline-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+    }
+
+    .rsvp-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
+    }
+
+    .rsvp-section,
+    .rsvp-submit-zone,
+    .rsvp-page > .page-content {
+      background: var(--color-bg);
+    }
+
+    .guest-row,
+    .event-row,
+    .static-card {
+      border-color: var(--color-text-muted);
+    }
+
+  }
+
+  @media (max-width: 768px) {
+    .rsvp-disc-m {
+      width: clamp(200px, 52vw, 320px);
+      height: clamp(200px, 52vw, 320px);
+      right: -8%;
+      top: -5%;
+    }
+
+    .rsvp-disc-s {
+      width: clamp(116px, 30vw, 186px);
+      height: clamp(116px, 30vw, 186px);
+      right: 22%;
+      top: 38%;
+    }
+
+    .rsvp-hero {
+      min-height: 44vh;
+      padding-bottom: 32px;
+    }
+
+    .rsvp-hero h1 {
+      font-size: clamp(40px, 10vw, 64px);
+      white-space: normal;
+    }
+
+    .rsvp-band {
+      padding: 12px var(--page-margin-mobile);
+    }
+
+    .rsvp-deadline-inner {
+      padding-top: var(--space-sm);
+      padding-bottom: var(--space-sm);
+      gap: var(--space-sm);
+    }
+
+    .guest-status {
+      min-width: 0;
+      font-size: 10px;
+    }
+  }
+</style>

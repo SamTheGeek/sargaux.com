@@ -1,0 +1,95 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e3]:
+    - navigation [ref=e4]:
+      - link "Chez Sargaux" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: NYC
+          - generic [ref=e9]: "|"
+          - link "France" [ref=e10] [cursor=pointer]:
+            - /url: /france
+        - link "RSVP" [ref=e11] [cursor=pointer]:
+          - /url: /nyc/rsvp
+  - generic [ref=e12]:
+    - heading "New York With Love" [level=1] [ref=e13]:
+      - text: New York
+      - text: With Love
+    - paragraph [ref=e14]: October 11, 2026
+    - separator [ref=e15]
+    - paragraph [ref=e16]: Bar Blondeau · Brooklyn
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e23]: When
+      - generic [ref=e24]:
+        - text: Sunday, October 11, 2026
+        - generic [ref=e25]: 5:15 PM – 9:15 PM
+    - generic [ref=e26]:
+      - generic [ref=e27]: Where
+      - generic [ref=e28]:
+        - text: Bar Blondeau
+        - text: 80 Wythe Ave, 6th Floor · Brooklyn, NY
+        - generic [ref=e29]: followed by Dancing (Location TBA)
+    - generic [ref=e30]:
+      - generic [ref=e31]: Dress Code
+      - generic [ref=e32]: Festive Attire
+    - generic [ref=e33]:
+      - generic [ref=e34]: RSVP
+      - generic [ref=e35]: By September 1, 2026
+  - generic [ref=e36]: Save the Date
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - paragraph [ref=e40]: Save the Date
+      - paragraph [ref=e41]: Add the events to your calendar app.
+    - generic [ref=e42]:
+      - button "Add to Calendar" [disabled] [ref=e43]
+      - paragraph [ref=e44]: Your personalized calendar link will be available after you RSVP.
+  - generic [ref=e45]: Explore
+  - navigation "Event sections" [ref=e47]:
+    - link "Details Venues & what to expect →" [ref=e48] [cursor=pointer]:
+      - /url: /nyc/details
+      - generic [ref=e49]: Details
+      - generic [ref=e50]: Venues & what to expect
+      - generic [ref=e51]: →
+    - link "Travel Hotels & getting around →" [ref=e52] [cursor=pointer]:
+      - /url: /nyc/travel
+      - generic [ref=e53]: Travel
+      - generic [ref=e54]: Hotels & getting around
+      - generic [ref=e55]: →
+    - link "The Couple Read our story →" [ref=e56] [cursor=pointer]:
+      - /url: /couple
+      - generic [ref=e57]: The Couple
+      - generic [ref=e58]: Read our story
+      - generic [ref=e59]: →
+    - link "RSVP Let us know you're coming →" [ref=e60] [cursor=pointer]:
+      - /url: /nyc/rsvp
+      - generic [ref=e61]: RSVP
+      - generic [ref=e62]: Let us know you're coming
+      - generic [ref=e63]: →
+  - contentinfo [ref=e64]:
+    - navigation [ref=e65]:
+      - link "Registry" [ref=e66] [cursor=pointer]:
+        - /url: /registry
+      - text: · Sam Gross ·
+      - link "Logout" [ref=e67] [cursor=pointer]:
+        - /url: /api/logout
+    - generic [ref=e68]:
+      - paragraph [ref=e69]: © 2026 Sam Gross
+      - generic "Language" [ref=e70]:
+        - link "Switch to English" [ref=e71] [cursor=pointer]:
+          - /url: /nyc?lang=en
+        - link "Passer en français" [ref=e88] [cursor=pointer]:
+          - /url: /nyc?lang=fr
+  - generic [ref=e95]:
+    - button "Menu" [ref=e96]:
+      - img [ref=e98]
+      - generic: Menu
+    - button "Inspect" [ref=e102]:
+      - img [ref=e104]
+      - generic: Inspect
+    - button "Audit" [ref=e106]:
+      - img [ref=e108]
+      - generic: Audit
+    - button "Settings" [ref=e111]:
+      - img [ref=e113]
+      - generic: Settings

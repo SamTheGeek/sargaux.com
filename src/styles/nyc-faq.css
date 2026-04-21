@@ -1,0 +1,144 @@
+html[data-event="nyc"][data-page="faq"] .nyc-disc {
+  position: fixed;
+  width: clamp(380px, 58vh, 700px);
+  height: clamp(380px, 58vh, 700px);
+  background: var(--color-burnt-amber);
+  border-radius: 50%;
+  top: 1vh;
+  left: -2%;
+  z-index: 2;
+}
+
+html[data-event="nyc"] .faq-trigger {
+  display: block;
+  width: 100%;
+  padding: 20px 0;
+  cursor: pointer;
+}
+
+html[data-event="nyc"] .faq-trigger::-webkit-details-marker {
+  display: none;
+}
+
+html[data-event="nyc"] .faq-trigger::marker {
+  content: '';
+}
+
+html[data-event="nyc"] .faq-trigger-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+}
+
+html[data-event="nyc"] .faq-question {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-warm-cream);
+}
+
+html[data-event="nyc"] .faq-indicator {
+  position: relative;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 249, 240, 0.7);
+}
+
+html[data-event="nyc"] .faq-indicator::before,
+html[data-event="nyc"] .faq-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 1.5px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+html[data-event="nyc"] .faq-indicator::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+html[data-event="nyc"] .faq-item[open] .faq-indicator::after {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(90deg) scaleX(0);
+}
+
+html[data-event="nyc"] .faq-answer {
+  padding: 0 0 24px 28px;
+}
+
+html[data-event="nyc"] .faq-answer-body p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255, 249, 240, 0.72);
+}
+
+html[data-event="nyc"] .faq-answer-link,
+html[data-event="nyc"] .faq-answer-link:link,
+html[data-event="nyc"] .faq-answer-link:visited {
+  color: var(--color-warm-cream);
+  -webkit-text-fill-color: var(--color-warm-cream);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+html[data-event="nyc"] .faq-answer-link:hover {
+  color: var(--color-burnt-amber);
+  -webkit-text-fill-color: var(--color-burnt-amber);
+}
+
+html[data-event="nyc"] .faq-answer-note {
+  color: rgba(255, 249, 240, 0.92);
+}
+
+html[data-event="nyc"] .faq-contact {
+  margin: 40px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 249, 240, 0.92);
+  text-align: center;
+}
+
+html[data-event="nyc"] .faq-contact-link,
+html[data-event="nyc"] .faq-contact-link:link,
+html[data-event="nyc"] .faq-contact-link:visited {
+  color: var(--color-burnt-amber);
+  -webkit-text-fill-color: var(--color-burnt-amber);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+html[data-event="nyc"] .faq-contact-link:hover {
+  opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  html[data-event="nyc"][data-page="faq"] .nyc-disc {
+    width: clamp(220px, 66vw, 360px);
+    height: clamp(220px, 66vw, 360px);
+    top: 68px;
+    left: -6%;
+  }
+
+  html[data-event="nyc"] .faq-trigger-inner {
+    gap: 16px;
+  }
+
+  html[data-event="nyc"] .faq-answer {
+    padding-left: 20px;
+  }
+
+  html[data-event="nyc"] .faq-contact {
+    font-size: 16px;
+  }
+}

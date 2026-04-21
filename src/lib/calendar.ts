@@ -9,7 +9,7 @@
  */
 
 import { createHmac } from 'crypto';
-import type { EventRecord } from '../types/event';
+import type { EventRecord } from '../types';
 
 /**
  * Encode a string as URL-safe base64 (no padding).
@@ -55,6 +55,19 @@ export function generateToken(guestId: string): string {
   const encoded = toBase64Url(guestId);
   const hmac = computeHmac(guestId);
   return `${encoded}.${hmac}`;
+}
+
+/**
+ * Generate a calendar token when runtime config allows it.
+ * Returns null instead of throwing when the signing secret is unavailable.
+ */
+export function generateTokenIfPossible(guestId?: string | null): string | null {
+  if (!guestId) return null;
+  try {
+    return generateToken(guestId);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -144,6 +157,32 @@ function escapeICS(text: string): string {
     .replace(/\n/g, '\\n');
 }
 
+/**
+ * Fold a single ICS content line to ≤75 octets per RFC 5545 §3.1.
+ * Continuation lines begin with a single space.
+ */
+function foldLine(line: string): string {
+  if (line.length <= 75) return line;
+  const chunks: string[] = [];
+  chunks.push(line.slice(0, 75));
+  let i = 75;
+  while (i < line.length) {
+    chunks.push(' ' + line.slice(i, i + 74));
+    i += 74;
+  }
+  return chunks.join('\r\n');
+}
+
+/**
+ * Add one calendar day to a "YYYY-MM-DD" string.
+ */
+function nextDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+}
+
 export interface EventWithDate extends EventRecord {
   date?: string; // "YYYY-MM-DD" resolved from the Day relation page
 }
@@ -171,14 +210,17 @@ export function buildICS(events: EventWithDate[]): string {
         const [year, month, day] = event.date.split('-').map(Number);
         const pad = (n: number) => String(n).padStart(2, '0');
         const localStr = `${year}${pad(month)}${pad(day)}T${pad(parsed.hour)}${pad(parsed.minute)}00`;
-        const endHour = parsed.hour + 2;
-        const endStr = `${year}${pad(month)}${pad(day)}T${pad(endHour)}${pad(parsed.minute)}00`;
+        // Cap at 23:59 to avoid overflow; treat midnight-crossing events as 2h duration capped at end of day
+        const endMinutes = parsed.hour * 60 + parsed.minute + 120;
+        const endH = Math.min(Math.floor(endMinutes / 60), 23);
+        const endM = endH < 23 ? parsed.minute : 59;
+        const endStr = `${year}${pad(month)}${pad(day)}T${pad(endH)}${pad(endM)}00`;
         dtstart = `DTSTART;TZID=${timezone}:${localStr}`;
         dtend = `DTEND;TZID=${timezone}:${endStr}`;
       } else {
         const d = formatDate(event.date);
         dtstart = `DTSTART;VALUE=DATE:${d}`;
-        dtend = `DTEND;VALUE=DATE:${d}`;
+        dtend = `DTEND;VALUE=DATE:${nextDay(event.date)}`;
       }
 
       const lines = [
@@ -194,12 +236,12 @@ export function buildICS(events: EventWithDate[]): string {
       if (event.location) lines.push(`LOCATION:${escapeICS(event.location)}`);
 
       lines.push('END:VEVENT');
-      return lines.join('\r\n');
+      return lines.map(foldLine).join('\r\n');
     })
     .filter(Boolean)
     .join('\r\n');
 
-  return [
+  const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Sargaux Wedding//sargaux.com//EN',
@@ -207,7 +249,10 @@ export function buildICS(events: EventWithDate[]): string {
     "X-WR-CALDESC:Your personal schedule for Sam & Margaux's wedding",
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    vevents,
-    'END:VCALENDAR',
-  ].join('\r\n');
+  ].map(foldLine);
+
+  if (vevents) lines.push(vevents);
+  lines.push('END:VCALENDAR');
+
+  return lines.join('\r\n');
 }

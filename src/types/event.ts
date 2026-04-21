@@ -4,6 +4,7 @@ export interface EventRecord {
   type: 'Core' | 'Optional';
   wedding: 'nyc' | 'france';
   time?: string;
+  date?: string; // YYYY-MM-DD
   location?: string;
   description?: string;
   dayId?: string; // Wedding Timeline page ID (optional)

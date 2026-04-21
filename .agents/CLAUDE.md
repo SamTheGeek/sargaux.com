@@ -65,7 +65,7 @@ To set up a fresh Mac for development, run:
 ./scripts/setup.sh
 ```
 
-This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). The only prerequisite is a stock macOS install.
+This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). It also configures the user's shell for Homebrew and `nvm`, and offers to create `.env.local` for local Notion-backed flows. The only prerequisite is a stock macOS install.
 
 After setup, authenticate once:
 
@@ -122,7 +122,7 @@ npm run test:install
 
 ## Testing
 
-The project includes 51 automated tests that run on every PR:
+The project includes automated tests that run on every PR:
 
 ### Test Suites (run in parallel)
 
@@ -151,6 +151,12 @@ The project includes 51 automated tests that run on every PR:
    - Core Web Vitals (LCP, FCP, CLS)
    - Time to Interactive (TTI), DOM Content Loaded
    - Page size, JavaScript execution time, resource loading
+
+5. **Pages Tests** (`tests/pages.spec.ts`)
+   - Back links ("← Return to event") present on all sub-pages
+   - NYC travel page hotel section content
+   - RSVP preview mode form rendering
+   - Couple page scattered gallery (exactly 6 cards)
 
 All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
@@ -183,6 +189,13 @@ npm run test:quick
 - For NYC/France route transitions, verify both visual motion and element stability for the shared amber disc, the `Chez Sargaux` header logo, the event toggle, and the top-right RSVP button.
 - The header right-side controls are intended to stay pinned to the same right edge across NYC and France. Avoid changes that let differing text metrics shift those controls horizontally.
 - If a transition appears broken, confirm whether the element still has the expected `transition:name` before changing layout or JS.
+- Use two different fixes depending on the transition goal:
+- If the disc should keep animating independently but some text/UI must stay above it, put that content in its own named view-transition group and give that group a z-index above `event-disc`. This is the right fix for cases like the login page where the disc still animates but must not cover the entering text.
+- If the disc should remain visually behind a route family's content for the whole transition, suppress the disc's `view-transition-name` on both the old and new documents for that navigation.
+- NYC index → Details/Travel uses a hybrid of both rules: suppress the disc VT name so the disc stays in the root snapshot, then temporarily assign a named VT group to the incoming sub-page hero above `root` so the entering header block is not trapped under the exiting snapshot while the moss/content rises in above it.
+- For this NYC sub-page hero case, do not leave `transition:name` in the page markup. Inject the VT name during `astro:before-swap` and remove it on `astro:page-load`, otherwise the hero can remain compositor-promoted after the animation and end up layered incorrectly relative to the disc during normal scrolling.
+- If a sliding view-transition snapshot is visually correct at the end state but appears clipped during motion, check the transition pseudo tree before changing z-index. Allowing overflow on the relevant `::view-transition-group(...)` / `::view-transition-image-pair(...)` can fix content that should slide over neighboring layers but is being cropped to its snapshot box.
+- Keep the shared scale aligned with the global stack when using named groups: root `1`, disc `2`, content `3`, moss `4`, header `100`. Do not raise groups above this scale just to force visibility; choose the correct strategy instead.
 
 ## Git Workflow
 
@@ -272,8 +285,16 @@ The project version in `package.json` follows semantic versioning with wedding m
 - SSR enabled with `@astrojs/node` adapter (standalone mode)
 - **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
 - **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept.
-- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` across the homepage, NYC, and France pages. The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
+- **Script gotcha**: Never suppress view transition animations for named elements using `html[data-astro-transition] ::view-transition-group(name)` CSS — this selector does not reliably fire because `data-astro-transition` may not be set at the right moment relative to pseudo-element creation. Use the `astro:after-preparation` event in JavaScript instead to modify `view-transition-name` on the element directly before the VT snapshot.
+- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` (NO `transition:persist`) on all NYC pages (index, details, travel). Removing `transition:persist` was required to let the VT API reliably FLIP between pages. Forward navigation (clicking into sub-pages) suppresses the disc FLIP via `astro:after-preparation` in `WireframeLayout`: if `toDepth > fromDepth` (by URL path segment count), the disc's `view-transition-name` is temporarily set to `none` on the old element before the VT snapshot, preventing an unwanted cross-screen animation. The disc FLIP only plays on backward navigation (returning to a parent page). The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
+- **`WireframeLayout` `page` prop**: `WireframeLayout` accepts a `page` prop that sets `data-page` on `<html>` statically, allowing per-page CSS scoping without inline scripts. Currently used by `nyc/travel.astro` (passes `page="travel"`) to position the disc on the right side.
+- **Header overscroll fix**: `.site-header::before` in `base.css` extends a 25px panel above the header's top edge (using `position: absolute; top: -25px; background: inherit`) to cover springy overscroll bleed. This is purely cosmetic and does not affect header children layout.
 - **Notion SDK**: Uses `@notionhq/client` v5.x targeting Notion API v2025-09-03. Key difference from older versions: `dataSources.query()` replaces `databases.query()`, using `data_source_id` instead of `database_id`. See [upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
+- **Dark mode token gotcha**: `--color-text` and `--color-surface-text` both resolve to `var(--color-warm-cream)` in dark mode. Never use both as `background` + `color` on the same element — use `--color-bg` for text color on `--color-text`-colored backgrounds in dark mode.
+- **Dark mode border visibility**: `--color-border` in dark mode (`#2E3E35`) is nearly invisible against the dark surface `#2F3F36`. Use `--color-text-muted` for interactive UI borders (event rows, custom checkboxes) that must be visible in dark mode.
+- **Custom checkbox pattern** (`src/pages/nyc/rsvp.astro`): Native `<input>` is hidden with `position: absolute; opacity: 0; pointer-events: none`; a sibling `<span class="event-check-mark">` drives the visual using the `~` general sibling combinator. `.event-check-mark` has `margin-top: 2px` for `flex-start` containers — reset to `0` inside `align-items: center` containers.
+- **RSVP subway bullets**: The RSVP hero uses real NYC subway bullet SVGs (`src/assets/nyc/subway-bullet-m.svg` and `subway-bullet-sf.svg`) as `<img>` elements, positioned and sized with CSS. The M bullet is recolored from subway orange to `--color-burnt-amber` (`#D96A1E`); the SF silver bullet is kept as-is. Source: Wikimedia Commons NYCS Standard Set (public domain).
+- **RSVP status sync**: `submitRSVP` (`src/lib/notion.ts`) writes back to the Guest List `RSVP` status field after every submission. For dual-invite guests it fetches both events' latest responses and resolves to Attending, Declined, or Partial (mixed). The `Partial` option must exist in the Notion Guest List RSVP field — add manually, as DDL cannot configure STATUS options (`ALTER COLUMN SET STATUS(...)` is unsupported by `notion-update-data-source`).
 
 ## Authentication
 
@@ -300,9 +321,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_API_KEY` — Notion integration token. Store in:
   - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
   - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
-- `NOTION_GUEST_LIST_DB` — Notion **data source** ID (Notion API v2025-09-03 uses data sources, not database IDs)
-- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
-- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
+- `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
@@ -312,9 +333,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 The following secrets must be set in GitHub repository settings (Settings → Secrets and variables → Actions):
 
 - `NOTION_API_KEY` — Notion integration token
-- `NOTION_GUEST_LIST_DB` — Guest List data source ID
-- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
-- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
+- `NOTION_GUEST_LIST_DB` — Guest List database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 
 These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
 
@@ -370,6 +391,8 @@ See `src/config/features.ts` for the full list. Key flags:
 - `global.notionBackend` — Use Notion Guest List for auth (requires `NOTION_API_KEY` and `NOTION_GUEST_LIST_DB`). When off, falls back to hardcoded guest list.
 - `global.i18n` — French language support
 - `nyc.*` / `france.*` — Event-specific features
+  - `nyc.wytheRoomBlock` — Controls visibility of the entire Wythe Hotel row on the travel page (default: false, enables when room block is bookable)
+  - `nyc.rsvpPreview` — Renders RSVP forms (NYC and France) with mock party data (Sam Gross + Margaux Ancel, invited to everything) when no Notion guestId is present. Used for local dev without Notion backend.
 - `registry.enabled` — Registry page visibility
 
 ### For Netlify Preview Deploys

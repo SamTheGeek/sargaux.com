@@ -1,0 +1,59 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import '../../styles/france-lookbook.css';
+import '../../styles/lookbook.css';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import SiteFooter from '../../components/SiteFooter.astro';
+
+const guest = Astro.locals.guest;
+const t = createTranslator(Astro.locals.lang ?? 'en');
+
+const dir = path.join(process.cwd(), 'public/images/france/lookbook');
+const images = fs.existsSync(dir)
+  ? fs.readdirSync(dir)
+      .filter(f => /\.(jpg|jpeg)$/i.test(f))
+      .sort()
+      .map(f => ({
+        jpg:  `/images/france/lookbook/${f}`,
+        webp: `/images/france/lookbook/${f.replace(/\.(jpg|jpeg)$/i, '.webp')}`,
+      }))
+  : [];
+---
+
+<WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="france-lookbook-shell" transition:name="france-lookbook-content">
+      <div class="france-lookbook-intro">
+        <h1 class="lookbook-heading" aria-label={t(strings.france.lookbook.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
+        <p class="subtitle">{t(strings.france.lookbook.subtitle)}</p>
+      </div>
+
+      <div class="france-lookbook-gallery">
+        {images.length > 0 ? (
+          <div class="lookbook-grid">
+            {images.map(img => (
+              <picture class="lookbook-item">
+                <source srcset={img.webp} type="image/webp" />
+                <img src={img.jpg} alt="" loading="lazy" decoding="async" />
+              </picture>
+            ))}
+          </div>
+        ) : (
+          <p class="lookbook-empty">{t(strings.global.detailsToCome)}</p>
+        )}
+      </div>
+    </div>
+  </main>
+
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} />
+</WireframeLayout>

@@ -1,22 +1,16 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import { features } from '../../config/features';
-import { generateToken } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
-const guestId = Astro.locals.guestId;
-const calendarToken = (features.france.calendarSubscribe && guestId)
-  ? generateToken(guestId)
-  : null;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
 
-<WireframeLayout title={t(strings.france.pageTitle)} description="France Wedding - May 2027" event="france">
+<WireframeLayout title={t(strings.france.pageTitle)} fullTitle="Chez Sargaux | France" description="France Wedding - May 2027" event="france">
   <header class="site-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
@@ -37,15 +31,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     <!-- Destination Header — travel poster style -->
     <section class="france-hero">
-      <div class="destination-header">
+      <div class="destination-header" transition:name="france-index-hero-content">
         <p class="event-location">{t(strings.france.heroLocation)}</p>
         <h1 class="destination-name">{t(strings.france.heroTitle)}</h1>
         <p class="event-dates">{t(strings.france.heroDate)}</p>
-        <p class="event-type">Margaux Marie Ancel please tell me what to put here</p>
+        <p class="event-type">Margaux and Sam are getting married!</p>
       </div>
       <div class="sun-disc-large" aria-hidden="true" transition:name="event-disc"></div>
     </section>
 
+    <div class="france-index-body" transition:name="france-index-body-content">
     <!-- Band: Programme of Events -->
     <div class="band-header">{t(strings.france.sections.programme)}</div>
     <section class="programme-section page-content">
@@ -109,7 +104,24 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <div class="details-row">
           <p class="details-label">{t(strings.france.where.mapLabel)}</p>
           <div class="details-value">
-            <a class="details-link" href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9" target="_blank">{t(strings.france.where.mapLink)}</a>
+            <div class="details-links">
+              <a
+                class="details-link"
+                href="https://maps.apple/p/dHL2e4qibM7MGE"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(strings.france.where.appleMapLink)}
+              </a>
+              <a
+                class="details-link"
+                href="https://maps.app.goo.gl/JHZfysCfNYZqmN4T9"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(strings.france.where.googleMapLink)}
+              </a>
+            </div>
           </div>
         </div>
         <hr class="timetable-rule">
@@ -130,35 +142,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       </div>
     </section>
 
-    <div class="band-header">{t(strings.france.calendar.heading)}</div>
-    <section class="calendar-prominent-section page-content">
-      <div class="calendar-prominent">
-        <div class="calendar-prominent-copy">
-          <p class="calendar-prominent-label">{t(strings.france.calendar.heading)}</p>
-          <p class="calendar-prominent-text">{t(strings.france.calendar.subtext)}</p>
-        </div>
-        <div class="calendar-prominent-actions">
-          {calendarToken ? (
-            <a
-              href={`webcal://sargaux.com/api/calendar/${calendarToken}.ics`}
-              class="calendar-btn-prominent"
-            >
-              {t(strings.france.calendar.addBtn)}
-            </a>
-          ) : (
-            <>
-              <button class="calendar-btn-prominent" disabled>
-                {t(strings.france.calendar.addBtn)}
-              </button>
-              <p class="calendar-prominent-note">{t(strings.france.calendar.unavailableNote)}</p>
-            </>
-          )}
-        </div>
-      </div>
-    </section>
-
     <!-- Band: Explore -->
-    <div class="band-header">{t(strings.france.nav.explore)}</div>
+    <div class="band-header">{t(strings.global.explore)}</div>
     <section class="nav-section">
       <nav class="strip-nav page-content" aria-label="Event sections">
         <a href="/france/schedule" class="strip-link">
@@ -181,6 +166,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="strip-desc">{t(strings.france.nav.couple.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
+        <a href="/france/lookbook" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.lookbook.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.lookbook.desc)}</span>
+          <span class="strip-arrow">→</span>
+        </a>
         <a href="/france/rsvp" class="strip-link strip-link--cta">
           <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
           <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
@@ -188,22 +178,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </a>
       </nav>
     </section>
+    </div>
 
   </main>
 
-  <footer class="site-footer">
-    <nav>
-      <a href="/registry">{t(strings.global.registry)}</a>
-      <span> · </span>
-      <span class="guest-name">{guest}</span>
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div class="footer-meta">
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} />
 </WireframeLayout>
 
 <style>
@@ -304,22 +283,22 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   }
 
   .event-item {
-    display: flex;
-    gap: var(--space-sm);
+    display: grid;
+    grid-template-columns: 12ch minmax(0, 1fr);
+    column-gap: var(--space-sm);
     align-items: baseline;
   }
 
   .event-time {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
-    min-width: 72px;
-    flex-shrink: 0;
   }
 
   .event-name {
     font-size: var(--font-size-body);
+    min-width: 0;
   }
 
   .timetable-rule {
@@ -343,7 +322,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     grid-template-columns: 112px 1fr;
     gap: var(--space-md);
     padding: 20px 0;
-    align-items: start;
+    align-items: center;
   }
 
   .details-label {
@@ -353,7 +332,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-transform: uppercase;
     letter-spacing: var(--tracking-heading);
     color: var(--color-text-muted);
-    padding-top: 3px;
   }
 
   .details-value {
@@ -385,84 +363,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-decoration: none;
   }
 
-  /* ── Calendar subscribe ── */
-  .calendar-prominent-section {
-    padding-top: var(--space-lg);
-    padding-bottom: var(--space-lg);
-  }
-
-  .calendar-prominent {
-    max-width: 640px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-lg);
-    align-items: end;
-  }
-
-  .calendar-prominent-copy {
-    max-width: 420px;
-  }
-
-  .calendar-prominent-label {
-    margin: 0 0 var(--space-xs);
-    font-family: var(--font-display);
-    font-size: var(--font-size-caption);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-heading);
-    color: var(--color-text-muted);
-  }
-
-  .calendar-prominent-text {
-    margin: 0;
-  }
-
-  .calendar-prominent-actions {
+  .details-links {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-xs);
-  }
-
-  .calendar-btn-prominent {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: 0 24px;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 0;
-    background: var(--color-accent);
-    color: var(--color-warm-cream);
-    font-family: var(--font-body);
-    font-size: var(--font-size-caption);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    text-decoration: none;
-    line-height: 1;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
-  .calendar-btn-prominent:hover {
-    color: var(--color-warm-cream);
-    opacity: 0.85;
-  }
-
-  .calendar-btn-prominent:disabled {
-    opacity: 0.42;
-    cursor: not-allowed;
-  }
-
-  .calendar-prominent-note {
-    margin: 0;
-    max-width: 280px;
-    font-size: var(--font-size-caption);
-    line-height: 1.6;
-    color: var(--color-text-muted);
+    flex-wrap: wrap;
+    gap: var(--space-sm);
   }
 
   /* ── Navigation strip ── */
@@ -512,15 +416,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     color: var(--color-accent);
   }
 
-  /* ── Footer ── */
-  .footer-meta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: var(--space-xs);
-  }
-
   /* ── Header nav button — fixed height prevents font-metric jumps between events ── */
   .rsvp-btn {
     height: 32px;
@@ -550,7 +445,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     }
 
     .programme-row {
-      grid-template-columns: 88px 1fr;
+      grid-template-columns: 104px 1fr;
     }
 
     .details-row {
@@ -569,22 +464,5 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       max-width: 100%;
     }
 
-    .calendar-prominent {
-      grid-template-columns: 1fr;
-      gap: var(--space-md);
-      align-items: start;
-    }
-
-    .calendar-prominent-actions {
-      align-items: stretch;
-    }
-
-    .calendar-btn-prominent {
-      width: 100%;
-    }
-
-    .calendar-prominent-note {
-      max-width: none;
-    }
   }
 </style>
