@@ -65,7 +65,7 @@ To set up a fresh Mac for development, run:
 ./scripts/setup.sh
 ```
 
-This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). The only prerequisite is a stock macOS install.
+This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). It also configures the user's shell for Homebrew and `nvm`, and offers to create `.env.local` for local Notion-backed flows. The only prerequisite is a stock macOS install.
 
 After setup, authenticate once:
 
@@ -321,9 +321,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_API_KEY` — Notion integration token. Store in:
   - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
   - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
-- `NOTION_GUEST_LIST_DB` — Notion **data source** ID (Notion API v2025-09-03 uses data sources, not database IDs)
-- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
-- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
+- `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
@@ -333,9 +333,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 The following secrets must be set in GitHub repository settings (Settings → Secrets and variables → Actions):
 
 - `NOTION_API_KEY` — Notion integration token
-- `NOTION_GUEST_LIST_DB` — Guest List data source ID
-- `NOTION_EVENT_CATALOG_DB` — Event Catalog data source ID
-- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses data source ID
+- `NOTION_GUEST_LIST_DB` — Guest List database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 
 These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
 
