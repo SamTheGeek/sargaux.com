@@ -453,9 +453,8 @@ const submittedAt = existingRSVP?.submittedAt
     padding-top: 20px;
     padding-bottom: 20px;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     gap: var(--space-md);
     text-align: center;
   }
@@ -464,7 +463,6 @@ const submittedAt = existingRSVP?.submittedAt
     display: flex;
     flex-direction: column;
     gap: 5px;
-    flex: 1;
   }
 
   .deadline-calendar {
@@ -827,12 +825,7 @@ const submittedAt = existingRSVP?.submittedAt
     .rsvp-deadline-inner {
       padding-top: var(--space-sm);
       padding-bottom: var(--space-sm);
-      flex-direction: column;
       gap: var(--space-sm);
-    }
-
-    .deadline-calendar {
-      width: 100%;
     }
 
     .guest-status {
