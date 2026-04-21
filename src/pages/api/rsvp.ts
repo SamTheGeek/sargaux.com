@@ -11,7 +11,7 @@ import { getAuthenticatedGuest } from '../../lib/auth';
 import { submitRSVP, getLatestRSVP, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
 import { isEnabled } from '../../config/features';
 import { sendToGuests } from '../../lib/email';
-import { rsvpConfirmation } from '../../lib/email-templates';
+import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
 import type { RSVPSubmission } from '../../types';
 
@@ -229,15 +229,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .map((g: any) => g.name)
           .join(', ');
 
-        // Fetch names of the specific events they're attending
-        let eventNames: string[] | undefined;
+        // Fetch events the guest is attending, split into core and optional
+        let coreEvents: EventInfo[] | undefined;
+        let optionalEvents: EventInfo[] | undefined;
         const attendingEventIds = new Set(body.eventsAttending ?? []);
         if (attendingEventIds.size > 0) {
           try {
             const allEvents = await getGuestEvents(guestId);
-            eventNames = allEvents
-              .filter((e) => attendingEventIds.has(e.id))
-              .map((e) => e.name);
+            const attended = allEvents.filter((e) => attendingEventIds.has(e.id));
+            coreEvents = attended
+              .filter((e) => e.type === 'Core')
+              .map((e): EventInfo => ({ name: e.name, time: e.time, location: e.location }));
+            optionalEvents = attended
+              .filter((e) => e.type === 'Optional')
+              .map((e): EventInfo => ({ name: e.name, time: e.time, location: e.location }));
           } catch (err) {
             console.error('Failed to fetch event names for confirmation email:', err);
           }
@@ -259,7 +264,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             event: body.event,
             attending,
             guestsAttending: guestsAttendingStr,
-            eventNames,
+            coreEvents,
+            optionalEvents,
             dietary: body.dietary,
             updateUrl,
             calendarUrl,
