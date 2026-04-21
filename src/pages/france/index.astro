@@ -42,7 +42,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     <div class="france-index-body" transition:name="france-index-body-content">
     <!-- Band: Programme of Events -->
-    <div class="band-header">Programme of Events</div>
+    <div class="band-header">{t(strings.france.sections.programme)}</div>
     <section class="programme-section page-content">
       <div class="programme-timetable">
         <div class="programme-row">
@@ -82,7 +82,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             </div>
             <div class="event-item">
               <span class="event-time">{t(strings.france.weekend.sunday.timeMidday)}</span>
-              <span class="event-name">All day brunch</span>
+              <span class="event-name">{t(strings.france.weekend.sunday.farewellBrunch)}</span>
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </section>
 
     <!-- Band: The Details -->
-    <div class="band-header">The Details</div>
+    <div class="band-header">{t(strings.france.sections.details)}</div>
     <section class="details-section page-content">
       <div class="details-table">
         <div class="details-row">
@@ -102,7 +102,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         </div>
         <hr class="timetable-rule">
         <div class="details-row">
-          <p class="details-label">Location</p>
+          <p class="details-label">{t(strings.france.where.mapLabel)}</p>
           <div class="details-value">
             <div class="details-links">
               <a

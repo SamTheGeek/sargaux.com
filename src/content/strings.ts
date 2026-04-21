@@ -486,6 +486,10 @@ export const strings = {
     heroTitle:     s('Village de\u00A0Sully', 'Village de\u00A0Sully'),
     heroDate:      s('28–30 May 2027', '28–30 mai 2027'),
     heroEventType: s('A Weekend Celebration', 'Un week-end de célébration'),
+    sections: {
+      programme: s('Programme of Events', 'Programme des événements'),
+      details:   s('The Details', 'Les détails'),
+    },
     when: {
       heading: s('When', 'Quand'),
       dates:   s('Friday, May 28 – Sunday, May 30, 2027', 'Vendredi 28 mai – Dimanche 30 mai 2027'),
