@@ -1,6 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-
-const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
+import { TEST_GUEST_NAME } from './fixtures';
 
 const weddingSiteEnabled = process.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED === 'true';
 

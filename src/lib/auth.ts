@@ -6,7 +6,8 @@
  * Otherwise, falls back to the hardcoded guest list (for local dev without keys).
  */
 
-import type { GuestRecord } from '../types/guest';
+import type { GuestRecord } from '../types';
+import { normalize } from './normalize';
 export type EventInvitation = 'nyc' | 'france';
 
 // Hardcoded fallback guest list for local dev without Notion keys
@@ -18,22 +19,6 @@ const AUTHORIZED_GUESTS = [
   'Nicolas Ancel',
   'Toni Waldman',
 ];
-
-/**
- * Normalize a string for comparison:
- * - Convert to lowercase
- * - Remove accent marks (é → e, etc.)
- * - Collapse multiple spaces to single space
- * - Trim leading/trailing whitespace
- */
-function normalize(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove combining diacritical marks
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 // Pre-normalize authorized guests for comparison
 const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map(normalize);

@@ -6,9 +6,8 @@
  */
 
 import { Client } from '@notionhq/client';
-import type { GuestRecord } from '../types/guest';
-import type { EventRecord } from '../types/event';
-import type { RSVPSubmission, RSVPResponse, RSVPDetails } from '../types/rsvp';
+import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails } from '../types';
+import { normalize } from './normalize';
 
 let notionClient: Client | null = null;
 
@@ -61,19 +60,6 @@ async function queryDatabase(
   }
 
   return response.json();
-}
-
-/**
- * Normalize a name for auth matching:
- * lowercase, remove accents, collapse whitespace.
- */
-function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 /**
@@ -182,7 +168,7 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
       guests.push({
         id: page.id,
         name: fullName,
-        normalizedName: normalizeName(fullName),
+        normalizedName: normalize(fullName),
         eventInvitations,
         isPlusOne,
         relatedGuestIds,
@@ -216,7 +202,7 @@ export function clearGuestCache(): void {
  * Falls back to fetchAllGuests() if the targeted query fails.
  */
 export async function findGuestByName(name: string): Promise<GuestRecord | null> {
-  const normalized = normalizeName(name);
+  const normalized = normalize(name);
 
   // Fast path: cache already warm
   if (guestCache) {
@@ -263,7 +249,7 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
         props['Name of Guest']?.title?.[0]?.plain_text ||
         '';
 
-      if (!fullName || normalizeName(fullName) !== normalized) continue;
+      if (!fullName || normalize(fullName) !== normalized) continue;
 
       const country = props['Country']?.select?.name || null;
       const isPlusOne = props['+1']?.checkbox === true;
@@ -289,7 +275,7 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
       return {
         id: page.id,
         name: fullName,
-        normalizedName: normalizeName(fullName),
+        normalizedName: normalize(fullName),
         eventInvitations,
         isPlusOne,
         relatedGuestIds,

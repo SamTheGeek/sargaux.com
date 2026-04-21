@@ -6,10 +6,8 @@ import { getAttendingNames, redactEmail } from '../../../lib/rsvp-display';
 import { strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
-import FranceCalendarCta from '../../../components/FranceCalendarCta.astro';
-import type { GuestRecord } from '../../../types/guest';
-import type { EventRecord } from '../../../types/event';
-import type { RSVPResponse } from '../../../types/rsvp';
+import CalendarCta from '../../../components/CalendarCta.astro';
+import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
@@ -175,7 +173,8 @@ function accommodationLabel(value?: string): string {
             </aside>
           )}
 
-          <FranceCalendarCta
+          <CalendarCta
+            event="france"
             token={calendarToken}
             label={t(strings.france.schedule.calendarBtn)}
             compact={true}
