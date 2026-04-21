@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const normalizedEmail = normalizeOptionalEmail(entry.email);
       if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
         const guestName = partyById.get(entry.guestId)?.name ?? entry.name ?? 'this guest';
-        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.` }), {
+        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.`, fieldGuestId: entry.guestId }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -207,6 +207,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const emailsToValidate = partyContacts.filter((guest) => guest.email);
   const mxResults = await Promise.all(
     emailsToValidate.map(async (guest) => ({
+      id: guest.id,
       name: guest.name,
       valid: await hasMxRecord(guest.email!),
     }))
@@ -214,7 +215,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const invalidMx = mxResults.find((r) => !r.valid);
   if (invalidMx) {
     return new Response(
-      JSON.stringify({ error: `Enter a valid email address for ${invalidMx.name}.` }),
+      JSON.stringify({ error: `Enter a valid email address for ${invalidMx.name}.`, fieldGuestId: invalidMx.id }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }

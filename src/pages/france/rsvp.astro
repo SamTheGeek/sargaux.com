@@ -889,6 +889,7 @@ main {
 
         if (!response.ok) {
           const data = await response.json().catch(() => null);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId);
           throw new Error(data?.error || defaultErrorMessage);
         }
 
