@@ -2,7 +2,7 @@
 import WireframeLayout from '../../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
 import { generateTokenIfPossible } from '../../../lib/calendar';
-import { getAttendingNames, getDisplayEventTime, redactEmail } from '../../../lib/rsvp-display';
+import { getAttendingNames, getDisplayEventTime, formatEventDate, redactEmail, sortEventsByDateTime } from '../../../lib/rsvp-display';
 import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { NYC_EVENT_TIME, strings } from '../../../content/strings';
@@ -56,6 +56,7 @@ if (isDevMock) {
       type: 'Core',
       wedding: 'nyc',
       time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
       location: 'Bar Blondeau',
       showOnWebsite: true,
     },
@@ -65,6 +66,7 @@ if (isDevMock) {
       type: 'Core',
       wedding: 'nyc',
       time: NYC_EVENT_TIME.en,
+      date: '2026-10-11',
       location: 'Wythe Hotel',
       showOnWebsite: true,
     },
@@ -96,8 +98,8 @@ if (isDevMock) {
   try {
     party = await getGuestParty(guestId);
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
-    coreEvents = events.filter((event) => event.type === 'Core');
-    optionalEvents = events.filter((event) => event.type === 'Optional');
+    coreEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Core'));
+    optionalEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Optional'));
     existingRSVP = await getLatestRSVP(guestId, 'nyc');
   } catch (error) {
     console.error('Failed to load NYC RSVP confirmation data:', error);
@@ -108,7 +110,6 @@ if (isDevMock) {
 const attendingNames = getAttendingNames(existingRSVP);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
-const nycEventTimeRange = t(strings.nyc.timeRange);
 const submittedAtISO = existingRSVP?.submittedAt ?? null;
 const submittedAtFallback = submittedAtISO
   ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
@@ -253,7 +254,7 @@ const submittedAtFallback = submittedAtISO
                     <div class="event-row-content">
                       <span class="event-row-name">{event.name}</span>
                       <span class="event-row-meta">
-                        {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                       </span>
                     </div>
                   </div>
@@ -276,7 +277,7 @@ const submittedAtFallback = submittedAtISO
                       <div class="event-row-content">
                         <span class="event-row-name">{event.name}</span>
                         <span class="event-row-meta">
-                          {[getDisplayEventTime(event, nycEventTimeRange), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                          {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                         </span>
                       </div>
                     </div>
