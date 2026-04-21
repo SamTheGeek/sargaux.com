@@ -505,7 +505,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   .rsvp-subtitle {
     font-size: 16px;
     letter-spacing: 0.05em;
-    color: rgba(23, 50, 11, 0.55);
+    color: var(--color-text-muted);
     margin: 0;
     text-transform: uppercase;
   }
@@ -653,7 +653,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
     display: flex;
     flex: 1;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 8px;
     min-width: 0;
   }
 
@@ -683,8 +683,8 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
-    width: 116px;      /* fixed: sized for "Not attending" so layout never shifts */
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 76px;
     text-align: right;
     flex-shrink: 0;
     font-feature-settings: "case" 1;
@@ -1091,10 +1091,6 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
       padding-bottom: var(--space-sm);
     }
 
-    .guest-status {
-      min-width: 0;
-      font-size: 10px;
-    }
   }
 
 </style>
