@@ -265,7 +265,7 @@ test.describe('RSVP Dynamic Forms', () => {
     expect(capturedPayload.sendConfirmation).toBe(true);
   });
 
-  test('NYC requires at least one group email when confirmation is requested', async ({ page }) => {
+  test('NYC requires at least one group email', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
 
     await page.locator('[data-testid="group-email-input"]').evaluateAll((inputs) => {
@@ -274,10 +274,31 @@ test.describe('RSVP Dynamic Forms', () => {
       }
     });
 
-    await page.locator('[data-testid="send-confirmation-checkbox"]').check({ force: true });
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('#form-error')).toContainText('Add at least one email address to receive a confirmation.');
+    await expect(page.locator('#form-error')).toContainText('At least one email address is required.');
     await expect(page).toHaveURL(/\/nyc\/rsvp$/);
+  });
+
+  test('NYC invalid email shows field-level error state and global error', async ({ page }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    await page.locator('[data-testid="group-email-input"]').first().fill('bad@notarealdomain.invalid');
+
+    await page.route('**/api/rsvp', async (route) => {
+      const payload = route.request().postDataJSON();
+      const fieldGuestId = payload?.guestEmails?.[0]?.guestId;
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Enter a valid email address for this guest.', fieldGuestId }),
+      });
+    });
+
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('#form-error')).toBeVisible();
+    await expect(page.locator('[data-testid="group-email-input"]').first()).toHaveClass(/has-error/);
+    await expect(page.locator('.group-email-row').first().locator('.group-email-error')).toBeVisible();
   });
 });
