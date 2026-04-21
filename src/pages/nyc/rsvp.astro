@@ -110,6 +110,8 @@ const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const nycEventTimeRange = t(strings.nyc.timeRange);
 const confirmationEmailRequired = t(strings.nyc.rsvp.form.email.requireOne);
+const confirmationEmailAllRequired = t(strings.nyc.rsvp.form.email.requireAll);
+const requireAllEmails = features.global.rsvpRequireAllEmails;
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -347,7 +349,6 @@ const submittedAtFallback = submittedAtISO
                 <div class="group-email-row">
                   <label for={`guest-email-${partyGuest.id}`} class="group-email-label">
                     <span class="group-email-name">{partyGuest.name}</span>
-                    <span class="optional-label">{t(strings.nyc.rsvp.form.email.optional)}</span>
                   </label>
                   <input
                     type="email"
@@ -360,6 +361,7 @@ const submittedAtFallback = submittedAtISO
                     data-guest-email-id={partyGuest.id}
                     data-guest-email-name={partyGuest.name}
                   />
+                  <p class="group-email-error" hidden></p>
                 </div>
               ))}
             </div>
@@ -865,19 +867,34 @@ const submittedAtFallback = submittedAtISO
 
   .confirmation-note {
     margin-top: 0;
-    margin-bottom: var(--space-md);
+    margin-bottom: 18px;
   }
 
   .group-email-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: 22px;
   }
 
   .group-email-row {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .group-email-input.has-error {
+    border-color: var(--color-error);
+  }
+
+  .group-email-error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 16px;
+    color: var(--color-error);
+    font-size: 12px;
+    line-height: 1;
+    margin: 0;
   }
 
   .group-email-label {
@@ -900,11 +917,6 @@ const submittedAtFallback = submittedAtISO
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
     font-feature-settings: "case" 1;
-  }
-
-  /* Hide "(optional)" once the guest opts in to a confirmation email */
-  .rsvp-section:has(#send-confirmation:checked) .optional-label {
-    display: none;
   }
 
   /* ── Feedback ──────────────────────────────── */
@@ -1111,7 +1123,7 @@ const submittedAtFallback = submittedAtISO
 
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -1153,6 +1165,8 @@ const submittedAtFallback = submittedAtISO
         errorMessage.hidden = true;
         errorMessage.textContent = defaultErrorMessage;
       }
+      form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
+      form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -1179,13 +1193,38 @@ const submittedAtFallback = submittedAtISO
         email: input.value?.trim() || undefined,
       }));
 
-      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
+      const markEmailError = (guestId, message = 'Required') => {
+        const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
+        if (!input) return;
+        input.classList.add('has-error');
+        const errorEl = input.parentElement?.querySelector('.group-email-error');
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.hidden = false;
+        }
+      };
+
+      if (guestEmails.every((guest) => !guest.email)) {
+        guestEmails.forEach((guest) => markEmailError(guest.guestId));
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         }
         return;
+      }
+
+      if (requireAllEmails) {
+        const missing = guestEmails.find((guest) => !guest.email);
+        if (missing) {
+          markEmailError(missing.guestId);
+          showError(confirmationEmailAllRequired);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
       }
 
       const payload = {
@@ -1210,6 +1249,7 @@ const submittedAtFallback = submittedAtISO
 
         if (!response.ok) {
           const data = await response.json().catch(() => null);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
           throw new Error(data?.error || defaultErrorMessage);
         }
 

@@ -6,6 +6,7 @@
  * DELETE /api/rsvp?event=nyc|france - Delete RSVP (for testing)
  */
 
+import { promises as dnsPromises } from 'node:dns';
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
 import { submitRSVP, getLatestRSVP, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
@@ -21,6 +22,17 @@ function normalizeOptionalEmail(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
+}
+
+async function hasMxRecord(email: string): Promise<boolean> {
+  try {
+    const domain = email.split('@')[1];
+    if (!domain) return false;
+    const records = await dnsPromises.resolveMx(domain);
+    return records.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -142,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const normalizedEmail = normalizeOptionalEmail(entry.email);
       if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
         const guestName = partyById.get(entry.guestId)?.name ?? entry.name ?? 'this guest';
-        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.` }), {
+        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.`, fieldGuestId: entry.guestId }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -172,13 +184,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       : normalizeOptionalEmail(partyGuest.email),
   }));
 
-  if (sendConfirmation && partyContacts.every((guest) => !guest.email)) {
+  // At least one email is always required
+  if (partyContacts.every((guest) => !guest.email)) {
     return new Response(
-      JSON.stringify({ error: 'Add at least one email address to receive a confirmation.' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: 'At least one email address is required.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // When requireAllEmails flag is on, every guest must have an email
+  if (isEnabled('global.rsvpRequireAllEmails')) {
+    const missing = partyContacts.find((guest) => !guest.email);
+    if (missing) {
+      return new Response(
+        JSON.stringify({ error: `An email address is required for ${missing.name}.` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // MX record check on all provided emails
+  const emailsToValidate = partyContacts.filter((guest) => guest.email);
+  const mxResults = await Promise.all(
+    emailsToValidate.map(async (guest) => ({
+      id: guest.id,
+      name: guest.name,
+      valid: await hasMxRecord(guest.email!),
+    }))
+  );
+  const invalidMx = mxResults.find((r) => !r.valid);
+  if (invalidMx) {
+    return new Response(
+      JSON.stringify({ error: `Enter a valid email address for ${invalidMx.name}.`, fieldGuestId: invalidMx.id }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 

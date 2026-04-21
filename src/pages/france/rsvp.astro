@@ -116,6 +116,8 @@ const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
+const confirmationEmailAllRequired = t(strings.france.rsvp.form.email.requireAll);
+const requireAllEmails = features.global.rsvpRequireAllEmails;
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -324,7 +326,6 @@ const submittedAtFallback = submittedAtISO
                 <div class="email-field group-email-row">
                   <label for={`guest-email-${partyGuest.id}`} class="section-note group-email-label">
                     <span class="group-email-name">{partyGuest.name}</span>
-                    <span class="optional-label">{t(strings.france.rsvp.form.email.optional)}</span>
                   </label>
                   <input
                     type="email"
@@ -337,6 +338,7 @@ const submittedAtFallback = submittedAtISO
                     data-guest-email-id={partyGuest.id}
                     data-guest-email-name={partyGuest.name}
                   />
+                  <p class="group-email-error" hidden></p>
                 </div>
               ))}
             </div>
@@ -661,16 +663,17 @@ main {
 
   .confirmation-note {
     margin-top: 0.75rem;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.4rem;
   }
 
   .group-email-list {
     display: grid;
-    gap: 0.85rem;
+    gap: 22px;
     margin-top: 0.35rem;
   }
 
   .group-email-row {
+    position: relative;
     margin-bottom: 0;
   }
 
@@ -688,6 +691,20 @@ main {
   .optional-label {
     color: var(--color-text-muted);
     font-size: 0.975rem;
+  }
+
+  .group-email-input.has-error {
+    border-color: var(--color-error);
+  }
+
+  .group-email-error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    color: var(--color-error);
+    font-size: 12px;
+    line-height: 1;
+    margin: 0;
   }
 
   .checkbox-label {
@@ -749,7 +766,7 @@ main {
   }
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -791,6 +808,8 @@ main {
         errorMessage.hidden = true;
         errorMessage.textContent = defaultErrorMessage;
       }
+      form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
+      form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -819,13 +838,38 @@ main {
         email: input.value?.trim() || undefined,
       }));
 
-      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
+      const markEmailError = (guestId, message = 'Required') => {
+        const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
+        if (!input) return;
+        input.classList.add('has-error');
+        const errorEl = input.parentElement?.querySelector('.group-email-error');
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.hidden = false;
+        }
+      };
+
+      if (guestEmails.every((guest) => !guest.email)) {
+        guestEmails.forEach((guest) => markEmailError(guest.guestId));
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         }
         return;
+      }
+
+      if (requireAllEmails) {
+        const missing = guestEmails.find((guest) => !guest.email);
+        if (missing) {
+          markEmailError(missing.guestId);
+          showError(confirmationEmailAllRequired);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
       }
 
       const payload = {
@@ -853,6 +897,7 @@ main {
 
         if (!response.ok) {
           const data = await response.json().catch(() => null);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
           throw new Error(data?.error || defaultErrorMessage);
         }
 
