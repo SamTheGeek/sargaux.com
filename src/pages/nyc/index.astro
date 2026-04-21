@@ -172,24 +172,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   /* ── Foundation ─────────────────────────────── */
 
   html[data-event="nyc"] {
-    /*
-      overflow: clip (not hidden) — clips without creating a scroll container.
-      overflow-x: hidden would implicitly set overflow-y: auto on body when
-      applied there, turning body into a scroll container and breaking
-      position: sticky on the header. clip has no such side effect.
-    */
-    overflow-x: clip;
+    overflow-x: clip; /* clip (not hidden) avoids implicit overflow-y:auto that breaks position:sticky */
   }
 
   html[data-event="nyc"] body {
     background: var(--color-warm-cream) !important;
     color: var(--color-dark-moss) !important;
-    /*
-      Restrict touch handling to vertical panning only.
-      overflow-x:clip alone does not prevent iOS Safari from allowing horizontal
-      momentum/rubber-band scroll when position:fixed elements are present.
-    */
-    touch-action: pan-y;
+    touch-action: pan-y; /* iOS Safari ignores overflow-x:clip for touch momentum scroll */
   }
 
   /* ── Header ─────────────────────────────────── */
