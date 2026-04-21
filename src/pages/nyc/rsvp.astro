@@ -412,7 +412,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
 
   .nyc-header {
     background: var(--color-warm-cream) !important;
-    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .nyc-header .site-logo,
@@ -423,7 +423,7 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   }
 
   .nyc-header .event-toggle a {
-    color: rgba(23, 50, 11, 0.4) !important;
+    color: var(--color-text-muted);
   }
 
   /* ── Discs — absolute within hero, right side, contained by overflow:hidden ── */
@@ -710,9 +710,10 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
   .toggle-slider {
     position: absolute;
     inset: 0;
-    background: rgba(23, 50, 11, 0.15);
+    background: var(--color-border);
+    opacity: 0.15;
     border-radius: 999px;
-    transition: background 0.2s;
+    transition: background 0.2s, opacity 0.2s;
   }
 
   .toggle-slider::before {
