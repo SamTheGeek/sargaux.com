@@ -361,7 +361,7 @@ const submittedAtFallback = submittedAtISO
                     data-guest-email-id={partyGuest.id}
                     data-guest-email-name={partyGuest.name}
                   />
-                  <p class="group-email-error" hidden>Required</p>
+                  <p class="group-email-error" hidden></p>
                 </div>
               ))}
             </div>
@@ -867,16 +867,17 @@ const submittedAtFallback = submittedAtISO
 
   .confirmation-note {
     margin-top: 0;
-    margin-bottom: var(--space-md);
+    margin-bottom: 18px;
   }
 
   .group-email-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: 22px;
   }
 
   .group-email-row {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -887,8 +888,12 @@ const submittedAtFallback = submittedAtISO
   }
 
   .group-email-error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
     color: var(--color-error);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1;
     margin: 0;
   }
 
@@ -1188,12 +1193,15 @@ const submittedAtFallback = submittedAtISO
         email: input.value?.trim() || undefined,
       }));
 
-      const markEmailError = (guestId) => {
+      const markEmailError = (guestId, message = 'Required') => {
         const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
         if (!input) return;
         input.classList.add('has-error');
         const errorEl = input.parentElement?.querySelector('.group-email-error');
-        if (errorEl) errorEl.hidden = false;
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.hidden = false;
+        }
       };
 
       if (guestEmails.every((guest) => !guest.email)) {
@@ -1241,7 +1249,7 @@ const submittedAtFallback = submittedAtISO
 
         if (!response.ok) {
           const data = await response.json().catch(() => null);
-          if (data?.fieldGuestId) markEmailError(data.fieldGuestId);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
           throw new Error(data?.error || defaultErrorMessage);
         }
 

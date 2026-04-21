@@ -338,7 +338,7 @@ const submittedAtFallback = submittedAtISO
                     data-guest-email-id={partyGuest.id}
                     data-guest-email-name={partyGuest.name}
                   />
-                  <p class="group-email-error" hidden>Required</p>
+                  <p class="group-email-error" hidden></p>
                 </div>
               ))}
             </div>
@@ -663,16 +663,17 @@ main {
 
   .confirmation-note {
     margin-top: 0.75rem;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.4rem;
   }
 
   .group-email-list {
     display: grid;
-    gap: 0.85rem;
+    gap: 22px;
     margin-top: 0.35rem;
   }
 
   .group-email-row {
+    position: relative;
     margin-bottom: 0;
   }
 
@@ -697,8 +698,12 @@ main {
   }
 
   .group-email-error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
     color: var(--color-error);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1;
     margin: 0;
   }
 
@@ -833,12 +838,15 @@ main {
         email: input.value?.trim() || undefined,
       }));
 
-      const markEmailError = (guestId) => {
+      const markEmailError = (guestId, message = 'Required') => {
         const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
         if (!input) return;
         input.classList.add('has-error');
         const errorEl = input.parentElement?.querySelector('.group-email-error');
-        if (errorEl) errorEl.hidden = false;
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.hidden = false;
+        }
       };
 
       if (guestEmails.every((guest) => !guest.email)) {
@@ -889,7 +897,7 @@ main {
 
         if (!response.ok) {
           const data = await response.json().catch(() => null);
-          if (data?.fieldGuestId) markEmailError(data.fieldGuestId);
+          if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
           throw new Error(data?.error || defaultErrorMessage);
         }
 
