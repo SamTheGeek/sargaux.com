@@ -108,13 +108,13 @@ const attendingNames = getAttendingNames(existingRSVP);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const details = existingRSVP?.details ?? {};
 const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
-const submittedAt = existingRSVP?.submittedAt
-  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+      timeZone: 'Europe/Paris',
     })
   : null;
 
@@ -147,7 +147,7 @@ function accommodationLabel(value?: string): string {
       <p class="subtitle">{t(strings.france.rsvp.confirmation.subtitle)}</p>
 
       <div class="deadline-banner">
-        <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong>{submittedAt}</strong>.</p>
+        <p>{t(strings.france.rsvp.confirmation.savedLabel)} <strong><time datetime={submittedAtISO ?? ''} data-local-timestamp>{submittedAtFallback}</time></strong>.</p>
       </div>
 
       {!guestId && !isDevMock ? (
@@ -310,6 +310,21 @@ function accommodationLabel(value?: string): string {
     </div>
   </footer>
 </WireframeLayout>
+
+<script is:inline>
+  document.querySelectorAll('[data-local-timestamp]').forEach(function(el) {
+    var lang = document.documentElement.lang || 'en';
+    var locale = lang === 'fr' ? 'fr-FR' : 'en-US';
+    var dt = new Date(el.getAttribute('datetime'));
+    el.textContent = dt.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  });
+</script>
 
 <style>
   header {
