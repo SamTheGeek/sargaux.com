@@ -338,6 +338,7 @@ const submittedAtFallback = submittedAtISO
                     data-guest-email-id={partyGuest.id}
                     data-guest-email-name={partyGuest.name}
                   />
+                  <p class="group-email-error" hidden>Required</p>
                 </div>
               ))}
             </div>
@@ -691,6 +692,16 @@ main {
     font-size: 0.975rem;
   }
 
+  .group-email-input.has-error {
+    border-color: var(--color-error);
+  }
+
+  .group-email-error {
+    color: var(--color-error);
+    font-size: 13px;
+    margin: 0;
+  }
+
   .checkbox-label {
     display: flex;
     align-items: center;
@@ -792,6 +803,8 @@ main {
         errorMessage.hidden = true;
         errorMessage.textContent = defaultErrorMessage;
       }
+      form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
+      form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -820,7 +833,16 @@ main {
         email: input.value?.trim() || undefined,
       }));
 
+      const markEmailError = (guestId) => {
+        const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
+        if (!input) return;
+        input.classList.add('has-error');
+        const errorEl = input.parentElement?.querySelector('.group-email-error');
+        if (errorEl) errorEl.hidden = false;
+      };
+
       if (guestEmails.every((guest) => !guest.email)) {
+        guestEmails.forEach((guest) => markEmailError(guest.guestId));
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
@@ -832,6 +854,7 @@ main {
       if (requireAllEmails) {
         const missing = guestEmails.find((guest) => !guest.email);
         if (missing) {
+          markEmailError(missing.guestId);
           showError(confirmationEmailAllRequired);
           if (submitButton) {
             submitButton.disabled = false;
