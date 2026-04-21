@@ -370,7 +370,7 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
       const description = props['Description']?.rich_text?.[0]?.plain_text || undefined;
 
       // Date (date property — YYYY-MM-DD)
-      const date: string | undefined = props['Date']?.date?.start ?? undefined;
+      const date: string | undefined = props['Event Date']?.date?.start ?? undefined;
 
       // Day (relation to Wedding Timeline)
       const dayId = props['Day']?.relation?.[0]?.id || undefined;
@@ -445,7 +445,7 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
     const type = typeProp === 'Optional' ? 'Optional' : 'Core';
 
     const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
-    const date: string | undefined = eventProps['Date']?.date?.start ?? undefined;
+    const date: string | undefined = eventProps['Event Date']?.date?.start ?? undefined;
     const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
     const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
     const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
