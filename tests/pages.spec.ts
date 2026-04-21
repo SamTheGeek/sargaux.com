@@ -341,7 +341,59 @@ test.describe('Lookbook pages — disc-as-O heading', () => {
   });
 });
 
-// ── 5. Couple page — scattered gallery ────────────────────────────────────────
+// ── 5. NYC mobile layout — no horizontal scroll, sticky header ───────────────
+
+test.describe('NYC mobile layout', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for NYC mobile layout tests');
+  test.describe.configure({ mode: 'serial' });
+
+  let context: BrowserContext;
+  let page: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext({ viewport: { width: 375, height: 812 } });
+    page = await context.newPage();
+    await login(page);
+    await page.goto('/nyc');
+  });
+
+  test.afterAll(async () => {
+    await context.close();
+  });
+
+  test('html has overflow-x:clip to block horizontal scroll', async () => {
+    // The skyline intentionally bleeds 5px on each side (width: calc(100% + 10px)),
+    // so scrollWidth > clientWidth by design. The fix is overflow-x:clip on <html>
+    // (clips without creating a scroll container, preserving position:sticky) plus
+    // touch-action:pan-y on body (blocks horizontal touch gestures on iOS Safari).
+    const overflowX = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).overflowX
+    );
+    expect(overflowX).toBe('clip');
+  });
+
+  test('body has touch-action:pan-y to block horizontal touch gestures', async () => {
+    const touchAction = await page.evaluate(() =>
+      getComputedStyle(document.body).touchAction
+    );
+    expect(touchAction).toBe('pan-y');
+  });
+
+  test('header remains at top of viewport after scrolling', async () => {
+    // Scroll well past the fixed hero text into the skyline section
+    await page.evaluate(() => window.scrollTo(0, 400));
+    await page.waitForTimeout(100); // let scroll settle
+
+    const headerTop = await page.locator('.site-header').evaluate(
+      (el) => el.getBoundingClientRect().top
+    );
+    // Allow a few pixels for border/subpixel rendering
+    expect(headerTop).toBeGreaterThanOrEqual(-2);
+    expect(headerTop).toBeLessThanOrEqual(2);
+  });
+});
+
+// ── 6. Couple page — scattered gallery ────────────────────────────────────────
 
 test.describe('Couple page — scattered gallery', () => {
   test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for couple page tests');
