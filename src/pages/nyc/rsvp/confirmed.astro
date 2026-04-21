@@ -8,10 +8,8 @@ import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { NYC_EVENT_TIME, strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
-import NycCalendarCta from '../../../components/NycCalendarCta.astro';
-import type { GuestRecord } from '../../../types/guest';
-import type { EventRecord } from '../../../types/event';
-import type { RSVPResponse } from '../../../types/rsvp';
+import CalendarCta from '../../../components/CalendarCta.astro';
+import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
@@ -196,7 +194,8 @@ const submittedAt = existingRSVP?.submittedAt
         )}
 
         <section class="rsvp-section page-content confirmation-calendar-section">
-          <NycCalendarCta
+          <CalendarCta
+            event="nyc"
             token={calendarToken}
             label={t(strings.nyc.calendar.addBtn)}
             compact={true}

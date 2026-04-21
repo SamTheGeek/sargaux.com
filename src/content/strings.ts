@@ -152,7 +152,7 @@ export const strings = {
       },
       lookbook: {
         title: s('Lookbook', 'Lookbook'),
-        desc:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+        desc:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
       },
       rsvp: {
         title: s('RSVP', 'RSVP'),
@@ -394,7 +394,7 @@ export const strings = {
     lookbook: {
       pageTitle: s('NYC Lookbook', 'Lookbook New York'),
       heading:   s('Lookbook', 'Lookbook'),
-      subtitle:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+      subtitle:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
     },
 
     // /nyc/rsvp
@@ -560,7 +560,7 @@ export const strings = {
       },
       lookbook: {
         title: s('Lookbook', 'Lookbook'),
-        desc:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+        desc:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
       },
       rsvp: {
         title: s('RSVP', 'RSVP'),
@@ -572,7 +572,7 @@ export const strings = {
     lookbook: {
       pageTitle: s('France Lookbook', 'Lookbook France'),
       heading:   s('Lookbook', 'Lookbook'),
-      subtitle:  s('outfit inspiration & ideas', 'inspiration tenues & idées'),
+      subtitle:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
     },
 
     // /france/schedule
