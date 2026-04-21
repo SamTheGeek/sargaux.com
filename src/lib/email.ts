@@ -24,8 +24,14 @@ function getClient(): Resend {
   return resendClient;
 }
 
-const FROM = () =>
-  process.env.RESEND_FROM_ADDRESS ?? 'Sam Gross <sam@mail.sargaux.com>';
+const FROM = () => {
+  const env = process.env.RESEND_FROM_ADDRESS;
+  if (!env) return 'Margaux Ancel & Sam Gross <hello@mail.sargaux.com>';
+  // If env var already contains a display name, use as-is; otherwise wrap it
+  return env.includes('<') ? env : `Margaux Ancel & Sam Gross <${env}>`;
+};
+
+const REPLY_TO = 'hello@sargaux.com';
 
 export interface EmailPayload {
   to: string | string[];
@@ -36,7 +42,7 @@ export interface EmailPayload {
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   const client = getClient();
-  const { error } = await client.emails.send({ from: FROM(), ...payload });
+  const { error } = await client.emails.send({ from: FROM(), replyTo: REPLY_TO, ...payload });
   if (error) throw new Error(`Resend error: ${(error as { message?: string }).message ?? String(error)}`);
 }
 
