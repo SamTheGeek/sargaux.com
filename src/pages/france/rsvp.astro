@@ -148,6 +148,15 @@ function formatSubmittedAt(dateString: string, locale: string): string {
 }
 
 const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRSVP.submittedAt, lang) : null;
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'Europe/Paris',
+    })
+  : null;
 ---
 
 <WireframeLayout title={t(strings.france.rsvp.pageTitle)} event="france">
@@ -334,9 +343,9 @@ const lastSubmittedAt = existingRSVP?.submittedAt ? formatSubmittedAt(existingRS
             </div>
           </section>
 
-          {existingRSVP && lastSubmittedAt && (
+          {existingRSVP && submittedAtFallback && (
             <p class="last-submitted-note">
-              {t(strings.france.rsvp.form.lastSubmittedLabel)} <strong>{lastSubmittedAt}</strong>
+              {t(strings.france.rsvp.form.lastSubmittedLabel)} <strong><time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time></strong>
             </p>
           )}
           <button type="submit" class="submit-btn">{existingRSVP ? t(strings.france.rsvp.form.updateBtn) : t(strings.france.rsvp.form.submitBtn)}</button>
