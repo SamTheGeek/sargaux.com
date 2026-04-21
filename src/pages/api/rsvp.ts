@@ -13,7 +13,7 @@ import { isEnabled } from '../../config/features';
 import { sendToGuests } from '../../lib/email';
 import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
-import type { RSVPSubmission } from '../../types/rsvp';
+import type { RSVPSubmission } from '../../types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 

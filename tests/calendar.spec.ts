@@ -14,9 +14,9 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { TEST_GUEST_NAME } from './fixtures';
 
 const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
-const TEST_GUEST_NAME = 'Sam Gross'; // Must exist in Notion Guest List
 
 const notionEnabled =
   process.env.FEATURE_GLOBAL_NOTION_BACKEND === 'true' &&
