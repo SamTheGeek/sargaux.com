@@ -149,10 +149,24 @@ const submittedAt = existingRSVP?.submittedAt
 
     <div class="rsvp-deadline-band">
       <div class="page-content rsvp-deadline-inner">
-        <span class="deadline-label">
-          {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
-        </span>
-        <strong class="deadline-date">{existingRSVP ? submittedAt : t(strings.nyc.rsvp.deadlineDate)}</strong>
+        <div class="deadline-info">
+          <span class="deadline-label">
+            {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
+          </span>
+          <strong class="deadline-date">{existingRSVP ? submittedAt : t(strings.nyc.rsvp.deadlineDate)}</strong>
+        </div>
+        {existingRSVP && (
+          <div class="deadline-calendar">
+            <CalendarCta
+              event="nyc"
+              token={calendarToken}
+              label={t(strings.nyc.calendar.addBtn)}
+              compact={true}
+              showNote={false}
+              testId="calendar-confirmation-link"
+            />
+          </div>
+        )}
       </div>
     </div>
 
@@ -192,17 +206,6 @@ const submittedAt = existingRSVP?.submittedAt
             </aside>
           </div>
         )}
-
-        <section class="rsvp-section page-content confirmation-calendar-section">
-          <CalendarCta
-            event="nyc"
-            token={calendarToken}
-            label={t(strings.nyc.calendar.addBtn)}
-            compact={true}
-            showNote={false}
-            testId="calendar-confirmation-link"
-          />
-        </section>
 
         <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
         <section class="rsvp-section page-content">
@@ -347,7 +350,7 @@ const submittedAt = existingRSVP?.submittedAt
 
   .nyc-header {
     background: var(--color-warm-cream) !important;
-    border-bottom: 1px solid rgba(23, 50, 11, 0.18) !important;
+    border-bottom: 1px solid var(--color-border) !important;
   }
 
   .nyc-header .site-logo,
@@ -358,7 +361,7 @@ const submittedAt = existingRSVP?.submittedAt
   }
 
   .nyc-header .event-toggle a {
-    color: rgba(23, 50, 11, 0.4) !important;
+    color: var(--color-text-muted) !important;
   }
 
   .rsvp-disc-m {
@@ -450,10 +453,22 @@ const submittedAt = existingRSVP?.submittedAt
     padding-top: 20px;
     padding-bottom: 20px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 5px;
+    justify-content: space-between;
+    gap: var(--space-md);
     text-align: center;
+  }
+
+  .deadline-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+  }
+
+  .deadline-calendar {
+    white-space: nowrap;
   }
 
   .deadline-label {
@@ -544,11 +559,6 @@ const submittedAt = existingRSVP?.submittedAt
   .placeholder-note {
     font-size: 16px;
     color: var(--color-text-muted);
-  }
-
-  .confirmation-calendar-section {
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
   }
 
   .guest-list,
@@ -748,7 +758,7 @@ const submittedAt = existingRSVP?.submittedAt
     }
 
     .nyc-header .event-toggle a {
-      color: rgba(255, 249, 240, 0.45) !important;
+      color: var(--color-text-muted) !important;
     }
 
     .rsvp-hero h1,
@@ -758,6 +768,17 @@ const submittedAt = existingRSVP?.submittedAt
     .rsvp-back:hover {
       color: var(--color-warm-cream);
       -webkit-text-fill-color: var(--color-warm-cream);
+    }
+
+    .rsvp-deadline-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+    }
+
+    .rsvp-band {
+      background: var(--color-dark-moss) !important;
+      color: rgba(255, 249, 240, 0.4) !important;
+      border-top-color: rgba(255, 249, 240, 0.06) !important;
     }
 
     .rsvp-section,
@@ -806,6 +827,12 @@ const submittedAt = existingRSVP?.submittedAt
     .rsvp-deadline-inner {
       padding-top: var(--space-sm);
       padding-bottom: var(--space-sm);
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .deadline-calendar {
+      width: 100%;
     }
 
     .guest-status {
