@@ -116,6 +116,8 @@ const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
+const confirmationEmailAllRequired = t(strings.france.rsvp.form.email.requireAll);
+const requireAllEmails = features.global.rsvpRequireAllEmails;
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -324,7 +326,6 @@ const submittedAtFallback = submittedAtISO
                 <div class="email-field group-email-row">
                   <label for={`guest-email-${partyGuest.id}`} class="section-note group-email-label">
                     <span class="group-email-name">{partyGuest.name}</span>
-                    <span class="optional-label">{t(strings.france.rsvp.form.email.optional)}</span>
                   </label>
                   <input
                     type="email"
@@ -749,7 +750,7 @@ main {
   }
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -819,13 +820,25 @@ main {
         email: input.value?.trim() || undefined,
       }));
 
-      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
+      if (guestEmails.every((guest) => !guest.email)) {
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         }
         return;
+      }
+
+      if (requireAllEmails) {
+        const missing = guestEmails.find((guest) => !guest.email);
+        if (missing) {
+          showError(confirmationEmailAllRequired);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
       }
 
       const payload = {

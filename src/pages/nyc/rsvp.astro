@@ -110,6 +110,8 @@ const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const nycEventTimeRange = t(strings.nyc.timeRange);
 const confirmationEmailRequired = t(strings.nyc.rsvp.form.email.requireOne);
+const confirmationEmailAllRequired = t(strings.nyc.rsvp.form.email.requireAll);
+const requireAllEmails = features.global.rsvpRequireAllEmails;
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -347,7 +349,6 @@ const submittedAtFallback = submittedAtISO
                 <div class="group-email-row">
                   <label for={`guest-email-${partyGuest.id}`} class="group-email-label">
                     <span class="group-email-name">{partyGuest.name}</span>
-                    <span class="optional-label">{t(strings.nyc.rsvp.form.email.optional)}</span>
                   </label>
                   <input
                     type="email"
@@ -902,11 +903,6 @@ const submittedAtFallback = submittedAtISO
     font-feature-settings: "case" 1;
   }
 
-  /* Hide "(optional)" once the guest opts in to a confirmation email */
-  .rsvp-section:has(#send-confirmation:checked) .optional-label {
-    display: none;
-  }
-
   /* ── Feedback ──────────────────────────────── */
 
   .feedback {
@@ -1111,7 +1107,7 @@ const submittedAtFallback = submittedAtISO
 
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, isLocalDev: import.meta.env.DEV }}>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -1179,13 +1175,25 @@ const submittedAtFallback = submittedAtISO
         email: input.value?.trim() || undefined,
       }));
 
-      if (sendConfirmationCheckbox?.checked && guestEmails.every((guest) => !guest.email)) {
+      if (guestEmails.every((guest) => !guest.email)) {
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         }
         return;
+      }
+
+      if (requireAllEmails) {
+        const missing = guestEmails.find((guest) => !guest.email);
+        if (missing) {
+          showError(confirmationEmailAllRequired);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
       }
 
       const payload = {
