@@ -42,7 +42,7 @@ export interface EmailPayload {
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   const client = getClient();
-  const { error } = await client.emails.send({ from: FROM(), reply_to: REPLY_TO, ...payload });
+  const { error } = await client.emails.send({ from: FROM(), replyTo: REPLY_TO, ...payload });
   if (error) throw new Error(`Resend error: ${(error as { message?: string }).message ?? String(error)}`);
 }
 
