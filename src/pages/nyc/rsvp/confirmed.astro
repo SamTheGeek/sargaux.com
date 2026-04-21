@@ -109,13 +109,13 @@ const attendingNames = getAttendingNames(existingRSVP);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const calendarToken = existingRSVP ? generateTokenIfPossible(guestId) : null;
 const nycEventTimeRange = t(strings.nyc.timeRange);
-const submittedAt = existingRSVP?.submittedAt
-  ? new Date(existingRSVP.submittedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+const submittedAtISO = existingRSVP?.submittedAt ?? null;
+const submittedAtFallback = submittedAtISO
+  ? new Date(submittedAtISO).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+      timeZone: 'America/New_York',
     })
   : null;
 ---
@@ -152,7 +152,12 @@ const submittedAt = existingRSVP?.submittedAt
         <span class="deadline-label">
           {existingRSVP ? t(strings.nyc.rsvp.confirmation.savedLabel) : t(strings.nyc.rsvp.deadline)}
         </span>
-        <strong class="deadline-date">{existingRSVP ? submittedAt : t(strings.nyc.rsvp.deadlineDate)}</strong>
+        <strong class="deadline-date">
+          {existingRSVP
+            ? <time datetime={submittedAtISO!} data-local-timestamp>{submittedAtFallback}</time>
+            : t(strings.nyc.rsvp.deadlineDate)
+          }
+        </strong>
       </div>
     </div>
 
@@ -337,6 +342,21 @@ const submittedAt = existingRSVP?.submittedAt
     </div>
   </footer>
 </WireframeLayout>
+
+<script is:inline>
+  document.querySelectorAll('[data-local-timestamp]').forEach(function(el) {
+    var lang = document.documentElement.lang || 'en';
+    var locale = lang === 'fr' ? 'fr-FR' : 'en-US';
+    var dt = new Date(el.getAttribute('datetime'));
+    el.textContent = dt.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  });
+</script>
 
 <style is:global>
   .rsvp-page {
