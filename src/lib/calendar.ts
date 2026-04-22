@@ -100,6 +100,19 @@ export function verifyToken(token: string): string | null {
 }
 
 /**
+ * Parse a duration string like "3h", "90m", or "2h30m" into total minutes.
+ * Returns undefined if the string is empty or cannot be parsed.
+ */
+export function parseDuration(duration: string): number | undefined {
+  const match = duration.trim().match(/^(?:(\d+)h)?(?:(\d+)m)?$/);
+  if (!match) return undefined;
+  const hours = parseInt(match[1] ?? '0', 10);
+  const minutes = parseInt(match[2] ?? '0', 10);
+  const total = hours * 60 + minutes;
+  return total > 0 ? total : undefined;
+}
+
+/**
  * Parse a time string like "6:00 PM" or "14:00" into { hour, minute }.
  * Returns undefined if the string cannot be parsed.
  */
@@ -205,15 +218,18 @@ export function buildICS(events: EventWithDate[]): string {
       let dtstart: string;
       let dtend: string;
 
-      const parsed = event.time ? parseTime(event.time) : undefined;
+      const parsed = event.startTime ? parseTime(event.startTime) : undefined;
       if (parsed) {
         const [year, month, day] = event.date.split('-').map(Number);
         const pad = (n: number) => String(n).padStart(2, '0');
         const localStr = `${year}${pad(month)}${pad(day)}T${pad(parsed.hour)}${pad(parsed.minute)}00`;
-        // Cap at 23:59 to avoid overflow; treat midnight-crossing events as 2h duration capped at end of day
-        const endMinutes = parsed.hour * 60 + parsed.minute + 120;
+        // Use explicit duration if provided, otherwise fall back to 2h default
+        const durationMinutes =
+          (event.duration ? parseDuration(event.duration) : undefined) ?? 120;
+        // Cap at 23:59 to avoid overflow on midnight-crossing events
+        const endMinutes = parsed.hour * 60 + parsed.minute + durationMinutes;
         const endH = Math.min(Math.floor(endMinutes / 60), 23);
-        const endM = endH < 23 ? parsed.minute : 59;
+        const endM = endH < 23 ? Math.floor(endMinutes % 60) : 59;
         const endStr = `${year}${pad(month)}${pad(day)}T${pad(endH)}${pad(endM)}00`;
         dtstart = `DTSTART;TZID=${timezone}:${localStr}`;
         dtend = `DTEND;TZID=${timezone}:${endStr}`;
