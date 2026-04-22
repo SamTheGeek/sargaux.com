@@ -360,8 +360,14 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
       const typeProp = props['Event Type']?.select?.name;
       const type = typeProp === 'Optional' ? 'Optional' : 'Core';
 
-      // Time (text)
+      // Time (text) — display only
       const time = props['Time']?.rich_text?.[0]?.plain_text || undefined;
+
+      // Start Time (text) — authoritative for ICS calendar
+      const startTime = props['Start Time']?.rich_text?.[0]?.plain_text || undefined;
+
+      // Duration (text) — e.g. "3h", "2h30m", "90m"
+      const duration = props['Duration']?.rich_text?.[0]?.plain_text || undefined;
 
       // Location (text)
       const location = props['Location']?.rich_text?.[0]?.plain_text || undefined;
@@ -384,6 +390,8 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
         type,
         wedding,
         time,
+        startTime,
+        duration,
         date,
         location,
         description,
@@ -445,6 +453,8 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
     const type = typeProp === 'Optional' ? 'Optional' : 'Core';
 
     const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
+    const startTime = eventProps['Start Time']?.rich_text?.[0]?.plain_text || undefined;
+    const duration = eventProps['Duration']?.rich_text?.[0]?.plain_text || undefined;
     const date: string | undefined = eventProps['Event Date']?.date?.start ?? undefined;
     const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
     const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
@@ -457,6 +467,8 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
       type,
       wedding,
       time,
+      startTime,
+      duration,
       date,
       location,
       description,
