@@ -512,8 +512,8 @@ const loginDelay = features.dev.loginDelay;
       const activateInlineForm = () => {
         if (isSubmitting) return;
         entryControl.classList.add('is-active');
+        nameInput.focus();
         requestAnimationFrame(() => {
-          nameInput.focus();
           const length = nameInput.value.length ?? 0;
           nameInput.setSelectionRange(length, length);
         });
