@@ -118,6 +118,8 @@ const t = createTranslator(lang);
 const confirmationEmailRequired = t(strings.france.rsvp.form.email.requireOne);
 const confirmationEmailAllRequired = t(strings.france.rsvp.form.email.requireAll);
 const requireAllEmails = features.global.rsvpRequireAllEmails;
+const attendingLabel = t(strings.global.attending);
+const notAttendingLabel = t(strings.global.notAttending);
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -766,7 +768,7 @@ main {
   }
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, isLocalDev: import.meta.env.DEV }}>
+<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, attendingLabel, notAttendingLabel, isLocalDev: import.meta.env.DEV }}>
   const form = document.getElementById('rsvp-form');
 
   if (form) {
@@ -785,7 +787,7 @@ main {
       const checkbox = row.querySelector('.guest-attending');
       const status = row.querySelector('.guest-status');
       if (status && checkbox) {
-        status.textContent = checkbox.checked ? 'Attending' : 'Not attending';
+        status.textContent = checkbox.checked ? attendingLabel : notAttendingLabel;
       }
     };
 

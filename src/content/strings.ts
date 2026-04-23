@@ -27,7 +27,7 @@ function s(en: string, fr: string): T {
 /** RSVP deadline dates — single source of truth for each event */
 export const RSVP_DEADLINE_NYC    = { en: 'September 1, 2026',  fr: '1er septembre 2026' } satisfies T;
 export const RSVP_DEADLINE_FRANCE = { en: 'April 15, 2027',     fr: '15 avril 2027'      } satisfies T;
-export const NYC_EVENT_TIME       = { en: '5:30 PM - 9 PM',     fr: '17h30 - 21h00'      } satisfies T;
+export const NYC_EVENT_TIME       = { en: '5:30 PM — 9 PM',     fr: '17h30 — 21h00'      } satisfies T;
 
 export const strings = {
   // ─────────────────────────────────────────
@@ -75,6 +75,7 @@ export const strings = {
       namePlaceholder: s('Your name', 'Votre prénom et nom'),
       submitBtn:    s('Continuer', 'Continuer'),
       checkingBtn:  s('Checking', 'Vérification'),
+      submitAriaLabel: s('Submit name', 'Envoyer le nom'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
     },
@@ -191,7 +192,7 @@ export const strings = {
         dinner: {
           title:          s('Dinner', 'Dîner'),
           name:           s('Bar Blondeau at the Wythe Hotel', 'Bar Blondeau au Wythe Hotel'),
-          address:        s('80 Wythe Ave, 6th Floor · Brooklyn, New York 11249', '80 Wythe Ave, 6e étage · Brooklyn, New York 11249'),
+          address:        s('80 Wythe Ave, 6th Floor · Brooklyn, NY', '80 Wythe Ave, 6e étage · Brooklyn, NY'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
         dancing: {
@@ -257,7 +258,7 @@ export const strings = {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
           heading:        s('By Subway', 'En métro'),
-          intro:          s('Take the L train to Bedford Avenue - a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue - à 5 minutes à pied du lieu."),
+          intro:          s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue — à 5 minutes à pied du lieu."),
           fareBeforeLink: s('Single ride: $3 (set up ', "Trajet simple : 3 $ (configurez "),
           fareLinkText:   s('Express Transit', 'Transit express'),
           fareAfterLink:  s(' on your phone ahead of time)', " sur votre téléphone à l'avance)"),
@@ -269,14 +270,14 @@ export const strings = {
         },
         car: {
           heading: s('By Car', 'En voiture'),
-          text:    s('Parking is available one block away at 25 Kent.', "Un parking est disponible à un pâté de maisons au 25 Kent Ave."),
+          text:    s('Parking is available one block away at 25 Kent parking garage.', "Un parking est disponible à un pâté de maisons au 25 Kent Ave."),
         },
       },
       whileHere: {
         heading: s("While You're Here", 'À ne pas manquer'),
         upperEastSide: {
           heading:    s('Museum Mile & Central Park', 'Museum Mile et Central Park'),
-          body:       s("Start with a visit to the newly renovated Frick Collection - reserve tickets in advance, and if you're lucky, snag a lunch reservation in the dining room. Afterward, take a leisurely walk through Central Park. For drinks, head to Bemelmans Bar in The Carlyle for one of the most iconic bar experiences in the city.", "Commencez par une visite de la Frick Collection, tout juste rénovée - réservez vos billets à l'avance et, avec un peu de chance, décrochez une réservation pour le déjeuner dans la salle à manger. Ensuite, faites une promenade tranquille dans Central Park. Pour prendre un verre, direction le Bemelmans Bar du Carlyle pour l'une des expériences de bar les plus emblématiques de la ville."),
+          body:       s("Start with a visit to the newly renovated Frick Collection — reserve tickets in advance, and if you're lucky, snag a lunch reservation in the dining room. Afterward, take a leisurely walk through Central Park. For drinks, head to Bemelmans Bar in The Carlyle for one of the most iconic bar experiences in the city.", "Commencez par une visite de la Frick Collection, tout juste rénovée - réservez vos billets à l'avance et, avec un peu de chance, décrochez une réservation pour le déjeuner dans la salle à manger. Ensuite, faites une promenade tranquille dans Central Park. Pour prendre un verre, direction le Bemelmans Bar du Carlyle pour l'une des expériences de bar les plus emblématiques de la ville."),
           alsoInArea: s('Also in the area: The Met, MoMA, the Jewish Museum (free on shabbos!), the American Museum of Natural History, and the Guggenheim.', 'Également dans le quartier : le Met, le MoMA, le Jewish Museum (gratuit le shabbat !), l\'American Museum of Natural History et le Guggenheim.'),
         },
         prospectHeights: {
@@ -285,7 +286,7 @@ export const strings = {
         },
         dumbo: {
           heading: s('Where It All Began', 'Là où tout a commencé'),
-          body:    s("A beautiful neighborhood where we kindled our relationship. Stroll through Brooklyn Bridge Park and up the bridge into Brooklyn Heights for some of the best views of the Manhattan skyline you'll find anywhere. We highly recommend making the trip by NYC Ferry - it runs from multiple points across Manhattan and Brooklyn, and the ride itself is half the fun. Check out the adaptive reuse of the Brooklyn docks abounding with quiet corners, play spaces, and sports facilities.", "Un très beau quartier où notre histoire a commencé. Promenez-vous dans Brooklyn Bridge Park puis montez jusqu'à Brooklyn Heights pour profiter de quelques-unes des plus belles vues sur la skyline de Manhattan. Nous recommandons vivement d'y aller en NYC Ferry : il part de plusieurs points de Manhattan et de Brooklyn, et le trajet fait déjà la moitié du plaisir. Découvrez aussi la réinvention des anciens docks de Brooklyn, pleins de coins tranquilles, d'espaces de jeux et d'installations sportives."),
+          body:    s("A beautiful neighborhood where we kindled our relationship. Stroll through Brooklyn Bridge Park and up the bridge into Brooklyn Heights for some of the best views of the Manhattan skyline you'll find anywhere. We highly recommend making the trip by NYC Ferry — it runs from multiple points across Manhattan and Brooklyn, and the ride itself is half the fun. Check out the adaptive reuse of the Brooklyn docks abounding with quiet corners, play spaces, and sports facilities.", "Un très beau quartier où notre histoire a commencé. Promenez-vous dans Brooklyn Bridge Park puis montez jusqu'à Brooklyn Heights pour profiter de quelques-unes des plus belles vues sur la skyline de Manhattan. Nous recommandons vivement d'y aller en NYC Ferry : il part de plusieurs points de Manhattan et de Brooklyn, et le trajet fait déjà la moitié du plaisir. Découvrez aussi la réinvention des anciens docks de Brooklyn, pleins de coins tranquilles, d'espaces de jeux et d'installations sportives."),
         },
         cycling: {
           heading:        s('Sunday Morning Ride', 'Balade du dimanche matin'),
@@ -334,8 +335,8 @@ export const strings = {
         parking: {
           question: s('Is there parking nearby?', 'Y a-t-il un parking à proximité ?'),
           answer:   s(
-            'Yes, parking is available near the venue at 25 Kent Avenue.',
-            'Oui, un parking est disponible près du lieu au 25 Kent Avenue.',
+            'Yes, parking is available near the venue at 25 Kent parking garage.',
+            'Oui, un parking est disponible près du lieu au 25 Kent parking garage.',
           ),
         },
         weather: {
@@ -486,6 +487,7 @@ export const strings = {
     heroTitle:     s('Village de\u00A0Sully', 'Village de\u00A0Sully'),
     heroDate:      s('28–30 May 2027', '28–30 mai 2027'),
     heroEventType: s('A Weekend Celebration', 'Un week-end de célébration'),
+    heroTagline:   s('Margaux and Sam are getting married!', 'Margaux et Sam se marient !'),
     sections: {
       programme: s('Programme of Events', 'Programme des événements'),
       details:   s('The Details', 'Les détails'),
@@ -501,7 +503,7 @@ export const strings = {
       datesLabel:    s('Dates', 'Dates'),
       mapLabel:      s('Map', 'Carte'),
       venue:         s('Village De Sully', 'Village De Sully'),
-      location:      s('Ile-de-France, near Paris', 'Île-de-France, près de Paris'),
+      location:      s('Île-de-France, near Paris', 'Île-de-France, près de Paris'),
       appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Plans ↗'),
       googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
     },
@@ -539,7 +541,7 @@ export const strings = {
     location: {
       heading:        s('The Location', 'Le lieu'),
       mapPlaceholder: s('Interactive map showing Village de Sully and Paris will be added here', 'Une carte interactive montrant le Village de Sully et Paris sera ajoutée ici'),
-      context:        s('Village de Sully is located in the Ile-de-France region, approximately 60km west of Paris.', "Le Village de Sully est situé en Île-de-France, à environ 60 km à l'ouest de Paris."),
+      context:        s('Village de Sully is located in the Île-de-France region, approximately 60km west of Paris.', "Le Village de Sully est situé en Île-de-France, à environ 60 km à l'ouest de Paris."),
     },
     calendar: {
       heading:         s('Save the Dates', 'Notez les dates'),
@@ -663,7 +665,7 @@ export const strings = {
       about: {
         heading:       s('About the Venue', 'À propos du lieu'),
         name:          s('Village De Sully', 'Village De Sully'),
-        location:      s('Ile-de-France, approximately 60km west of Paris', "Île-de-France, à environ 60 km à l'ouest de Paris"),
+        location:      s('Île-de-France, approximately 60km west of Paris', "Île-de-France, à environ 60 km à l'ouest de Paris"),
         appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Plans ↗'),
         googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
         websiteLink:   s('Venue Website ↗', 'Site du lieu ↗'),
@@ -698,8 +700,8 @@ export const strings = {
           heading:     s('Room Details', 'Détails des chambres'),
           price:       s('€75 per person, per night', '75 € par personne par nuit'),
           breakfast:   s('Breakfast included each morning', 'Petit-déjeuner inclus chaque matin'),
-          checkin:     s('Check-in: Friday, 4:00 PM', 'Arrivée : vendredi à 16h00'),
-          checkout:    s('Check-out: Sunday, 4:00 PM', 'Départ : dimanche à 16h00'),
+          checkin:     s('Check-in: Friday, 5:00 PM', 'Arrivée : vendredi à 17h00'),
+          checkout:    s('Check-out: Sunday, 3:00 PM', 'Départ : dimanche à 15h00'),
           bookingNote: s(
             "Reserve your room through the RSVP form. We'll confirm your booking closer to the event.",
             "Réservez votre chambre via le formulaire RSVP. Nous confirmerons votre réservation à l'approche de l'événement.",
@@ -770,7 +772,7 @@ export const strings = {
       },
       toVenue: {
         heading: s('Getting to the Venue from Paris', 'Comment se rendre au lieu depuis Paris'),
-        intro:   s('Village De Sully is in the Ile-de-France region, approximately 60km west of Paris.', "Le Village De Sully est en Île-de-France, à environ 60 km à l'ouest de Paris."),
+        intro:   s('Village De Sully is in the Île-de-France region, approximately 60km west of Paris.', "Le Village De Sully est en Île-de-France, à environ 60 km à l'ouest de Paris."),
         train: {
           heading: s('By Train', 'En train'),
           step1:   s(

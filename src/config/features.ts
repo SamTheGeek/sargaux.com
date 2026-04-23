@@ -104,7 +104,7 @@ const features: FeatureFlags = {
     rsvpEnabled: flag(import.meta.env.FEATURE_FRANCE_RSVP_ENABLED, false),
   },
   registry: {
-    enabled: flag(import.meta.env.FEATURE_REGISTRY_ENABLED, true),
+    enabled: flag(import.meta.env.FEATURE_REGISTRY_ENABLED, false),
   },
 };
 
