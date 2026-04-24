@@ -324,6 +324,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
+- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets.
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
@@ -336,6 +337,7 @@ The following secrets must be set in GitHub repository settings (Settings → Se
 - `NOTION_GUEST_LIST_DB` — Guest List database page ID
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
+- `CALENDAR_HMAC_SECRET` — Signing secret for calendar subscription tokens (must match Netlify)
 
 These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
 
