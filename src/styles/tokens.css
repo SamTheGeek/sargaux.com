@@ -212,8 +212,10 @@
     --color-bg: #0F1A2E;
     --color-text: var(--color-warm-cream);
     --color-text-muted: #7B8FAA;
-    --color-surface: #162040;
+    --color-surface: #1E3060;
     --color-border: #1A2844;
+    --color-info-bg: #0D1E38;
+    --color-info-border: #1A3264;
   }
 
 }
