@@ -1,12 +1,13 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpage-hero.css';
-import { getLatestRSVP } from '../../lib/notion';
 import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
 
 const guest = Astro.locals.guest;
 const guestId = Astro.locals.guestId;
@@ -46,13 +47,7 @@ const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
 
 const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14) : null;
 const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
-const latestRSVP = guestId
-  ? await getLatestRSVP(guestId, 'nyc').catch((error) => {
-      console.error('Failed to load NYC RSVP status for calendar CTA:', error);
-      return null;
-    })
-  : null;
-const calendarToken = latestRSVP ? generateTokenIfPossible(guestId) : null;
+const calendarToken = generateTokenIfPossible(guestId);
 ---
 
 <WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">

@@ -11,6 +11,8 @@ import LangSwitcher from '../../../components/LangSwitcher.astro';
 import CalendarCta from '../../../components/CalendarCta.astro';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
 
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];

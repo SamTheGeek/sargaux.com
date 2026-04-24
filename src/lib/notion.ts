@@ -412,35 +412,10 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
  * Uses the in-memory guest cache (eventInvitedIds) to avoid an extra
  * pages.retrieve() call — the cache is populated by fetchAllGuests().
  */
-export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
-  const notion = getClient();
-
-  // Get event IDs from the guest cache — avoids an extra pages.retrieve() call
-  const allGuests = await fetchAllGuests();
-  const guest = allGuests.find(g => g.id === guestId);
-  const eventIds = guest?.eventInvitedIds ?? [];
-
-  if (eventIds.length === 0) {
-    return [];
-  }
-
-  // Fetch all event pages in parallel
-  const eventPages = await Promise.all(
-    eventIds.map(async (eventId) => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
-      } catch (error) {
-        console.error(`Failed to fetch event ${eventId}:`, error);
-        return null;
-      }
-    })
-  );
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseEventPages(results: Array<{ id: string; page: any }>): EventRecord[] {
   const events: EventRecord[] = [];
-  for (const result of eventPages) {
-    if (!result) continue;
-    const { id: eventId, page: eventPage } = result;
+  for (const { id: eventId, page: eventPage } of results) {
     const eventProps = eventPage.properties;
 
     const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
@@ -476,8 +451,66 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
       showOnWebsite,
     });
   }
-
   return events;
+}
+
+export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
+  const notion = getClient();
+
+  // Get event IDs from the guest cache — avoids an extra pages.retrieve() call
+  const allGuests = await fetchAllGuests();
+  const guest = allGuests.find(g => g.id === guestId);
+  const eventIds = guest?.eventInvitedIds ?? [];
+
+  if (eventIds.length === 0) {
+    return [];
+  }
+
+  const eventPages = await Promise.all(
+    eventIds.map(async (eventId) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
+      } catch (error) {
+        console.error(`Failed to fetch event ${eventId}:`, error);
+        return null;
+      }
+    })
+  );
+
+  return parseEventPages(eventPages.filter((r): r is NonNullable<typeof r> => r !== null));
+}
+
+/**
+ * Fetch events for a guest by directly retrieving their Notion page.
+ * Unlike getGuestEvents(), this does NOT go through fetchAllGuests() —
+ * safe for cold-start paths like the calendar ICS endpoint where the full
+ * guest scan would exceed the Netlify function timeout.
+ */
+export async function getGuestEventsById(guestId: string): Promise<EventRecord[]> {
+  const notion = getClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const guestPage: any = await notion.pages.retrieve({ page_id: guestId });
+  const eventIds: string[] = (
+    guestPage.properties?.['Events Invited']?.relation || []
+  ).map((r: { id: string }) => r.id);
+
+  if (eventIds.length === 0) return [];
+
+  const eventPages = await Promise.all(
+    eventIds.map(async (eventId) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
+      } catch (error) {
+        console.error(`Failed to fetch event ${eventId}:`, error);
+        return null;
+      }
+    })
+  );
+
+  return parseEventPages(eventPages.filter((r): r is NonNullable<typeof r> => r !== null));
 }
 
 /**

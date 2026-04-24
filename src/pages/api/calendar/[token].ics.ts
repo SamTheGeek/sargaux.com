@@ -10,7 +10,7 @@
 
 import type { APIRoute } from 'astro';
 import { verifyToken, buildICS } from '../../../lib/calendar';
-import { getGuestEvents } from '../../../lib/notion';
+import { getGuestEventsById } from '../../../lib/notion';
 import type { EventWithDate } from '../../../lib/calendar';
 
 export const GET: APIRoute = async ({ params }) => {
@@ -26,13 +26,16 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response('Not found', { status: 404 });
   }
 
-  // Fetch events this guest is invited to (dates live on the Event Catalog records)
+  // Fetch events this guest is invited to via direct page lookup (bypasses full
+  // guest-list scan so the cold-start path stays well under the 10s timeout).
   let events: EventWithDate[];
   try {
-    events = await getGuestEvents(guestId);
+    events = await getGuestEventsById(guestId);
   } catch (error) {
     console.error('Calendar: failed to fetch events for guest', guestId, error);
-    return new Response('Internal server error', { status: 500 });
+    // 503 (not 500) — calendar apps treat 503 as transient and retry,
+    // whereas 500 may trigger permanent unsubscribe in some clients.
+    return new Response('Service Unavailable', { status: 503 });
   }
 
   const ics = buildICS(events);
