@@ -611,8 +611,12 @@ function accommodationLabel(value?: string): string {
 
   @media (prefers-color-scheme: dark) {
     .deadline-banner {
-      background: var(--color-surface);
+      background: var(--color-bg);
       border-color: transparent;
+      margin-left: -2rem;
+      margin-right: -2rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
     }
 
     .deadline-banner-inner p {
@@ -625,6 +629,15 @@ function accommodationLabel(value?: string): string {
 
     .form-section h2 {
       color: var(--color-text);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) and (max-width: 768px) {
+    .deadline-banner {
+      margin-left: -1rem;
+      margin-right: -1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
   }
 
