@@ -628,14 +628,25 @@ main {
   }
 
   .submit-btn {
+    display: block;
+    width: 100%;
+    max-width: 540px;
     margin-top: 0.2rem;
-    padding: 0.95rem 1.2rem;
+    margin-left: auto;
+    margin-right: auto;
+    height: 56px;
     border: none;
 
     background: var(--color-text);
-    color: var(--color-surface-text);
-    font-weight: 600;
+    color: var(--color-bg);
+    font-family: var(--font-display);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-heading);
+    font-feature-settings: "case" 1;
     cursor: pointer;
+    transition: opacity 0.15s;
   }
 
   .submit-btn:disabled {
