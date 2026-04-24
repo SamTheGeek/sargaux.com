@@ -79,6 +79,7 @@ jobs:
           NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
           NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
           NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
+          CALENDAR_HMAC_SECRET: ${{ secrets.CALENDAR_HMAC_SECRET }}
 
       - name: Upload test results
         if: steps.filter.outputs.docs_only != 'true'
