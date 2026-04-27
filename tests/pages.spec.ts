@@ -108,7 +108,7 @@ test.describe('NYC Travel page — hotels section', () => {
 
   test('Wythe Hotel is visible by default', async () => {
     test.skip(process.env.FEATURE_NYC_WYTHE_SOLD_OUT === 'true', 'Wythe is marked sold out — hotel is expected to be hidden');
-    await expect(page.locator('text=Wythe Hotel')).toBeVisible();
+    await expect(page.locator('.nyc-info-key', { hasText: 'Wythe Hotel' })).toBeVisible();
   });
 });
 

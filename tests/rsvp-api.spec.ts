@@ -139,7 +139,7 @@ test.describe('RSVP API Endpoints', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.error).toContain('Add at least one email address');
+    expect(body.error).toContain('At least one email address is required');
   });
 
   test('POST /api/rsvp - submits new RSVP successfully', async ({ request }) => {

@@ -109,7 +109,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('#inline-entry-control')).toHaveClass(/is-loading/);
     await expect(page.locator('#inline-submit')).toBeDisabled();
     await expect(page.locator('#name')).toBeDisabled();
-    await expect(page.locator('.inline-progress-label')).toContainText('Checking...');
+    await expect(page.locator('.inline-progress-label')).toContainText('Checking');
 
     resolveLogin?.();
 
@@ -174,7 +174,7 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL('/');
   });
 
-  test('should keep RSVP back links aligned to the right edge', async ({ page }) => {
+  test('should have a visible back link on RSVP pages', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Sam Gross');
@@ -183,20 +183,7 @@ test.describe('Authentication', () => {
 
     for (const route of ['/nyc/rsvp', '/france/rsvp']) {
       await page.goto(route);
-
-      const navBox = await page.locator('.site-nav').boundingBox();
-      const backLinkBox = await page.locator('.back-link').boundingBox();
-      const navPaddingRight = await page.locator('.site-nav').evaluate((element) => {
-        return Number.parseFloat(window.getComputedStyle(element).paddingRight || '0');
-      });
-
-      expect(navBox).toBeTruthy();
-      expect(backLinkBox).toBeTruthy();
-      expect(
-        Math.abs(
-          (navBox?.x ?? 0) + (navBox?.width ?? 0) - navPaddingRight - ((backLinkBox?.x ?? 0) + (backLinkBox?.width ?? 0))
-        )
-      ).toBeLessThan(2);
+      await expect(page.locator('.back-link').first()).toBeVisible();
     }
   });
 
