@@ -20,6 +20,13 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response('Not found', { status: 404 });
   }
 
+  // Check secret before verifyToken so a missing secret returns 503 (transient,
+  // calendar apps retry) rather than 404 (permanent, calendar apps unsubscribe).
+  if (!process.env.CALENDAR_HMAC_SECRET) {
+    console.error('Calendar: CALENDAR_HMAC_SECRET not configured');
+    return new Response('Service Unavailable', { status: 503 });
+  }
+
   // Verify token and extract guestId
   const guestId = verifyToken(token);
   if (!guestId) {
@@ -31,10 +38,17 @@ export const GET: APIRoute = async ({ params }) => {
   let events: EventWithDate[];
   try {
     events = await getGuestEventsById(guestId);
-  } catch (error) {
+  } catch (error: unknown) {
+    // Return 410 Gone if the Notion page no longer exists — this is a permanent
+    // failure (e.g. guest record was deleted) and 410 is more accurate than 503.
+    const code = (error as Record<string, unknown>)?.code;
+    const status = (error as Record<string, unknown>)?.status;
+    if (code === 'object_not_found' || status === 404) {
+      console.warn('Calendar: guest page not found, subscription may be stale', guestId);
+      return new Response('Gone', { status: 410 });
+    }
     console.error('Calendar: failed to fetch events for guest', guestId, error);
-    // 503 (not 500) — calendar apps treat 503 as transient and retry,
-    // whereas 500 may trigger permanent unsubscribe in some clients.
+    // 503 (not 500) — calendar apps treat 503 as transient and retry.
     return new Response('Service Unavailable', { status: 503 });
   }
 
@@ -44,7 +58,11 @@ export const GET: APIRoute = async ({ params }) => {
     status: 200,
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      // Allow CDN and calendar apps to cache the ICS for 1 hour.
+      // stale-if-error lets the CDN serve a cached copy when the origin errors
+      // (e.g. Notion is slow, or a deploy cold-start returns 503), preventing
+      // established subscriptions from being dropped during transient outages.
+      'Cache-Control': 'max-age=3600, stale-while-revalidate=7200, stale-if-error=86400',
     },
   });
 };

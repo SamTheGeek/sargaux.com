@@ -324,7 +324,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
-- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets.
+- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token.
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
