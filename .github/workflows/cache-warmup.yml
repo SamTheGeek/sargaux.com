@@ -1,36 +1,33 @@
 name: Cache Warmup
 
 on:
-  deployment_status:
+  schedule:
+    # Every 6 hours — keeps the Notion guest cache and Netlify function warm.
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   warm:
     name: Warm guest cache
     runs-on: ubuntu-latest
-    # Only run when Netlify reports a successful deploy
-    if: github.event.deployment_status.state == 'success'
 
     steps:
       - name: Warm cache
-        env:
-          DEPLOY_URL: ${{ github.event.deployment_status.environment_url }}
         run: |
-          URL="${DEPLOY_URL}/api/warm"
-          echo "Warming cache at: $URL"
-          RESPONSE=$(curl -s -w "\n%{http_code}" "$URL")
+          URL="https://sargaux.com/api/warm"
+          echo "Warming cache at: ${URL}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" "${URL}")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -1)
-          echo "Response: $BODY"
-          echo "Status: $HTTP_CODE"
-          if [ "$HTTP_CODE" -ne 200 ]; then
-            echo "Warning: warmup returned $HTTP_CODE (non-fatal)"
+          echo "Response: ${BODY}"
+          echo "Status: ${HTTP_CODE}"
+          if [ "${HTTP_CODE}" -ne 200 ]; then
+            echo "Warning: warmup returned ${HTTP_CODE} (non-fatal)"
           fi
 
       - name: Check calendar health
-        env:
-          DEPLOY_URL: ${{ github.event.deployment_status.environment_url }}
         run: |
-          URL="${DEPLOY_URL}/api/calendar/health"
+          URL="https://sargaux.com/api/calendar/health"
           echo "Checking calendar health at: ${URL}"
           RESPONSE=$(curl -s -w "\n%{http_code}" "${URL}")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
