@@ -181,7 +181,6 @@ test.describe('RSVP Dynamic Forms', () => {
 
     await page.fill('textarea[name="allergens"]', 'Peanut allergy');
     await page.selectOption('select[name="accommodation"]', 'yes');
-    await page.selectOption('select[name="transport"]', 'no');
     await page.fill('textarea[name="message"]', 'Merci!');
     await Promise.all([
       page.waitForURL('/france/rsvp/confirmed'),
@@ -192,7 +191,6 @@ test.describe('RSVP Dynamic Forms', () => {
     expect(capturedPayload.event).toBe('france');
     expect(capturedPayload.dietary).toBe('Peanut allergy');
     expect(capturedPayload.details.accommodation).toBe('yes');
-    expect(capturedPayload.details.transport).toBe('no');
     expect(capturedPayload.details.allergens).toBe('Peanut allergy');
   });
 

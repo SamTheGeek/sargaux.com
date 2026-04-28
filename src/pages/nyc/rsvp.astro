@@ -220,7 +220,17 @@ const submittedAtFallback = submittedAtISO
       </div>
     ) : (
       <>
-        <form class="rsvp-form" id="rsvp-form" data-event="nyc">
+        <form
+          class="rsvp-form"
+          id="rsvp-form"
+          data-event="nyc"
+          data-confirm-email-required={confirmationEmailRequired}
+          data-confirm-email-all-required={confirmationEmailAllRequired}
+          data-require-all-emails={requireAllEmails}
+          data-attending-label={attendingLabel}
+          data-not-attending-label={notAttendingLabel}
+          data-is-local-dev={import.meta.env.DEV}
+        >
 
           <!-- ── Who's Coming ── -->
           <div class="rsvp-band">{t(strings.nyc.rsvp.form.whosComing.heading)}</div>
@@ -1128,10 +1138,19 @@ const submittedAtFallback = submittedAtISO
 
 </style>
 
-<script is:inline define:vars={{ confirmationEmailRequired, confirmationEmailAllRequired, requireAllEmails, attendingLabel, notAttendingLabel, isLocalDev: import.meta.env.DEV }}>
-  const form = document.getElementById('rsvp-form');
+<script>
+  function initRsvpForm() {
+    const form = document.getElementById('rsvp-form');
+    if (!form || form.dataset.rsvpInitialized) return;
+    form.dataset.rsvpInitialized = 'true';
 
-  if (form) {
+    const confirmationEmailRequired = form.dataset.confirmEmailRequired ?? '';
+    const confirmationEmailAllRequired = form.dataset.confirmEmailAllRequired ?? '';
+    const requireAllEmails = form.dataset.requireAllEmails === 'true';
+    const attendingLabel = form.dataset.attendingLabel ?? 'Attending';
+    const notAttendingLabel = form.dataset.notAttendingLabel ?? 'Not attending';
+    const isLocalDev = form.dataset.isLocalDev === 'true';
+
     const submitButton = form.querySelector('button[type="submit"]');
     const successMessage = document.getElementById('form-success');
     const errorMessage = document.getElementById('form-error');
@@ -1276,22 +1295,30 @@ const submittedAtFallback = submittedAtISO
       }
     });
   }
+
+  document.addEventListener('astro:page-load', initRsvpForm);
+  initRsvpForm();
 </script>
 
-<script is:inline>
-  document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
-    const isoStr = timeEl.getAttribute('datetime');
-    if (isoStr) {
-      const date = new Date(isoStr);
-      const lang = document.documentElement.lang || 'en';
-      const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(date);
-      timeEl.textContent = formatted;
-    }
-  });
+<script>
+  function initTimestamps() {
+    document.querySelectorAll('time[data-local-timestamp]').forEach((timeEl) => {
+      const isoStr = timeEl.getAttribute('datetime');
+      if (isoStr) {
+        const date = new Date(isoStr);
+        const lang = document.documentElement.lang || 'en';
+        const formatted = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        }).format(date);
+        timeEl.textContent = formatted;
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', initTimestamps);
+  initTimestamps();
 </script>
