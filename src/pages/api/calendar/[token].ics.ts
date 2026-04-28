@@ -54,15 +54,30 @@ export const GET: APIRoute = async ({ params }) => {
 
   const ics = buildICS(events);
 
+  // Derive Last-Modified from the latest event date so calendar apps can use
+  // conditional If-Modified-Since requests and skip re-parsing unchanged data.
+  const latestDate = events
+    .map((e) => e.date)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const lastModified = latestDate
+    ? new Date(latestDate + 'T00:00:00Z').toUTCString()
+    : new Date().toUTCString();
+
   return new Response(ics, {
     status: 200,
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
+      'Last-Modified': lastModified,
       // Allow CDN and calendar apps to cache the ICS for 1 hour.
       // stale-if-error lets the CDN serve a cached copy when the origin errors
       // (e.g. Notion is slow, or a deploy cold-start returns 503), preventing
       // established subscriptions from being dropped during transient outages.
-      'Cache-Control': 'max-age=3600, stale-while-revalidate=7200, stale-if-error=86400',
+      // 7-day stale-if-error: wedding event dates rarely change, so serving
+      // week-old data is fine and prevents subscriptions from dropping during
+      // extended Notion outages or cold-start error windows.
+      'Cache-Control': 'max-age=3600, stale-while-revalidate=7200, stale-if-error=604800',
     },
   });
 };

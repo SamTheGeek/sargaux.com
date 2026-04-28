@@ -1,0 +1,29 @@
+name: Calendar Health Check
+
+on:
+  schedule:
+    # Every Monday at noon UTC — keeps the production function warm and
+    # verifies CALENDAR_HMAC_SECRET + NOTION_API_KEY are still configured.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+jobs:
+  health:
+    name: Ping calendar health endpoint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check calendar health
+        run: |
+          URL="https://sargaux.com/api/calendar/health"
+          echo "Checking calendar health at: ${URL}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" "${URL}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: ${BODY}"
+          echo "Status: ${HTTP_CODE}"
+          if [ "${HTTP_CODE}" -ne 200 ]; then
+            echo "Error: calendar health check failed with status ${HTTP_CODE}"
+            echo "CALENDAR_HMAC_SECRET or NOTION_API_KEY may be missing from Netlify env vars"
+            exit 1
+          fi

@@ -25,3 +25,20 @@ jobs:
           if [ "$HTTP_CODE" -ne 200 ]; then
             echo "Warning: warmup returned $HTTP_CODE (non-fatal)"
           fi
+
+      - name: Check calendar health
+        env:
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          URL="${DEPLOY_URL}/api/calendar/health"
+          echo "Checking calendar health at: ${URL}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" "${URL}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: ${BODY}"
+          echo "Status: ${HTTP_CODE}"
+          if [ "${HTTP_CODE}" -ne 200 ]; then
+            echo "Error: calendar health check failed with status ${HTTP_CODE}"
+            echo "CALENDAR_HMAC_SECRET or NOTION_API_KEY may be missing from Netlify env vars"
+            exit 1
+          fi
