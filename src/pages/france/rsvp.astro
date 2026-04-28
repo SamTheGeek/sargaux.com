@@ -794,7 +794,7 @@ main {
 <script>
   function initRsvpForm() {
     const form = document.getElementById('rsvp-form');
-    if (!form || form.dataset.rsvpInitialized) return;
+    if (!form || form.dataset.event !== 'france' || form.dataset.rsvpInitialized) return;
     form.dataset.rsvpInitialized = 'true';
 
     const confirmationEmailRequired = form.dataset.confirmEmailRequired ?? '';
