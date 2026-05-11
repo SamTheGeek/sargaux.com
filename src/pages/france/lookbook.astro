@@ -1,26 +1,23 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/france-lookbook.css';
 import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 
 const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
-const dir = path.join(process.cwd(), 'public/images/france/lookbook');
-const images = fs.existsSync(dir)
-  ? fs.readdirSync(dir)
-      .filter(f => /\.(jpg|jpeg)$/i.test(f))
-      .sort()
-      .map(f => ({
-        jpg:  `/images/france/lookbook/${f}`,
-        webp: `/images/france/lookbook/${f.replace(/\.(jpg|jpeg)$/i, '.webp')}`,
-      }))
-  : [];
+const globResult = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/images/france/lookbook/*.{jpg,jpeg}',
+  { eager: true }
+);
+const images = Object.entries(globResult)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, mod]) => mod.default);
 ---
 
 <WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
@@ -42,10 +39,9 @@ const images = fs.existsSync(dir)
         {images.length > 0 ? (
           <div class="lookbook-grid">
             {images.map(img => (
-              <picture class="lookbook-item">
-                <source srcset={img.webp} type="image/webp" />
-                <img src={img.jpg} alt="" loading="lazy" decoding="async" />
-              </picture>
+              <figure class="lookbook-item">
+                <Image src={img} alt="" loading="lazy" width={800} />
+              </figure>
             ))}
           </div>
         ) : (

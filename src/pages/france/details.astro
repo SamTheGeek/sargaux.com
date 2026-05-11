@@ -4,6 +4,11 @@ import '../../styles/france-details.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { Image } from 'astro:assets';
+import fromabove from '../../assets/images/france/fromabove.jpg';
+import aubonmarche from '../../assets/images/france/aubonmarche.jpeg';
+import mairie from '../../assets/images/france/mairie.jpg';
+import accommodation from '../../assets/images/france/accommodation.jpg';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 ---
@@ -23,10 +28,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
       <section class="hero-venue">
         <div class="venue-image-frame venue-image-frame--hero">
-          <img
-            src="/images/france/fromabove.jpg"
+          <Image
+            src={fromabove}
             alt="Aerial view of the France venue"
             class="venue-image"
+            width={1600}
           />
         </div>
       </section>
@@ -69,10 +75,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <div class="spaces-grid">
           <div class="space-card">
             <div class="venue-image-frame venue-image-frame--card">
-              <img
-                src="/images/france/aubonmarche.jpeg"
+              <Image
+                src={aubonmarche}
                 alt="The grounds at the France venue"
                 class="venue-image"
+                width={800}
               />
             </div>
             <h3>{t(strings.france.details.spaces.grounds.title)}</h3>
@@ -80,10 +87,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           </div>
           <div class="space-card">
             <div class="venue-image-frame venue-image-frame--card">
-              <img
-                src="/images/france/mairie.jpg"
+              <Image
+                src={mairie}
                 alt="Ceremony space at the France venue"
                 class="venue-image"
+                width={800}
               />
             </div>
             <h3>{t(strings.france.details.spaces.ceremony.title)}</h3>
@@ -91,10 +99,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           </div>
           <div class="space-card">
             <div class="venue-image-frame venue-image-frame--card">
-              <img
-                src="/images/france/accommodation.jpg"
+              <Image
+                src={accommodation}
                 alt="Guest accommodations at the France venue"
                 class="venue-image"
+                width={800}
               />
             </div>
             <h3>{t(strings.france.details.spaces.accommodation.title)}</h3>
