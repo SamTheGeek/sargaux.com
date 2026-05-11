@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "0.9.9",
+  "version": "0.10.0",
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@astrojs/netlify": "^7.0.8",
     "@astrojs/node": "^10.0.6",
+    "@netlify/blobs": "^10.7.5",
     "@notionhq/client": "^5.20.0",
     "astro": "^6.2.2",
     "resend": "^6.12.2"
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@axe-core/playwright": "^4.11.3",
+    "@netlify/functions": "^5.2.0",
     "@playwright/test": "^1.59.1",
     "@types/sharp": "^0.32.0",
     "axe-core": "^4.11.1",

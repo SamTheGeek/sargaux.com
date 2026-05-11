@@ -14,6 +14,7 @@ import { isEnabled } from '../../config/features';
 import { sendToGuests } from '../../lib/email';
 import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
+import { generateAndStoreICSForGuest } from '../../lib/ics-generator';
 import type { RSVPSubmission } from '../../types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -242,6 +243,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
+  }
+
+  // ICS regeneration — awaited but errors never fail the RSVP response.
+  // Awaited (not fire-and-forget) because Netlify terminates the function
+  // when the response is sent — detached promises don't complete reliably.
+  try {
+    await Promise.all(party.map((member) => generateAndStoreICSForGuest(member.id)));
+  } catch (err) {
+    console.error('ICS regeneration after RSVP failed (non-fatal):', err);
   }
 
   // Email logic — non-blocking, never fails the RSVP response
