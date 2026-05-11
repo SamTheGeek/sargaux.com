@@ -1042,3 +1042,19 @@ Before starting, read these files to understand the codebase:
 **`buildICS` type compatibility:** `buildICS` takes `EventWithDate[]`. `EventRecord` already has `date?: string` (the same field). TypeScript's structural typing makes `EventRecord[]` directly assignable to `EventWithDate[]` — no cast needed.
 
 **Calendar endpoint is read-only:** The endpoint never imports from `ics-generator.ts` and never calls Notion. The only Notion-calling paths are the RSVP trigger (Task 5) and scheduled functions (Task 7). Do not add any Notion calls to the calendar endpoint.
+
+---
+
+## Implementation Log (2026-05-11)
+
+Implemented as planned. Key observations from actual implementation:
+
+**RSVP trigger simplification:** The plan's Task 5 code snippet calls `getGuestParty(guestId)` again inside the ICS block, but `party` is already in scope from earlier in the handler (fetched unconditionally for party contacts validation). Used `party` directly — no second `getGuestParty` call needed.
+
+**`MissingBlobsEnvironmentError` in local tests:** When running `npm run verify` locally (no Netlify CLI), the RSVP API tests trigger the ICS regeneration path, which throws `MissingBlobsEnvironmentError` from `@netlify/blobs`. This is correctly caught by the try/catch in the RSVP handler and logged as non-fatal. All 164 tests pass; 13 skip.
+
+**Calendar unit tests:** All 19 unit tests in `tests/calendar-unit.spec.ts` pass without any server or infrastructure — pure TypeScript import of `src/lib/calendar.ts`.
+
+**Task numbering:** Plan's Task 6 (health endpoint) was implemented as part of the same commit as Task 4 (calendar endpoint) and Task 3b (test-seed) since they're closely related.
+
+**PR:** https://github.com/SamTheGeek/sargaux.com/pull/148
