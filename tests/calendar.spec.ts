@@ -1,104 +1,94 @@
 /**
- * Calendar subscription endpoint tests
+ * Calendar endpoint tests.
  *
- * Tests for GET /api/calendar/[token].ics
+ * These tests use the mock blob store (CALENDAR_TEST_MODE=true) and a fixed
+ * CALENDAR_HMAC_SECRET so they run without Netlify infrastructure or Notion.
  *
- * NOTE: These tests require:
- * - FEATURE_GLOBAL_NOTION_BACKEND=true
- * - FEATURE_NYC_CALENDAR_SUBSCRIBE=true or FEATURE_FRANCE_CALENDAR_SUBSCRIBE=true
- * - CALENDAR_HMAC_SECRET set
- * - Valid NOTION_API_KEY, NOTION_GUEST_LIST_DB, NOTION_EVENT_CATALOG_DB env vars
- * - Test guest (Sam Gross) exists in Notion Guest List database
- *
- * Skip gracefully if environment is not configured.
+ * Skip guard: if CALENDAR_TEST_MODE is not set, all tests skip gracefully.
  */
 
 import { test, expect } from '@playwright/test';
-import { TEST_GUEST_NAME } from './fixtures';
+import { generateToken, buildICS } from '../src/lib/calendar';
+import type { EventWithDate } from '../src/lib/calendar';
 
-const BASE_URL = 'http://localhost:1213'; // December 13th - engagement date!
+const BASE_URL = 'http://localhost:1213';
+const TEST_SECRET = 'test-hmac-secret-for-unit-tests';
+const TEST_GUEST_ID = 'abc123-test-notion-page-id';
+const UNKNOWN_GUEST_ID = 'ffffffff-0000-no-blob-here';
 
-const notionEnabled =
-  process.env.FEATURE_GLOBAL_NOTION_BACKEND === 'true' &&
-  !!process.env.CALENDAR_HMAC_SECRET;
+process.env.CALENDAR_HMAC_SECRET = TEST_SECRET;
 
-const calendarEnabled =
-  process.env.FEATURE_NYC_CALENDAR_SUBSCRIBE === 'true' ||
-  process.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE === 'true';
+const TEST_EVENT: EventWithDate = {
+  id: 'event-test-1',
+  name: 'Wedding Dinner',
+  type: 'Core',
+  wedding: 'nyc',
+  date: '2026-10-11',
+  startTime: '6:00 PM',
+  duration: '3h',
+  location: 'The Venue',
+  showOnWebsite: true,
+};
 
-test.describe('Calendar ICS Endpoint', () => {
-  let calendarToken: string | undefined;
+const isMockMode = process.env.CALENDAR_TEST_MODE === 'true';
 
-  test.skip(
-    !notionEnabled || !calendarEnabled,
-    'Notion backend or calendar feature not configured'
-  );
+test.describe('Calendar endpoint (mock blob store)', () => {
+  test.skip(!isMockMode, 'Requires CALENDAR_TEST_MODE=true on the server');
 
-  test.beforeAll(async ({ browser }) => {
-    // Log in as Sam Gross, submit an RSVP, and extract the token from the confirmation page
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  let validToken: string;
+  let unknownToken: string;
 
-    await page.goto(`${BASE_URL}/`);
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.click('#submit-btn');
-    await page.waitForURL(`${BASE_URL}/nyc`);
+  test.beforeAll(async ({ request }) => {
+    validToken = generateToken(TEST_GUEST_ID);
+    unknownToken = generateToken(UNKNOWN_GUEST_ID);
+    const testICS = buildICS([TEST_EVENT]);
 
-    await page.goto(`${BASE_URL}/nyc/rsvp`);
-    await Promise.all([
-      page.waitForURL(`${BASE_URL}/nyc/rsvp/confirmed`),
-      page.click('button[type="submit"]'),
-    ]);
-
-    const href = await page.locator('[data-testid="calendar-confirmation-link"]').getAttribute('href');
-    if (href) {
-      const match = href.match(/\/api\/calendar\/(.+)\.ics$/);
-      calendarToken = match?.[1];
-    }
-
-    await context.close();
+    // Seed the mock blob store via the test-seed endpoint
+    const res = await request.post(`${BASE_URL}/api/calendar/test-seed`, {
+      data: { token: validToken, ics: testICS },
+    });
+    expect(res.status()).toBe(200);
   });
 
-  test('valid token returns 200 with text/calendar content type', async ({ request }) => {
-    test.skip(!calendarToken, 'Could not extract calendar token from page');
-    const response = await request.get(`${BASE_URL}/api/calendar/${calendarToken}.ics`);
-    expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('text/calendar');
+  test('valid token with seeded blob returns 200 text/calendar', async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/calendar/${validToken}.ics`);
+    expect(res.status()).toBe(200);
+    expect(res.headers()['content-type']).toContain('text/calendar');
   });
 
-  test('valid token ICS starts and ends with VCALENDAR', async ({ request }) => {
-    test.skip(!calendarToken, 'Could not extract calendar token from page');
-    const body = await request.get(`${BASE_URL}/api/calendar/${calendarToken}.ics`).then(r => r.text());
+  test('ICS body contains expected calendar envelope', async ({ request }) => {
+    const body = await request.get(`${BASE_URL}/api/calendar/${validToken}.ics`).then(r => r.text());
     expect(body).toContain('BEGIN:VCALENDAR');
     expect(body).toContain('END:VCALENDAR');
-  });
-
-  test('ICS contains calendar name Sargaux Wedding', async ({ request }) => {
-    test.skip(!calendarToken, 'Could not extract calendar token from page');
-    const body = await request.get(`${BASE_URL}/api/calendar/${calendarToken}.ics`).then(r => r.text());
     expect(body).toContain('X-WR-CALNAME:Sargaux Wedding');
   });
 
-  test('ICS contains at least one VEVENT', async ({ request }) => {
-    test.skip(!calendarToken, 'Could not extract calendar token from page');
-    const body = await request.get(`${BASE_URL}/api/calendar/${calendarToken}.ics`).then(r => r.text());
+  test('ICS body contains the seeded VEVENT', async ({ request }) => {
+    const body = await request.get(`${BASE_URL}/api/calendar/${validToken}.ics`).then(r => r.text());
     expect(body).toContain('BEGIN:VEVENT');
-    expect(body).toContain('END:VEVENT');
+    expect(body).toContain('SUMMARY:Wedding Dinner');
+    expect(body).toContain('DTSTART;TZID=America/New_York:20261011T180000');
+  });
+
+  test('valid token with no blob returns 503', async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/calendar/${unknownToken}.ics`);
+    expect(res.status()).toBe(503);
   });
 
   test('invalid token returns 404', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/calendar/not-a-real-token.ics`);
-    expect(response.status()).toBe(404);
+    const res = await request.get(`${BASE_URL}/api/calendar/not-a-real-token.ics`);
+    expect(res.status()).toBe(404);
   });
 
   test('tampered HMAC returns 404', async ({ request }) => {
-    test.skip(!calendarToken, 'Could not extract calendar token from page');
-    // Corrupt the HMAC portion of a valid token
-    const dotIndex = calendarToken!.indexOf('.');
-    const encoded = calendarToken!.slice(0, dotIndex);
-    const tamperedToken = `${encoded}.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
-    const response = await request.get(`${BASE_URL}/api/calendar/${tamperedToken}.ics`);
-    expect(response.status()).toBe(404);
+    const dot = validToken.indexOf('.');
+    const tampered = validToken.slice(0, dot + 1) + 'a'.repeat(32);
+    const res = await request.get(`${BASE_URL}/api/calendar/${tampered}.ics`);
+    expect(res.status()).toBe(404);
+  });
+
+  test('test-seed endpoint returns 404 in non-test mode', async () => {
+    // This test only makes sense running against a non-test server.
+    test.skip(true, 'Requires a separate non-test server instance to verify');
   });
 });
