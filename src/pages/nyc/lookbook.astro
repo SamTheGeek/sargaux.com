@@ -1,6 +1,4 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpage-hero.css';
 import '../../styles/nyc-lookbook.css';
@@ -8,20 +6,21 @@ import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
-const dir = path.join(process.cwd(), 'public/images/nyc/lookbook');
-const images = fs.readdirSync(dir)
-  .filter(f => /^pinterest_nyc_\d+\.jpg$/i.test(f))
-  .sort()
-  .map(f => ({
-    jpg:  `/images/nyc/lookbook/${f}`,
-    webp: `/images/nyc/lookbook/${f.replace(/\.jpg$/i, '.webp')}`,
-  }));
+const globResult = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/images/nyc/lookbook/pinterest_nyc_*.jpg',
+  { eager: true }
+);
+const images = Object.entries(globResult)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, mod]) => mod.default);
 ---
 
 <WireframeLayout title={t(strings.nyc.lookbook.pageTitle)} fullTitle="Chez Sargaux | NYC — Lookbook" event="nyc" page="lookbook">
@@ -56,10 +55,9 @@ const images = fs.readdirSync(dir)
     <section class="nyc-moss details-section lookbook-section">
       <div class="lookbook-grid">
         {images.map(img => (
-          <picture class="lookbook-item">
-            <source srcset={img.webp} type="image/webp" />
-            <img src={img.jpg} alt="" loading="lazy" decoding="async" />
-          </picture>
+          <figure class="lookbook-item">
+            <Image src={img} alt="" loading="lazy" width={800} />
+          </figure>
         ))}
       </div>
     </section>

@@ -6,6 +6,9 @@ import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
+import { Image } from 'astro:assets';
+import barBlondeau from '../../assets/images/nyc/bar-blondeau.avif';
+import blondeauPlaceholder from '../../assets/images/nyc/blondeau-placeholder.avif';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
@@ -152,11 +155,12 @@ const calendarToken = generateTokenIfPossible(guestId);
         <!-- Dinner venue -->
         <div class="venue-card">
           <div class="venue-photo">
-            <img
-              src="/images/nyc/bar-blondeau.avif"
+            <Image
+              src={barBlondeau}
               alt="Interior of Bar Blondeau at the Wythe Hotel, Brooklyn"
               class="venue-photo-img"
               loading="eager"
+              width={1200}
             />
           </div>
           <div class="venue-body">
@@ -195,11 +199,12 @@ const calendarToken = generateTokenIfPossible(guestId);
         <!-- Dancing venue (TBD) -->
         <div class="venue-card">
           <div class="venue-photo">
-            <img
-              src="/images/nyc/blondeau-placeholder.avif"
+            <Image
+              src={blondeauPlaceholder}
               alt="Dancing venue"
               class="venue-photo-img"
               loading="lazy"
+              width={1200}
             />
           </div>
           <div class="venue-body">
