@@ -29,7 +29,6 @@ Pre-generate a `.ics` file per guest, keyed by their Notion page ID (`guestId`),
 
 ### Serving Flow
 
-```
 Calendar app polls webcal://sargaux.com/api/calendar/[token].ics
   → SSR endpoint verifies token → decodes guestId
   → Reads blob from Netlify Blobs (key = guestId)
@@ -40,9 +39,9 @@ Calendar app polls webcal://sargaux.com/api/calendar/[token].ics
         → 503 Service Unavailable (calendar app retries later)
         → Scheduled job is the backstop; fixes within days
   → No Notion calls from this endpoint, ever
-```
 
 **Why not redirect to a CDN URL?** A 302 redirect approach was considered and rejected:
+
 - Netlify Blobs CDN URLs may include deploy IDs or expiring tokens — not guaranteed stable
 - iOS Calendar is known to cache redirect destinations despite 302, then poll the CDN URL directly on future polls; if that URL changes, the subscription silently breaks — same failure mode we're solving
 - Two round trips per poll (SSR + CDN) vs. one
@@ -64,11 +63,11 @@ Three paths write/update blobs:
 
 ### Pre-wedding windows
 
-Compared in UTC. Boundaries are generous (no fencepost issues from server-timezone differences).
+Compared in UTC. Boundaries are generous (no fencepost issues from server-timezone difference)
 
-| Wedding | Daily starts (UTC) | Daily ends (UTC) |
-|---------|--------------------|------------------|
-| NYC (Oct 11, 2026) | `2026-09-27T00:00:00Z` | `2026-10-14T00:00:00Z` |
+| Wedding               | Daily starts (UTC).    | Daily ends (UTC)       |
+|-----------------------|------------------------|------------------------|
+| NYC (Oct 11, 2026).   | `2026-09-27T00:00:00Z` | `2026-10-14T00:00:00Z` |
 | France (May 28, 2027) | `2027-05-14T00:00:00Z` | `2027-06-01T00:00:00Z` |
 
 ### No pre-seeding, no cache-aside
@@ -100,16 +99,16 @@ npm install --save-dev @netlify/functions
 
 ## Files Overview
 
-| Action | File |
-|--------|------|
-| Create | `src/lib/ics-store.ts` |
-| Create | `src/lib/ics-generator.ts` |
+| Action | File                                       |
+|--------|--------------------------------------------|
+| Create | `src/lib/ics-store.ts`                     |
+| Create | `src/lib/ics-generator.ts`                 |
 | Create | `netlify/functions/ics-refresh-weekly.mts` |
-| Create | `netlify/functions/ics-refresh-daily.mts` |
-| Modify | `src/pages/api/calendar/[token].ics.ts` |
-| Modify | `src/pages/api/rsvp.ts` |
-| Modify | `src/pages/api/calendar/health.ts` |
-| Modify | `package.json` (dependencies + version) |
+| Create | `netlify/functions/ics-refresh-daily.mts`  |
+| Modify | `src/pages/api/calendar/[token].ics.ts`    |
+| Modify | `src/pages/api/rsvp.ts`                    |
+| Modify | `src/pages/api/calendar/health.ts`         |
+| Modify | `package.json` (dependencies + version)    |
 
 `tsconfig.json` does NOT need updating — it already uses `"include": ["**/*"]` which covers `netlify/functions/`.
 
@@ -123,10 +122,12 @@ npm install --save-dev @netlify/functions
 ```
 
 Verify in `package.json`:
+
 - `@netlify/blobs` is under `"dependencies"`
 - `@netlify/functions` is under `"devDependencies"`
 
 **Commit:**
+
 ```bash
 git add package.json package-lock.json
 git commit -m "chore: add @netlify/blobs and @netlify/functions"
@@ -139,6 +140,7 @@ git commit -m "chore: add @netlify/blobs and @netlify/functions"
 Thin wrapper over Netlify Blobs. All blob I/O goes through here.
 
 **Critical behavior contract:**
+
 - `getICS` returns `null` when the key is not found — this is NOT an error, it's a cache miss
 - `getICS` throws when the blob store itself is unreachable — callers should catch this and return 503
 - `@netlify/blobs`'s `store.get()` already follows this contract: returns `null` for missing keys, throws on connectivity failures — so we just propagate it
@@ -197,11 +199,13 @@ export async function checkBlobStoreHealth(): Promise<boolean> {
 ```
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add src/lib/ics-store.ts
 git commit -m "feat: add ics-store Netlify Blobs wrapper"
@@ -283,11 +287,13 @@ export async function refreshAllICS(): Promise<{ total: number; succeeded: numbe
 **Type note:** `EventRecord` (in `src/types/event.ts`) has `date?: string`. `EventWithDate` from `calendar.ts` extends `EventRecord` with the same optional field — they are structurally identical. `EventRecord[]` is directly assignable to `EventWithDate[]`, so passing it to `buildICS(events: EventWithDate[])` compiles without casting.
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add src/lib/ics-generator.ts
 git commit -m "feat: add ics-generator orchestration layer"
@@ -329,6 +335,7 @@ export const POST: APIRoute = async ({ request }) => {
 ```
 
 **Commit:**
+
 ```bash
 git add src/pages/api/calendar/test-seed.ts
 git commit -m "test: add calendar test-seed endpoint for mock blob store"
@@ -401,11 +408,13 @@ export const GET: APIRoute = async ({ params }) => {
 ```
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add src/pages/api/calendar/[token].ics.ts
 git commit -m "feat(calendar): serve ICS directly from Netlify Blobs"
@@ -442,11 +451,13 @@ import { generateAndStoreICSForGuest } from '../../lib/ics-generator';
 ```
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add src/pages/api/rsvp.ts
 git commit -m "feat(rsvp): regenerate ICS for party on RSVP submit"
@@ -476,11 +487,13 @@ export const GET: APIRoute = async () => {
 ```
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add src/pages/api/calendar/health.ts
 git commit -m "feat(calendar): add blob store health check"
@@ -574,6 +587,7 @@ export const config: Config = {
 ```
 
 **Build verify:**
+
 ```bash
 npm run build
 ```
@@ -581,6 +595,7 @@ npm run build
 **Note on `netlify.toml`:** No changes needed. Scheduled functions in Netlify v2 API declare their schedule via the `config` export. Netlify reads this at deploy time. The existing `[functions]` and `[functions."*"]` blocks in `netlify.toml` are empty and will not conflict.
 
 **If Netlify does not pick up the schedule from the `config` export** (verify after first deploy by checking Netlify dashboard → Functions tab), add to `netlify.toml` as a fallback:
+
 ```toml
 [functions."ics-refresh-weekly"]
   schedule = "0 3 * * 0"
@@ -590,6 +605,7 @@ npm run build
 ```
 
 **Commit:**
+
 ```bash
 git add netlify/functions/
 git commit -m "feat: add weekly/daily scheduled ICS refresh functions"
@@ -757,6 +773,7 @@ test.describe('parseDuration', () => {
 ```
 
 **Run:**
+
 ```bash
 npm run build && npx playwright test tests/calendar-unit.spec.ts
 ```
@@ -896,6 +913,7 @@ test.describe('Calendar endpoint (mock blob store)', () => {
 ```
 
 **Run:**
+
 ```bash
 npm run build
 CALENDAR_TEST_MODE=true CALENDAR_HMAC_SECRET=test-hmac-secret-for-unit-tests \
@@ -906,6 +924,7 @@ kill %1
 ```
 
 **Commit:**
+
 ```bash
 git add tests/calendar-unit.spec.ts tests/calendar.spec.ts src/pages/api/calendar/test-seed.ts
 git commit -m "test: add calendar unit tests and mock-mode endpoint tests"
@@ -1057,4 +1076,4 @@ Implemented as planned. Key observations from actual implementation:
 
 **Task numbering:** Plan's Task 6 (health endpoint) was implemented as part of the same commit as Task 4 (calendar endpoint) and Task 3b (test-seed) since they're closely related.
 
-**PR:** https://github.com/SamTheGeek/sargaux.com/pull/148
+**PR:** <https://github.com/SamTheGeek/sargaux.com/pull/148>

@@ -1,3 +1,35 @@
+/*
+ * NYC sub-page shared styles — imported by details, faq, lookbook, and travel.
+ *
+ * This file consolidates nyc-subpage-hero.css (date band styling) and
+ * nyc-faq.css (FAQ accordion, disc positioning) into a single module so all
+ * NYC sub-pages need only one external import for shared overrides.
+ *
+ * Kept out of inline Astro <style> blocks: during SPA navigation, stale route
+ * style tags can survive a transition and cause direct-load-only styling
+ * differences, especially in dark mode. External CSS files loaded via
+ * WireframeLayout persist correctly across navigations.
+ */
+
+/* ── Date band — shared by all NYC sub-page heroes ──────────────────────── */
+
+html[data-event="nyc"] .details-date {
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  letter-spacing: var(--tracking-h3);
+  color: rgba(23, 50, 11, 0.82);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="nyc"] .details-date {
+    color: rgba(255, 249, 240, 0.78) !important;
+  }
+}
+
+/* ── FAQ page — disc, accordion, answer text ─────────────────────────────── */
+
 html[data-event="nyc"][data-page="faq"] .nyc-disc {
   position: fixed;
   width: clamp(380px, 58vh, 700px);
@@ -28,7 +60,7 @@ html[data-event="nyc"] .faq-trigger-inner {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--space-md);
   width: 100%;
 }
 
@@ -79,7 +111,7 @@ html[data-event="nyc"] .faq-answer {
 html[data-event="nyc"] .faq-answer-body p {
   margin: 0;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: var(--line-height-body);
   color: rgba(255, 249, 240, 0.72);
 }
 
@@ -103,7 +135,7 @@ html[data-event="nyc"] .faq-answer-note {
 
 html[data-event="nyc"] .faq-contact {
   margin: 40px 0 0;
-  font-size: 18px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
   color: rgba(255, 249, 240, 0.92);
   text-align: center;
@@ -131,7 +163,7 @@ html[data-event="nyc"] .faq-contact-link:hover {
   }
 
   html[data-event="nyc"] .faq-trigger-inner {
-    gap: 16px;
+    gap: var(--space-sm);
   }
 
   html[data-event="nyc"] .faq-answer {
