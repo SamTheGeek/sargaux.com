@@ -160,6 +160,8 @@ The project includes automated tests that run on every PR:
 
 All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
+**Always run `npm test` locally before pushing any code changes.** Do not rely on CI to catch failures — draft PRs skip tests entirely, and a PR marked "Ready for review" will fail publicly if tests haven't been verified locally first. If Playwright browsers aren't installed, run `npm run test:install` once.
+
 **Test infrastructure notes:**
 
 - Tests use `BASE_URL = 'http://localhost:1213'` constant (port 1213 is sacred!)
