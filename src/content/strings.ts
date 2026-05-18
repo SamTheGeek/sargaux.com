@@ -63,7 +63,7 @@ export const strings = {
     pageTitle:  s('Homepage', 'Accueil'),
     heroTitle:  s('Chez Sargaux', 'Chez Sargaux'),
     tagline:    s('Sam & Margaux', 'Sam & Margaux'),
-    ctaEnter:   s('Entrée', 'Entrée'),
+    ctaEnter:   s('Entrez', 'Entrez'),
     inline: {
       prompt: s('Please enter your name', 'Veuillez entrer votre nom'),
       note: s('As it appears on your invitation.', "Tel qu'il apparaît sur votre invitation."),
