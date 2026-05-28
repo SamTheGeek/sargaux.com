@@ -8,3 +8,18 @@ html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title {
   color: var(--color-burnt-amber);
   -webkit-text-fill-color: var(--color-burnt-amber);
 }
+
+@media (prefers-color-scheme: dark) {
+  /* Skyline fill: darkened so it reads as a horizon against the lighter sky.
+     Must live here (not in <style>) so the rule survives SPA nav — Safari
+     dark mode loses scoped component styles after client-side navigation. */
+  html[data-event="nyc"] .nyc-skyline-fill {
+    display: block;
+    filter: none;
+    color: var(--color-nyc-skyline-dark);
+  }
+
+  html[data-event="nyc"] .nyc-skyline-outline {
+    display: none;
+  }
+}
