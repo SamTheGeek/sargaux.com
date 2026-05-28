@@ -546,6 +546,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
       color: rgba(255, 249, 240, 0.45) !important;
     }
 
+    /* Skyline: filled, darkened so it reads as a horizon against the lighter sky */
+    html[data-event="nyc"] .nyc-skyline-fill {
+      display: block;
+      filter: none;
+      color: var(--color-nyc-skyline-dark);
+    }
+
+    html[data-event="nyc"] .nyc-skyline-outline {
+      display: none;
+    }
+
     /* Body sections below skyline: deep dark moss */
     html[data-event="nyc"] .nyc-moss {
       background: var(--color-nyc-skyline-dark) !important;
