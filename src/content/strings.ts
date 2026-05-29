@@ -114,8 +114,9 @@ export const strings = {
     },
     where: {
       heading:    s('Where', 'Où'),
-      dinner:     s('Bar Blondeau', 'Bar Blondeau'),
-      dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
+      dinner:        s('Bar Blondeau', 'Bar Blondeau'),
+      dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
+      dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:  s('followed by', 'suivi de'),
       dancing:    s('Dancing (Location TBA)', 'Dancing (lieu à confirmer)'),
     },
