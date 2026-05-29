@@ -157,6 +157,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </main>
 
   <footer>
+    <nav class="footer-nav">
+      <a href="/france">Home</a>
+    </nav>
     <div class="footer-row">
       <p>{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />

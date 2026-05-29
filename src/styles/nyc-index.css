@@ -8,3 +8,13 @@ html[data-event="nyc"] .nyc-strip-cta .nyc-strip-title {
   color: var(--color-burnt-amber);
   -webkit-text-fill-color: var(--color-burnt-amber);
 }
+
+/* ── Dark mode: reduce brightness of moss section text ── */
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="nyc"] .nyc-moss .nyc-info-val,
+  html[data-event="nyc"] .nyc-moss .nyc-info-secondary,
+  html[data-event="nyc"] .nyc-moss .nyc-strip-link {
+    color: rgba(255, 249, 240, 0.82);
+  }
+}
