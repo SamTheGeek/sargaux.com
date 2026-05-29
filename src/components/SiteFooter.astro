@@ -8,6 +8,7 @@ interface Props {
   guest?: string | null;
   lang?: string;
   showNav?: boolean;
+  homeHref?: string | null;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
   guest = null,
   lang = 'en',
   showNav = true,
+  homeHref = null,
 } = Astro.props;
 
 const t = createTranslator(lang);
@@ -24,6 +26,12 @@ const footerClassName = ['site-footer', className].filter(Boolean).join(' ');
 <footer class={footerClassName}>
   {showNav && (
     <nav>
+      {homeHref && (
+        <>
+          <a href={homeHref}>Home</a>
+          <span> · </span>
+        </>
+      )}
       <a href="/registry">{t(strings.global.registry)}</a>
       {guest && (
         <>

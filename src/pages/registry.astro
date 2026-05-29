@@ -4,8 +4,11 @@ import ImagePlaceholder from '../components/ImagePlaceholder.astro';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import LangSwitcher from '../components/LangSwitcher.astro';
+import { getPrimaryEventRoute } from '../lib/event-routing';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
 ---
 
 <WireframeLayout title={t(strings.registry.pageTitle)}>
@@ -91,6 +94,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </main>
 
   <footer>
+    <nav class="footer-nav">
+      <a href={homeHref}>Home</a>
+    </nav>
     <div class="footer-row">
       <p>{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
