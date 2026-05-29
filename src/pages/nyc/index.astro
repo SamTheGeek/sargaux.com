@@ -96,7 +96,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="nyc-info-key">{t(strings.nyc.where.heading)}</span>
           <span class="nyc-info-val">
             {t(strings.nyc.where.dinner)}<br>
-            80 Wythe Ave, 6th Floor · Brooklyn, NY<br>
+            <span class="nyc-info-secondary nyc-info-address">{t(strings.nyc.where.dinnerAddress)}</span>
             <span class="nyc-info-secondary">{t(strings.nyc.where.separator)} {t(strings.nyc.where.dancing)}</span>
           </span>
         </div>
@@ -153,6 +153,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   <footer class="nyc-moss nyc-footer site-footer">
     <nav>
+      <a href="/nyc">Home</a>
+      <span> · </span>
       <a href="/registry">{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
@@ -396,9 +398,14 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: var(--font-size-caption);
+    font-size: 16px;
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
+  }
+
+  html[data-event="nyc"] .nyc-info-address {
+    color: rgba(255, 249, 240, 0.65);
+    margin-top: 2px;
   }
 
   html[data-event="nyc"] .nyc-info-link-inline,
