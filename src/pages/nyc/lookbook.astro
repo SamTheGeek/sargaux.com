@@ -15,7 +15,7 @@ const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.inc
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
 const globResult = import.meta.glob<{ default: ImageMetadata }>(
-  '../../assets/images/nyc/lookbook/pinterest_nyc_*.jpg',
+  '../../assets/images/nyc/lookbook/*.{jpg,jpeg}',
   { eager: true }
 );
 const images = Object.entries(globResult)
