@@ -30,14 +30,14 @@ function formatExifDate(date: Date): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
-const heroPhotoGlob = import.meta.glob<{ default: ImageMetadata }>(
-  '../assets/images/couple/photo_1.jpeg',
-  { eager: true }
-);
-const heroPhoto = Object.values(heroPhotoGlob)[0].default;
+function formatDateLabel(date: string | null): string {
+  if (!date) return 'Chez Sargaux';
+  if (/^\d{4}$/.test(date)) return `c. ${date}`;
+  return date;
+}
 
 const couplePhotosGlob = import.meta.glob<{ default: ImageMetadata }>(
-  '../assets/images/couple/couple - *.jpeg',
+  '../assets/images/couple/couple_*.{jpeg,jpg}',
   { eager: true }
 );
 const allPhotoEntries = Object.entries(couplePhotosGlob).sort(([a], [b]) => {
@@ -65,18 +65,10 @@ const exifDates = await Promise.all(
 
 const photosWithDates = allPhotoEntries.map(([, mod], i) => ({ image: mod.default, date: exifDates[i] }));
 
-let heroPhotoDate: string | null = null;
-try {
-  const heroFilePath = path.join(process.cwd(), 'src/assets/images/couple/photo_1.jpeg');
-  const data = await exifr.parse(heroFilePath, ['DateTimeOriginal']);
-  if (data?.DateTimeOriginal) {
-    heroPhotoDate = formatExifDate(data.DateTimeOriginal);
-  }
-} catch {
-  // Fall through to the checked-in fallback when metadata is missing.
-}
-
-heroPhotoDate ??= couplePhotoDateFallbacks['/images/couple/photo_1.jpeg'] ?? null;
+// Pick a random portrait photo for the hero, then exclude it from the gallery pool.
+const portraitPhotos = photosWithDates.filter(p => p.image.height > p.image.width);
+const heroPhotoData = portraitPhotos[Math.floor(Math.random() * portraitPhotos.length)];
+const heroPhotoDate = heroPhotoData?.date ?? null;
 
 const storyRows = [
   {
@@ -98,7 +90,9 @@ const storyRows = [
 const closingLine = 'We are so excited to celebrate this next chapter in our lives with you, thank you for being a part of it!';
 
 // 10 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row
-const shuffled = [...photosWithDates].sort(() => Math.random() - 0.5).slice(0, 10);
+// Exclude the hero photo from the gallery pool so it doesn't appear twice.
+const galleryPool = photosWithDates.filter(p => p !== heroPhotoData);
+const shuffled = [...galleryPool].sort(() => Math.random() - 0.5).slice(0, 10);
 
 function makeCard(photo: (typeof photosWithDates)[0]) {
   return {
@@ -156,11 +150,11 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
           <div class="photo-card">
             <div class="photo-card-inner">
               <div class="photo-label-row">
-                <span class="photo-label" id="couple-panel-title">{heroPhotoDate ?? t(strings.couple.photoLabel)}</span>
+                <span class="photo-label" id="couple-panel-title">{heroPhotoDate ? formatDateLabel(heroPhotoDate) : t(strings.couple.photoLabel)}</span>
                 <span class="photo-label photo-label--muted">Chez Sargaux</span>
               </div>
               <figure class="couple-photo-frame" transition:persist="couple-photo-frame">
-                <Image src={heroPhoto} alt="Sam and Margaux together" class="couple-photo" width={960} />
+                <Image src={heroPhotoData.image} alt="Sam and Margaux together" class="couple-photo" width={960} />
               </figure>
             </div>
           </div>
@@ -180,7 +174,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
                 >
                   <div class="photo-card-inner">
                     <div class="photo-label-row">
-                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                      <span class="photo-label photo-label--muted">{formatDateLabel(photo.date)}</span>
                     </div>
                     <figure class="couple-photo-frame">
                       <Image src={photo.image} alt={photo.alt} loading="lazy" class="couple-photo" width={800} />
@@ -204,7 +198,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
                 >
                   <div class="photo-card-inner">
                     <div class="photo-label-row">
-                      <span class="photo-label photo-label--muted">{photo.date ?? 'Chez Sargaux'}</span>
+                      <span class="photo-label photo-label--muted">{formatDateLabel(photo.date)}</span>
                     </div>
                     <figure class="couple-photo-frame">
                       <Image src={photo.image} alt={photo.alt} loading="lazy" class="couple-photo" width={800} />
@@ -225,7 +219,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
               >
                 <div class="photo-card-inner">
                   <div class="photo-label-row">
-                    <span class="photo-label photo-label--muted">{closingCards[0].date ?? 'Chez Sargaux'}</span>
+                    <span class="photo-label photo-label--muted">{formatDateLabel(closingCards[0].date)}</span>
                   </div>
                   <figure class="couple-photo-frame">
                     <Image src={closingCards[0].image} alt="Sam and Margaux" loading="lazy" class="couple-photo" width={800} />
@@ -245,7 +239,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
               >
                 <div class="photo-card-inner">
                   <div class="photo-label-row">
-                    <span class="photo-label photo-label--muted">{closingCards[1].date ?? 'Chez Sargaux'}</span>
+                    <span class="photo-label photo-label--muted">{formatDateLabel(closingCards[1].date)}</span>
                   </div>
                   <figure class="couple-photo-frame">
                     <Image src={closingCards[1].image} alt="Sam and Margaux" loading="lazy" class="couple-photo" width={800} />
