@@ -161,6 +161,7 @@ sargaux.com.code-workspace
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 # Local Codex and Playwright MCP state
 .codex/environments/
