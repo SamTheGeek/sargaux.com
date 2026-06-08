@@ -66,6 +66,7 @@ test.describe('Auth Module — Name Normalization', () => {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/-/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -82,6 +83,12 @@ test.describe('Auth Module — Name Normalization', () => {
 
   test('collapses whitespace', async () => {
     expect(normalize('  Sam   Gross  ')).toBe('sam gross');
+  });
+
+  test('treats hyphens as word separators', async () => {
+    expect(normalize('Jean-Pierre Delacroix')).toBe('jean pierre delacroix');
+    expect(normalize('Jean Pierre Delacroix')).toBe('jean pierre delacroix');
+    expect(normalize('jean-pierre   delacroix')).toBe('jean pierre delacroix');
   });
 
   test('handles combined normalization', async () => {
@@ -102,6 +109,7 @@ test.describe('Auth Module — Guest Validation', () => {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/-/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -110,6 +118,11 @@ test.describe('Auth Module — Guest Validation', () => {
     { id: 'notion-1', name: 'Sam Gross', normalizedName: 'sam gross' },
     { id: 'notion-2', name: 'Margaux Ancel', normalizedName: 'margaux ancel' },
     { id: 'notion-3', name: 'Dorothée Ancel', normalizedName: 'dorothee ancel' },
+    {
+      id: 'notion-4',
+      name: 'Jean-Pierre Delacroix',
+      normalizedName: 'jean pierre delacroix',
+    },
   ];
 
   test('finds guest by exact name', async () => {
@@ -131,6 +144,20 @@ test.describe('Auth Module — Guest Validation', () => {
     const found = mockGuests.find((g) => g.normalizedName === input);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Dorothée Ancel');
+  });
+
+  test('finds hyphenated-name guest when input omits the hyphen', async () => {
+    const input = normalize('Jean Pierre Delacroix');
+    const found = mockGuests.find((g) => g.normalizedName === input);
+    expect(found).toBeDefined();
+    expect(found!.name).toBe('Jean-Pierre Delacroix');
+  });
+
+  test('finds hyphenated-name guest when input includes the hyphen', async () => {
+    const input = normalize('jean-pierre delacroix');
+    const found = mockGuests.find((g) => g.normalizedName === input);
+    expect(found).toBeDefined();
+    expect(found!.name).toBe('Jean-Pierre Delacroix');
   });
 
   test('returns undefined for unknown guest', async () => {
