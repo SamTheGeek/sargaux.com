@@ -23,13 +23,14 @@
  *   Defaults to 'both' if no argument given.
  *
  * Output:
- *   invitation-addresses-nyc.csv
- *   invitation-addresses-france.csv
+ *   scripts/output/invitation-addresses-nyc.csv
+ *   scripts/output/invitation-addresses-france.csv
  *
  * Requires: NOTION_API_KEY and NOTION_GUEST_LIST_DB in .env.local
  */
 
 import { readFileSync, writeFileSync } from 'fs';
+import { execFileSync } from 'child_process';
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
@@ -370,10 +371,11 @@ async function generateCSV(eventName) {
     ]));
   }
 
-  const outPath = new URL(`../invitation-addresses-${eventName}.csv`, import.meta.url).pathname;
+  const outPath = new URL(`output/invitation-addresses-${eventName}.csv`, import.meta.url).pathname;
   // Prepend UTF-8 BOM so Excel opens the file with correct encoding
   writeFileSync(outPath, '﻿' + rows.join('\n') + '\n', 'utf8');
   console.log(`  ✓ Wrote ${rows.length - 1} rows → ${outPath}`);
+  return outPath;
 
   if (warnings.length > 0) {
     console.log(`\n  Households missing addresses (${warnings.length}):`);
@@ -382,10 +384,14 @@ async function generateCSV(eventName) {
 }
 
 async function main() {
+  const outPaths = [];
   for (const event of events) {
-    await generateCSV(event);
+    outPaths.push(await generateCSV(event));
   }
   console.log('\nDone.');
+  for (const p of outPaths) {
+    execFileSync('open', ['-R', p]);
+  }
 }
 
 main().catch(err => {

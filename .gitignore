@@ -171,5 +171,5 @@ sargaux.com.code-workspace
 public/apple-touch-icon.png
 public/apple-touch-icon-precomposed.png
 
-# Generated invitation CSVs (contain guest PII — never commit)
-invitation-addresses-*.csv
+# Generated script outputs (contain guest PII — never commit)
+scripts/output/
