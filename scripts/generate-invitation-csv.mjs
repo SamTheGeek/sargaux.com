@@ -151,14 +151,72 @@ function parsePlaceAddress(full) {
 }
 
 /**
+ * Parse a manually-entered address string (from the Apartment Nº fallback field).
+ * Normalises newlines to commas first, then handles US formats with or without
+ * an explicit country token.
+ *
+ * Observed shapes:
+ *   "P.O. Box 28722\nAustin TX 78755\nUS"           → newline-separated
+ *   "P.O. Box 20155 Fountain Hills, Arizona 85269"  → single line, full state name
+ *   "3 Daybreak Commons, Westport, CT 06880"        → single line, state abbrev
+ *   "PO Box 6572, Mckinney, TX 75071"               → single line, state abbrev
+ */
+function parseManualAddress(raw) {
+  // Normalise newlines → comma-separated parts
+  const normalised = raw.replace(/\n/g, ', ').replace(/,\s*,/g, ', ').trim();
+  const parts = normalised.split(', ').map(p => p.trim()).filter(Boolean);
+
+  if (parts.length === 0) return null;
+  if (parts.length === 1) {
+    return { address1: parts[0], address2: '', address3: '', city: '', state: '', postcode: '', country: '' };
+  }
+
+  // Detect a country token as the last part
+  const KNOWN_COUNTRIES = /^(US|USA|United States|France|United Kingdom|UK|Canada|Belgium|Germany|Italy|Spain|Australia)$/i;
+  const COUNTRY_NORMALISE = { US: 'United States', USA: 'United States', UK: 'United Kingdom' };
+  const lastPart = parts[parts.length - 1];
+  const hasCountry = KNOWN_COUNTRIES.test(lastPart);
+  const country = hasCountry
+    ? (COUNTRY_NORMALISE[lastPart.toUpperCase()] ?? lastPart)
+    : '';
+  const addrParts = hasCountry ? parts.slice(0, -1) : parts;
+
+  const address1 = addrParts[0];
+  const tail = addrParts[addrParts.length - 1]; // last non-country token
+
+  // "City ST ZIP" on a single token — e.g. "Austin TX 78755"
+  const cityStateZip = tail.match(/^(.+?)\s+([A-Z]{2})\s+(\S+)$/);
+  if (cityStateZip && addrParts.length === 2) {
+    return { address1, address2: '', address3: '', city: cityStateZip[1], state: cityStateZip[2], postcode: cityStateZip[3], country: country || 'United States' };
+  }
+
+  // "ST ZIP" on last token — e.g. "CT 06880", "TX 75071"
+  const stateZip = tail.match(/^([A-Z]{2})\s+(\d[\w-]*)$/);
+  if (stateZip) {
+    const city = addrParts.length > 2 ? addrParts.slice(1, -1).join(', ') : '';
+    return { address1, address2: '', address3: '', city, state: stateZip[1], postcode: stateZip[2], country: country || 'United States' };
+  }
+
+  // "Full State Name ZIP" on last token — e.g. "Arizona 85269"
+  const stateFullZip = tail.match(/^([A-Za-z][A-Za-z\s]+)\s+(\d[\w-]*)$/);
+  if (stateFullZip) {
+    const city = addrParts.length > 2 ? addrParts.slice(1, -1).join(', ') : '';
+    return { address1, address2: '', address3: '', city, state: stateFullZip[1].trim(), postcode: stateFullZip[2], country: country || 'United States' };
+  }
+
+  // Fallback: put everything after address1 as city
+  return { address1, address2: '', address3: '', city: addrParts.slice(1).join(', '), state: '', postcode: '', country };
+}
+
+/**
  * Return a ParsedAddress from a Notion page's properties, or null if no address.
  *
  * Normal path:    Mailing Address (place) provides the geocoded string;
  *                 Apartment Nº holds an optional unit number (becomes address2).
  *
- * Fallback path:  Mailing Address is null (failed geocode) and Apartment Nº
- *                 contains the full address as newline-separated lines
- *                 (e.g. "P.O. Box 28722\nAustin TX 78755\nUS").
+ * Fallback path:  Mailing Address did not geocode (null) and Apartment Nº
+ *                 holds the full address — either newline-separated or a
+ *                 single comma-separated line (e.g. P.O. Box addresses).
  */
 function getAddress(props) {
   const placeAddr = props['Mailing Address']?.place?.address;
@@ -172,37 +230,9 @@ function getAddress(props) {
     return parsed;
   }
 
-  // Dennis-style fallback: full address stored as newlines in Apartment Nº
-  if (aptRaw && aptRaw.includes('\n')) {
-    const lines = aptRaw.split('\n').map(l => l.trim()).filter(Boolean);
-    // Try to parse the city/state/zip from the second line if it looks like one
-    let address1 = lines[0] || '';
-    let address2 = '';
-    let address3 = '';
-    let city = '';
-    let state = '';
-    let postcode = '';
-    let country = lines.length > 1 ? lines[lines.length - 1] : '';
-
-    if (lines.length >= 3) {
-      // Middle line(s) contain city/state/zip
-      const cityLine = lines[1];
-      // US-style: "City ST ZIP"
-      const usMatch = cityLine.match(/^(.+?)\s+([A-Z]{2})\s+(\S+)$/);
-      if (usMatch) {
-        city = usMatch[1];
-        state = usMatch[2];
-        postcode = usMatch[3];
-      } else {
-        address2 = cityLine;
-        if (lines.length > 3) address3 = lines.slice(2, -1).join(', ');
-      }
-    } else if (lines.length === 2) {
-      // Only two lines: treat second as country, first as address1
-      country = lines[1];
-    }
-
-    return { address1, address2, address3, city, state, postcode, country };
+  // Fallback: full address typed into the Apartment Nº field
+  if (aptRaw) {
+    return parseManualAddress(aptRaw);
   }
 
   return null;
