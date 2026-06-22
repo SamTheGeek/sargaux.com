@@ -147,13 +147,13 @@ test.describe('RSVP preview mode — NYC', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('NYC RSVP guest names include "Sam Gross" and "Margaux Ancel"', async () => {
+  test('NYC RSVP guest names include "Samuel Gross" and "Margaux Ancel"', async () => {
     await page.goto('/nyc/rsvp');
     const nameInputs = page.locator('[data-guest-row] .guest-name');
     const values = await nameInputs.evaluateAll((inputs) =>
       inputs.map((el) => (el as HTMLInputElement).value)
     );
-    expect(values).toContain('Sam Gross');
+    expect(values).toContain('Samuel Gross');
     expect(values).toContain('Margaux Ancel');
   });
 

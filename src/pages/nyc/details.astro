@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import '../../styles/nyc-subpage-hero.css';
+import '../../styles/nyc-subpages.css';
 import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
@@ -100,6 +100,7 @@ const calendarToken = generateTokenIfPossible(guestId);
           <span class="nyc-info-val">
             {t(strings.nyc.details.dressCode.value)}
             <span class="nyc-info-secondary">{t(strings.nyc.details.dressCode.note)}</span>
+            <a href="/nyc/lookbook" class="venue-directions-link nyc-details-lookbook-link">View the lookbook →</a>
           </span>
         </div>
         <div class="nyc-info-row">
@@ -252,6 +253,8 @@ const calendarToken = generateTokenIfPossible(guestId);
   <!-- Footer -->
   <footer class="nyc-moss nyc-footer site-footer">
     <nav>
+      <a href="/nyc">Home</a>
+      <span> · </span>
       <a href="/registry">{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
@@ -454,7 +457,7 @@ const calendarToken = generateTokenIfPossible(guestId);
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: var(--font-size-caption);
+    font-size: 16px;
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }

@@ -5,7 +5,7 @@ import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
-import '../../styles/france-schedule.css';
+import '../../styles/france-details.css';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
@@ -147,6 +147,9 @@ const calendarToken = generateTokenIfPossible(guestId);
   </main>
 
   <footer>
+    <nav class="footer-nav">
+      <a href="/france">Home</a>
+    </nav>
     <div class="footer-row">
       <p>{t(strings.global.copyright)}</p>
       <LangSwitcher lang={Astro.locals.lang ?? 'en'} />

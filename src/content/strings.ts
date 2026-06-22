@@ -113,15 +113,16 @@ export const strings = {
       note:     s('', ''),
     },
     where: {
-      heading:    s('Where', 'Où'),
-      dinner:     s('Bar Blondeau', 'Bar Blondeau'),
-      dinnerType: s('Cocktails & Dinner', 'Cocktail & Dîner'),
-      separator:  s('followed by', 'suivi de'),
-      dancing:    s('Dancing (Location TBA)', 'Dancing (lieu à confirmer)'),
+      heading:       s('Where', 'Où'),
+      dinner:        s('Bar Blondeau', 'Bar Blondeau'),
+      dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
+      dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
+      separator:     s('followed by', 'suivi de'),
+      dancing:       s('Dancing (Location TBA)', 'Dancing (lieu à confirmer)'),
     },
     dressCode: {
       heading: s('Dress Code', 'Code vestimentaire'),
-      value:   s('Festive Attire', 'Tenue de fête'),
+      value:   s('Festive Cocktail Attire', 'Tenue cocktail festive'),
       note:    s('Think jackets but no tie required.', 'Veste recommandée, cravate non obligatoire.'),
     },
     rsvpDeadline: {
@@ -168,7 +169,7 @@ export const strings = {
     // /nyc/details
     details: {
       pageTitle:  s('NYC Details', 'Détails New York'),
-      heroTitle:  s('La Soirée', 'La Soirée'),
+      heroTitle:  s('The Party', 'La Soirée'),
       subtitle:   s('October 11, 2026', '11 octobre 2026'),
       schedule: {
         heading: s('Schedule', 'Programme'),
@@ -180,7 +181,7 @@ export const strings = {
         sunset: s('Sunset behind the Manhattan skyline', 'Coucher de soleil derrière la skyline de Manhattan'),
         dancing: {
           time:  s('9:30 PM', '21h30'),
-          title: s('Dancing', 'Dancing'),
+          title: s('After Party - Dancing', 'After Party - Dancing'),
           desc:  s(
             'Join us as we head to a nearby venue and keep the night going. No reservations, just dancing and continued celebration.',
             'Retrouvez-nous ensuite dans un lieu voisin pour prolonger la soirée. Sans réservation, juste de la danse et la fête qui continue.',
@@ -192,11 +193,11 @@ export const strings = {
         dinner: {
           title:          s('Dinner', 'Dîner'),
           name:           s('Bar Blondeau at the Wythe Hotel', 'Bar Blondeau au Wythe Hotel'),
-          address:        s('80 Wythe Ave, 6th Floor · Brooklyn, NY', '80 Wythe Ave, 6e étage · Brooklyn, NY'),
+          address:        s('80 Wythe Avenue · Brooklyn, New York', '80 Wythe Avenue · Brooklyn, New York'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
         dancing: {
-          title:          s('Dancing', 'Dancing'),
+          title:          s('After Party - Dancing', 'After Party - Dancing'),
           name:           s('Location TBA', 'Lieu à confirmer'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
@@ -210,8 +211,8 @@ export const strings = {
       },
       dressCode: {
         heading: s('Dress Code', 'Code vestimentaire'),
-        value:   s('Festive Attire', 'Tenue de fête'),
-        note:    s('Think jackets but no tie required. The couple will be in suits.', 'Veste recommandée, cravate non obligatoire. Le couple sera en costume.'),
+        value:   s('Festive Cocktail Attire', 'Tenue cocktail festive'),
+        note:    s('Think jackets, but no tie required.', 'Veste recommandée, cravate non obligatoire.'),
       },
       calendar: {
         heading: s('Add to Calendar', "Ajouter à l'agenda"),
@@ -335,8 +336,8 @@ export const strings = {
         parking: {
           question: s('Is there parking nearby?', 'Y a-t-il un parking à proximité ?'),
           answer:   s(
-            'Yes, parking is available near the venue at 25 Kent parking garage.',
-            'Oui, un parking est disponible près du lieu au 25 Kent parking garage.',
+            'There is a parking garage at 25 Kent Avenue. You can also reserve a spot at the Propark – William Vale Hotel via ParkMobile (parkmobile.io/reservation/57104).',
+            'Il y a un parking au 25 Kent Avenue. Vous pouvez également réserver une place au Propark – William Vale Hotel via ParkMobile (parkmobile.io/reservation/57104).',
           ),
         },
         weather: {
@@ -354,10 +355,10 @@ export const strings = {
           ),
         },
         ceremony: {
-          question: s('Will there be a ceremony?', 'Y aura-t-il une cérémonie ?'),
+          question: s('Will there be a ceremony or formal program?', 'Y aura-t-il une cérémonie ou un programme formel ?'),
           answer:   s(
-            'In lieu of a ceremony, we\'ll have a toast from our parents. Our wedding ceremony and reception will be held separately as an intimate gathering.',
-            'Il n\'y aura pas de cérémonie lors de cet événement. Notre cérémonie de mariage et la réception auront lieu séparément dans un cadre plus intime.',
+            'There will be no ceremony at this event. We will have a brief toast from the parents, but no formal program. This evening is for mingling and celebrating!',
+            'Il n\'y aura pas de cérémonie lors de cet événement. Nous aurons un bref toast des parents, mais pas de programme formel. Cette soirée est faite pour se retrouver et célébrer !',
           ),
         },
         program: {

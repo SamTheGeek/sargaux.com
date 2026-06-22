@@ -59,18 +59,18 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
-    await expect(page.locator('.guest-name')).toContainText('Sam Gross');
+    await expect(page.locator('.guest-name')).toContainText('Samuel Gross');
   });
 
   test('should submit login when clicking inline arrow button', async ({ page }) => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.click('#inline-submit');
 
     await expect(page).toHaveURL('/nyc');
@@ -120,7 +120,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'sam gross');
+    await page.fill('#name', 'samuel gross');
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
@@ -130,7 +130,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', '  Sam   Gross  ');
+    await page.fill('#name', '  Samuel   Gross  ');
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
@@ -147,7 +147,7 @@ test.describe('Authentication', () => {
   test('should redirect authenticated users from homepage to /nyc', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -159,7 +159,7 @@ test.describe('Authentication', () => {
   test('should logout and redirect to homepage', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -177,7 +177,7 @@ test.describe('Authentication', () => {
   test('should have a visible back link on RSVP pages', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -204,14 +204,14 @@ test.describe('Authentication', () => {
     // Call the login API directly
     const response = await page.evaluate(async () => {
       const formData = new FormData();
-      formData.append('name', 'Sam Gross');
+      formData.append('name', 'Samuel Gross');
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
     });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.guest).toBe('Sam Gross');
+    expect(response.body.guest).toBe('Samuel Gross');
     expect(response.body.redirectPath).toBe('/nyc');
   });
 
@@ -246,7 +246,7 @@ test.describe('Authentication', () => {
   test('session cookie is set as httpOnly after login', async ({ page, context }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -261,7 +261,7 @@ test.describe('Authentication', () => {
   test('session cookie contains valid base64 JSON payload', async ({ page, context }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Sam Gross');
+    await page.fill('#name', 'Samuel Gross');
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -271,7 +271,7 @@ test.describe('Authentication', () => {
 
     // Decode and validate the session payload
     const payload = JSON.parse(Buffer.from(authCookie!.value, 'base64url').toString('utf-8'));
-    expect(payload.guest).toBe('Sam Gross');
+    expect(payload.guest).toBe('Samuel Gross');
     expect(payload.created).toBeGreaterThan(0);
     // notionId is optional — absent when using hardcoded fallback
     expect(typeof payload.guest).toBe('string');

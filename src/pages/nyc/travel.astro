@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import '../../styles/nyc-subpage-hero.css';
+import '../../styles/nyc-subpages.css';
 import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
@@ -159,6 +159,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <!-- Footer -->
   <footer class="nyc-moss nyc-footer site-footer">
     <nav>
+      <a href="/nyc">Home</a>
+      <span> · </span>
       <a href="/registry">{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
@@ -373,7 +375,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-info-secondary {
     display: block;
-    font-size: var(--font-size-caption);
+    font-size: 16px;
     color: rgba(255, 249, 240, 0.45);
     margin-top: 4px;
   }

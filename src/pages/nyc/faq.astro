@@ -1,7 +1,7 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import '../../styles/nyc-subpage-hero.css';
-import '../../styles/nyc-faq.css';
+import '../../styles/nyc-subpages.css';
+
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
@@ -112,6 +112,8 @@ const faqItems = [
 
     <footer class="nyc-moss nyc-footer site-footer">
       <nav>
+        <a href="/nyc">Home</a>
+        <span> · </span>
         <a href="/registry">{t(strings.global.registry)}</a>
         <span> · </span>
         <span class="guest-name">{guest}</span>
