@@ -100,4 +100,7 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
   };
 }
 
-export const TEST_GUEST_NAME = 'Sam Gross';
+// Matches the Notion "Full Name" formula (First Name + Last Name) for the
+// real guest record used in Notion-backed login tests, not the invitation
+// title ("Sam Gross") — see Full Name vs Name of Guest mismatch.
+export const TEST_GUEST_NAME = 'Samuel Gross';
