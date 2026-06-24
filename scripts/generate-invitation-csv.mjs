@@ -18,14 +18,16 @@
  * Special case — Dennis-style fallback: when Mailing Address does not geocode,
  * the full address is stored as newline-separated text in "Apartment Nº".
  *
- * US addresses also get UspsSerial and UspsImbBarcode columns: UspsSerial is
- * the household's 6-digit USPS serial number, and UspsImbBarcode is the
- * 65-character A/D/T/F bar string for a USPS Intelligent Mail Barcode (see
- * scripts/lib/usps-imb.mjs), suitable for rendering with an IMb barcode font
- * in a mail-merge tool. Each household's serial is calculated and
- * permanently assigned once, persisted in scripts/data/usps-imb-serials.json
- * (see scripts/lib/usps-serial-registry.mjs), so re-running this script
- * never changes a household's serial.
+ * US addresses also get a pair of UspsSerial<Piece>/UspsImbBarcode<Piece>
+ * columns per physical mailpiece this household receives for the event:
+ *   - NYC sends one mailpiece (Invitation) per household.
+ *   - France sends two (SaveTheDate, then Invitation) per household.
+ * A USPS Intelligent Mail Barcode serial identifies one physical mailpiece,
+ * not a household, so each piece gets its own unique serial (see
+ * scripts/lib/usps-imb.mjs for the encoder). Serials are calculated and
+ * permanently assigned once per (household, piece), persisted in
+ * scripts/data/usps-imb-serials.json (see scripts/lib/usps-serial-registry.mjs),
+ * so re-running this script never changes an already-assigned serial.
  *
  * Usage:
  *   node scripts/generate-invitation-csv.mjs [nyc|france|both]
@@ -41,7 +43,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { encodeImb } from './lib/usps-imb.mjs';
-import { householdKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
+import { mailpieceKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
 
 // ─── USPS Intelligent Mail Barcode config ──────────────────────────────────────
 //
@@ -53,6 +55,14 @@ const USPS_MAILER_ID = '904209274';
 const USPS_SERVICE_TYPE = '300';
 const USPS_BARCODE_ID = '00';
 const USPS_SERIAL_DIGITS = 6;
+
+// Physical mailpieces sent to each household, per event, in mailing order.
+// A serial number — and therefore a barcode — must be unique per mailpiece,
+// not per household, so each event lists every piece its households receive.
+const MAIL_PIECES = {
+  nyc: ['Invitation'],
+  france: ['SaveTheDate', 'Invitation'],
+};
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
@@ -386,10 +396,14 @@ async function generateCSV(eventName) {
   console.log(`  Households (= envelopes): ${households.length}`);
 
   // ── Build CSV rows ──────────────────────────────────────────────────────────
-  const headers = ['EnvelopeName', 'Address1', 'Address2', 'Address3', 'City', 'State', 'Postcode', 'Country', 'HandDeliver', 'UspsSerial', 'UspsImbBarcode'];
+  const pieces = MAIL_PIECES[eventName];
+  const headers = [
+    'EnvelopeName', 'Address1', 'Address2', 'Address3', 'City', 'State', 'Postcode', 'Country', 'HandDeliver',
+    ...pieces.flatMap(piece => [`UspsSerial${piece}`, `UspsImbBarcode${piece}`]),
+  ];
   const warnings = [];
 
-  // Resolve each household's serial in a fixed order (by household-key hash,
+  // Resolve each mailpiece's serial in a fixed order (by mailpiece-key hash,
   // never by name) so collision resolution is reproducible across runs.
   const serialAssigner = createSerialAssigner(USPS_SERIAL_DIGITS);
   const householdRows = [];
@@ -423,31 +437,45 @@ async function generateCSV(eventName) {
       warnings.push(`  ⚠️  No address: ${envelopeName}`);
     }
 
-    householdRows.push({ envelopeName, addr, handDeliver, key: householdKey(members.map(m => m.id)) });
+    const memberIds = members.map(m => m.id);
+    householdRows.push({
+      envelopeName,
+      addr,
+      handDeliver,
+      sortKey: [...memberIds].sort().join('|'),
+      memberIds,
+    });
   }
 
-  householdRows.sort((a, b) => a.key.localeCompare(b.key));
+  householdRows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
   const rows = [csvRow(headers)];
-  for (const { envelopeName, addr, handDeliver, key } of householdRows) {
-    let serialStr = '';
-    let barcode = '';
-    if (addr?.country === 'United States') {
-      const zipParts = parseUsZip(addr.postcode);
-      if (zipParts) {
-        const serial = serialAssigner.getOrAssignSerial(key);
-        serialStr = formatSerial(serial, USPS_SERIAL_DIGITS);
-        barcode = encodeImb({
-          barcodeId: USPS_BARCODE_ID,
-          serviceType: USPS_SERVICE_TYPE,
-          mailerId: USPS_MAILER_ID,
-          serialNum: serialStr,
-          zip: zipParts.zip,
-          plus4: zipParts.plus4,
-        });
-      } else {
-        warnings.push(`  ⚠️  US address missing usable zip for barcode: ${envelopeName}`);
+  for (const { envelopeName, addr, handDeliver, memberIds } of householdRows) {
+    const pieceCells = [];
+    for (const piece of pieces) {
+      let serialStr = '';
+      let barcode = '';
+      if (addr?.country === 'United States') {
+        const zipParts = parseUsZip(addr.postcode);
+        if (zipParts) {
+          // Scope the piece label by event: an "Invitation" mailed for NYC and
+          // an "Invitation" mailed for France are two distinct physical
+          // envelopes (even to the same household), so each needs its own serial.
+          const serial = serialAssigner.getOrAssignSerial(mailpieceKey(memberIds, `${eventName}:${piece}`));
+          serialStr = formatSerial(serial, USPS_SERIAL_DIGITS);
+          barcode = encodeImb({
+            barcodeId: USPS_BARCODE_ID,
+            serviceType: USPS_SERVICE_TYPE,
+            mailerId: USPS_MAILER_ID,
+            serialNum: serialStr,
+            zip: zipParts.zip,
+            plus4: zipParts.plus4,
+          });
+        } else {
+          warnings.push(`  ⚠️  US address missing usable zip for ${piece} barcode: ${envelopeName}`);
+        }
       }
+      pieceCells.push(serialStr, barcode);
     }
 
     rows.push(csvRow([
@@ -460,8 +488,7 @@ async function generateCSV(eventName) {
       addr?.postcode ?? '',
       addr?.country ?? '',
       handDeliver ? 'Yes' : '',
-      serialStr,
-      barcode,
+      ...pieceCells,
     ]));
   }
 

@@ -1,19 +1,22 @@
 /**
  * Persistent, deterministic serial-number assignment for USPS IMb barcodes.
  *
- * Each mailpiece (household/envelope) needs a serial number that is:
+ * A serial number identifies one physical mailpiece, not a household — a
+ * household that receives multiple mailings (e.g. a save-the-date AND an
+ * invitation) needs a distinct serial for each piece. Each serial is:
  *   - Calculated, not based on alphabetical order or processing order
- *   - Unique within this Mailer ID
+ *   - Unique within this Mailer ID, per mailpiece
  *   - Stable across every run and re-run of the export script
  *
- * Serials are derived by hashing a stable household key (the sorted Notion
- * page IDs of the household's named members — immutable, opaque, never
- * alphabetical) with SHA-256, then reducing mod the serial space. Collisions
- * are resolved by linear probing. Once assigned, a household's serial is
- * written to a local registry file and never recalculated or changed, even
- * if a later run's hash distribution would have probed differently.
+ * Serials are derived by hashing a stable mailpiece key — the sorted Notion
+ * page IDs of the household's named members plus a mailpiece label (e.g.
+ * "Invitation", "SaveTheDate") — with SHA-256, then reducing mod the serial
+ * space. Collisions are resolved by linear probing. Once assigned, a
+ * mailpiece's serial is written to a local registry file and never
+ * recalculated or changed, even if a later run's hash distribution would
+ * have probed differently.
  *
- * The registry stores only opaque household-key hashes → serial numbers; it
+ * The registry stores only opaque mailpiece-key hashes → serial numbers; it
  * contains no guest names, addresses, or other PII, so it's safe to commit.
  */
 
@@ -39,13 +42,17 @@ function saveRegistry(registry) {
 }
 
 /**
- * Build the stable household key used to derive a serial. `memberIds` should
- * be the Notion page IDs of the household's named members (not +1
+ * Build the stable key used to derive a mailpiece's serial. `memberIds`
+ * should be the Notion page IDs of the household's named members (not +1
  * placeholders) — immutable per guest, independent of name or address.
+ * `piece` distinguishes multiple mailings to the same household (e.g.
+ * "SaveTheDate" vs "Invitation") so each gets its own unique serial.
  * @param {string[]} memberIds
+ * @param {string} piece
  */
-export function householdKey(memberIds) {
-  return [...memberIds].sort().join('|');
+export function mailpieceKey(memberIds, piece) {
+  if (!piece) throw new Error('mailpieceKey requires a piece label');
+  return [...memberIds].sort().join('|') + '#' + piece;
 }
 
 /**
@@ -60,7 +67,7 @@ export function createSerialAssigner(serialDigits) {
   const used = new Set(Object.values(registry));
   let dirty = false;
 
-  /** @param {string} key  Output of householdKey() */
+  /** @param {string} key  Output of mailpieceKey() */
   function getOrAssignSerial(key) {
     const hash = hashKey(key);
     if (registry[hash] !== undefined) return registry[hash];
