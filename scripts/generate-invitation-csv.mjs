@@ -18,19 +18,49 @@
  * Special case — Dennis-style fallback: when Mailing Address does not geocode,
  * the full address is stored as newline-separated text in "Apartment Nº".
  *
+ * US addresses also get UspsSerial and UspsImbBarcode columns: UspsSerial is
+ * the household's 6-digit USPS serial number, and UspsImbBarcode is the
+ * 65-character A/D/T/F bar string for a USPS Intelligent Mail Barcode (see
+ * scripts/lib/usps-imb.mjs), suitable for rendering with an IMb barcode font
+ * in a mail-merge tool. Each household's serial is calculated and
+ * permanently assigned once, persisted in scripts/data/usps-imb-serials.json
+ * (see scripts/lib/usps-serial-registry.mjs), so re-running this script
+ * never changes a household's serial.
+ *
  * Usage:
  *   node scripts/generate-invitation-csv.mjs [nyc|france|both]
  *   Defaults to 'both' if no argument given.
  *
  * Output:
- *   scripts/output/invitation-addresses-nyc.csv
- *   scripts/output/invitation-addresses-france.csv
+ *   scripts/output/invitation-addresses-nyc-YYYYMMDD.csv
+ *   scripts/output/invitation-addresses-france-YYYYMMDD.csv
  *
  * Requires: NOTION_API_KEY and NOTION_GUEST_LIST_DB in .env.local
  */
 
 import { readFileSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
+import { encodeImb } from './lib/usps-imb.mjs';
+import { householdKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
+
+// ─── USPS Intelligent Mail Barcode config ──────────────────────────────────────
+//
+// Mailer ID is 9 digits, so the serial number field is 6 digits (9 + 6 = 15,
+// per USPS Pub 109). Service Type 300 = First-Class Mail, no special IMb
+// services. Barcode Identifier 00 = standard, no special services.
+
+const USPS_MAILER_ID = '904209274';
+const USPS_SERVICE_TYPE = '300';
+const USPS_BARCODE_ID = '00';
+const USPS_SERIAL_DIGITS = 6;
+
+/** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
+function parseUsZip(postcode) {
+  const digits = (postcode || '').replace(/\D/g, '');
+  if (digits.length === 9) return { zip: digits.slice(0, 5), plus4: digits.slice(5) };
+  if (digits.length === 5) return { zip: digits, plus4: '' };
+  return null;
+}
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
@@ -356,13 +386,18 @@ async function generateCSV(eventName) {
   console.log(`  Households (= envelopes): ${households.length}`);
 
   // ── Build CSV rows ──────────────────────────────────────────────────────────
-  const headers = ['EnvelopeName', 'Address1', 'Address2', 'Address3', 'City', 'State', 'Postcode', 'Country', 'HandDeliver'];
-  const rows = [csvRow(headers)];
+  const headers = ['EnvelopeName', 'Address1', 'Address2', 'Address3', 'City', 'State', 'Postcode', 'Country', 'HandDeliver', 'UspsSerial', 'UspsImbBarcode'];
   const warnings = [];
+
+  // Resolve each household's serial in a fixed order (by household-key hash,
+  // never by name) so collision resolution is reproducible across runs.
+  const serialAssigner = createSerialAssigner(USPS_SERIAL_DIGITS);
+  const householdRows = [];
 
   for (const { eventMembers, allMembers } of households) {
     // Split event members into named guests and unnamed +1 placeholders
     const allMemberInfos = eventMembers.map(p => ({
+      id: p.id,
       firstName: getText(p.properties, 'First Name'),
       lastName: getText(p.properties, 'Last Name'),
       title: getSelect(p.properties, 'Title'),
@@ -388,6 +423,33 @@ async function generateCSV(eventName) {
       warnings.push(`  ⚠️  No address: ${envelopeName}`);
     }
 
+    householdRows.push({ envelopeName, addr, handDeliver, key: householdKey(members.map(m => m.id)) });
+  }
+
+  householdRows.sort((a, b) => a.key.localeCompare(b.key));
+
+  const rows = [csvRow(headers)];
+  for (const { envelopeName, addr, handDeliver, key } of householdRows) {
+    let serialStr = '';
+    let barcode = '';
+    if (addr?.country === 'United States') {
+      const zipParts = parseUsZip(addr.postcode);
+      if (zipParts) {
+        const serial = serialAssigner.getOrAssignSerial(key);
+        serialStr = formatSerial(serial, USPS_SERIAL_DIGITS);
+        barcode = encodeImb({
+          barcodeId: USPS_BARCODE_ID,
+          serviceType: USPS_SERVICE_TYPE,
+          mailerId: USPS_MAILER_ID,
+          serialNum: serialStr,
+          zip: zipParts.zip,
+          plus4: zipParts.plus4,
+        });
+      } else {
+        warnings.push(`  ⚠️  US address missing usable zip for barcode: ${envelopeName}`);
+      }
+    }
+
     rows.push(csvRow([
       envelopeName,
       addr?.address1 ?? '',
@@ -398,19 +460,24 @@ async function generateCSV(eventName) {
       addr?.postcode ?? '',
       addr?.country ?? '',
       handDeliver ? 'Yes' : '',
+      serialStr,
+      barcode,
     ]));
   }
 
-  const outPath = new URL(`output/invitation-addresses-${eventName}.csv`, import.meta.url).pathname;
+  serialAssigner.flush();
+
+  if (warnings.length > 0) {
+    console.log(`\n  Warnings (${warnings.length}):`);
+    warnings.forEach(w => console.log(w));
+  }
+
+  const runDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const outPath = new URL(`output/invitation-addresses-${eventName}-${runDate}.csv`, import.meta.url).pathname;
   // Prepend UTF-8 BOM so Excel opens the file with correct encoding
   writeFileSync(outPath, '﻿' + rows.join('\n') + '\n', 'utf8');
   console.log(`  ✓ Wrote ${rows.length - 1} rows → ${outPath}`);
   return outPath;
-
-  if (warnings.length > 0) {
-    console.log(`\n  Households missing addresses (${warnings.length}):`);
-    warnings.forEach(w => console.log(w));
-  }
 }
 
 async function main() {
