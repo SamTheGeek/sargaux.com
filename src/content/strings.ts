@@ -145,7 +145,7 @@ export const strings = {
       dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
       dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:     s('followed by', ''),
-      dancing:       s('Dancing (Location TBA)', 'La soirée se poursuivra par une soirée dansante dans Williamsburg.'),
+      dancing:       s('Dancing (Location TBA)', 'Suivis d’une soirée dansante dans Williamsburg.'),
     },
     dressCode: {
       heading: s('Dress Code', 'Tenue'),
@@ -231,6 +231,7 @@ export const strings = {
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
       },
+      lookbookLink: s('View the lookbook →', 'Voir le lookbook →'),
       whatToExpect: {
         heading: s('What to Expect', 'Programme'),
         text:    s(
