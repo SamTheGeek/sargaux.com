@@ -236,7 +236,7 @@ export const strings = {
         heading: s('What to Expect', 'Programme'),
         text:    s(
           "Join us for an evening of cocktails and bites to share, with a stunning view of the sunset over the New York City skyline.\n\nThis evening is our chance to celebrate with you in New York, and we're so happy to share it with you.",
-          "Rejoignez-nous pour une soirée de cocktails et de bouchées à partager, avec une vue imprenable sur le coucher du soleil et les toits de New York.\n\nCette soirée est l'occasion pour nous de célébrer avec vous à New York, et nous sommes ravis de partager ce moment avec vous.",
+          "Rejoignez-nous pour une soirée de cocktails et de bouchées à partager, avec une vue imprenable sur le coucher du soleil et les toits de New York.\n\nCette soirée est l’occasion de célébrer ce nouveau chapitre de vie, et nous sommes ravis de partager ce moment avec vous à New York.",
         ),
       },
       dressCode: {
@@ -247,15 +247,15 @@ export const strings = {
       calendar: {
         heading: s('Add to Calendar', "Ajouter à mon agenda"),
         btn:     s('Subscribe to Calendar', "S'abonner au calendrier"),
-        note:    s('Personalized calendar link based on your RSVP', 'Calendrier personnalisé selon votre réponse'),
+        note:    s('Personalized calendar link based on your RSVP', 'Calendrier personnalisé selon vos réponses'),
       },
     },
 
     // /nyc/travel
     travel: {
       pageTitle: s('NYC Travel', 'Voyager à New York'),
-      heading:   s('Travel', 'Informations pratiques'),
-      subtitle:  s('Getting to and around NYC', "Se rendre à New York et s'y déplacer"),
+      heading:   s('Travel', 'Info pratiques'),
+      subtitle:  s('Getting to and around NYC', "Se rendre et se déplacer à New York"),
       hotels: {
         heading:    s('Hotels', 'Hôtels'),
         intro:      s('Suggested accommodations near the venues:', 'Hébergements suggérés à proximité des lieux :'),
