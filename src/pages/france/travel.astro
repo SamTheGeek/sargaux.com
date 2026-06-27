@@ -122,7 +122,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   <footer>
     <nav class="footer-nav">
-      <a href="/france">Home</a>
+      <a href="/france">{t(strings.nav.home)}</a>
     </nav>
     <div class="footer-row">
       <p>{t(strings.global.copyright)}</p>

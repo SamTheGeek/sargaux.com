@@ -28,7 +28,7 @@ const footerClassName = ['site-footer', className].filter(Boolean).join(' ');
     <nav>
       {homeHref && (
         <>
-          <a href={homeHref}>Home</a>
+          <a href={homeHref}>{t(strings.nav.home)}</a>
           <span> · </span>
         </>
       )}
