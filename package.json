@@ -18,7 +18,7 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
-    "@astrojs/netlify": "^7.0.13",
+    "@astrojs/netlify": "^8.0.0",
     "@astrojs/node": "^10.1.4",
     "@netlify/blobs": "^10.7.9",
     "@notionhq/client": "^5.22.0",
