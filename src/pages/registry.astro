@@ -95,7 +95,7 @@ const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
 
   <footer>
     <nav class="footer-nav">
-      <a href={homeHref}>Home</a>
+      <a href={homeHref}>{t(strings.nav.home)}</a>
     </nav>
     <div class="footer-row">
       <p>{t(strings.global.copyright)}</p>

@@ -73,21 +73,21 @@ const heroPhotoDate = heroPhotoData?.date ?? null;
 const storyRows = [
   {
     copy: [
-      "Margaux & Sam's story started through Hinge in the early weeks of lockdown. After a few pandemic-tinged dates (a synced viewing of Casablanca, long walks around Brooklyn with to-go cocktails from local bars, and many picnics in Brooklyn Bridge Park to watch the sun set over Manhattan), they knew they had found their perfect match.",
-      "They discovered a shared passion for travel (and bonded over their nearly-identical trips to Japan just before they met), collecting city magnets, modern art and architecture, French electro house music, and snacks. Over the past 6.5 years, they have also picked up each other's hobbies: following Margaux's love for cooking, Sam has become an excellent chef, and while she won't be doing the Tour de France anytime soon, Margaux now joins Sam on long bike rides for great snack destinations. Together, they have explored 11 countries across North America, South America and Europe, most notably the Netherlands, where Sam proposed to Margaux over a 3-day date in Amsterdam.",
+      t(strings.couple.story.intro),
+      t(strings.couple.story.passions),
     ],
     doublePhotos: true,
   },
   {
     copy: [
-      'Sam was born and raised in the suburbs of Washington, D.C., before attending the University of Maryland. He became a forever New Yorker in 2015.',
-      'Margaux was born in France and lived in the suburbs of Paris until moving to Connecticut in 2008 with her parents and two sisters. She spent her freshman year at Concordia University in Montr\u00e9al living with her older sister, before transferring to the University of Connecticut for the remainder of her undergraduate and graduate studies. She became a forever New Yorker in 2019.',
+      t(strings.couple.story.samBackground),
+      t(strings.couple.story.margauxBackground),
     ],
     doublePhotos: false,
   },
 ];
 
-const closingLine = 'We are so excited to celebrate this next chapter in our lives with you, thank you for being a part of it!';
+const closingLine = t(strings.couple.story.closing);
 
 // 10 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row
 // Exclude the hero photo from the gallery pool so it doesn't appear twice.
@@ -478,6 +478,7 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
 
   .story-card p {
     color: var(--color-text-muted);
+    white-space: pre-line;
   }
 
   .closing-line {

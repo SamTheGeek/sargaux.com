@@ -2,7 +2,11 @@
  * Centralised copy for all user-visible text on the site.
  *
  * Every string has an English ('en') and French ('fr') variant.
- * French translations are a first-pass — Margaux should review during the copy-edit sprint.
+ *
+ * IMPORTANT: French copy has been reviewed by a native French speaker
+ * (see French_Location_Implementation_NY.md, June 2026). Do not regenerate,
+ * "fix", or revert any French string to a model-derived/machine translation.
+ * Only change French text in response to an explicit, human-provided update.
  *
  * Usage in Astro pages:
  *   import { strings } from '../../content/strings';
@@ -27,7 +31,7 @@ function s(en: string, fr: string): T {
 /** RSVP deadline dates — single source of truth for each event */
 export const RSVP_DEADLINE_NYC    = { en: 'September 1, 2026',  fr: '1er septembre 2026' } satisfies T;
 export const RSVP_DEADLINE_FRANCE = { en: 'April 15, 2027',     fr: '15 avril 2027'      } satisfies T;
-export const NYC_EVENT_TIME       = { en: '5:30 PM — 9 PM',     fr: '17h30 — 21h00'      } satisfies T;
+export const NYC_EVENT_TIME       = { en: '5:30 PM — 9 PM',     fr: '17 h 30 à 21 h'     } satisfies T;
 
 export const strings = {
   // ─────────────────────────────────────────
@@ -38,7 +42,7 @@ export const strings = {
     rsvpBtn:      s('RSVP', 'RSVP'),
     registry:     s('Registry', 'Liste de mariage'),
     logout:       s('Logout', 'Se déconnecter'),
-    explore:      s('Explore', 'Explorer'),
+    explore:      s('Explore', 'Navigation'),
     copyright:    s('© 2026 Sam Gross', '© 2026 Sam Gross'),
     detailsToCome: s('Details to come', 'Détails à venir'),
     attending:    s('Attending', 'Présent'),
@@ -54,6 +58,7 @@ export const strings = {
   // ─────────────────────────────────────────
   nav: {
     backToEvent:  s('← Return to event', '← Retour à l\'événement'),
+    home:         s('Home', 'Accueil'),
   },
 
   // ─────────────────────────────────────────
@@ -92,6 +97,28 @@ export const strings = {
     photoLabel: s('Photo One', 'Photo Un'),
     photoCaption: s('A first image from the archive.', "Une première image de l'archive."),
     navLabel: s('Event Pages', 'Pages événement'),
+    story: {
+      intro: s(
+        "Margaux & Sam's story started through Hinge in the early weeks of lockdown. After a few pandemic-tinged dates (a synced viewing of Casablanca, long walks around Brooklyn with to-go cocktails from local bars, and many picnics in Brooklyn Bridge Park to watch the sun set over Manhattan), they knew they had found their perfect match.",
+        "L'histoire de Margaux et Sam a commencé sur Hinge au début du confinement, en mai 2020.\n\nAprès quelques rendez-vous un peu particuliers, entre une séance de Casablanca synchronisée à distance, de longues promenades dans Brooklyn avec des cocktails à emporter et des pique-niques au Brooklyn Bridge Park face au coucher du soleil sur Manhattan, ils ont rapidement compris qu'ils avaient trouvé leur évidence.",
+      ),
+      passions: s(
+        "They discovered a shared passion for travel (and bonded over their nearly-identical trips to Japan just before they met), collecting city magnets, modern art and architecture, French electro house music, and snacks. Over the past 6.5 years, they have also picked up each other's hobbies: following Margaux's love for cooking, Sam has become an excellent chef, and while she won't be doing the Tour de France anytime soon, Margaux now joins Sam on long bike rides for great snack destinations. Together, they have explored 11 countries across North America, South America and Europe, most notably the Netherlands, where Sam proposed to Margaux over a 3-day date in Amsterdam.",
+        "Ils ont découvert qu'ils partageaient de nombreuses passions communes, notamment les voyages (dont témoigne leur collection d'aimants sur le réfrigérateur, rapportés de leurs aventures autour du monde), l'art et l'architecture contemporains, la musique électro française et Star Wars. Au cours des six dernières années, ils ont également adopté les centres d'intérêt l'un de l'autre. Sam est devenu un excellent cuisinier, tandis que Margaux accompagne désormais volontiers Sam dans ses longues sorties à vélo, à condition qu'une bonne adresse gourmande les attende à l'arrivée.\n\nEnsemble, ils ont exploré onze pays à travers les Amériques du Nord et du Sud ainsi que l'Europe. Parmi leurs voyages les plus marquants figure Amsterdam, où Sam a demandé Margaux en mariage.",
+      ),
+      samBackground: s(
+        'Sam was born and raised in the suburbs of Washington, D.C., before attending the University of Maryland. He became a forever New Yorker in 2015.',
+        'Sam a grandi dans la région de Washington, D.C., avant de s\'installer à New York en 2015.',
+      ),
+      margauxBackground: s(
+        'Margaux was born in France and lived in the suburbs of Paris until moving to Connecticut in 2008 with her parents and two sisters. She spent her freshman year at Concordia University in Montréal living with her older sister, before transferring to the University of Connecticut for the remainder of her undergraduate and graduate studies. She became a forever New Yorker in 2019.',
+        'Née en France, Margaux a grandi près de Paris avant de s\'installer dans le Connecticut avec sa famille en 2008. Après quelques années passées entre Montréal et le Connecticut pour ses études, elle a rejoint New York en 2019.',
+      ),
+      closing: s(
+        'We are so excited to celebrate this next chapter in our lives with you, thank you for being a part of it!',
+        'Nous sommes impatients de célébrer ce nouveau chapitre de notre vie avec vous et vous remercions d\'en faire partie.',
+      ),
+    },
   },
 
   // ─────────────────────────────────────────
@@ -117,48 +144,48 @@ export const strings = {
       dinner:        s('Bar Blondeau', 'Bar Blondeau'),
       dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
       dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
-      separator:     s('followed by', 'suivi de'),
-      dancing:       s('Dancing (Location TBA)', 'Dancing (lieu à confirmer)'),
+      separator:     s('followed by', ''),
+      dancing:       s('Dancing (Location TBA)', 'Suivis d’une soirée dansante dans Williamsburg.'),
     },
     dressCode: {
-      heading: s('Dress Code', 'Code vestimentaire'),
-      value:   s('Festive Cocktail Attire', 'Tenue cocktail festive'),
+      heading: s('Dress Code', 'Tenue'),
+      value:   s('Festive Cocktail Attire', 'Tenue de cocktail'),
       note:    s('Think jackets but no tie required.', 'Veste recommandée, cravate non obligatoire.'),
     },
     rsvpDeadline: {
       heading: s('RSVP', 'RSVP'),
-      value:   { en: `By ${RSVP_DEADLINE_NYC.en}`, fr: `Avant le ${RSVP_DEADLINE_NYC.fr}` },
+      value:   { en: `By ${RSVP_DEADLINE_NYC.en}`, fr: `Merci de répondre avant le ${RSVP_DEADLINE_NYC.fr}.` },
     },
     calendar: {
       heading:         s('Save the Date', 'Notez la date'),
       subtext:         s("Add the events to your calendar app.", "Ajoutez notre événement à votre agenda pour ne rien manquer."),
-      addBtn:          s('Add to Calendar', "Ajouter à l'agenda"),
+      addBtn:          s('Add to Calendar', "Ajouter à mon agenda"),
       unavailableNote: s('Your calendar will be available after you RSVP.', 'Votre calendrier sera disponible après votre RSVP.'),
     },
     nav: {
       details: {
         title: s('Details', 'Détails'),
-        desc:  s('Venues & what to expect', 'Lieux & programme'),
+        desc:  s('Venues & what to expect', 'Lieu & Soirée'),
       },
       faq: {
         title: s('FAQ', 'FAQ'),
-        desc:  s('Questions & answers', 'Questions & réponses'),
+        desc:  s('Questions & answers', 'Questions fréquentes'),
       },
       couple: {
         title: s('The Couple', 'Le Couple'),
-        desc:  s('Read our story', 'Lire notre histoire'),
+        desc:  s('Read our story', 'Notre histoire'),
       },
       travel: {
-        title: s('Travel', 'Voyager'),
-        desc:  s('Hotels & getting around', 'Hôtels & déplacements'),
+        title: s('Travel', 'Informations pratiques'),
+        desc:  s('Hotels & getting around', 'Hébergement, transports & conseils'),
       },
       lookbook: {
         title: s('Lookbook', 'Lookbook'),
-        desc:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
+        desc:  s('Outfit inspiration & ideas', 'Inspiration tenues'),
       },
       rsvp: {
         title: s('RSVP', 'RSVP'),
-        desc:  s("Let us know you're coming", 'Confirmez votre venue'),
+        desc:  s("Let us know you're coming", 'Confirmer votre présence'),
       },
     },
     optional: {
@@ -169,71 +196,74 @@ export const strings = {
     // /nyc/details
     details: {
       pageTitle:  s('NYC Details', 'Détails New York'),
-      heroTitle:  s('The Party', 'La Soirée'),
+      heroTitle:  s('The Party', 'La Célébration'),
       subtitle:   s('October 11, 2026', '11 octobre 2026'),
       schedule: {
-        heading: s('Schedule', 'Programme'),
+        heading: s('Schedule', 'Déroulé de la soirée'),
         dinner: {
-          time:  s('5:30 PM', '17h30'),
-          title: s('Cocktails & Bites', 'Cocktails & Bouchées'),
-          desc:  s("Cocktails, passed hors d'oeuvres, and small plates", "Cocktails, hors-d'oeuvres passés et petites assiettes"),
+          time:  s('5:30 PM', '17 h 30'),
+          title: s('Cocktails & Bites', 'Début de la Soirée'),
+          desc:  s("Cocktails, passed hors d'oeuvres, and small plates", 'Apéro Dinatoire'),
         },
-        sunset: s('Sunset behind the Manhattan skyline', 'Coucher de soleil derrière la skyline de Manhattan'),
+        sunsetTime: s('6:23 PM', '18 h 23'),
+        sunset: s('Sunset behind the Manhattan skyline', 'Coucher du soleil sur Manhattan'),
         dancing: {
-          time:  s('9:30 PM', '21h30'),
-          title: s('After Party - Dancing', 'After Party - Dancing'),
+          time:  s('9:30 PM', '21 h 30'),
+          title: s('After Party - Dancing', 'Soirée Dansante'),
           desc:  s(
             'Join us as we head to a nearby venue and keep the night going. No reservations, just dancing and continued celebration.',
-            'Retrouvez-nous ensuite dans un lieu voisin pour prolonger la soirée. Sans réservation, juste de la danse et la fête qui continue.',
+            'La soirée continue à quelques pas du Bar Blondeau. Rejoignez-nous pour danser !',
           ),
         },
       },
       venues: {
         heading: s('The Venues', 'Les Lieux'),
+        getDirections: s('Get Directions →', 'Itinéraire →'),
         dinner: {
-          title:          s('Dinner', 'Dîner'),
+          title:          s('Celebration', 'Célébration'),
           name:           s('Bar Blondeau at the Wythe Hotel', 'Bar Blondeau au Wythe Hotel'),
           address:        s('80 Wythe Avenue · Brooklyn, New York', '80 Wythe Avenue · Brooklyn, New York'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
         dancing: {
-          title:          s('After Party - Dancing', 'After Party - Dancing'),
-          name:           s('Location TBA', 'Lieu à confirmer'),
+          title:          s('After Party - Dancing', 'Soirée Dansante'),
+          name:           s('Location TBA', 'Williamsburg, Brooklyn'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
       },
+      lookbookLink: s('View the lookbook →', 'Voir le lookbook →'),
       whatToExpect: {
-        heading: s('What to Expect', 'Programme de la soirée'),
+        heading: s('What to Expect', 'Programme'),
         text:    s(
-          "Celebrate our upcoming marriage with an evening of cocktails, passed hors d'oeuvres, and small plates, with a front-row seat to the New York City sunset.\n\nOur wedding ceremony will be held as an intimate gathering next spring. This evening is our celebration with you!",
-          "Célébrez notre futur mariage autour d'une soirée de cocktails, d'hors-d'oeuvres passés et de petites assiettes, avec une place de choix face au coucher de soleil sur New York.\n\nNotre cérémonie de mariage aura lieu lors d'un rassemblement intime au printemps prochain. Cette soirée est notre célébration avec vous !",
+          "Join us for an evening of cocktails and bites to share, with a stunning view of the sunset over the New York City skyline.\n\nThis evening is our chance to celebrate with you in New York, and we're so happy to share it with you.",
+          "Rejoignez-nous pour une soirée de cocktails et de bouchées à partager, avec une vue imprenable sur le coucher du soleil et les toits de New York.\n\nCette soirée est l’occasion de célébrer ce nouveau chapitre de vie, et nous sommes ravis de partager ce moment avec vous à New York.",
         ),
       },
       dressCode: {
-        heading: s('Dress Code', 'Code vestimentaire'),
-        value:   s('Festive Cocktail Attire', 'Tenue cocktail festive'),
+        heading: s('Dress Code', 'Tenue'),
+        value:   s('Festive Cocktail Attire', 'Tenue de cocktail'),
         note:    s('Think jackets, but no tie required.', 'Veste recommandée, cravate non obligatoire.'),
       },
       calendar: {
-        heading: s('Add to Calendar', "Ajouter à l'agenda"),
+        heading: s('Add to Calendar', "Ajouter à mon agenda"),
         btn:     s('Subscribe to Calendar', "S'abonner au calendrier"),
-        note:    s('Personalized calendar link based on your RSVP', 'Lien de calendrier personnalisé selon votre RSVP'),
+        note:    s('Personalized calendar link based on your RSVP', 'Calendrier personnalisé selon vos réponses'),
       },
     },
 
     // /nyc/travel
     travel: {
       pageTitle: s('NYC Travel', 'Voyager à New York'),
-      heading:   s('Travel', 'Voyager'),
-      subtitle:  s('Getting to and around NYC', 'Comment se rendre à New York et se déplacer'),
+      heading:   s('Travel', 'Info pratiques'),
+      subtitle:  s('Getting to and around NYC', "Se rendre et se déplacer à New York"),
       hotels: {
         heading:    s('Hotels', 'Hôtels'),
         intro:      s('Suggested accommodations near the venues:', 'Hébergements suggérés à proximité des lieux :'),
-        hotel1:     s('The hotel that hosts our venue at', 'L\'hôtel qui accueille notre lieu au'),
+        hotel1:     s('The hotel that hosts our venue at', "L'hôtel où se déroule notre célébration, au"),
         hotel1BookNow: s('Book now →', 'Réserver →'),
-        hotel2:     s('Just down the street from the Wythe at', 'Juste en bas de la rue du Wythe, au'),
+        hotel2:     s('Just down the street from the Wythe at', 'À quelques pas du Wythe Hotel, au'),
         hotel2BookNow: s('Book now →', 'Réserver →'),
-        hotel3:     s("Located in Manhattan's NoMad neighborhood at", "Situé dans le quartier NoMad de Manhattan au"),
+        hotel3:     s("Located in Manhattan's NoMad neighborhood at", "Situé dans le quartier de NoMad, à Manhattan, au"),
         hotel3BookNow: s('Book now →', 'Réserver →'),
       },
       gettingThere: {
@@ -259,11 +289,11 @@ export const strings = {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
           heading:        s('By Subway', 'En métro'),
-          intro:          s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue — à 5 minutes à pied du lieu."),
-          fareBeforeLink: s('Single ride: $3 (set up ', "Trajet simple : 3 $ (configurez "),
-          fareLinkText:   s('Express Transit', 'Transit express'),
-          fareAfterLink:  s(' on your phone ahead of time)', " sur votre téléphone à l'avance)"),
-          maps:           s('Apple Maps and Google Maps have great subway directions', "Apple Plans et Google Maps proposent d'excellents itinéraires en métro"),
+          intro:          s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue, puis comptez environ cinq minutes de marche jusqu'au Bar Blondeau."),
+          fareBeforeLink: s('Single ride: $3 (set up ', 'Trajet simple : $3. Le moyen le plus simple et rapide de payer le métro à New York est d\'utiliser le système '),
+          fareLinkText:   s('Express Transit', 'sans contact OMNY'),
+          fareAfterLink:  s(' on your phone ahead of time)', ". Vous n'avez plus besoin d'acheter de ticket à l'avance ; passez simplement votre carte bancaire sans contact ou votre téléphone/montre (Apple Pay, Google Pay) directement sur le tourniquet."),
+          maps:           s('Apple Maps and Google Maps have great subway directions', "Apple Plans et Google Maps proposent d'excellents itinéraires en transports en commun."),
         },
         bike: {
           heading: s('By Bike', 'À vélo'),
@@ -271,27 +301,27 @@ export const strings = {
         },
         car: {
           heading: s('By Car', 'En voiture'),
-          text:    s('Parking is available one block away at 25 Kent parking garage.', "Un parking est disponible à un pâté de maisons au 25 Kent Ave."),
+          text:    s('Parking is available one block away at 25 Kent parking garage.', "Un parking est disponible au coin de la rue, au 25 Kent Avenue."),
         },
       },
       whileHere: {
-        heading: s("While You're Here", 'À ne pas manquer'),
+        heading: s("While You're Here", 'Nos recommandations'),
         upperEastSide: {
           heading:    s('Museum Mile & Central Park', 'Museum Mile et Central Park'),
-          body:       s("Start with a visit to the newly renovated Frick Collection — reserve tickets in advance, and if you're lucky, snag a lunch reservation in the dining room. Afterward, take a leisurely walk through Central Park. For drinks, head to Bemelmans Bar in The Carlyle for one of the most iconic bar experiences in the city.", "Commencez par une visite de la Frick Collection, tout juste rénovée - réservez vos billets à l'avance et, avec un peu de chance, décrochez une réservation pour le déjeuner dans la salle à manger. Ensuite, faites une promenade tranquille dans Central Park. Pour prendre un verre, direction le Bemelmans Bar du Carlyle pour l'une des expériences de bar les plus emblématiques de la ville."),
+          body:       s("Start with a visit to the newly renovated Frick Collection — reserve tickets in advance, and if you're lucky, snag a lunch reservation in the dining room. Afterward, take a leisurely walk through Central Park. For drinks, head to Bemelmans Bar in The Carlyle for one of the most iconic bar experiences in the city.", "Commencez par visiter la Frick Collection, récemment rénovée. Réservez vos billets à l'avance et, avec un peu de chance, obtenez une réservation pour déjeuner dans la salle à manger. Ensuite, profitez d'une promenade dans Central Park. Pour prendre un verre, rendez-vous au Bemelmans Bar du Carlyle, l'un des bars les plus emblématiques de New York."),
           alsoInArea: s('Also in the area: The Met, MoMA, the Jewish Museum (free on shabbos!), the American Museum of Natural History, and the Guggenheim.', 'Également dans le quartier : le Met, le MoMA, le Jewish Museum (gratuit le shabbat !), l\'American Museum of Natural History et le Guggenheim.'),
         },
         prospectHeights: {
-          heading: s('Follow in Our Footsteps', 'Sur nos traces'),
-          body:    s("This is our neighborhood, and we love it. Start your morning with a visit to the Brooklyn Botanic Garden or take a stroll (or bike ride) through Prospect Park. Wander down Vanderbilt Avenue for Unnameable Books, A.Mano decor, great people-watching, and continue our eternal debate between Van Leeuwen and Ample Hills ice cream. For food, brave the line at Radio Bakery for excellent pastries and focaccia, try brunch at Gertie or Cafe Mado, or grab a sandwich at Prospect Heights Butcher or Ciao Gloria and eat outside on the pedestrianized street. For dinner, some of our favorites: Leland, Nuaa Table, Alta Calidad, and Zaytoons.", "C'est notre quartier, et nous l'adorons. Commencez la matinée par le Brooklyn Botanic Garden ou une promenade, voire une balade à vélo, dans Prospect Park. Descendez Vanderbilt Avenue pour Unnameable Books, A.Mano decor, un excellent terrain d'observation, et poursuivez notre débat éternel entre les glaces Van Leeuwen et Ample Hills. Côté repas, affrontez la file de Radio Bakery pour d'excellentes pâtisseries et une focaccia, essayez le brunch chez Gertie ou Cafe Mado, ou prenez un sandwich chez Prospect Heights Butcher ou Ciao Gloria pour le manger dehors dans la rue piétonne. Pour le dîner, quelques-unes de nos adresses préférées : Leland, Nuaa Table, Alta Calidad et Zaytoons."),
+          heading: s('Follow in Our Footsteps', 'Notre New York'),
+          body:    s("This is our neighborhood, and we love it. Start your morning with a visit to the Brooklyn Botanic Garden or take a stroll (or bike ride) through Prospect Park. Wander down Vanderbilt Avenue for Unnameable Books, A.Mano decor, great people-watching, and continue our eternal debate between Van Leeuwen and Ample Hills ice cream. For food, brave the line at Radio Bakery for excellent pastries and focaccia, try brunch at Gertie or Cafe Mado, or grab a sandwich at Prospect Heights Butcher or Ciao Gloria and eat outside on the pedestrianized street. For dinner, some of our favorites: Leland, Nuaa Table, Alta Calidad, and Zaytoons.", "C'est notre quartier, et nous l'adorons. Commencez la matinée par le Brooklyn Botanic Garden ou une promenade, voire une balade à vélo, dans Prospect Park. Promenez-vous sur Vanderbilt Avenue pour découvrir Unnameable Books, A.Mano Decor, observer les passants et poursuivre notre débat éternel entre les glaces Van Leeuwen et Ample Hills. Côté repas, affrontez la file de Radio Bakery pour d'excellentes pâtisseries et une focaccia, essayez le brunch chez Gertie ou Cafe Mado, ou prenez un sandwich chez Prospect Heights Butcher ou Ciao Gloria pour le manger dehors dans la rue piétonne. Pour le dîner, quelques-unes de nos adresses préférées : Leland, Nuaa Table, Alta Calidad et Zaytoons."),
         },
         dumbo: {
           heading: s('Where It All Began', 'Là où tout a commencé'),
-          body:    s("A beautiful neighborhood where we kindled our relationship. Stroll through Brooklyn Bridge Park and up the bridge into Brooklyn Heights for some of the best views of the Manhattan skyline you'll find anywhere. We highly recommend making the trip by NYC Ferry — it runs from multiple points across Manhattan and Brooklyn, and the ride itself is half the fun. Check out the adaptive reuse of the Brooklyn docks abounding with quiet corners, play spaces, and sports facilities.", "Un très beau quartier où notre histoire a commencé. Promenez-vous dans Brooklyn Bridge Park puis montez jusqu'à Brooklyn Heights pour profiter de quelques-unes des plus belles vues sur la skyline de Manhattan. Nous recommandons vivement d'y aller en NYC Ferry : il part de plusieurs points de Manhattan et de Brooklyn, et le trajet fait déjà la moitié du plaisir. Découvrez aussi la réinvention des anciens docks de Brooklyn, pleins de coins tranquilles, d'espaces de jeux et d'installations sportives."),
+          body:    s("A beautiful neighborhood where we kindled our relationship. Stroll through Brooklyn Bridge Park and up the bridge into Brooklyn Heights for some of the best views of the Manhattan skyline you'll find anywhere. We highly recommend making the trip by NYC Ferry — it runs from multiple points across Manhattan and Brooklyn, and the ride itself is half the fun. Check out the adaptive reuse of the Brooklyn docks abounding with quiet corners, play spaces, and sports facilities.", "Un très beau quartier où notre histoire a commencé. Promenez-vous dans Brooklyn Bridge Park puis montez jusqu'à Brooklyn Heights pour profiter de quelques-unes des plus belles vues sur la skyline de Manhattan. Nous vous recommandons vivement d'y aller en ferry : il dessert plusieurs embarcadères à Manhattan et à Brooklyn, et le trajet fait déjà la moitié du plaisir. Découvrez aussi la réinvention des anciens docks de Brooklyn, pleins de coins tranquilles, d'espaces de jeux et d'installations sportives."),
         },
         cycling: {
-          heading:        s('Sunday Morning Ride', 'Balade du dimanche matin'),
-          body:           s('Cycling together is something Sam & Margaux often do together around the city. A quick loop of Prospect Park is a great way to get outdoors and enjoy Brooklyn. CitiBikes are plentiful, and rental shops abound when the weather is nice. For the more adventurous, October is also peak leaf-peeping season. You can follow Sam\'s typical', 'Le vélo est une activité que Sam & Margaux pratiquent souvent ensemble en ville. Un tour de Prospect Park est une excellente façon de profiter de Brooklyn. Les CitiBikes sont nombreux, et les loueurs de vélos abondent quand le temps le permet. Pour les plus aventureux, octobre est aussi la pleine saison des feuillages. Vous pouvez suivre la'),
+          heading:        s('Sunday Morning Ride', 'Dimanche matin à Brooklyn'),
+          body:           s('Cycling together is something Sam & Margaux often do together around the city. A quick loop of Prospect Park is a great way to get outdoors and enjoy Brooklyn. CitiBikes are plentiful, and rental shops abound when the weather is nice. For the more adventurous, October is also peak leaf-peeping season. You can follow Sam\'s typical', 'Le vélo est une activité que Sam & Margaux pratiquent souvent ensemble en ville. Un tour de Prospect Park est une excellente façon de profiter de Brooklyn. Les Citi Bikes sont nombreux et disponibles partout à New York. Vous pouvez facilement en louer un avec l\'application Lyft. Pour les plus aventureux, octobre est aussi la pleine saison des feuillages. Vous pouvez suivre la'),
           linkText:       s('Sunday morning ride', 'sortie dominicale de Sam'),
           bodyAfter:      s('to New Jersey.', 'jusqu\'au New Jersey.'),
         },
@@ -302,12 +332,12 @@ export const strings = {
     faq: {
       pageTitle: s('NYC FAQ', 'FAQ New York'),
       heading:   s('FAQ', 'FAQ'),
-      subtitle:  s('Questions & answers for the weekend', 'Questions & réponses pour le week-end'),
-      moreQuestions: s('More questions? Email us at', 'D’autres questions ? Écrivez-nous à'),
+      subtitle:  s('Questions & answers for the weekend', 'Questions fréquentes'),
+      moreQuestions: s('More questions? Email us at', 'Une question ? Écrivez-nous à'),
       links: {
-        lookbook: s('See the lookbook →', 'Voir le lookbook →'),
-        travel:   s('Travel Page', 'Page Travel'),
-        travelPrefix: s('See the', 'Voir la'),
+        lookbook: s('See the lookbook →', 'Voir le Lookbook →'),
+        travel:   s('Travel Page', 'page Informations pratiques'),
+        travelPrefix: s('See the', 'Consultez la'),
         travelSuffix: s('for details and booking links.', 'pour les détails et les liens de réservation.'),
         registry: s('Visit the registry.', 'Voir la liste de mariage.'),
       },
@@ -316,7 +346,7 @@ export const strings = {
           question: s('What is the dress code?', 'Quel est le code vestimentaire ?'),
           answer:   s(
             'Festive cocktail attire!',
-            'Tenue cocktail festive!',
+            'Tenue de cocktail festive !',
           ),
         },
         rsvpDeadline: {
@@ -330,42 +360,42 @@ export const strings = {
           question: s('Where is the venue?', 'Où se trouve le lieu ?'),
           answer:   s(
             'The celebration is held at Bar Blondeau, located on the 6th floor of the Wythe Hotel in Williamsburg, Brooklyn. The bar is accessible through the hotel lobby and by elevator. The space has both indoor and outdoor areas, with seating available including banquettes and outdoor benches, though most of the evening will be a standing cocktail party. We recommend comfortable shoes!',
-            'La célébration aura lieu au Bar Blondeau, situé au 6e étage du Wythe Hotel à Williamsburg, Brooklyn. Le bar est accessible par le lobby de l’hôtel et par ascenseur. L’espace comprend des zones intérieures et extérieures, avec des assises disponibles, notamment des banquettes et des bancs extérieurs, même si la majeure partie de la soirée se déroulera debout autour d’un cocktail. Nous recommandons des chaussures confortables !',
+            "La célébration aura lieu au Bar Blondeau, situé au 6e étage du Wythe Hotel, à Williamsburg, Brooklyn. Le bar est accessible par le hall de l'hôtel et par ascenseur. Vous aurez accès à des espaces intérieurs et extérieurs, avec des banquettes à disposition. La majeure partie de la soirée se déroulera toutefois debout. Nous vous recommandons donc de porter des chaussures confortables !",
           ),
         },
         parking: {
           question: s('Is there parking nearby?', 'Y a-t-il un parking à proximité ?'),
           answer:   s(
             'There is a parking garage at 25 Kent Avenue. You can also reserve a spot at the Propark – William Vale Hotel via ParkMobile (parkmobile.io/reservation/57104).',
-            'Il y a un parking au 25 Kent Avenue. Vous pouvez également réserver une place au Propark – William Vale Hotel via ParkMobile (parkmobile.io/reservation/57104).',
+            'Un parking est disponible au 25 Kent Avenue. Vous pouvez également réserver une place au Propark du William Vale Hotel via ParkMobile (parkmobile.io/reservation/57104).',
           ),
         },
         weather: {
           question: s('What will the weather be like?', 'Quel temps fera-t-il ?'),
           answer:   s(
             'New York in October is beautiful. Expect mild autumn weather, typically in the 60s or even 70s during the day. Evenings can cool down to the 50s, so we recommend bringing a layer.',
-            'New York en octobre est magnifique. Attendez-vous à une météo automnale douce, généralement autour de 15 à 25 °C en journée. Les soirées peuvent descendre autour de 10 à 15 °C, donc nous vous recommandons d’apporter une petite couche supplémentaire.',
+            'En octobre, New York est magnifique. Les températures tournent généralement autour de 15 à 25 °C en journée et de 10 à 15 °C en soirée. Pensez simplement à prévoir une petite veste pour la fin de la soirée.',
           ),
         },
         foodDrinks: {
           question: s('What food and drinks will be served?', 'Quels plats et boissons seront servis ?'),
           answer:   s(
             "We'll have a full bar with wine, cocktails, and non-alcoholic options, along with passed hors d'oeuvres and small plates throughout the evening. The food will be pescatarian and vegetarian friendly, but will not come from a kosher kitchen. If you have a serious allergy, please let us know when you RSVP.",
-            "Nous aurons un bar complet avec vin, cocktails et options sans alcool, ainsi que des hors-d'oeuvres passés et des petites assiettes tout au long de la soirée. Le menu conviendra aux pescétariens et végétariens, mais ne viendra pas d’une cuisine casher. Si vous avez une allergie sérieuse, merci de nous le signaler au moment du RSVP.",
+            "Des cocktails, du vin et des boissons sans alcool seront proposés tout au long de la soirée, accompagnés de bouchées et de petites assiettes à partager. Des options végétariennes et pescétariennes seront disponibles. Le menu ne sera toutefois pas casher. Si vous souffrez d'une allergie alimentaire, merci de nous en informer au moment de votre RSVP.",
           ),
         },
         ceremony: {
-          question: s('Will there be a ceremony or formal program?', 'Y aura-t-il une cérémonie ou un programme formel ?'),
+          question: s('Will there be a ceremony or formal program?', 'Y aura-t-il une cérémonie ?'),
           answer:   s(
             'There will be no ceremony at this event. We will have a brief toast from the parents, but no formal program. This evening is for mingling and celebrating!',
-            'Il n\'y aura pas de cérémonie lors de cet événement. Nous aurons un bref toast des parents, mais pas de programme formel. Cette soirée est faite pour se retrouver et célébrer !',
+            "Il n'y aura pas de cérémonie lors de cette soirée. Nous prévoyons simplement quelques mots de nos parents, puis la soirée sera consacrée aux retrouvailles et à la célébration.",
           ),
         },
         program: {
-          question: s('Will there be speeches or a formal program?', 'Y aura-t-il des discours ou un programme formel ?'),
+          question: s('Will there be speeches or a formal program?', 'Y aura-t-il des discours ?'),
           answer:   s(
             "We\'ll have speeches from our parents, but this evening is primarily about celebrating with you.",
-            'Cette soirée sera avant tout consacrée aux retrouvailles et à la fête ensemble. Il y aura un bref toast des parents, mais pas de programme formel.',
+            'Nos parents prendront brièvement la parole, mais la soirée sera avant tout consacrée aux retrouvailles et à la fête.',
           ),
         },
         children: {
@@ -376,17 +406,17 @@ export const strings = {
           ),
         },
         stay: {
-          question: s('Where should out-of-town guests stay?', 'Où les invités venant de l’extérieur devraient-ils loger ?'),
+          question: s('Where should out-of-town guests stay?', 'Où séjourner si je suis de passage à New York ?'),
           answer:   s(
             "We have a few room blocks available in Williamsburg and NoMad. If you need additional suggestions, don't hesitate to reach out!",
-            'Nous avons quelques blocs de chambres disponibles à Williamsburg et NoMad. Si vous avez besoin d’autres suggestions, n’hésitez pas à nous contacter !',
+            "Nous avons négocié des tarifs préférentiels dans plusieurs hôtels à Williamsburg et NoMad. Si vous souhaitez d'autres recommandations, n'hésitez pas à nous contacter.",
           ),
         },
         registry: {
           question: s('Do you have a registry?', 'Avez-vous une liste de mariage ?'),
           answer:   s(
             "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something, contributions to our honeymoon fund are always welcome.",
-            'Votre présence est déjà un merveilleux cadeau, et nous sommes très reconnaissants que vous soyez là pour célébrer avec nous. Si vous souhaitez offrir quelque chose, une contribution à notre voyage de noces sera toujours la bienvenue.',
+            'Votre présence est le plus beau des cadeaux, et nous sommes très heureux de pouvoir célébrer avec vous. Si vous souhaitez nous faire plaisir, une contribution à notre voyage de noces sera toujours la bienvenue. Voir notre liste de mariage.',
           ),
         },
       },
@@ -458,22 +488,22 @@ export const strings = {
           placeholder: s('Share your well wishes or anything else we should know', 'Partagez vos vœux ou tout ce que nous devrions savoir'),
         },
         email: {
-          heading:          s('Confirmation Email', 'Email de confirmation'),
+          heading:          s('Confirmation Email', 'Confirmation par e-mail'),
           label:            s('Email address', 'Adresse email'),
           optional:         s('(optional)', '(facultatif)'),
           placeholder:      s('you@example.com', 'vous@exemple.com'),
-          sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par email"),
-          note:             s('Everyone below with an email address will receive the confirmation.', 'Chaque personne ci-dessous avec une adresse email recevra la confirmation.'),
+          sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par e-mail"),
+          note:             s('Everyone below with an email address will receive the confirmation.', 'Toutes les adresses e-mail renseignées ci-dessous recevront un e-mail de confirmation.'),
           requireOne:       s('At least one email address is required.', 'Au moins une adresse email est requise.'),
           requireAll:       s('An email address is required for each guest.', 'Une adresse email est requise pour chaque invité.'),
         },
         lastSubmittedLabel: s('Last submitted:', 'Dernière soumission :'),
-        submitBtn:   s('Submit RSVP', 'Envoyer mon RSVP'),
+        submitBtn:   s('Submit RSVP', 'Confirmer ma présence'),
         updateBtn:   s('Update RSVP', 'Mettre à jour mon RSVP'),
         successMsg:  s('RSVP submitted successfully.', 'RSVP envoyé avec succès.'),
         errorMsg:    s('We could not submit your RSVP. Please try again.', "Nous n'avons pas pu envoyer votre RSVP. Veuillez réessayer."),
-        signedInAs:  s('Signed in as', 'Connecté en tant que'),
-        canUpdate:   s('You can update your response anytime before the deadline.', 'Vous pouvez modifier votre réponse à tout moment avant la date limite.'),
+        signedInAs:  s('Signed in as', 'Vous répondez en tant que'),
+        canUpdate:   { en: 'You can update your response anytime before the deadline.', fr: `Vous pourrez modifier votre réponse à tout moment jusqu'au ${RSVP_DEADLINE_NYC.fr}.` },
       },
     },
   },
@@ -896,22 +926,22 @@ export const strings = {
           placeholder: s('Share your well wishes or anything else we should know', 'Partagez vos vœux ou tout ce que nous devrions savoir'),
         },
         email: {
-          heading:          s('Confirmation Email', 'Email de confirmation'),
+          heading:          s('Confirmation Email', 'Confirmation par e-mail'),
           label:            s('Email address', 'Adresse email'),
           optional:         s('(optional)', '(facultatif)'),
           placeholder:      s('you@example.com', 'vous@exemple.com'),
-          sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par email"),
-          note:             s('Everyone below with an email address will receive the confirmation.', 'Chaque personne ci-dessous avec une adresse email recevra la confirmation.'),
+          sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par e-mail"),
+          note:             s('Everyone below with an email address will receive the confirmation.', 'Toutes les adresses e-mail renseignées ci-dessous recevront un e-mail de confirmation.'),
           requireOne:       s('At least one email address is required.', 'Au moins une adresse email est requise.'),
           requireAll:       s('An email address is required for each guest.', 'Une adresse email est requise pour chaque invité.'),
         },
         lastSubmittedLabel: s('Last submitted:', 'Dernière soumission :'),
-        submitBtn:  s('Submit RSVP', 'Envoyer mon RSVP'),
+        submitBtn:  s('Submit RSVP', 'Confirmer ma présence'),
         updateBtn:  s('Update RSVP', 'Mettre à jour mon RSVP'),
         successMsg: s('RSVP submitted successfully.', 'RSVP envoyé avec succès.'),
         errorMsg:   s('We could not submit your RSVP. Please try again.', "Nous n'avons pas pu envoyer votre RSVP. Veuillez réessayer."),
-        signedInAs: s('Signed in as', 'Connecté en tant que'),
-        canUpdate:  s('You can update your response anytime before the deadline.', 'Vous pouvez modifier votre réponse à tout moment avant la date limite.'),
+        signedInAs: s('Signed in as', 'Vous répondez en tant que'),
+        canUpdate:  { en: 'You can update your response anytime before the deadline.', fr: `Vous pourrez modifier votre réponse à tout moment jusqu'au ${RSVP_DEADLINE_FRANCE.fr}.` },
       },
     },
   },
