@@ -260,6 +260,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - Minor bump when completing a full implementation plan/epic/phase
 - Patch bump for smaller PRs (bug fixes, single features, dependency updates)
 - Check version is updated before running `git commit`
+- **Exception**: Changes confined to `scripts/` (one-off tooling, data exports, guest-list utilities) do not change site behavior and never bump the version, no matter the size of the change.
 
 ## Project Structure
 
