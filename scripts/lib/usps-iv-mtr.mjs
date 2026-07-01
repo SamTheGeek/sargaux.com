@@ -58,6 +58,11 @@ export async function authenticate(envName, credentials) {
   return { accessToken: json.access_token, refreshToken: json.refresh_token };
 }
 
+// USPS returns this exact message (with HTTP 200) when a query legitimately
+// matches nothing — e.g. the piece was never registered in IV-MTR (no eDoc
+// job submitted for it). That's a normal "no data" outcome, not an error.
+const NOT_FOUND_MESSAGE = 'no results found';
+
 /** @param {'production' | 'cat'} envName */
 async function apiGet(envName, accessToken, path) {
   const env = ENVIRONMENTS[envName];
@@ -66,6 +71,7 @@ async function apiGet(envName, accessToken, path) {
   });
   if (r.status === 404) return null;
   const json = await r.json();
+  if (r.ok && json.message?.toLowerCase() === NOT_FOUND_MESSAGE) return null;
   if (!r.ok || json.message) {
     throw new Error(`IV-MTR API error (${r.status}) for ${path}: ${json.message || r.statusText}`);
   }
