@@ -56,6 +56,18 @@ export function mailpieceKey(memberIds, piece) {
 }
 
 /**
+ * Look up the serial already assigned to a mailpiece key, without assigning
+ * one if it's missing. Returns null for a key that has never been mailed.
+ * @param {string} key  Output of mailpieceKey()
+ * @returns {number | null}
+ */
+export function lookupSerial(key) {
+  const registry = loadRegistry();
+  const serial = registry[hashKey(key)];
+  return serial === undefined ? null : serial;
+}
+
+/**
  * Get the previously-assigned serial for every known household key, plus a
  * function to assign new ones — batched so collision resolution for a whole
  * run is computed against a single consistent snapshot of the registry.

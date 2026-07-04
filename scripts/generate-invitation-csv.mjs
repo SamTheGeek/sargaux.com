@@ -44,25 +44,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { encodeImb } from './lib/usps-imb.mjs';
 import { mailpieceKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
-
-// ─── USPS Intelligent Mail Barcode config ──────────────────────────────────────
-//
-// Mailer ID is 9 digits, so the serial number field is 6 digits (9 + 6 = 15,
-// per USPS Pub 109). Service Type 300 = First-Class Mail, no special IMb
-// services. Barcode Identifier 00 = standard, no special services.
-
-const USPS_MAILER_ID = '904209274';
-const USPS_SERVICE_TYPE = '300';
-const USPS_BARCODE_ID = '00';
-const USPS_SERIAL_DIGITS = 6;
-
-// Physical mailpieces sent to each household, per event, in mailing order.
-// A serial number — and therefore a barcode — must be unique per mailpiece,
-// not per household, so each event lists every piece its households receive.
-const MAIL_PIECES = {
-  nyc: ['Invitation'],
-  france: ['SaveTheDate', 'Invitation'],
-};
+import { USPS_MAILER_ID, USPS_SERVICE_TYPE, USPS_BARCODE_ID, USPS_SERIAL_DIGITS, MAIL_PIECES } from './lib/usps-mailer-config.mjs';
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
