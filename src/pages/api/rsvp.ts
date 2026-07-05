@@ -9,7 +9,7 @@
 import { promises as dnsPromises } from 'node:dns';
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
-import { submitRSVP, getLatestRSVP, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
+import { submitRSVP, getLatestRSVPForParty, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
 import { isEnabled } from '../../config/features';
 import { sendToGuests } from '../../lib/email';
 import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
@@ -90,13 +90,6 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     );
   }
 
-  if (!auth.eventInvitations.includes(body.event)) {
-    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   if (!Array.isArray(body.guestsAttending)) {
     return new Response(
       JSON.stringify({ error: 'guestsAttending must be an array' }),
@@ -131,6 +124,17 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
+  }
+
+  // Event access is validated against the live Notion record, never the
+  // session cookie — a 90-day cookie can go stale if invitations change.
+  const primaryGuest = party.find((member) => member.id === guestId);
+  const liveInvitations = primaryGuest?.eventInvitations ?? [];
+  if (!liveInvitations.includes(body.event)) {
+    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const partyById = new Map(party.map((guest) => [guest.id, guest]));
@@ -399,16 +403,22 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     );
   }
 
-  if (!auth.eventInvitations.includes(event as 'nyc' | 'france')) {
-    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   // Fetch from Notion
   try {
-    const rsvp = await getLatestRSVP(guestId, event as 'nyc' | 'france');
+    // Validate event access against the live Notion record, not the cookie
+    const party = await getGuestParty(guestId);
+    const primaryGuest = party.find((member) => member.id === guestId);
+    if (!primaryGuest?.eventInvitations.includes(event as 'nyc' | 'france')) {
+      return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const rsvp = await getLatestRSVPForParty(
+      party.map((member) => member.id),
+      event as 'nyc' | 'france'
+    );
 
     if (!rsvp) {
       return new Response(JSON.stringify({ rsvp: null }), {

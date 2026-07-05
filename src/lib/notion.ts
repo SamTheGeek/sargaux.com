@@ -124,12 +124,6 @@ function parseGuestPage(page: any): GuestRecord | null {
 
   const email: string | undefined = props['Guest Email']?.email ?? undefined;
 
-  // Event Invited IDs (relation to Event Catalog) — stored to avoid extra
-  // pages.retrieve() calls in getGuestEvents on the RSVP page
-  const eventInvitedIds: string[] = (
-    props['Events Invited']?.relation || []
-  ).map((r: { id: string }) => r.id);
-
   return {
     id: page.id,
     name: fullName,
@@ -137,7 +131,6 @@ function parseGuestPage(page: any): GuestRecord | null {
     eventInvitations,
     isPlusOne,
     relatedGuestIds,
-    eventInvitedIds,
     email,
   };
 }
@@ -491,117 +484,66 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
 }
 
 /**
- * Fetch events that a specific guest is invited to.
- * Uses the in-memory guest cache (eventInvitedIds) to avoid an extra
- * pages.retrieve() call — the cache is populated by fetchAllGuests().
+ * Fetch the events a guest can RSVP to: the full Event Catalog for each
+ * wedding they are invited to (per the live Notion record). The deprecated
+ * 'Events Invited' relation is intentionally not consulted — every guest
+ * invited to a wedding gets that wedding's whole catalog.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseEventPages(results: Array<{ id: string; page: any }>): EventRecord[] {
-  const events: EventRecord[] = [];
-  for (const { id: eventId, page: eventPage } of results) {
-    const eventProps = eventPage.properties;
-
-    const name = eventProps['Event Name']?.title?.[0]?.plain_text || '';
-    if (!name) continue;
-
-    const weddingProp = eventProps['Wedding']?.select?.name?.toLowerCase();
-    const wedding = weddingProp === 'france' ? 'france' : 'nyc';
-
-    const typeProp = eventProps['Event Type']?.select?.name;
-    const type = typeProp === 'Optional' ? 'Optional' : 'Core';
-
-    const time = eventProps['Time']?.rich_text?.[0]?.plain_text || undefined;
-    const startTime = eventProps['Start Time']?.rich_text?.[0]?.plain_text || undefined;
-    const duration = eventProps['Duration']?.rich_text?.[0]?.plain_text || undefined;
-    const date: string | undefined = eventProps['Event Date']?.date?.start ?? undefined;
-    const location = eventProps['Location']?.rich_text?.[0]?.plain_text || undefined;
-    const description = eventProps['Description']?.rich_text?.[0]?.plain_text || undefined;
-    const dayId = eventProps['Day']?.relation?.[0]?.id || undefined;
-    const showOnWebsite = eventProps['Show on Website']?.checkbox === true;
-
-    events.push({
-      id: eventId,
-      name,
-      type,
-      wedding,
-      time,
-      startTime,
-      duration,
-      date,
-      location,
-      description,
-      dayId,
-      showOnWebsite,
-    });
-  }
-  return events;
-}
-
-// Event pages change rarely — cache direct retrieves briefly so repeated RSVP
-// page loads on a warm instance skip the per-event Notion round-trips.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const eventPageCache: Map<string, { at: number; page: any }> = new Map();
-const EVENT_PAGE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function retrieveEventPage(eventId: string): Promise<any> {
-  const cached = eventPageCache.get(eventId);
-  if (cached && Date.now() - cached.at < EVENT_PAGE_TTL_MS) {
-    return cached.page;
-  }
-
-  const notion = getClient();
-  const page = await notion.pages.retrieve({ page_id: eventId });
-  eventPageCache.set(eventId, { at: Date.now(), page });
-  return page;
-}
-
-async function retrieveEventPages(
-  eventIds: string[]
-): Promise<EventRecord[]> {
-  const eventPages = await Promise.all(
-    eventIds.map(async (eventId) => {
-      try {
-        return { id: eventId, page: await retrieveEventPage(eventId) };
-      } catch (error) {
-        console.error(`Failed to fetch event ${eventId}:`, error);
-        return null;
-      }
-    })
-  );
-
-  return parseEventPages(eventPages.filter((r): r is NonNullable<typeof r> => r !== null));
-}
-
 export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
   // Targeted lookup: memory/blob cache, or a single direct page retrieve —
   // never a full guest-list scan (this runs on every RSVP page load).
   const guest = await getGuestById(guestId);
-  const eventIds = guest?.eventInvitedIds ?? [];
+  const weddings = guest?.eventInvitations ?? [];
 
-  if (eventIds.length === 0) {
+  if (weddings.length === 0) {
     return [];
   }
 
-  return retrieveEventPages(eventIds);
+  const catalogs = await Promise.all(weddings.map((wedding) => getEventCatalog(wedding)));
+  return catalogs.flat();
 }
 
 /**
- * Fetch events for a guest by directly retrieving their Notion page.
- * Unlike getGuestEvents(), this does NOT go through fetchAllGuests() —
- * safe for cold-start paths like the calendar ICS endpoint where the full
- * guest scan would exceed the Netlify function timeout.
+ * Fetch the events a guest has RSVP'd to attend: the union of
+ * `eventsAttending` across their latest non-declined response per wedding.
+ * Guests who have not RSVP'd (or declined everything) get an empty list.
+ * This is the source of truth for the personalized calendar ICS.
  */
-export async function getGuestEventsById(guestId: string): Promise<EventRecord[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const guestPage: any = await retrieveGuestPage(guestId);
-  const eventIds: string[] = (
-    guestPage.properties?.['Events Invited']?.relation || []
-  ).map((r: { id: string }) => r.id);
+export async function getAttendingEvents(guestId: string): Promise<EventRecord[]> {
+  const guest = await getGuestById(guestId);
+  const weddings = guest?.eventInvitations ?? [];
 
-  if (eventIds.length === 0) return [];
+  if (weddings.length === 0) {
+    return [];
+  }
 
-  return retrieveEventPages(eventIds);
+  const [catalogs, rsvps] = await Promise.all([
+    Promise.all(weddings.map((wedding) => getEventCatalog(wedding))),
+    Promise.all(weddings.map((wedding) => getLatestRSVP(guestId, wedding))),
+  ]);
+
+  const attendingIds = new Set<string>();
+  for (const rsvp of rsvps) {
+    if (!rsvp || rsvp.status === 'Declined') continue;
+    // Responses are party-level — only count this response for THIS guest if
+    // they are among its attendees (a declining member of an attending party
+    // keeps an empty calendar).
+    if (guest && !rsvpIncludesGuest(rsvp, guest.normalizedName)) continue;
+    for (const eventId of rsvp.eventsAttending ?? []) {
+      attendingIds.add(eventId);
+    }
+  }
+
+  return catalogs.flat().filter((event) => attendingIds.has(event.id));
+}
+
+/** True if the guest's normalized name appears in a response's attendee list. */
+export function rsvpIncludesGuest(rsvp: RSVPResponse, normalizedName: string): boolean {
+  return rsvp.guestsAttending
+    .split(',')
+    .map((name) => normalize(name))
+    .filter(Boolean)
+    .includes(normalizedName);
 }
 
 /**
@@ -662,8 +604,11 @@ export async function submitRSVP(
     );
   }
 
-  // Fetch the guest name for the title (targeted lookup, no full scan)
-  const guest = await getGuestById(guestId);
+  // Fetch the whole party (targeted lookups, no full scan) — RSVP responses
+  // are party-level: one row per party + event, related to every member so
+  // any member's pre-fill lookup and calendar generation can find it.
+  const party = await getGuestParty(guestId);
+  const guest = party.find((member) => member.id === guestId) ?? null;
   const guestName = guest?.name || 'Unknown Guest';
 
   // Determine status
@@ -693,15 +638,20 @@ export async function submitRSVP(
   // Event label must match the Notion select options: 'NYC' or 'France'
   const eventLabel = submission.event === 'nyc' ? 'NYC' : 'France';
 
-  // Check if an existing RSVP exists for this guest + event
-  const existingRSVP = await getLatestRSVP(guestId, submission.event);
+  // Check if an existing RSVP exists for this party + event — matched against
+  // any party member, so a partner updating the RSVP lands on the same row
+  // instead of forking a second response.
+  const existingRSVP = await getLatestRSVPForParty(
+    party.map((member) => member.id),
+    submission.event
+  );
 
   const properties = {
     Response: {
       title: [{ text: { content: `${guestName} — ${eventLabel}` } }],
     },
     Guest: {
-      relation: [{ id: guestId }],
+      relation: party.map((member) => ({ id: member.id })),
     },
     Event: {
       select: { name: eventLabel },
@@ -749,29 +699,105 @@ export async function submitRSVP(
     responseId = response.id;
   }
 
-  // Sync RSVP status back to the Guest List record.
-  // For dual-invite guests, combine this event's status with the other event's
-  // latest response: all positive → Attending, all declined → Declined, mixed → Partial.
-  const otherEvents = (guest?.eventInvitations ?? []).filter(e => e !== submission.event);
-  let guestListStatus: 'Attending' | 'Declined' | 'Partial';
+  // Sync RSVP status back to every party member's Guest List record.
+  // Per member: gather their personal attendance from this submission plus the
+  // party's latest response for any other event they're invited to, then
+  // resolve: all attending → Attending, none → Declined, mixed → Partial.
+  const partyIds = party.map((member) => member.id);
+  const otherEvents = Array.from(
+    new Set(party.flatMap((member) => member.eventInvitations))
+  ).filter((e) => e !== submission.event);
+  const otherRSVPs = new Map(
+    await Promise.all(
+      otherEvents.map(async (e) => [e, await getLatestRSVPForParty(partyIds, e)] as const)
+    )
+  );
 
-  if (otherEvents.length === 0) {
-    guestListStatus = status === 'Declined' ? 'Declined' : 'Attending';
-  } else {
-    const otherRSVPs = await Promise.all(otherEvents.map(e => getLatestRSVP(guestId, e)));
-    const allStatuses = [status, ...otherRSVPs.filter(Boolean).map(r => r!.status)];
-    const anyPositive = allStatuses.some(s => s !== 'Declined');
-    const anyNegative = allStatuses.some(s => s === 'Declined');
-    guestListStatus = anyPositive && anyNegative ? 'Partial' : anyPositive ? 'Attending' : 'Declined';
-  }
+  const attendingNamesFor = (event: 'nyc' | 'france'): Set<string> | null => {
+    if (event === submission.event) {
+      return new Set(
+        submission.guestsAttending.filter((g) => g.attending).map((g) => normalize(g.name))
+      );
+    }
+    const rsvp = otherRSVPs.get(event);
+    if (!rsvp) return null; // no response yet for this event — don't count it
+    return new Set(
+      rsvp.guestsAttending
+        .split(',')
+        .map((name) => normalize(name))
+        .filter(Boolean)
+    );
+  };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await notion.pages.update({
-    page_id: guestId,
-    properties: { RSVP: { status: { name: guestListStatus } } } as any,
-  });
+  await Promise.all(
+    party.map((member) => {
+      const attendance: boolean[] = [];
+      for (const event of member.eventInvitations) {
+        const names = attendingNamesFor(event);
+        if (names === null) continue;
+        attendance.push(names.has(member.normalizedName));
+      }
+      if (attendance.length === 0) return Promise.resolve(null);
+
+      const anyYes = attendance.some(Boolean);
+      const anyNo = attendance.some((a) => !a);
+      const memberStatus = anyYes && anyNo ? 'Partial' : anyYes ? 'Attending' : 'Declined';
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return notion.pages.update({
+        page_id: member.id,
+        properties: { RSVP: { status: { name: memberStatus } } } as any,
+      });
+    })
+  );
 
   return responseId;
+}
+
+/**
+ * Fetch the latest RSVP for a party and event — matches a response related to
+ * ANY of the given party members, so responses submitted by one member are
+ * found when another member of the same party looks them up.
+ */
+export async function getLatestRSVPForParty(
+  partyIds: string[],
+  event: 'nyc' | 'france'
+): Promise<RSVPResponse | null> {
+  const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
+
+  if (!dataSourceId || partyIds.length === 0) {
+    return null;
+  }
+
+  const eventLabel = event === 'nyc' ? 'NYC' : 'France';
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response: any = await queryDatabase(dataSourceId, {
+    page_size: 1,
+    filter: {
+      and: [
+        {
+          or: partyIds.map((id) => ({
+            property: 'Guest',
+            relation: { contains: id },
+          })),
+        },
+        {
+          property: 'Event',
+          select: { equals: eventLabel },
+        },
+      ],
+    },
+    sorts: [
+      {
+        property: 'Submitted At',
+        direction: 'descending',
+      },
+    ],
+  });
+
+  const page = response.results?.[0];
+  return parseRSVPPage(page, partyIds[0], event);
 }
 
 /**
@@ -881,6 +907,69 @@ export function parseRSVPPage(
     details,
     eventsAttending,
   };
+}
+
+/**
+ * Fetch the latest RSVP response per guest + event across the whole
+ * RSVP Responses database in one paginated scan (sorted newest-first, so the
+ * first row seen for a guest + event pair is the latest). Used by the bulk
+ * ICS refresh to avoid two Notion queries per guest.
+ */
+export async function fetchAllLatestRSVPs(): Promise<Map<string, RSVPResponse[]>> {
+  const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
+
+  if (!dataSourceId) {
+    throw new Error(
+      'NOTION_RSVP_RESPONSES_DB is not set. Add it to Netlify environment variables.'
+    );
+  }
+
+  // guestId → event → latest response
+  const latestByGuest = new Map<string, Map<'nyc' | 'france', RSVPResponse>>();
+  let cursor: string | undefined = undefined;
+
+  do {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await queryDatabase(dataSourceId, {
+      start_cursor: cursor,
+      page_size: 100,
+      sorts: [
+        {
+          property: 'Submitted At',
+          direction: 'descending',
+        },
+      ],
+    });
+
+    for (const page of response.results ?? []) {
+      if (page.object !== 'page') continue;
+      const props = page.properties ?? {};
+
+      // Responses are party-level: index under every related guest so each
+      // party member's calendar refresh finds the shared response.
+      const relatedGuestIds: string[] = (props['Guest']?.relation ?? []).map(
+        (r: { id: string }) => r.id
+      );
+      const eventLabel = props['Event']?.select?.name;
+      const event = eventLabel === 'NYC' ? 'nyc' : eventLabel === 'France' ? 'france' : null;
+      if (relatedGuestIds.length === 0 || !event) continue;
+
+      for (const guestId of relatedGuestIds) {
+        const perGuest = latestByGuest.get(guestId) ?? new Map<'nyc' | 'france', RSVPResponse>();
+        if (!perGuest.has(event)) {
+          const parsed = parseRSVPPage(page, guestId, event);
+          if (parsed) perGuest.set(event, parsed);
+        }
+        latestByGuest.set(guestId, perGuest);
+      }
+    }
+
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
+
+  return new Map(
+    Array.from(latestByGuest, ([guestId, byEvent]) => [guestId, Array.from(byEvent.values())])
+  );
 }
 
 /**

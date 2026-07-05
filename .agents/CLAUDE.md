@@ -301,7 +301,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 - **Dark mode border visibility**: `--color-border` in dark mode (`#2E3E35`) is nearly invisible against the dark surface `#2F3F36`. Use `--color-text-muted` for interactive UI borders (event rows, custom checkboxes) that must be visible in dark mode.
 - **Custom checkbox pattern** (`src/pages/nyc/rsvp.astro`): Native `<input>` is hidden with `position: absolute; opacity: 0; pointer-events: none`; a sibling `<span class="event-check-mark">` drives the visual using the `~` general sibling combinator. `.event-check-mark` has `margin-top: 2px` for `flex-start` containers — reset to `0` inside `align-items: center` containers.
 - **RSVP subway bullets**: The RSVP hero uses real NYC subway bullet SVGs (`src/assets/nyc/subway-bullet-m.svg` and `subway-bullet-sf.svg`) as `<img>` elements, positioned and sized with CSS. The M bullet is recolored from subway orange to `--color-burnt-amber` (`#D96A1E`); the SF silver bullet is kept as-is. Source: Wikimedia Commons NYCS Standard Set (public domain).
-- **RSVP status sync**: `submitRSVP` (`src/lib/notion.ts`) writes back to the Guest List `RSVP` status field after every submission. For dual-invite guests it fetches both events' latest responses and resolves to Attending, Declined, or Partial (mixed). The `Partial` option must exist in the Notion Guest List RSVP field — add manually, as DDL cannot configure STATUS options (`ALTER COLUMN SET STATUS(...)` is unsupported by `notion-update-data-source`).
+- **Party-level RSVP responses**: RSVP Responses rows are party-level — one row per party + event, with the `Guest` relation set to **every** party member. Pre-fill (`getLatestRSVPForParty`) matches responses related to any member, so a partner returning to update the RSVP sees the submitted state, never a blank form. `submitRSVP` also matches the existing row via any member so updates converge on one row instead of forking.
+- **RSVP status sync**: `submitRSVP` (`src/lib/notion.ts`) writes back to the Guest List `RSVP` status field of **every party member** after every submission, resolved per member from their personal attendance (name-matched against `Guests Attending`) across the latest response per event they're invited to: all attending → Attending, none → Declined, mixed → Partial. The `Partial` option must exist in the Notion Guest List RSVP field — add manually, as DDL cannot configure STATUS options (`ALTER COLUMN SET STATUS(...)` is unsupported by `notion-update-data-source`).
+- **Events Invited relation is deprecated**: never read the Guest List `Events Invited` relation. The RSVP form lists the full Event Catalog for each wedding in the guest's `Event Invitations` multi-select (`getGuestEvents`). The personalized calendar ICS contains **only events the guest has RSVP'd to attend** (`getAttendingEvents` / `refreshAllICS` — latest non-declined response per wedding, and only if the guest is named in its attendee list); guests who haven't RSVP'd get a valid empty calendar.
 
 ## Authentication
 
@@ -310,6 +312,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - When flag is off (local dev without keys): falls back to hardcoded list in `src/lib/auth.ts`
 - Names normalized: lowercase, remove accents (NFD), collapse whitespace
 - Cookie: `sargaux_auth` (90-day expiry, httpOnly) — contains guest name + optional Notion page ID
+- **Event invitations are resolved live, never trusted from the cookie**: the cookie's `eventInvitations` snapshot is only a fallback (hardcoded-list mode, transient Notion failures). Middleware and the RSVP API read invitations from the live Notion record (`getGuestById`, served by the 15-min guest cache) so invitation changes take effect without re-login.
 - Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated
 - `Astro.locals.guest` (string) — guest display name, available in all protected pages
 - `Astro.locals.guestId` (string) — Notion page ID, available when notionBackend is enabled
@@ -320,6 +323,23 @@ The project version in `package.json` follows semantic versioning with wedding m
 - Guests invited to both events default to `/france` starting **October 15, 2026**
 - The dual-invite cutoff is evaluated in the `America/New_York` time zone
 - Homepage redirect, login API redirect, and middleware fallback redirects must stay aligned with the same shared helper
+
+## Admin Endpoints
+
+All admin endpoints live under `/api/admin/*` and require an
+`Authorization: Bearer {RESEND_ADMIN_SECRET}` header (401 otherwise):
+
+- `POST /api/admin/refresh-calendars` — regenerate every guest's stored ICS calendar (same job as the scheduled `ics-refresh-daily`/`-weekly` functions, which are **not** publicly routable) and invalidate the CDN-cached calendar URLs. Returns `{ total, succeeded, failed }`. Use after editing events or RSVP responses directly in Notion, or after deploying a change to ICS semantics, so calendar subscriptions update without waiting for the next scheduled run:
+
+  ```bash
+  curl -X POST https://sargaux.com/api/admin/refresh-calendars \
+    -H "Authorization: Bearer $(netlify env:get RESEND_ADMIN_SECRET)"
+  ```
+
+- `POST /api/admin/send-stds` — bulk-send save-the-date emails for one event. Body: `{ "event": "nyc" | "france" }`.
+- `POST /api/admin/send-email` — send a single transactional email (see endpoint source for body shape).
+
+Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sunday 03:00 UTC; `ics-refresh-daily` runs at 03:00 UTC but only inside the pre-wedding windows (Sep 27–Oct 13 2026, May 14–May 31 2027). Neither can be invoked over HTTP in production — use the admin endpoint above for on-demand refreshes.
 
 ## Secrets & API Keys
 
@@ -332,6 +352,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 - `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token.
+- `RESEND_ADMIN_SECRET` — bearer token protecting the admin endpoints (`/api/admin/*`). Set in Netlify Dashboard (runtime, `process.env`) and mirrored in `.env.local` for local runs. The production endpoints check the **Netlify** value — look it up with `netlify env:get RESEND_ADMIN_SECRET` (never paste the value into code, docs, or commit messages).
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
