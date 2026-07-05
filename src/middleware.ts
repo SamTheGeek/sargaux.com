@@ -22,6 +22,22 @@ const PUBLIC_ROUTES = [
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
+  // Per-guest CDN cache variants (see astro.config.mjs routeRules).
+  // Cached content pages must vary on the auth cookie — this keeps the login
+  // wall intact (an anonymous request never matches a guest's cached copy)
+  // and lets the personalized footer/toggle stay server-rendered — and on the
+  // language cookie. Applied to redirects too, so a cached 302 (e.g. the
+  // unauthenticated redirect to `/`) can never be served to a logged-in
+  // guest's variant. Harmless on uncached responses and under the node
+  // adapter; Netlify only consults it when a response is CDN-cached.
+  const withVary = (response: Response): Response => {
+    if (!pathname.startsWith('/api/')) {
+      response.headers.set('Netlify-Vary', 'cookie=sargaux_auth|sargaux_lang');
+    }
+    return response;
+  };
+  const withCacheVary = async (): Promise<Response> => withVary(await next());
+
   // Language detection (runs for all routes, gated by i18n feature flag)
   if (features.global.i18n) {
     const langParam = context.url.searchParams.get('lang');
@@ -44,22 +60,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Master switch: if site not enabled, only allow homepage and static assets
   if (!isSiteEnabled()) {
     if (pathname === '/' || pathname.startsWith('/_') || pathname.includes('.')) {
-      return next();
+      return withCacheVary();
     }
     // Redirect everything else to homepage (temporary redirect)
-    return context.redirect('/', 302);
+    return withVary(context.redirect('/', 302));
   }
 
   // Check if route is public
   const isPublic = PUBLIC_ROUTES.some(route => pathname === route);
   if (isPublic) {
-    return next();
+    return withCacheVary();
   }
 
   // Check if route is protected
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
   if (!isProtected) {
-    return next();
+    return withCacheVary();
   }
 
   // Check authentication
@@ -67,7 +83,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (!auth) {
     // Redirect to homepage for login
-    return context.redirect('/');
+    return withVary(context.redirect('/'));
   }
 
   // Add guest info to locals for use in pages
@@ -83,12 +99,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Event-level route access control
   if (pathname.startsWith('/nyc') && !invitedToNyc) {
-    return context.redirect(primaryEventRoute, 302);
+    return withVary(context.redirect(primaryEventRoute, 302));
   }
 
   if (pathname.startsWith('/france') && !invitedToFrance) {
-    return context.redirect(primaryEventRoute, 302);
+    return withVary(context.redirect(primaryEventRoute, 302));
   }
 
-  return next();
+  return withCacheVary();
 });

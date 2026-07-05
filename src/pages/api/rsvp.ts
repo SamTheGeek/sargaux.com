@@ -39,7 +39,7 @@ async function hasMxRecord(email: string): Promise<boolean> {
 /**
  * POST - Submit or update an RSVP
  */
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, cache }) => {
   // Check authentication
   const authCookie = cookies.get('sargaux_auth');
   if (!authCookie) {
@@ -250,6 +250,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   // when the response is sent — detached promises don't complete reliably.
   try {
     await Promise.all(party.map((member) => generateAndStoreICSForGuest(member.id)));
+
+    // Purge the CDN-cached calendar files so subscriptions pick up the new
+    // ICS promptly instead of waiting out the stale-while-revalidate window.
+    if (cache.enabled) {
+      await Promise.all(
+        party.map((member) =>
+          cache.invalidate({ path: `/api/calendar/${generateToken(member.id)}.ics` })
+        )
+      );
+    }
   } catch (err) {
     console.error('ICS regeneration after RSVP failed (non-fatal):', err);
   }

@@ -454,3 +454,56 @@ a:focus-visible {
 .muted {
   color: var(--color-text-muted);
 }
+
+/* === Loading dots (shared by RSVP nav + submit buttons) ===
+   Mirrors the homepage login form's animated submit dots. Markup:
+     <span class="loading-dots" aria-hidden="true">
+       <span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+     </span>
+   Dots are hidden until the closest `.is-loading` ancestor appears. */
+
+@keyframes loading-dot {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+
+.loading-dots {
+  display: none;
+}
+
+.is-loading .loading-dots {
+  display: inline-block;
+}
+
+.loading-dot {
+  display: inline-block;
+  opacity: 0.2;
+}
+
+.is-loading .loading-dot {
+  animation: loading-dot 1.2s infinite ease-in-out;
+  animation-fill-mode: both;
+}
+
+.is-loading .loading-dot:nth-child(2) { animation-delay: 0.16s; }
+.is-loading .loading-dot:nth-child(3) { animation-delay: 0.32s; }
+
+/* Label/progress swap for submit-style buttons: default shows the label;
+   while loading, the label hides and the progress text + dots show. */
+.btn-progress {
+  display: none;
+}
+
+.is-loading .btn-progress {
+  display: inline;
+}
+
+.is-loading .btn-label {
+  display: none;
+}
+
+/* Elements hidden while the closest .is-loading ancestor is active
+   (e.g. a strip CTA arrow that yields its spot to the dots). */
+.is-loading .loading-hide {
+  display: none;
+}

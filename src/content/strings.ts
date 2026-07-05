@@ -47,6 +47,8 @@ export const strings = {
     detailsToCome: s('Details to come', 'Détails à venir'),
     attending:    s('Attending', 'Présent'),
     notAttending: s('Not attending', 'Absent'),
+    // French provided by Sam (2026-07-04) — do not machine-translate
+    savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {
       nyc:    s('NYC', 'NYC'),
       france: s('France', 'France'),

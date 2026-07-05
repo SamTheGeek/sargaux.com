@@ -60,6 +60,7 @@ declare global {
   interface Window {
     __sargauxDiscTransitionSetup?: boolean;
     __sargauxLangTransitionSetup?: boolean;
+    __sargauxNavLoadingSetup?: boolean;
   }
 }
 
@@ -244,6 +245,30 @@ if (!window.__sargauxDiscTransitionSetup) {
       enteringMoss.addEventListener('animationend', cleanup, { once: true });
       window.setTimeout(cleanup, 500);
     }
+  });
+}
+
+// ── Navigation loading indicator ─────────────────────────────────────────────
+// Links marked with `data-loading-button` (e.g. the header RSVP buttons and
+// the RSVP strip CTAs) get an `.is-loading` class while ClientRouter fetches
+// and renders the next page. Paired with the shared `.loading-dots` styles in
+// base.css, this shows the same animated dots as the homepage login form
+// while a slow server render (like the Notion-backed RSVP form) is in flight.
+// The class lives on the outgoing DOM, which is discarded on swap; page-load
+// cleanup covers aborted/failed preparations.
+
+if (!window.__sargauxNavLoadingSetup) {
+  window.__sargauxNavLoadingSetup = true;
+
+  document.addEventListener('astro:before-preparation', (e) => {
+    const source = (e as TransitionBeforePreparationEvent).sourceElement;
+    source?.closest?.('[data-loading-button]')?.classList.add('is-loading');
+  });
+
+  document.addEventListener('astro:page-load', () => {
+    document
+      .querySelectorAll('[data-loading-button].is-loading')
+      .forEach((el) => el.classList.remove('is-loading'));
   });
 }
 

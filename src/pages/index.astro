@@ -18,6 +18,13 @@ if (isSiteEnabled()) {
   }
 }
 
+// CDN-cache the logged-out homepage (per language + auth-cookie variant via
+// the middleware's Netlify-Vary header). The logged-in redirect above returns
+// before this, so authenticated variants are never cached from here.
+if (Astro.cache.enabled) {
+  Astro.cache.set({ maxAge: 3600, swr: 86400, tags: ['home'] });
+}
+
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const emptyError = t(strings.home.modal.errorEmpty);
 const defaultError = t(strings.home.modal.errorDefault);
@@ -40,7 +47,15 @@ const loginDelay = features.dev.loginDelay;
           </div>
 
           <aside class="login-panel" aria-labelledby="login-panel-title">
-            <form id="login-form" class="inline-login-form">
+            <form
+              id="login-form"
+              class="inline-login-form"
+              data-empty-error={emptyError}
+              data-default-error={defaultError}
+              data-checking-label={checkingLabel}
+              data-submit-label={submitLabel}
+              data-login-delay={loginDelay ? 'true' : 'false'}
+            >
               <label for="name" class="visually-hidden">{t(strings.home.modal.nameLabel)}</label>
               <div class="inline-entry-control" id="inline-entry-control">
                 <button type="button" class="btn btn-primary login-trigger-panel" id="login-trigger">
@@ -487,138 +502,163 @@ const loginDelay = features.dev.loginDelay;
     </style>
   </WireframeLayout>
 
-  <script is:inline data-astro-rerun define:vars={{ emptyError, defaultError, checkingLabel, submitLabel, loginDelay }}>
+  <!--
+    NOTE: This intentionally avoids `data-astro-rerun` + `define:vars`. The Astro 7
+    Rust compiler strips custom attributes from `define:vars` scripts, so the rerun
+    opt-out never reaches the browser and the script silently stops re-executing
+    after client-side swaps (e.g. logout back to the homepage). Instead we use the
+    same `astro:page-load` + init-guard pattern as the RSVP form scripts, with
+    server values passed via data-* attributes on the form.
+  -->
+  <script is:inline>
     (() => {
-      window.__homeLoginController?.abort?.();
+      if (window.__homeLoginInitRegistered) return;
+      window.__homeLoginInitRegistered = true;
 
-      const controller = new AbortController();
-      window.__homeLoginController = controller;
+      const initHomeLogin = () => {
+        const form = document.getElementById('login-form');
+        if (!form || form.dataset.loginInitialized === 'true') return;
+        form.dataset.loginInitialized = 'true';
 
-      const { signal } = controller;
-      const form = document.getElementById('login-form');
-      const entryControl = document.getElementById('inline-entry-control');
-      const trigger = document.getElementById('login-trigger');
-      const nameInput = document.getElementById('name');
-      const errorMessage = document.getElementById('error-message');
-      const submitBtn = document.getElementById('submit-btn');
-      const inlineSubmit = document.getElementById('inline-submit');
+        const emptyError = form.dataset.emptyError || 'Please enter your name';
+        const defaultError = form.dataset.defaultError || 'Something went wrong. Please try again.';
+        const checkingLabel = form.dataset.checkingLabel || 'Checking';
+        const submitLabel = form.dataset.submitLabel || 'Submit';
+        const loginDelay = form.dataset.loginDelay === 'true';
 
-      if (!form || !entryControl || !trigger || !nameInput || !errorMessage || !submitBtn || !inlineSubmit) {
-        return;
-      }
+        window.__homeLoginController?.abort?.();
 
-      let isSubmitting = false;
+        const controller = new AbortController();
+        window.__homeLoginController = controller;
 
-      const activateInlineForm = () => {
-        if (isSubmitting) return;
-        entryControl.classList.add('is-active');
-        nameInput.focus();
-        requestAnimationFrame(() => {
-          const length = nameInput.value.length ?? 0;
-          nameInput.setSelectionRange(length, length);
-        });
-      };
+        const { signal } = controller;
+        const entryControl = document.getElementById('inline-entry-control');
+        const trigger = document.getElementById('login-trigger');
+        const nameInput = document.getElementById('name');
+        const errorMessage = document.getElementById('error-message');
+        const submitBtn = document.getElementById('submit-btn');
+        const inlineSubmit = document.getElementById('inline-submit');
 
-      const collapseInlineForm = () => {
-        if (isSubmitting || nameInput.value.trim()) return;
-        entryControl.classList.remove('is-active');
-      };
-
-      const showError = (message) => {
-        errorMessage.textContent = message;
-      };
-
-      const setSubmitState = (submitting) => {
-        isSubmitting = submitting;
-        entryControl.classList.toggle('is-loading', submitting);
-        form.setAttribute('aria-busy', submitting ? 'true' : 'false');
-        nameInput.disabled = submitting;
-        inlineSubmit.disabled = submitting;
-        submitBtn.disabled = submitting;
-        submitBtn.textContent = submitting ? checkingLabel : submitLabel;
-        inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
-      };
-
-      const navigateWithTransition = (href) => {
-        const redirectLink = document.createElement('a');
-        redirectLink.href = href;
-        redirectLink.hidden = true;
-        document.body.appendChild(redirectLink);
-        redirectLink.click();
-        redirectLink.remove();
-      };
-
-      trigger.addEventListener('click', () => {
-        showError('');
-        activateInlineForm();
-      }, { signal });
-
-      nameInput.addEventListener('input', () => {
-        if (errorMessage.textContent) {
-          showError('');
-        }
-      }, { signal });
-
-      nameInput.addEventListener('blur', () => {
-        window.setTimeout(() => {
-          collapseInlineForm();
-        }, 0);
-      }, { signal });
-
-      document.addEventListener('pointerdown', (event) => {
-        if (!entryControl.contains(event.target)) {
-          collapseInlineForm();
-        }
-      }, { signal });
-
-      document.addEventListener('astro:before-swap', () => {
-        controller.abort();
-      }, { once: true, signal });
-
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (isSubmitting) return;
-
-        const name = nameInput.value.trim();
-        if (!name) {
-          showError(emptyError);
-          activateInlineForm();
+        if (!form || !entryControl || !trigger || !nameInput || !errorMessage || !submitBtn || !inlineSubmit) {
           return;
         }
 
-        showError('');
-        setSubmitState(true);
+        let isSubmitting = false;
 
-        let shouldResetState = true;
-
-        try {
-          const formData = new FormData();
-          formData.append('name', name);
-
-          const response = await fetch('/api/login', {
-            method: 'POST',
-            body: formData,
+        const activateInlineForm = () => {
+          if (isSubmitting) return;
+          entryControl.classList.add('is-active');
+          nameInput.focus();
+          requestAnimationFrame(() => {
+            const length = nameInput.value.length ?? 0;
+            nameInput.setSelectionRange(length, length);
           });
+        };
 
-          const data = await response.json();
+        const collapseInlineForm = () => {
+          if (isSubmitting || nameInput.value.trim()) return;
+          entryControl.classList.remove('is-active');
+        };
 
-          if (response.ok) {
-            shouldResetState = false;
-            if (loginDelay) await new Promise((r) => setTimeout(r, 2000));
-            navigateWithTransition(data.redirectPath || '/nyc');
+        const showError = (message) => {
+          errorMessage.textContent = message;
+        };
+
+        const setSubmitState = (submitting) => {
+          isSubmitting = submitting;
+          entryControl.classList.toggle('is-loading', submitting);
+          form.setAttribute('aria-busy', submitting ? 'true' : 'false');
+          nameInput.disabled = submitting;
+          inlineSubmit.disabled = submitting;
+          submitBtn.disabled = submitting;
+          submitBtn.textContent = submitting ? checkingLabel : submitLabel;
+          inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
+        };
+
+        const navigateWithTransition = (href) => {
+          const redirectLink = document.createElement('a');
+          redirectLink.href = href;
+          redirectLink.hidden = true;
+          document.body.appendChild(redirectLink);
+          redirectLink.click();
+          redirectLink.remove();
+        };
+
+        trigger.addEventListener('click', () => {
+          showError('');
+          activateInlineForm();
+        }, { signal });
+
+        nameInput.addEventListener('input', () => {
+          if (errorMessage.textContent) {
+            showError('');
+          }
+        }, { signal });
+
+        nameInput.addEventListener('blur', () => {
+          window.setTimeout(() => {
+            collapseInlineForm();
+          }, 0);
+        }, { signal });
+
+        document.addEventListener('pointerdown', (event) => {
+          if (!entryControl.contains(event.target)) {
+            collapseInlineForm();
+          }
+        }, { signal });
+
+        document.addEventListener('astro:before-swap', () => {
+          controller.abort();
+        }, { once: true, signal });
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (isSubmitting) return;
+
+          const name = nameInput.value.trim();
+          if (!name) {
+            showError(emptyError);
+            activateInlineForm();
             return;
           }
 
-          showError(data.error || defaultError);
-        } catch (error) {
-          showError(defaultError);
-        } finally {
-          if (shouldResetState && !signal.aborted) {
-            setSubmitState(false);
-            activateInlineForm();
+          showError('');
+          setSubmitState(true);
+
+          let shouldResetState = true;
+
+          try {
+            const formData = new FormData();
+            formData.append('name', name);
+
+            const response = await fetch('/api/login', {
+              method: 'POST',
+              body: formData,
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              shouldResetState = false;
+              if (loginDelay) await new Promise((r) => setTimeout(r, 2000));
+              navigateWithTransition(data.redirectPath || '/nyc');
+              return;
+            }
+
+            showError(data.error || defaultError);
+          } catch (error) {
+            showError(defaultError);
+          } finally {
+            if (shouldResetState && !signal.aborted) {
+              setSubmitState(false);
+              activateInlineForm();
+            }
           }
-        }
-      }, { signal });
+        }, { signal });
+      };
+
+      document.addEventListener('astro:page-load', initHomeLogin);
+      initHomeLogin();
     })();
   </script>
 ) : (
