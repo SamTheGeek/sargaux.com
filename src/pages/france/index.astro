@@ -3,6 +3,7 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
+import LoadingDots from '../../components/LoadingDots.astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -22,7 +23,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             <span class="active event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</span>
           </div>
         )}
-        <a href="/france/rsvp" class="btn btn-primary rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
+        <a href="/france/rsvp" class="btn btn-primary rsvp-btn" transition:name="header-rsvp" data-loading-button>{t(strings.global.rsvpBtn)}<LoadingDots /></a>
       </div>
     </nav>
   </header>
@@ -171,10 +172,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="strip-desc">{t(strings.france.nav.lookbook.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/rsvp" class="strip-link strip-link--cta">
+        <a href="/france/rsvp" class="strip-link strip-link--cta" data-loading-button>
           <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
           <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
-          <span class="strip-arrow">→</span>
+          <span class="strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
         </a>
       </nav>
     </section>

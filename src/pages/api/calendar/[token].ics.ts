@@ -23,7 +23,7 @@ const ICS_HEADERS = {
   'Cache-Control': 'max-age=3600, stale-while-revalidate=7200, stale-if-error=604800',
 };
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, cache }) => {
   const token = params.token;
 
   if (!token) {
@@ -44,6 +44,13 @@ export const GET: APIRoute = async ({ params }) => {
   try {
     const stored = await getICS(guestId);
     if (stored !== null) {
+      // Durable CDN cache (Netlify) — each token is a unique per-guest URL, so
+      // path-keyed caching is safe. POST /api/rsvp invalidates this path after
+      // regenerating the guest's ICS. Only successful responses are cached;
+      // 503s below fall through without cache directives.
+      if (cache.enabled) {
+        cache.set({ maxAge: 3600, swr: 86400, tags: ['calendar'] });
+      }
       return new Response(stored, { status: 200, headers: ICS_HEADERS });
     }
     // Blob not yet generated — 503 so calendar app retries; scheduled job is backstop

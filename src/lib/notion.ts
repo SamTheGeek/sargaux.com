@@ -6,6 +6,7 @@
  */
 
 import { Client } from '@notionhq/client';
+import { getStore } from '@netlify/blobs';
 import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails } from '../types';
 import { normalize } from './normalize';
 
@@ -82,10 +83,128 @@ function deriveEventInvitations(country: string | null): ('nyc' | 'france')[] {
   }
 }
 
+/**
+ * Parse a Notion Guest List page into a GuestRecord.
+ * Shared by the full DB scan, the targeted login query, and direct
+ * page retrieves. Returns null for non-page objects or pages without a name.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseGuestPage(page: any): GuestRecord | null {
+  if (!page || page.object !== 'page') return null;
+
+  const props = page.properties ?? {};
+
+  // Full Name is a formula property
+  const fullName =
+    props['Full Name']?.formula?.string ||
+    props['Name of Guest']?.title?.[0]?.plain_text ||
+    '';
+
+  if (!fullName) return null;
+
+  const country = props['Country']?.select?.name || null;
+  const isPlusOne = props['+1']?.checkbox === true;
+
+  // Related Guests is a self-relation
+  const relatedGuestIds: string[] = (
+    props['Related Guests']?.relation || []
+  ).map((r: { id: string }) => r.id);
+
+  // Event Invitations multi-select (Phase 2 addition)
+  // Falls back to deriving from Country if property doesn't exist yet
+  let eventInvitations: ('nyc' | 'france')[];
+  const eventInvProp = props['Event Invitations'];
+  if (eventInvProp?.multi_select?.length > 0) {
+    eventInvitations = eventInvProp.multi_select
+      .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
+      .filter((e: string) => e === 'nyc' || e === 'france');
+  } else {
+    eventInvitations = deriveEventInvitations(country);
+  }
+
+  const email: string | undefined = props['Guest Email']?.email ?? undefined;
+
+  // Event Invited IDs (relation to Event Catalog) — stored to avoid extra
+  // pages.retrieve() calls in getGuestEvents on the RSVP page
+  const eventInvitedIds: string[] = (
+    props['Events Invited']?.relation || []
+  ).map((r: { id: string }) => r.id);
+
+  return {
+    id: page.id,
+    name: fullName,
+    normalizedName: normalize(fullName),
+    eventInvitations,
+    isPlusOne,
+    relatedGuestIds,
+    eventInvitedIds,
+    email,
+  };
+}
+
 // Module-level cache — populated once per cold start
 let guestCache: GuestRecord[] | null = null;
 // In-flight deduplication — prevents thundering herd on first request
 let guestCachePromise: Promise<GuestRecord[]> | null = null;
+
+// ── Netlify Blobs persistence for the guest cache ───────────────────────────
+// The in-memory cache dies with each function instance, so cold starts used to
+// pay for a full paginated Notion scan. The blob layer persists the last scan
+// across instances/deploys: cold starts hydrate from one fast blob read and
+// only fall back to Notion when the blob is missing or older than the TTL.
+// All blob access is best-effort — local dev and Playwright runs without a
+// Netlify Blobs environment silently skip this layer.
+
+const GUEST_CACHE_STORE = 'guest-cache';
+const GUEST_CACHE_KEY = 'all-guests-v1';
+const GUEST_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+interface GuestCacheBlob {
+  fetchedAt: number;
+  guests: GuestRecord[];
+}
+
+async function readGuestCacheBlob(): Promise<GuestRecord[] | null> {
+  try {
+    const raw = await getStore(GUEST_CACHE_STORE).get(GUEST_CACHE_KEY, { type: 'json' });
+    const blob = raw as GuestCacheBlob | null;
+    if (!blob || !Array.isArray(blob.guests)) return null;
+    if (Date.now() - blob.fetchedAt > GUEST_CACHE_TTL_MS) return null;
+    return blob.guests;
+  } catch {
+    return null; // Blobs unavailable (local dev/tests) or read failure
+  }
+}
+
+async function writeGuestCacheBlob(guests: GuestRecord[]): Promise<void> {
+  try {
+    const blob: GuestCacheBlob = { fetchedAt: Date.now(), guests };
+    await getStore(GUEST_CACHE_STORE).setJSON(GUEST_CACHE_KEY, blob);
+  } catch {
+    // Best-effort — never fail the request over cache persistence
+  }
+}
+
+async function deleteGuestCacheBlob(): Promise<void> {
+  try {
+    await getStore(GUEST_CACHE_STORE).delete(GUEST_CACHE_KEY);
+  } catch {
+    // Best-effort
+  }
+}
+
+/**
+ * Hydrate the in-memory guest cache from the blob layer if possible.
+ * Returns the cache (or null without touching Notion).
+ */
+async function hydrateGuestCacheFromBlob(): Promise<GuestRecord[] | null> {
+  if (guestCache) return guestCache;
+  const guests = await readGuestCacheBlob();
+  if (guests) {
+    guestCache = guests;
+  }
+  return guestCache;
+}
 
 /**
  * Fetch all guests from the Notion Guest List database.
@@ -104,8 +223,10 @@ export async function fetchAllGuests(): Promise<GuestRecord[]> {
 }
 
 async function _fetchAllGuests(): Promise<GuestRecord[]> {
+  // Fast path: a fresh blob from a previous instance avoids the full scan
+  const fromBlob = await hydrateGuestCacheFromBlob();
+  if (fromBlob) return fromBlob;
 
-  const notion = getClient();
   const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
 
   if (!dataSourceId) {
@@ -125,88 +246,89 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
     });
 
     for (const page of response.results) {
-      if (page.object !== 'page') continue;
-
-      const props = page.properties;
-
-      // Full Name is a formula property
-      const fullName =
-        props['Full Name']?.formula?.string ||
-        props['Name of Guest']?.title?.[0]?.plain_text ||
-        '';
-
-      if (!fullName) continue;
-
-      const country = props['Country']?.select?.name || null;
-      const isPlusOne = props['+1']?.checkbox === true;
-
-      // Related Guests is a self-relation
-      const relatedGuestIds: string[] = (
-        props['Related Guests']?.relation || []
-      ).map((r: { id: string }) => r.id);
-
-      // Event Invitations multi-select (Phase 2 addition)
-      // Falls back to deriving from Country if property doesn't exist yet
-      let eventInvitations: ('nyc' | 'france')[];
-      const eventInvProp = props['Event Invitations'];
-      if (eventInvProp?.multi_select?.length > 0) {
-        eventInvitations = eventInvProp.multi_select
-          .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
-          .filter((e: string) => e === 'nyc' || e === 'france');
-      } else {
-        eventInvitations = deriveEventInvitations(country);
-      }
-
-      const email: string | undefined = props['Guest Email']?.email ?? undefined;
-
-      // Event Invited IDs (relation to Event Catalog) — stored to avoid extra
-      // pages.retrieve() calls in getGuestEvents on the RSVP page
-      const eventInvitedIds: string[] = (
-        props['Events Invited']?.relation || []
-      ).map((r: { id: string }) => r.id);
-
-      guests.push({
-        id: page.id,
-        name: fullName,
-        normalizedName: normalize(fullName),
-        eventInvitations,
-        isPlusOne,
-        relatedGuestIds,
-        eventInvitedIds,
-        email,
-      });
+      const guest = parseGuestPage(page);
+      if (guest) guests.push(guest);
     }
 
     cursor = response.has_more ? response.next_cursor : undefined;
   } while (cursor);
 
   guestCache = guests;
+  await writeGuestCacheBlob(guests);
   return guests;
 }
 
 /**
  * Clear the guest cache (useful for testing or manual refresh).
+ * Also drops the blob-persisted copy so the next fetch is fresh.
  */
 export function clearGuestCache(): void {
   guestCache = null;
   guestCachePromise = null;
+  guestPagePromises.clear();
+  void deleteGuestCacheBlob();
+}
+
+// Short-TTL cache for direct guest page retrieves. Deduplicates concurrent
+// calls (the RSVP page requests party + events at once, both needing the same
+// guest page on a cold start) and skips repeat round-trips on warm instances.
+// TTL matches the blob cache so guest edits in Notion surface within minutes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const guestPagePromises: Map<string, { at: number; promise: Promise<any> }> = new Map();
+const GUEST_PAGE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+/** Retrieve a guest's Notion page directly, deduplicating concurrent calls. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function retrieveGuestPage(guestId: string): Promise<any> {
+  const existing = guestPagePromises.get(guestId);
+  if (existing && Date.now() - existing.at < GUEST_PAGE_TTL_MS) {
+    return existing.promise;
+  }
+
+  const notion = getClient();
+  const promise = notion.pages.retrieve({ page_id: guestId }).catch((err) => {
+    guestPagePromises.delete(guestId); // allow retry after failure
+    throw err;
+  });
+  guestPagePromises.set(guestId, { at: Date.now(), promise });
+  return promise;
+}
+
+/**
+ * Fetch a single guest by Notion page ID without ever triggering a full
+ * guest-list scan: in-memory cache → blob cache → direct page retrieve.
+ */
+export async function getGuestById(guestId: string): Promise<GuestRecord | null> {
+  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  if (cached) {
+    const hit = cached.find(g => g.id === guestId);
+    if (hit) return hit;
+  }
+
+  const page = await retrieveGuestPage(guestId);
+  return parseGuestPage(page);
 }
 
 /**
  * Find a single guest by name for login validation.
  *
- * Uses the in-memory cache when warm (fast path).
- * On a cold start, does a targeted Notion title-filter query — one API call
- * instead of a full paginated DB scan — so login is fast even after idle.
+ * Uses the in-memory cache when warm (fast path), then the blob-persisted
+ * cache (one fast read). On a fully cold start, does a targeted Notion
+ * title-filter query — one API call instead of a full paginated DB scan —
+ * so login is fast even after idle.
  *
  * Falls back to fetchAllGuests() if the targeted query fails.
  */
 export async function findGuestByName(name: string): Promise<GuestRecord | null> {
   const normalized = normalize(name);
 
-  // Fast path: cache already warm
-  if (guestCache) {
-    return guestCache.find(g => g.normalizedName === normalized) ?? null;
+  // Fast path: in-memory cache, then blob-persisted cache. A miss falls
+  // through to the live targeted query — the cache can be up to TTL stale,
+  // and a freshly added guest must still be able to log in.
+  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  if (cached) {
+    const hit = cached.find(g => g.normalizedName === normalized);
+    if (hit) return hit;
   }
 
   // Cold path: targeted title-filter query (avoids full DB scan)
@@ -241,47 +363,8 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
     const data: { results: any[] } = await response.json();
 
     for (const page of data.results) {
-      if (page.object !== 'page') continue;
-
-      const props = page.properties;
-      const fullName =
-        props['Full Name']?.formula?.string ||
-        props['Name of Guest']?.title?.[0]?.plain_text ||
-        '';
-
-      if (!fullName || normalize(fullName) !== normalized) continue;
-
-      const country = props['Country']?.select?.name || null;
-      const isPlusOne = props['+1']?.checkbox === true;
-      const relatedGuestIds: string[] = (props['Related Guests']?.relation || []).map(
-        (r: { id: string }) => r.id
-      );
-      const eventInvitedIds: string[] = (props['Events Invited']?.relation || []).map(
-        (r: { id: string }) => r.id
-      );
-
-      let eventInvitations: ('nyc' | 'france')[];
-      const eventInvProp = props['Event Invitations'];
-      if (eventInvProp?.multi_select?.length > 0) {
-        eventInvitations = eventInvProp.multi_select
-          .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
-          .filter((e: string) => e === 'nyc' || e === 'france');
-      } else {
-        eventInvitations = deriveEventInvitations(country);
-      }
-
-      const email: string | undefined = props['Guest Email']?.email ?? undefined;
-
-      return {
-        id: page.id,
-        name: fullName,
-        normalizedName: normalize(fullName),
-        eventInvitations,
-        isPlusOne,
-        relatedGuestIds,
-        eventInvitedIds,
-        email,
-      };
+      const guest = parseGuestPage(page);
+      if (guest && guest.normalizedName === normalized) return guest;
     }
 
     // Not found in targeted query — could be a schema mismatch; fall back to full scan
@@ -454,23 +537,32 @@ function parseEventPages(results: Array<{ id: string; page: any }>): EventRecord
   return events;
 }
 
-export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
-  const notion = getClient();
+// Event pages change rarely — cache direct retrieves briefly so repeated RSVP
+// page loads on a warm instance skip the per-event Notion round-trips.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const eventPageCache: Map<string, { at: number; page: any }> = new Map();
+const EVENT_PAGE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-  // Get event IDs from the guest cache — avoids an extra pages.retrieve() call
-  const allGuests = await fetchAllGuests();
-  const guest = allGuests.find(g => g.id === guestId);
-  const eventIds = guest?.eventInvitedIds ?? [];
-
-  if (eventIds.length === 0) {
-    return [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function retrieveEventPage(eventId: string): Promise<any> {
+  const cached = eventPageCache.get(eventId);
+  if (cached && Date.now() - cached.at < EVENT_PAGE_TTL_MS) {
+    return cached.page;
   }
 
+  const notion = getClient();
+  const page = await notion.pages.retrieve({ page_id: eventId });
+  eventPageCache.set(eventId, { at: Date.now(), page });
+  return page;
+}
+
+async function retrieveEventPages(
+  eventIds: string[]
+): Promise<EventRecord[]> {
   const eventPages = await Promise.all(
     eventIds.map(async (eventId) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
+        return { id: eventId, page: await retrieveEventPage(eventId) };
       } catch (error) {
         console.error(`Failed to fetch event ${eventId}:`, error);
         return null;
@@ -479,6 +571,19 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
   );
 
   return parseEventPages(eventPages.filter((r): r is NonNullable<typeof r> => r !== null));
+}
+
+export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
+  // Targeted lookup: memory/blob cache, or a single direct page retrieve —
+  // never a full guest-list scan (this runs on every RSVP page load).
+  const guest = await getGuestById(guestId);
+  const eventIds = guest?.eventInvitedIds ?? [];
+
+  if (eventIds.length === 0) {
+    return [];
+  }
+
+  return retrieveEventPages(eventIds);
 }
 
 /**
@@ -488,29 +593,15 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
  * guest scan would exceed the Netlify function timeout.
  */
 export async function getGuestEventsById(guestId: string): Promise<EventRecord[]> {
-  const notion = getClient();
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const guestPage: any = await notion.pages.retrieve({ page_id: guestId });
+  const guestPage: any = await retrieveGuestPage(guestId);
   const eventIds: string[] = (
     guestPage.properties?.['Events Invited']?.relation || []
   ).map((r: { id: string }) => r.id);
 
   if (eventIds.length === 0) return [];
 
-  const eventPages = await Promise.all(
-    eventIds.map(async (eventId) => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { id: eventId, page: await notion.pages.retrieve({ page_id: eventId }) as any };
-      } catch (error) {
-        console.error(`Failed to fetch event ${eventId}:`, error);
-        return null;
-      }
-    })
-  );
-
-  return parseEventPages(eventPages.filter((r): r is NonNullable<typeof r> => r !== null));
+  return retrieveEventPages(eventIds);
 }
 
 /**
@@ -518,22 +609,30 @@ export async function getGuestEventsById(guestId: string): Promise<EventRecord[]
  * Returns [primary guest, ...related guests], with +1s sorted last.
  */
 export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
-  const allGuests = await fetchAllGuests();
-  const primaryGuest = allGuests.find(g => g.id === guestId);
+  // Targeted lookups (memory/blob cache or direct page retrieves in parallel)
+  // — never a full guest-list scan.
+  const primaryGuest = await getGuestById(guestId);
 
   if (!primaryGuest) {
     throw new Error(`Guest not found: ${guestId}`);
   }
 
-  const party: GuestRecord[] = [primaryGuest];
+  // Fetch related guests in parallel; skip any that fail to resolve
+  const related = await Promise.all(
+    primaryGuest.relatedGuestIds.map(async (relatedId) => {
+      try {
+        return await getGuestById(relatedId);
+      } catch (error) {
+        console.error(`Failed to fetch related guest ${relatedId}:`, error);
+        return null;
+      }
+    })
+  );
 
-  // Fetch related guests
-  for (const relatedId of primaryGuest.relatedGuestIds) {
-    const relatedGuest = allGuests.find(g => g.id === relatedId);
-    if (relatedGuest) {
-      party.push(relatedGuest);
-    }
-  }
+  const party: GuestRecord[] = [
+    primaryGuest,
+    ...related.filter((g): g is GuestRecord => g !== null),
+  ];
 
   // Sort: primary first, then non-+1s, then +1s
   return party.sort((a, b) => {
@@ -563,9 +662,8 @@ export async function submitRSVP(
     );
   }
 
-  // Fetch the guest name for the title
-  const allGuests = await fetchAllGuests();
-  const guest = allGuests.find(g => g.id === guestId);
+  // Fetch the guest name for the title (targeted lookup, no full scan)
+  const guest = await getGuestById(guestId);
   const guestName = guest?.name || 'Unknown Guest';
 
   // Determine status

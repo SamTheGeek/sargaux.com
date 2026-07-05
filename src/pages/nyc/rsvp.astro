@@ -7,6 +7,7 @@ import { features } from '../../config/features';
 import { NYC_EVENT_TIME, strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import LoadingDots from '../../components/LoadingDots.astro';
 import { getDisplayEventTime, formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
@@ -390,7 +391,8 @@ const submittedAtFallback = submittedAtISO
               </p>
             )}
             <button type="submit" class="rsvp-submit-btn">
-              {existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}
+              <span class="btn-label">{existingRSVP ? t(strings.nyc.rsvp.form.updateBtn) : t(strings.nyc.rsvp.form.submitBtn)}</span>
+              <span class="btn-progress">{t(strings.global.savingBtn)}<LoadingDots /></span>
             </button>
             <div class="feedback" aria-live="polite">
               <p id="form-success" class="success-message" hidden>{t(strings.nyc.rsvp.form.successMsg)}</p>
@@ -1181,10 +1183,10 @@ const submittedAtFallback = submittedAtISO
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      const originalButtonText = submitButton?.textContent || 'Submit RSVP';
       if (submitButton) {
         submitButton.disabled = true;
-        submitButton.textContent = 'Saving...';
+        submitButton.classList.add('is-loading');
+        submitButton.setAttribute('aria-busy', 'true');
       }
       if (successMessage) successMessage.hidden = true;
       if (errorMessage) {
@@ -1235,7 +1237,8 @@ const submittedAtFallback = submittedAtISO
         showError(confirmationEmailRequired);
         if (submitButton) {
           submitButton.disabled = false;
-          submitButton.textContent = originalButtonText;
+          submitButton.classList.remove('is-loading');
+          submitButton.removeAttribute('aria-busy');
         }
         return;
       }
@@ -1247,7 +1250,8 @@ const submittedAtFallback = submittedAtISO
           showError(confirmationEmailAllRequired);
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            submitButton.classList.remove('is-loading');
+            submitButton.removeAttribute('aria-busy');
           }
           return;
         }
@@ -1292,7 +1296,8 @@ const submittedAtFallback = submittedAtISO
 
         if (submitButton) {
           submitButton.disabled = false;
-          submitButton.textContent = originalButtonText;
+          submitButton.classList.remove('is-loading');
+          submitButton.removeAttribute('aria-busy');
         }
       }
     });

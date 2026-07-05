@@ -1,6 +1,7 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-index.css';
+import LoadingDots from '../../components/LoadingDots.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
@@ -45,7 +46,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp">{t(strings.global.rsvpBtn)}</a>
+        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp" data-loading-button>{t(strings.global.rsvpBtn)}<LoadingDots /></a>
       </div>
     </nav>
   </header>
@@ -143,10 +144,10 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <span class="nyc-strip-desc">{t(strings.nyc.nav.lookbook.desc)}</span>
         <span class="nyc-strip-arrow">→</span>
       </a>
-      <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta">
+      <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta" data-loading-button>
         <span class="nyc-strip-title">{t(strings.nyc.nav.rsvp.title)}</span>
         <span class="nyc-strip-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
-        <span class="nyc-strip-arrow">→</span>
+        <span class="nyc-strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
       </a>
     </nav>
   </section>
