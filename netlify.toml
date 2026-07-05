@@ -27,6 +27,11 @@
   FEATURE_FRANCE_LOCATION_MAP = "true"
   FEATURE_FRANCE_RSVP_ENABLED = "true"
 
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
