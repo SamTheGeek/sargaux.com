@@ -1,0 +1,147 @@
+/*
+ * Chez Sargaux theme for the Joy registry (withjoy.com/sargaux/registry)
+ *
+ * Paste into Joy's designer custom-CSS field ("under the hood"). See
+ * README.md in this folder for caveats — this field is unofficial and
+ * unsupported by Joy, and the pasted copy in Joy is the live source of
+ * truth; this file is the recovery point.
+ *
+ * Selectors target Joy's styled-components class *prefixes* via
+ * [class*="..."] because the trailing hash suffixes change between Joy
+ * deploys while the prefixes stay stable. !important is used throughout
+ * because Joy's own hashed classes have equal-or-higher specificity and
+ * unknown injection order relative to this stylesheet.
+ *
+ * Palette + type from src/styles/tokens.css (NYC / default light theme):
+ *   warm cream  #FFF9F0  (page background)
+ *   dark moss   #17320b  (text, borders)
+ *   espresso    #3A2E26  (muted text)
+ *   burnt amber #e65a17  (accent, CTAs)
+ *   Helvetica Now Display (headings) — served from sargaux.com with CORS
+ */
+
+/* === Fonts ===
+ * Requires Access-Control-Allow-Origin on https://sargaux.com/fonts/*
+ * (configured in netlify.toml). If Joy sanitizes @font-face or external
+ * url(), delete this block; the font stacks below fall back gracefully.
+ */
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('https://sargaux.com/fonts/helvetica-now/HelveticaNowDisplay-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('https://sargaux.com/fonts/helvetica-now/HelveticaNowDisplay-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('https://sargaux.com/fonts/helvetica-now/HelveticaNowDisplay-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* === Page canvas === */
+
+[class*="GuestRegistrystyles__StyledMainSection"] {
+  background: #FFF9F0 !important;
+  color: #17320b !important;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+}
+
+/* === Couple header (title + note) === */
+
+[class*="CoupleHeaderstyles__StyledTitle"] {
+  font-family: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  font-weight: 500 !important;
+  color: #17320b !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+[class*="CoupleHeaderstyles__NoteText"] {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  color: #3A2E26 !important;
+  line-height: 1.6 !important;
+}
+
+/* Header photo — keep, but square the corners to match the site's edges */
+[class*="EventPhotostyles__StyledImage"] {
+  border-radius: 0 !important;
+}
+
+/* === Product grid === */
+
+[class*="ProductListViewstyles__StyledGridContainer"] {
+  background: transparent !important;
+}
+
+/* Sort dropdown wrapper */
+[class*="ProductListViewstyles__SelectWrapper"] {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  color: #17320b !important;
+}
+
+/* === Product tiles === */
+
+[class*="ProductTilestyles__StyledProductTile"] {
+  background: #FFF9F0 !important;
+  border: 1px solid #17320b !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #17320b !important;
+}
+
+[class*="ProductTilestyles__StyledProductPhotoWrapper"] {
+  background: #ffffff !important;
+  border-radius: 0 !important;
+}
+
+[class*="ProductTilestyles__StyledProductPhoto"] {
+  border-radius: 0 !important;
+}
+
+[class*="ProductTilestyles__ProductTitleWrapper"],
+[class*="ProductTilestyles__StyledProductTitleText"] {
+  font-family: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  font-weight: 500 !important;
+  color: #17320b !important;
+}
+
+/* Price / store line */
+[class*="ProductTilestyles__ProductSubTitleWrapper"] {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  color: #3A2E26 !important;
+}
+
+/* === Cart pill === */
+
+[class*="ShoppingCartOpenButtonV2styles"] button,
+[class*="ShoppingCartOpenButtonV2styles__StyledButton"] {
+  background: #e65a17 !important;
+  color: #FFF9F0 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+}
+
+/* === Footer === */
+
+[class*="RegistryFooterstyles"] {
+  background: #17320b !important;
+  color: #FFF9F0 !important;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+}
+
+[class*="RegistryFooterstyles"] a {
+  color: #FFF9F0 !important;
+  text-decoration: underline !important;
+}
