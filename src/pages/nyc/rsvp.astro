@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
-import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../lib/notion';
+import { getGuestParty, getGuestEvents, getLatestRSVPForParty } from '../../lib/notion';
 import mBulletSrc from '../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../assets/nyc/subway-bullet-sf.svg?url';
 import { features } from '../../config/features';
@@ -36,7 +36,6 @@ if (isPreview) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['preview-margaux'],
-      eventInvitedIds: [],
       email: 'sam@samthegeek.net',
     },
     {
@@ -46,7 +45,6 @@ if (isPreview) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['preview-sam'],
-      eventInvitedIds: [],
       email: undefined,
     },
   ];
@@ -87,16 +85,20 @@ if (isPreview) {
   };
 } else if (guestId) {
   try {
-    const [partyResult, allEvents, rsvpResult] = await Promise.all([
+    const [partyResult, allEvents] = await Promise.all([
       getGuestParty(guestId),
       getGuestEvents(guestId),
-      getLatestRSVP(guestId, 'nyc'),
     ]);
     party = partyResult;
     const events = allEvents.filter((event) => event.wedding === 'nyc');
     coreEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Core'));
     optionalEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Optional'));
-    existingRSVP = rsvpResult;
+    // Party-level lookup: a response submitted by any party member pre-fills
+    // the form for every member, so returning guests never see a blank form.
+    existingRSVP = await getLatestRSVPForParty(
+      party.map((member) => member.id),
+      'nyc'
+    );
   } catch (error) {
     console.error('Failed to load NYC RSVP data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';

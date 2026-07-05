@@ -7,7 +7,6 @@ export const mockGuest: GuestRecord = {
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-2'],
-  eventInvitedIds: [],
   email: 'sam@example.com',
 };
 
@@ -18,7 +17,6 @@ export const mockCompanionGuest: GuestRecord = {
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-1'],
-  eventInvitedIds: [],
 };
 
 export const mockNycGuest: GuestRecord = {
@@ -28,7 +26,6 @@ export const mockNycGuest: GuestRecord = {
   eventInvitations: ['nyc'],
   isPlusOne: false,
   relatedGuestIds: [],
-  eventInvitedIds: [],
 };
 
 export const mockFranceGuest: GuestRecord = {
@@ -38,7 +35,6 @@ export const mockFranceGuest: GuestRecord = {
   eventInvitations: ['france'],
   isPlusOne: false,
   relatedGuestIds: [],
-  eventInvitedIds: [],
 };
 
 export const mockNycEvents: EventRecord[] = [

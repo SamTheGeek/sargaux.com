@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../../layouts/WireframeLayout.astro';
-import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
+import { getGuestParty, getGuestEvents, getLatestRSVPForParty } from '../../../lib/notion';
 import { generateTokenIfPossible } from '../../../lib/calendar';
 import { getAttendingNames, redactEmail } from '../../../lib/rsvp-display';
 import { strings } from '../../../content/strings';
@@ -33,7 +33,6 @@ if (isDevMock) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['dev-companion'],
-      eventInvitedIds: [],
       email: 'sam@example.com',
     },
     {
@@ -43,7 +42,6 @@ if (isDevMock) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['dev-primary'],
-      eventInvitedIds: [],
       email: 'margaux@example.com',
     },
   ];
@@ -99,7 +97,10 @@ if (isDevMock) {
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'france');
     coreEvents = events.filter((event) => event.type === 'Core');
     optionalEvents = events.filter((event) => event.type === 'Optional');
-    existingRSVP = await getLatestRSVP(guestId, 'france');
+    existingRSVP = await getLatestRSVPForParty(
+      party.map((member) => member.id),
+      'france'
+    );
   } catch (error) {
     console.error('Failed to load France RSVP confirmation data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';

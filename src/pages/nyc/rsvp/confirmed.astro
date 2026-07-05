@@ -1,6 +1,6 @@
 ---
 import WireframeLayout from '../../../layouts/WireframeLayout.astro';
-import { getGuestParty, getGuestEvents, getLatestRSVP } from '../../../lib/notion';
+import { getGuestParty, getGuestEvents, getLatestRSVPForParty } from '../../../lib/notion';
 import { generateTokenIfPossible } from '../../../lib/calendar';
 import { getAttendingNames, getDisplayEventTime, formatEventDate, redactEmail, sortEventsByDateTime } from '../../../lib/rsvp-display';
 import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
@@ -37,7 +37,6 @@ if (isDevMock) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['dev-companion'],
-      eventInvitedIds: [],
       email: 'sam@example.com',
     },
     {
@@ -47,7 +46,6 @@ if (isDevMock) {
       eventInvitations: ['nyc', 'france'],
       isPlusOne: false,
       relatedGuestIds: ['dev-primary'],
-      eventInvitedIds: [],
       email: 'margaux@example.com',
     },
   ];
@@ -102,7 +100,10 @@ if (isDevMock) {
     const events = (await getGuestEvents(guestId)).filter((event) => event.wedding === 'nyc');
     coreEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Core'));
     optionalEvents = sortEventsByDateTime(events.filter((event) => event.type === 'Optional'));
-    existingRSVP = await getLatestRSVP(guestId, 'nyc');
+    existingRSVP = await getLatestRSVPForParty(
+      party.map((member) => member.id),
+      'nyc'
+    );
   } catch (error) {
     console.error('Failed to load NYC RSVP confirmation data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
