@@ -4,7 +4,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import { getPrimaryEventRoute } from '../lib/event-routing';
-import { fetchJoyRegistry, JOY_REGISTRY_URL } from '../lib/joy';
+import { fetchJoyRegistry, joyItemUrl, JOY_REGISTRY_URL } from '../lib/joy';
 import '../styles/registry.css';
 
 const lang = Astro.locals.lang ?? 'en';
@@ -97,7 +97,7 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
               <div class="registry-card-body">
                 <h3>{fund.title}</h3>
                 {fund.description && <p class="registry-card-desc">{fund.description}</p>}
-                <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+                <a href={joyItemUrl(fund.id)} class="registry-joy-link" target="_blank" rel="noopener">
                   {t(strings.registry.contributeOnJoy)}
                 </a>
               </div>
@@ -125,7 +125,7 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
                   {gift.priceLabel && gift.storeName && <span class="registry-meta-divider"> · </span>}
                   {gift.storeName}
                 </p>
-                <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+                <a href={joyItemUrl(gift.id)} class="registry-joy-link" target="_blank" rel="noopener">
                   {t(strings.registry.viewOnJoy)}
                 </a>
               </div>

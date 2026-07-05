@@ -180,6 +180,19 @@ npx playwright test tests/event-routing.spec.ts tests/auth.spec.ts tests/access-
 npm run test:quick
 ```
 
+**Logging in during local testing:**
+
+- `.env.local` defines `LOCAL_TESTING_USERNAME` — a guest name that logs in successfully in a local environment (it must match a Notion Guest List `Full Name`, so display names like "Sam Gross" may not work; the stored value does). Use it whenever a test, script, or browser session needs an authenticated guest:
+
+  ```bash
+  curl -s -X POST http://localhost:1213/api/login \
+    -H "Origin: http://localhost:1213" \
+    --data-urlencode "name=$(grep '^LOCAL_TESTING_USERNAME' .env.local | cut -d= -f2-)" \
+    -c cookies.txt
+  ```
+
+- The login endpoint accepts form-encoded bodies only (`application/x-www-form-urlencoded` or `multipart/form-data`) — JSON bodies return a 500.
+
 **Homepage login behavior to remember when testing:**
 
 - The homepage login is an inline control, not a modal.
@@ -304,6 +317,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - **Party-level RSVP responses**: RSVP Responses rows are party-level — one row per party + event, with the `Guest` relation set to **every** party member. Pre-fill (`getLatestRSVPForParty`) matches responses related to any member, so a partner returning to update the RSVP sees the submitted state, never a blank form. `submitRSVP` also matches the existing row via any member so updates converge on one row instead of forking.
 - **RSVP status sync**: `submitRSVP` (`src/lib/notion.ts`) writes back to the Guest List `RSVP` status field of **every party member** after every submission, resolved per member from their personal attendance (name-matched against `Guests Attending`) across the latest response per event they're invited to: all attending → Attending, none → Declined, mixed → Partial. The `Partial` option must exist in the Notion Guest List RSVP field — add manually, as DDL cannot configure STATUS options (`ALTER COLUMN SET STATUS(...)` is unsupported by `notion-update-data-source`).
 - **Events Invited relation is deprecated**: never read the Guest List `Events Invited` relation. The RSVP form lists the full Event Catalog for each wedding in the guest's `Event Invitations` multi-select (`getGuestEvents`). The personalized calendar ICS contains **only events the guest has RSVP'd to attend** (`getAttendingEvents` / `refreshAllICS` — latest non-declined response per wedding, and only if the guest is named in its attendee list); guests who haven't RSVP'd get a valid empty calendar.
+- **Joy registry integration** (`src/lib/joy.ts` + `src/pages/registry.astro`): `/registry` renders the couple's withjoy.com registry natively by querying Joy's **unofficial** GraphQL endpoint (`https://withjoy.com/graphql`, `registryItemsByEventId`) server-side with a 15-min in-memory cache. `JOY_EVENT_ID` / `JOY_EVENT_HANDLE` are runtime env vars (`.env.local` + Netlify Dashboard); when unset or when Joy is unreachable, the page falls back to a link-out card — the fetch must never throw. Joy models group-gifted physical items as `donationFund` entries with `fundType: "gift"` (real price, normal item-count semantics); only `fundType: "cash"` items belong in the Funds section. **Per-item deep links**: `https://withjoy.com/{handle}/registry?pid={registryItemId}` opens that item's detail/buy modal directly on Joy (`joyItemUrl()`) — always link cards to their item, not the registry root. Cash-fund `stillNeeded`/`totalRequested` are in cents of the goal, not item counts. The Joy-side theme CSS lives in `docs/joy-custom-css/` (pasted copy in Joy's designer is the live source of truth; fonts load cross-origin from sargaux.com and need the `/fonts/*` CORS header in `netlify.toml`).
 
 ## Authentication
 

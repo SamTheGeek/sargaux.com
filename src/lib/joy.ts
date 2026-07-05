@@ -16,6 +16,14 @@ const CACHE_TTL_MS = 15 * 60 * 1000;
 
 export const JOY_REGISTRY_URL = `https://withjoy.com/${process.env.JOY_EVENT_HANDLE ?? 'sargaux'}/registry`;
 
+/**
+ * Deep link to a single registry item on Joy: opens the item's detail/buy
+ * modal directly (verified live — Joy's own share links use the same param).
+ */
+export function joyItemUrl(itemId: string): string {
+  return `${JOY_REGISTRY_URL}?pid=${itemId}`;
+}
+
 export interface JoyProduct {
   id: string;
   title: string;
@@ -76,7 +84,7 @@ interface JoyRawItem {
     price: { floatingPointDecimalString: string | null; currency: { code: string | null } | null } | null;
     photos: Array<{ url: string | null }> | null;
   } | null;
-  donationFund: { title: string | null } | null;
+  donationFund: { title: string | null; fundType: string | null } | null;
 }
 
 let cache: { registry: JoyRegistry; fetchedAt: number } | null = null;
@@ -96,7 +104,10 @@ function toRegistry(items: JoyRawItem[]): JoyRegistry {
 
     const photoUrl = data?.photos?.find((photo) => photo.url)?.url ?? null;
 
-    if (item.donationFund) {
+    // Joy models group-gifted physical items as donation funds with
+    // fundType "gift"; they carry a real product price and item-count
+    // semantics, so only true cash funds ("cash") belong in the funds list.
+    if (item.donationFund && item.donationFund.fundType !== 'gift') {
       funds.push({
         id: item.id,
         title,
