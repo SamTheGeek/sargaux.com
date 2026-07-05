@@ -188,7 +188,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   // At least one email is always required
   if (partyContacts.every((guest) => !guest.email)) {
     return new Response(
-      JSON.stringify({ error: 'At least one email address is required.' }),
+      JSON.stringify({
+        error:
+          'At least one email address is required. We recommend adding an email address for everyone in your party.',
+      }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
