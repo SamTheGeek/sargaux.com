@@ -30,7 +30,7 @@
 [[headers]]
   for = "/fonts/*"
   [headers.values]
-    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Origin = "https://withjoy.com"
 
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
