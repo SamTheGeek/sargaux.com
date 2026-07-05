@@ -47,3 +47,16 @@ export interface RSVPResponse {
   details?: RSVPDetails;
   eventsAttending?: string[]; // Event IDs parsed from Details JSON
 }
+
+/**
+ * Lightweight RSVP record for bulk lookups (e.g. calendar personalization).
+ * guestId is whichever party member the RSVP was submitted under —
+ * not necessarily the guest whose calendar is being generated.
+ */
+export interface RSVPRecord {
+  guestId: string;
+  event: 'nyc' | 'france';
+  submittedAt: string; // ISO datetime, used to pick the latest per guest+event
+  status: 'Attending' | 'Declined' | 'Partial';
+  eventsAttending: string[]; // Optional event IDs confirmed
+}

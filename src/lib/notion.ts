@@ -7,7 +7,7 @@
 
 import { Client } from '@notionhq/client';
 import { getStore } from '@netlify/blobs';
-import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails } from '../types';
+import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails, RSVPRecord } from '../types';
 import { normalize } from './normalize';
 
 let notionClient: Client | null = null;
@@ -587,24 +587,6 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
 }
 
 /**
- * Fetch events for a guest by directly retrieving their Notion page.
- * Unlike getGuestEvents(), this does NOT go through fetchAllGuests() —
- * safe for cold-start paths like the calendar ICS endpoint where the full
- * guest scan would exceed the Netlify function timeout.
- */
-export async function getGuestEventsById(guestId: string): Promise<EventRecord[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const guestPage: any = await retrieveGuestPage(guestId);
-  const eventIds: string[] = (
-    guestPage.properties?.['Events Invited']?.relation || []
-  ).map((r: { id: string }) => r.id);
-
-  if (eventIds.length === 0) return [];
-
-  return retrieveEventPages(eventIds);
-}
-
-/**
  * Fetch a guest and their related party members (Related Guests).
  * Returns [primary guest, ...related guests], with +1s sorted last.
  */
@@ -881,6 +863,87 @@ export function parseRSVPPage(
     details,
     eventsAttending,
   };
+}
+
+// RSVP records cache — populated once per cold start, used for bulk
+// calendar personalization (avoids one Notion query per guest).
+let rsvpCache: RSVPRecord[] | null = null;
+let rsvpCachePromise: Promise<RSVPRecord[]> | null = null;
+
+/**
+ * Fetch every RSVP response across both weddings in a handful of paginated
+ * queries, regardless of guest count. Used to personalize calendar ICS
+ * generation without making a Notion call per guest.
+ */
+export async function fetchAllRSVPs(): Promise<RSVPRecord[]> {
+  if (rsvpCache) return rsvpCache;
+  if (rsvpCachePromise) return rsvpCachePromise;
+  rsvpCachePromise = _fetchAllRSVPs().catch((err) => {
+    rsvpCachePromise = null;
+    throw err;
+  });
+  return rsvpCachePromise;
+}
+
+async function _fetchAllRSVPs(): Promise<RSVPRecord[]> {
+  const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
+  if (!dataSourceId) {
+    throw new Error(
+      'NOTION_RSVP_RESPONSES_DB is not set. Add it to Netlify environment variables.'
+    );
+  }
+
+  const records: RSVPRecord[] = [];
+  let cursor: string | undefined;
+
+  do {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await queryDatabase(dataSourceId, {
+      start_cursor: cursor,
+      page_size: 100,
+    });
+
+    for (const page of response.results) {
+      if (page.object !== 'page') continue;
+
+      const props = page.properties ?? {};
+      const guestId = props['Guest']?.relation?.[0]?.id;
+      const eventLabel = props['Event']?.select?.name;
+      if (!guestId || (eventLabel !== 'NYC' && eventLabel !== 'France')) continue;
+
+      const event: 'nyc' | 'france' = eventLabel === 'NYC' ? 'nyc' : 'france';
+      const status = props['Status']?.select?.name || 'Attending';
+      const submittedAt = props['Submitted At']?.date?.start || '';
+
+      let eventsAttending: string[] = [];
+      const detailsText = getRichTextPlainText(props['Details']);
+      if (detailsText) {
+        try {
+          const parsed = JSON.parse(detailsText);
+          if (Array.isArray(parsed?.eventsAttending)) {
+            eventsAttending = parsed.eventsAttending.filter(
+              (item: unknown): item is string => typeof item === 'string'
+            );
+          }
+        } catch {
+          // Malformed Details JSON — treat as no optional events confirmed
+        }
+      }
+
+      records.push({
+        guestId,
+        event,
+        submittedAt,
+        status: status as 'Attending' | 'Declined' | 'Partial',
+        eventsAttending,
+      });
+    }
+
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
+
+  rsvpCache = records;
+  return records;
 }
 
 /**
