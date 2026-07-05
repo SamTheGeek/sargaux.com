@@ -324,6 +324,23 @@ The project version in `package.json` follows semantic versioning with wedding m
 - The dual-invite cutoff is evaluated in the `America/New_York` time zone
 - Homepage redirect, login API redirect, and middleware fallback redirects must stay aligned with the same shared helper
 
+## Admin Endpoints
+
+All admin endpoints live under `/api/admin/*` and require an
+`Authorization: Bearer {RESEND_ADMIN_SECRET}` header (401 otherwise):
+
+- `POST /api/admin/refresh-calendars` — regenerate every guest's stored ICS calendar (same job as the scheduled `ics-refresh-daily`/`-weekly` functions, which are **not** publicly routable) and invalidate the CDN-cached calendar URLs. Returns `{ total, succeeded, failed }`. Use after editing events or RSVP responses directly in Notion, or after deploying a change to ICS semantics, so calendar subscriptions update without waiting for the next scheduled run:
+
+  ```bash
+  curl -X POST https://sargaux.com/api/admin/refresh-calendars \
+    -H "Authorization: Bearer $(netlify env:get RESEND_ADMIN_SECRET)"
+  ```
+
+- `POST /api/admin/send-stds` — bulk-send save-the-date emails for one event. Body: `{ "event": "nyc" | "france" }`.
+- `POST /api/admin/send-email` — send a single transactional email (see endpoint source for body shape).
+
+Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sunday 03:00 UTC; `ics-refresh-daily` runs at 03:00 UTC but only inside the pre-wedding windows (Sep 27–Oct 13 2026, May 14–May 31 2027). Neither can be invoked over HTTP in production — use the admin endpoint above for on-demand refreshes.
+
 ## Secrets & API Keys
 
 **CRITICAL: Never commit API keys or secrets to the repository.**
@@ -335,6 +352,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 - `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token.
+- `RESEND_ADMIN_SECRET` — bearer token protecting the admin endpoints (`/api/admin/*`). Set in Netlify Dashboard (runtime, `process.env`) and mirrored in `.env.local` for local runs. The production endpoints check the **Netlify** value — look it up with `netlify env:get RESEND_ADMIN_SECRET` (never paste the value into code, docs, or commit messages).
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
