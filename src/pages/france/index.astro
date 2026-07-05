@@ -4,6 +4,7 @@ import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
+import { features } from '../../config/features';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -172,6 +173,13 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="strip-desc">{t(strings.france.nav.lookbook.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
+        {features.registry.enabled && (
+          <a href="/registry" class="strip-link">
+            <span class="strip-title">{t(strings.france.nav.registry.title)}</span>
+            <span class="strip-desc">{t(strings.france.nav.registry.desc)}</span>
+            <span class="strip-arrow">→</span>
+          </a>
+        )}
         <a href="/france/rsvp" class="strip-link strip-link--cta" data-loading-button>
           <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
           <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>

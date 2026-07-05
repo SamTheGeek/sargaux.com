@@ -1,220 +1,173 @@
 ---
 import WireframeLayout from '../layouts/WireframeLayout.astro';
-import ImagePlaceholder from '../components/ImagePlaceholder.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
-import LangSwitcher from '../components/LangSwitcher.astro';
 import { getPrimaryEventRoute } from '../lib/event-routing';
+import { fetchJoyRegistry, JOY_REGISTRY_URL } from '../lib/joy';
+import '../styles/registry.css';
 
-const t = createTranslator(Astro.locals.lang ?? 'en');
+const lang = Astro.locals.lang ?? 'en';
+const t = createTranslator(lang);
+const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
+const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const singleEventHref = eventInvitations.includes('nyc')
+  ? '/nyc'
+  : eventInvitations.includes('france')
+    ? '/france'
+    : null;
+const singleEventLabel = eventInvitations.includes('nyc')
+  ? 'NYC'
+  : eventInvitations.includes('france')
+    ? 'France'
+    : null;
 const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
+
+function formatPrice(price: number | null, currencyCode: string | null): string | null {
+  if (price == null) return null;
+  return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
+    style: 'currency',
+    currency: currencyCode ?? 'USD',
+    minimumFractionDigits: Number.isInteger(price) ? 0 : 2,
+  }).format(price);
+}
+
+const registry = await fetchJoyRegistry();
+const funds = registry?.funds ?? [];
+const gifts = (registry?.products ?? []).map((product) => ({
+  ...product,
+  priceLabel: formatPrice(product.price, product.currencyCode),
+}));
+const availableGifts = gifts.filter((gift) => gift.stillNeeded > 0);
+const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
 ---
 
-<WireframeLayout title={t(strings.registry.pageTitle)}>
-  <header class="site-header">
+<WireframeLayout title={t(strings.registry.pageTitle)} description="Wedding registry for Sam and Margaux" event="nyc">
+  <header class="site-header registry-header" transition:name="site-header">
     <nav class="site-nav">
-      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
       <div class="nav-actions">
-        <a href="/nyc">NYC</a>
-        <span>·</span>
-        <a href="/france">France</a>
+        {showEventToggle && (
+          <div class="event-toggle" transition:name="event-toggle">
+            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
+            <span class="divider">|</span>
+            <a href="/france" class="event-toggle-item event-toggle-item--france">France</a>
+          </div>
+        )}
+        {!showEventToggle && singleEventHref && singleEventLabel && (
+          <a href={singleEventHref} class="registry-event-nav-link">{singleEventLabel}</a>
+        )}
       </div>
     </nav>
   </header>
 
-  <main>
-    <section class="hero">
-      <ImagePlaceholder
-        name="couple-registry"
-        folder="couple"
-        description="Fun or playful couple photo — could be casual, candid, or showing personality"
-        aspectRatio="3/1"
-      />
-    </section>
-
-    <section class="registry-intro">
-      <h1>{t(strings.registry.heading)}</h1>
-      <div class="content-box">
-        <h3>Intro Message</h3>
-        <p>[Personalized message from Sam & Margaux about gifts]</p>
-        <p>Example: "Your presence at our celebration is the greatest gift. If you wish to honor us with a gift, we've registered at the following places..."</p>
+  <main class="registry-shell">
+    <section class="registry-hero">
+      <div class="page-content">
+        <h1>{t(strings.registry.heading)}</h1>
+        <p class="registry-intro">{t(strings.registry.intro)}</p>
+        <hr class="section-rule registry-rule" />
       </div>
     </section>
 
-    <section class="registry-options">
-      <div class="registry-grid">
-        <div class="content-box registry-card">
-          <h3>Registry Option 1</h3>
-          <p><strong>[Store/Service Name]</strong></p>
-          <p class="desc">[Brief description — what kind of items]</p>
-          <a href="#" class="registry-link">View Registry →</a>
+    {!registry && (
+      <section class="registry-section page-content">
+        <div class="registry-fallback">
+          <h2>{t(strings.registry.fallback.title)}</h2>
+          <p>{t(strings.registry.fallback.body)}</p>
+          <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+            {t(strings.registry.fallback.cta)}
+          </a>
         </div>
+      </section>
+    )}
 
-        <div class="content-box registry-card">
-          <h3>Registry Option 2</h3>
-          <p><strong>[Store/Service Name]</strong></p>
-          <p class="desc">[Brief description]</p>
-          <a href="#" class="registry-link">View Registry →</a>
+    {funds.length > 0 && (
+      <section class="registry-section page-content" aria-labelledby="registry-funds-heading">
+        <h2 id="registry-funds-heading">{t(strings.registry.fundsHeading)}</h2>
+        <div class="registry-grid registry-grid--funds">
+          {funds.map((fund) => (
+            <article class="registry-card registry-card--fund">
+              {fund.photoUrl && (
+                <div class="registry-card-photo">
+                  <img src={fund.photoUrl} alt="" loading="lazy" />
+                </div>
+              )}
+              <div class="registry-card-body">
+                <h3>{fund.title}</h3>
+                {fund.description && <p class="registry-card-desc">{fund.description}</p>}
+                <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+                  {t(strings.registry.contributeOnJoy)}
+                </a>
+              </div>
+            </article>
+          ))}
         </div>
+      </section>
+    )}
 
-        <div class="content-box registry-card">
-          <h3>Honeymoon Fund?</h3>
-          <p><em>Decision: Include a honeymoon/experience fund?</em></p>
-          <p class="desc">Contribution toward travel, experiences, etc.</p>
+    {availableGifts.length > 0 && (
+      <section class="registry-section page-content" aria-labelledby="registry-gifts-heading">
+        <h2 id="registry-gifts-heading">{t(strings.registry.giftsHeading)}</h2>
+        <div class="registry-grid">
+          {availableGifts.map((gift) => (
+            <article class="registry-card">
+              {gift.photoUrl && (
+                <div class="registry-card-photo">
+                  <img src={gift.photoUrl} alt="" loading="lazy" />
+                </div>
+              )}
+              <div class="registry-card-body">
+                <h3>{gift.title}</h3>
+                <p class="registry-card-meta">
+                  {gift.priceLabel}
+                  {gift.priceLabel && gift.storeName && <span class="registry-meta-divider"> · </span>}
+                  {gift.storeName}
+                </p>
+                <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+                  {t(strings.registry.viewOnJoy)}
+                </a>
+              </div>
+            </article>
+          ))}
         </div>
-      </div>
-    </section>
+      </section>
+    )}
 
-    <section class="open-question">
-      <div class="content-box highlight">
-        <h3>Open Question: French Guests</h3>
-        <p><strong>How do we handle registry for French guests?</strong></p>
-        <ul>
-          <li>Different registry service available in France/EU?</li>
-          <li>Currency considerations (€ vs $)?</li>
-          <li>Shipping logistics?</li>
-        </ul>
-        <p class="note">Note: Ask Alice for input</p>
-      </div>
-    </section>
+    {claimedGifts.length > 0 && (
+      <section class="registry-section registry-section--claimed page-content" aria-labelledby="registry-claimed-heading">
+        <h2 id="registry-claimed-heading">{t(strings.registry.claimedHeading)}</h2>
+        <div class="registry-grid">
+          {claimedGifts.map((gift) => (
+            <article class="registry-card registry-card--claimed">
+              {gift.photoUrl && (
+                <div class="registry-card-photo">
+                  <img src={gift.photoUrl} alt="" loading="lazy" />
+                </div>
+              )}
+              <div class="registry-card-body">
+                <h3>{gift.title}</h3>
+                <p class="registry-card-meta">
+                  <span class="registry-claimed-label">{t(strings.registry.claimedLabel)}</span>
+                  {gift.storeName && <span class="registry-meta-divider"> · </span>}
+                  {gift.storeName}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
 
-    <section class="shipping-note">
-      <div class="content-box">
-        <h3>Shipping Information</h3>
-        <p><em>Decision: Include shipping address or instructions?</em></p>
-        <p>Options:</p>
-        <ul>
-          <li>Ship directly through registry</li>
-          <li>Provide a shipping address</li>
-          <li>Bring to wedding (probably not ideal)</li>
-        </ul>
-      </div>
-    </section>
+    {registry && (
+      <section class="registry-section registry-section--outro page-content">
+        <a href={JOY_REGISTRY_URL} class="registry-joy-link" target="_blank" rel="noopener">
+          {t(strings.registry.fallback.cta)}
+        </a>
+      </section>
+    )}
   </main>
 
-  <footer>
-    <nav class="footer-nav">
-      <a href={homeHref}>{t(strings.nav.home)}</a>
-    </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={lang} homeHref={homeHref} />
 </WireframeLayout>
-
-<style>
-  header {
-    border-bottom: 1px solid var(--color-border);
-  }
-
-main {
-    flex: 1;
-  }
-
-  .hero {
-    margin-bottom: 2rem;
-  }
-
-  .registry-intro {
-    padding: 0 2rem 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    margin-bottom: 1.5rem;
-  }
-
-  .registry-intro .content-box {
-    text-align: left;
-  }
-
-  .registry-options {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .registry-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .registry-card p {
-    margin-bottom: 0.5rem;
-  }
-
-  .registry-card .desc {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-  }
-
-  .registry-link {
-    display: inline-block;
-    margin-top: 1rem;
-    color: var(--color-text);
-    font-weight: 500;
-  }
-
-  .registry-card em {
-    color: var(--color-accent);
-  }
-
-  .open-question,
-  .shipping-note {
-    padding: 0 2rem 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .content-box.highlight {
-    background: var(--color-info-bg);
-    border-color: var(--color-accent);
-  }
-
-  .content-box ul {
-    margin: 1rem 0;
-    padding-left: 1.5rem;
-  }
-
-  .content-box li {
-    margin-bottom: 0.5rem;
-  }
-
-  .content-box em {
-    color: var(--color-accent);
-  }
-
-  .note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
-    margin-top: 1rem;
-  }
-
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-    margin-top: 2rem;
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-  }
-</style>

@@ -185,6 +185,11 @@ export const strings = {
         title: s('Lookbook', 'Lookbook'),
         desc:  s('Outfit inspiration & ideas', 'Inspiration tenues'),
       },
+      registry: {
+        title: s('Registry', 'Liste de mariage'),
+        // TODO(sam/margaux): French copy needed — English placeholder
+        desc:  s('Gifts, funds & wishes', 'Gifts, funds & wishes'),
+      },
       rsvp: {
         title: s('RSVP', 'RSVP'),
         desc:  s("Let us know you're coming", 'Confirmer votre présence'),
@@ -602,6 +607,11 @@ export const strings = {
         title: s('Lookbook', 'Lookbook'),
         desc:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
       },
+      registry: {
+        title: s('Registry', 'Liste de mariage'),
+        // TODO(sam/margaux): French copy needed — English placeholder
+        desc:  s('Gifts, funds & wishes', 'Gifts, funds & wishes'),
+      },
       rsvp: {
         title: s('RSVP', 'RSVP'),
         desc:  s('Confirm & request accommodation', "Confirmer & réserver l'hébergement"),
@@ -954,5 +964,24 @@ export const strings = {
   registry: {
     pageTitle: s('Registry', 'Liste de mariage'),
     heading:   s('Registry', 'Liste de mariage'),
+    // TODO(sam/margaux): French copy needed for all strings below — English placeholders
+    intro: s(
+      "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something anyway, we've gathered a few ideas below — everything is handled through our registry on Joy.",
+      "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something anyway, we've gathered a few ideas below — everything is handled through our registry on Joy.",
+    ),
+    fundsHeading:   s('Funds', 'Funds'),
+    giftsHeading:   s('Gifts', 'Gifts'),
+    claimedHeading: s('Already claimed', 'Already claimed'),
+    claimedLabel:   s('Fully claimed', 'Fully claimed'),
+    viewOnJoy:       s('View on Joy →', 'View on Joy →'),
+    contributeOnJoy: s('Contribute on Joy →', 'Contribute on Joy →'),
+    fallback: {
+      title: s('Our registry lives on Joy', 'Our registry lives on Joy'),
+      body:  s(
+        "We couldn't load the registry here just now — you can browse everything directly on Joy.",
+        "We couldn't load the registry here just now — you can browse everything directly on Joy.",
+      ),
+      cta:   s('Open our registry on Joy →', 'Open our registry on Joy →'),
+    },
   },
 };
