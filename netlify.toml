@@ -28,6 +28,8 @@
   FEATURE_FRANCE_RSVP_ENABLED = "true"
   FEATURE_REGISTRY_ENABLED = "true"
 
+# Fonts are loaded cross-origin by the Joy registry theme
+# (docs/joy-custom-css/joy-theme.css), which requires CORS on font files.
 [[headers]]
   for = "/fonts/*"
   [headers.values]
@@ -36,10 +38,3 @@
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
-
-# Fonts are loaded cross-origin by the Joy registry theme
-# (docs/joy-custom-css/joy-theme.css), which requires CORS on font files.
-[[headers]]
-  for = "/fonts/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
