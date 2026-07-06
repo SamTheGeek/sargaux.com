@@ -23,7 +23,7 @@
     "@netlify/blobs": "^10.7.9",
     "@notionhq/client": "^5.22.0",
     "astro": "^7.0.6",
-    "resend": "^6.16.0"
+    "resend": "^6.17.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
