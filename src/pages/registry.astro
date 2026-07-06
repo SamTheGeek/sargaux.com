@@ -64,7 +64,11 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
 
   <main class="registry-shell">
     <section class="registry-hero">
-      <div class="page-content">
+      <div class="registry-disc registry-disc--amber" aria-hidden="true"></div>
+      <div class="registry-disc registry-disc--blue" aria-hidden="true"></div>
+
+      <div class="registry-hero-content page-content">
+        <p class="registry-eyebrow">{t(strings.global.siteName)}</p>
         <h1>{t(strings.registry.heading)}</h1>
         <p class="registry-intro">{t(strings.registry.intro)}</p>
         <hr class="section-rule registry-rule" />
@@ -89,17 +93,23 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
         <div class="registry-grid registry-grid--funds">
           {funds.map((fund) => (
             <article class="registry-card registry-card--fund">
-              {fund.photoUrl && (
-                <div class="registry-card-photo">
-                  <img src={fund.photoUrl} alt="" loading="lazy" />
+              <div class="registry-card-inner">
+                <div class="registry-label-row">
+                  <span class="registry-label">{t(strings.registry.fundsHeading)}</span>
+                  <span class="registry-label registry-label--muted">{t(strings.global.siteName)}</span>
                 </div>
-              )}
-              <div class="registry-card-body">
-                <h3>{fund.title}</h3>
-                {fund.description && <p class="registry-card-desc">{fund.description}</p>}
-                <a href={joyItemUrl(fund.id)} class="registry-joy-link" target="_blank" rel="noopener">
-                  {t(strings.registry.contributeOnJoy)}
-                </a>
+                {fund.photoUrl && (
+                  <figure class="registry-photo-frame">
+                    <img src={fund.photoUrl} alt="" loading="lazy" />
+                  </figure>
+                )}
+                <div class="registry-card-body">
+                  <h3>{fund.title}</h3>
+                  {fund.description && <p class="registry-card-desc">{fund.description}</p>}
+                  <a href={joyItemUrl(fund.id)} class="registry-joy-link" target="_blank" rel="noopener">
+                    {t(strings.registry.contributeOnJoy)}
+                  </a>
+                </div>
               </div>
             </article>
           ))}
@@ -113,21 +123,22 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
         <div class="registry-grid">
           {availableGifts.map((gift) => (
             <article class="registry-card">
-              {gift.photoUrl && (
-                <div class="registry-card-photo">
-                  <img src={gift.photoUrl} alt="" loading="lazy" />
+              <div class="registry-card-inner">
+                <div class="registry-label-row">
+                  <span class="registry-label">{gift.priceLabel}</span>
+                  {gift.storeName && <span class="registry-label registry-label--muted">{gift.storeName}</span>}
                 </div>
-              )}
-              <div class="registry-card-body">
-                <h3>{gift.title}</h3>
-                <p class="registry-card-meta">
-                  {gift.priceLabel}
-                  {gift.priceLabel && gift.storeName && <span class="registry-meta-divider"> · </span>}
-                  {gift.storeName}
-                </p>
-                <a href={joyItemUrl(gift.id)} class="registry-joy-link" target="_blank" rel="noopener">
-                  {t(strings.registry.viewOnJoy)}
-                </a>
+                {gift.photoUrl && (
+                  <figure class="registry-photo-frame">
+                    <img src={gift.photoUrl} alt="" loading="lazy" />
+                  </figure>
+                )}
+                <div class="registry-card-body">
+                  <h3>{gift.title}</h3>
+                  <a href={joyItemUrl(gift.id)} class="registry-joy-link" target="_blank" rel="noopener">
+                    {t(strings.registry.viewOnJoy)}
+                  </a>
+                </div>
               </div>
             </article>
           ))}
@@ -141,18 +152,19 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
         <div class="registry-grid">
           {claimedGifts.map((gift) => (
             <article class="registry-card registry-card--claimed">
-              {gift.photoUrl && (
-                <div class="registry-card-photo">
-                  <img src={gift.photoUrl} alt="" loading="lazy" />
+              <div class="registry-card-inner">
+                <div class="registry-label-row">
+                  <span class="registry-label">{t(strings.registry.claimedLabel)}</span>
+                  {gift.storeName && <span class="registry-label registry-label--muted">{gift.storeName}</span>}
                 </div>
-              )}
-              <div class="registry-card-body">
-                <h3>{gift.title}</h3>
-                <p class="registry-card-meta">
-                  <span class="registry-claimed-label">{t(strings.registry.claimedLabel)}</span>
-                  {gift.storeName && <span class="registry-meta-divider"> · </span>}
-                  {gift.storeName}
-                </p>
+                {gift.photoUrl && (
+                  <figure class="registry-photo-frame">
+                    <img src={gift.photoUrl} alt="" loading="lazy" />
+                  </figure>
+                )}
+                <div class="registry-card-body">
+                  <h3>{gift.title}</h3>
+                </div>
               </div>
             </article>
           ))}

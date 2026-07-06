@@ -49,7 +49,26 @@
   font-display: swap;
 }
 
-/* === Page canvas === */
+/* === Page canvas ===
+ * Joy paints its theme color (dark green) on the Brannan frame wrapper
+ * AND an unstable-hash direct child of it, so both need covering: the
+ * frame goes cream and its immediate layout children go transparent.
+ * (Verified live 2026-07-05 — GuestRegistrystyles alone leaves the
+ * couple-header band green.)
+ */
+
+body,
+[class*="Framesstyles__StyledBox"] {
+  background: #FFF9F0 !important;
+}
+
+/* The theme color also lands on a full-height layout wrapper with an
+ * unstable hashed class several levels deep. Every wrapper between the
+ * frame and the registry main section is a plain layout column, so make
+ * them all transparent via :has() — depth- and hash-independent. */
+[class*="Framesstyles__StyledBoxBrannan"] div:has([class*="GuestRegistrystyles__StyledMainSection"]) {
+  background-color: transparent !important;
+}
 
 [class*="GuestRegistrystyles__StyledMainSection"] {
   background: #FFF9F0 !important;
@@ -57,9 +76,14 @@
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
 }
 
-/* === Couple header (title + note) === */
+/* === Couple header (title + note) ===
+ * Joy re-applies its theme font/color on elements *inside* these
+ * wrappers, so the overrides must hit descendants too — styling the
+ * wrapper alone loses to the inner rules (verified live).
+ */
 
-[class*="CoupleHeaderstyles__StyledTitle"] {
+[class*="CoupleHeaderstyles__StyledTitle"],
+[class*="CoupleHeaderstyles__StyledTitle"] * {
   font-family: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
   font-weight: 500 !important;
   color: #17320b !important;
@@ -67,7 +91,8 @@
   text-transform: uppercase !important;
 }
 
-[class*="CoupleHeaderstyles__NoteText"] {
+[class*="CoupleHeaderstyles__NoteText"],
+[class*="CoupleHeaderstyles__NoteText"] * {
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
   color: #3A2E26 !important;
   line-height: 1.6 !important;
@@ -91,6 +116,14 @@
 }
 
 /* === Product tiles === */
+
+/* Joy wraps each tile in a white rounded frame — flatten it so the
+ * tile's own treatment is the only visible card */
+[class*="ProductTilestyles__StyledTileWrapper"] {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
 
 [class*="ProductTilestyles__StyledProductTile"] {
   background: #FFF9F0 !important;
@@ -131,6 +164,13 @@
   border: none !important;
   border-radius: 999px !important;
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+}
+
+/* Item-count badge defaults to Joy purple */
+[class*="ShoppingCartOpenButtonV2styles__StyledCountContainer"],
+[class*="ShoppingCartOpenButtonV2styles__StyledCountContainer"] * {
+  background: #17320b !important;
+  color: #FFF9F0 !important;
 }
 
 /* === Footer === */
