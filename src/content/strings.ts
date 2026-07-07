@@ -966,8 +966,8 @@ export const strings = {
     heading:   s('Registry', 'Liste de mariage'),
     // TODO(sam/margaux): French copy needed for all strings below — English placeholders
     intro: s(
-      "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something anyway, we've gathered a few ideas below — everything is handled through our registry on Joy.",
-      "Your presence is truly gift enough, and we're so grateful you'll be there to celebrate with us. If you'd like to give something anyway, we've gathered a few ideas below — everything is handled through our registry on Joy.",
+      "Your presence is the greatest gift we could ask for. But for those who insist, we've put together a registry of experiences and a few items for our home.",
+      "Your presence is the greatest gift we could ask for. But for those who insist, we've put together a registry of experiences and a few items for our home.",
     ),
     fundsHeading:   s('Funds', 'Funds'),
     giftsHeading:   s('Gifts', 'Gifts'),
