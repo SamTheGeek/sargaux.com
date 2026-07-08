@@ -449,3 +449,60 @@ test.describe('Couple page — scattered gallery', () => {
     }
   });
 });
+
+// ── 7. Registry page ──────────────────────────────────────────────────────────
+
+test.describe('Registry page', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for registry tests');
+  test.describe.configure({ mode: 'serial' });
+
+  let context: BrowserContext;
+  let page: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    page = await context.newPage();
+    await login(page);
+  });
+
+  test.afterAll(async () => {
+    await context.close();
+  });
+
+  test('logged-out /registry redirects to homepage', async ({ browser }) => {
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto('/registry');
+    await anonPage.waitForURL((url) => url.pathname === '/');
+    await anonContext.close();
+  });
+
+  test('renders with an h1 when authenticated', async () => {
+    await page.goto('/registry');
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('links out to the Joy registry', async () => {
+    // Rendered from live Joy data (item/fund cards) or the fallback card —
+    // both must link to the Joy-hosted registry.
+    const joyLink = page.locator('a[href*="withjoy.com"]').first();
+    await expect(joyLink).toBeVisible();
+    await expect(joyLink).toHaveAttribute('href', /withjoy\.com\/.+\/registry/);
+  });
+
+  test('shows item cards or the Joy fallback card', async () => {
+    const cards = page.locator('.registry-card');
+    const fallback = page.locator('.registry-fallback');
+    expect((await cards.count()) > 0 || (await fallback.count()) === 1).toBe(true);
+  });
+
+  test('NYC index shows a Registry strip link', async () => {
+    await page.goto('/nyc');
+    await expect(page.locator('.nyc-strip-link[href="/registry"]')).toBeVisible();
+  });
+
+  test('France index shows a Registry strip link', async () => {
+    await page.goto('/france');
+    await expect(page.locator('.strip-link[href="/registry"]')).toBeVisible();
+  });
+});

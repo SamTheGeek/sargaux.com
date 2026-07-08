@@ -22,6 +22,8 @@ declare namespace NodeJS {
     RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
     RESEND_ADMIN_SECRET?: string; // Secret for protecting admin endpoints (never commit)
     GOOGLE_MAPS_STATIC_API_KEY?: string; // Google Maps Static API key (domain-restricted, visible in HTML)
+    JOY_EVENT_HANDLE?: string; // Joy registry event handle (withjoy.com/<handle>)
+    JOY_EVENT_ID?: string; // Joy registry event ID for the GraphQL registry query
   }
 }
 

@@ -10,12 +10,12 @@ const PROTECTED_ROUTES = [
   '/nyc',
   '/france',
   '/couple',
+  '/registry',
 ];
 
 // Routes that are always public
 const PUBLIC_ROUTES = [
   '/',
-  '/registry',
   '/api/login',
   '/api/logout',
 ];

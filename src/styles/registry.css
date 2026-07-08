@@ -1,0 +1,351 @@
+/*
+ * Registry page (/registry).
+ *
+ * Lives in an external stylesheet (not a component <style>) because
+ * @media (prefers-color-scheme: dark) inside scoped component styles
+ * breaks after SPA navigation with the ClientRouter.
+ *
+ * The card treatment mirrors the Couple page's photo-card language
+ * (dark shell, amber bottom stripe, cream inner panel with an uppercase
+ * label row) so the two shared pages read as one family. Those styles
+ * are scoped inside couple.astro, so they are re-declared here under
+ * registry-* names.
+ */
+
+.registry-header {
+  background: var(--color-bg);
+}
+
+.registry-event-nav-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caption);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.registry-event-nav-link:hover {
+  color: var(--color-text);
+}
+
+.registry-shell {
+  position: relative;
+  overflow: clip;
+  flex: 1;
+  background: var(--color-bg);
+  padding-bottom: var(--space-2xl);
+}
+
+/* ── Hero — echoes the Couple hero: eyebrow, oversized title, discs ── */
+
+.registry-hero {
+  position: relative;
+  padding: var(--space-2xl) 0 var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.registry-disc {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.registry-disc--amber {
+  width: clamp(240px, 28vw, 360px);
+  height: clamp(240px, 28vw, 360px);
+  top: calc(var(--space-xl) * -1);
+  left: clamp(-140px, -10vw, -56px);
+  background: var(--color-accent);
+  opacity: 0.92;
+}
+
+.registry-disc--blue {
+  width: clamp(120px, 14vw, 184px);
+  height: clamp(120px, 14vw, 184px);
+  right: clamp(24px, 8vw, 120px);
+  bottom: calc(var(--space-xl) * -0.5);
+  background: var(--color-prussian-blue);
+  opacity: 0.88;
+}
+
+.registry-hero-content {
+  position: relative;
+  z-index: 3;
+}
+
+.registry-eyebrow {
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-caption);
+  letter-spacing: var(--tracking-heading);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.registry-hero h1 {
+  margin-bottom: var(--space-sm);
+  font-size: clamp(64px, 10vw, 128px);
+  line-height: 0.88;
+}
+
+.registry-intro {
+  max-width: 38rem;
+  color: var(--color-text-muted);
+}
+
+.registry-rule {
+  width: min(100%, 320px);
+  margin: var(--space-lg) 0 0;
+}
+
+/* ── Sections ── */
+
+.registry-section {
+  margin-top: var(--space-xl);
+}
+
+.registry-section h2 {
+  font-size: var(--font-size-h3);
+  letter-spacing: var(--tracking-heading);
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.registry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-md);
+}
+
+.registry-grid--funds {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* ── Cards — Joy's tile geometry (12px rounded rect, soft shadow,
+ *    −4px hover lift measured off the live Joy registry), dressed in
+ *    the site palette with the Couple page's uppercase label rows ── */
+
+.registry-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.registry-card:hover {
+  transform: translateY(-4px);
+}
+
+.registry-card-inner {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.registry-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 1.2em;
+}
+
+.registry-label {
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+}
+
+.registry-label--muted {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registry-photo-frame {
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.registry-photo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.registry-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.registry-card-body h3 {
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.registry-card-desc {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.registry-joy-link {
+  margin-top: auto;
+  padding-top: var(--space-xs);
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.registry-joy-link:hover {
+  color: var(--color-accent);
+}
+
+/* ── Fund cards — prussian blue, like the Couple hero card ── */
+
+.registry-card--fund {
+  background: var(--color-prussian-blue);
+  border-color: var(--color-prussian-blue);
+}
+
+.registry-card--fund h3,
+.registry-card--fund .registry-label,
+.registry-card--fund .registry-joy-link {
+  color: var(--color-warm-cream);
+}
+
+.registry-card--fund .registry-label--muted,
+.registry-card--fund .registry-card-desc {
+  color: var(--color-surface-text-placeholder);
+}
+
+.registry-card--fund .registry-joy-link:hover {
+  color: var(--color-mustard);
+}
+
+/* ── Claimed gifts — de-emphasized ── */
+
+.registry-section--claimed .registry-card {
+  opacity: 0.55;
+}
+
+.registry-section--claimed .registry-card:hover {
+  transform: none;
+}
+
+.registry-section--claimed .registry-photo-frame img {
+  filter: grayscale(1);
+}
+
+/* ── Fallback / outro link-out ── */
+
+.registry-fallback {
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+  max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.registry-fallback h2 {
+  margin-bottom: 0;
+}
+
+.registry-fallback p {
+  color: var(--color-text-muted);
+}
+
+.registry-section--outro {
+  display: flex;
+  justify-content: center;
+}
+
+.registry-section--outro .registry-joy-link {
+  margin-top: 0;
+}
+
+/* ── Dark mode ──
+ * --color-border is nearly invisible against the dark surface (see
+ * CLAUDE.md), so card and fallback borders switch to the muted text
+ * color; the soft shadow reads as black-on-black and is dropped.
+ */
+
+@media (prefers-color-scheme: dark) {
+  .registry-card,
+  .registry-fallback {
+    border-color: var(--color-text-muted);
+  }
+
+  .registry-card {
+    box-shadow: none;
+  }
+
+  .registry-card--fund {
+    border-color: var(--color-prussian-blue);
+  }
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .registry-hero {
+    padding: var(--space-xl) 0 var(--space-lg);
+  }
+
+  .registry-hero h1 {
+    font-size: clamp(48px, 16vw, 80px);
+  }
+
+  .registry-disc--amber {
+    width: 192px;
+    height: 192px;
+    top: -72px;
+    left: -72px;
+  }
+
+  .registry-disc--blue {
+    width: 120px;
+    height: 120px;
+    right: -24px;
+    bottom: -32px;
+  }
+
+  .registry-section {
+    margin-top: var(--space-lg);
+  }
+
+  .registry-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .registry-card {
+    padding: 12px;
+  }
+}

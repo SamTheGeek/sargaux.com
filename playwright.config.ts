@@ -63,6 +63,7 @@ export default defineConfig({
       FEATURE_NYC_RSVP_ENABLED: process.env.FEATURE_NYC_RSVP_ENABLED ?? 'true',
       FEATURE_FRANCE_RSVP_ENABLED:
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',
+      FEATURE_REGISTRY_ENABLED: process.env.FEATURE_REGISTRY_ENABLED ?? 'true',
     },
   },
 });
