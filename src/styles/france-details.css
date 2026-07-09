@@ -248,6 +248,27 @@ html[data-event="france"][data-page="details"] .footer-row p {
   margin: 0;
 }
 
+/* Text-only cards (Village Highlights & Room Types — images added later) */
+html[data-event="france"][data-page="details"] .space-card--text {
+  padding: 0.5rem 0;
+}
+
+html[data-event="france"][data-page="details"] .accommodation-info--booking {
+  margin-top: 1.5rem;
+}
+
+html[data-event="france"][data-page="details"] .booking-lead {
+  font-size: 1.0625rem;
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+html[data-event="france"][data-page="details"] .booking-pricing {
+  color: var(--color-text-muted);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
 @media (max-width: 720px) {
   html[data-event="france"][data-page="details"] .venue-image-frame--hero {
     width: 100%;

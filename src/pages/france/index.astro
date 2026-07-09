@@ -43,16 +43,21 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     </section>
 
     <div class="france-index-body" transition:name="france-index-body-content">
-    <!-- Band: Programme of Events -->
+    <!-- Band: The Weekend -->
     <div class="band-header">{t(strings.france.sections.programme)}</div>
     <section class="programme-section page-content">
+      <p class="programme-subtitle">{t(strings.france.sections.programmeSubtitle)}</p>
       <div class="programme-timetable">
         <div class="programme-row">
           <p class="day-label">{t(strings.france.weekend.friday.day)}</p>
           <div class="day-events">
             <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.friday.timeEvening)}</span>
-              <span class="event-name">{t(strings.france.weekend.friday.welcomeDinner)}</span>
+              <span class="event-time">{t(strings.france.weekend.friday.checkin.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.friday.checkin.name)}</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">{t(strings.france.weekend.friday.dinner.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.friday.dinner.name)}</span>
             </div>
           </div>
         </div>
@@ -61,16 +66,16 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <p class="day-label">{t(strings.france.weekend.saturday.day)}</p>
           <div class="day-events">
             <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.saturday.timeMorning)}</span>
-              <span class="event-name">{t(strings.france.weekend.saturday.breakfast)}</span>
+              <span class="event-time">{t(strings.france.weekend.saturday.excursion.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.excursion.name)}</span>
             </div>
             <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.saturday.timeAfternoon)}</span>
-              <span class="event-name">{t(strings.france.weekend.saturday.ceremony)}</span>
+              <span class="event-time">{t(strings.france.weekend.saturday.ceremony.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.ceremony.name)}</span>
             </div>
             <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.saturday.timeEvening)}</span>
-              <span class="event-name">{t(strings.france.weekend.saturday.reception)}</span>
+              <span class="event-time">{t(strings.france.weekend.saturday.celebration.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.saturday.celebration.name)}</span>
             </div>
           </div>
         </div>
@@ -79,12 +84,8 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <p class="day-label">{t(strings.france.weekend.sunday.day)}</p>
           <div class="day-events">
             <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.sunday.timeMorning)}</span>
-              <span class="event-name">{t(strings.france.weekend.sunday.breakfast)}</span>
-            </div>
-            <div class="event-item">
-              <span class="event-time">{t(strings.france.weekend.sunday.timeMidday)}</span>
-              <span class="event-name">{t(strings.france.weekend.sunday.farewellBrunch)}</span>
+              <span class="event-time">{t(strings.france.weekend.sunday.brunch.time)}</span>
+              <span class="event-name">{t(strings.france.weekend.sunday.brunch.name)}</span>
             </div>
           </div>
         </div>
@@ -127,18 +128,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           </div>
         </div>
         <hr class="timetable-rule">
-        <div class="details-row">
+        <div class="details-row details-row--stay">
           <p class="details-label">{t(strings.france.accommodation.heading)}</p>
           <div class="details-value">
             <span class="details-primary">{t(strings.france.accommodation.stayAtVillage)}</span>
-            <span class="details-secondary">{t(strings.france.accommodation.price)}</span>
-          </div>
-        </div>
-        <hr class="timetable-rule">
-        <div class="details-row">
-          <p class="details-label">{t(strings.france.where.datesLabel)}</p>
-          <div class="details-value">
-            <span class="details-primary">{t(strings.france.when.dates)}</span>
+            <p class="details-stay-desc">{t(strings.france.accommodation.desc)}</p>
+            <a class="details-link details-link--cta" href="/france/details">{t(strings.france.accommodation.exploreBtn)} →</a>
           </div>
         </div>
       </div>
@@ -161,6 +156,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <a href="/france/travel" class="strip-link">
           <span class="strip-title">{t(strings.france.nav.travel.title)}</span>
           <span class="strip-desc">{t(strings.france.nav.travel.desc)}</span>
+          <span class="strip-arrow">→</span>
+        </a>
+        <a href="/france/faq" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.faq.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.faq.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
         <a href="/couple" class="strip-link">
@@ -291,9 +291,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     gap: var(--space-xs);
   }
 
+  .programme-subtitle {
+    max-width: 640px;
+    margin-bottom: var(--space-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
   .event-item {
     display: grid;
-    grid-template-columns: 12ch minmax(0, 1fr);
+    grid-template-columns: 16ch minmax(0, 1fr);
     column-gap: var(--space-sm);
     align-items: baseline;
   }
@@ -303,6 +311,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     color: var(--color-text-muted);
+    white-space: nowrap;
   }
 
   .event-name {
@@ -376,6 +385,22 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-sm);
+  }
+
+  .details-row--stay {
+    align-items: start;
+  }
+
+  .details-stay-desc {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    max-width: 52ch;
+  }
+
+  .details-link--cta {
+    margin-top: 4px;
+    color: var(--color-accent);
   }
 
   /* ── Navigation strip ── */
@@ -455,6 +480,11 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
     .programme-row {
       grid-template-columns: 104px 1fr;
+    }
+
+    .event-item {
+      grid-template-columns: 1fr;
+      row-gap: 2px;
     }
 
     .details-row {

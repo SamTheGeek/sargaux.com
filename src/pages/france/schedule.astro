@@ -27,26 +27,20 @@ const calendarToken = generateTokenIfPossible(guestId);
       <h1>{t(strings.france.schedule.heading)}</h1>
       <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
 
-      <!-- Check-in/Check-out Info -->
-      <div class="stay-info">
-        <div class="stay-time">
-          <span class="stay-label">{t(strings.france.schedule.checkin)}</span>
-          <span class="stay-value">{t(strings.france.schedule.checkinValue)}</span>
-        </div>
-        <div class="stay-divider"></div>
-        <div class="stay-time">
-          <span class="stay-label">{t(strings.france.schedule.checkout)}</span>
-          <span class="stay-value">{t(strings.france.schedule.checkoutValue)}</span>
-        </div>
-      </div>
-
       <CalendarCta
         event="france"
         token={calendarToken}
         label={t(strings.france.schedule.calendarBtn)}
         note={t(strings.france.schedule.calendarNote)}
-        unavailableNote={t(strings.nyc.calendar.unavailableNote)}
+        noteHref="/france/rsvp"
+        unavailableNote={t(strings.france.schedule.calendarNote)}
       />
+
+      <section class="weekend-weather">
+        <h2>{t(strings.france.schedule.weather.heading)}</h2>
+        <p class="weather-value"><strong>{t(strings.france.schedule.weather.value)}</strong></p>
+        <p class="weather-note">{t(strings.france.schedule.weather.note)}</p>
+      </section>
 
       <section class="days">
       <!-- Friday -->
@@ -69,12 +63,18 @@ const calendarToken = generateTokenIfPossible(guestId);
             </div>
           </div>
         </div>
+        <div class="day-dresscode">
+          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
+          <p class="dresscode-code">{t(strings.france.schedule.friday.dressCode.code)}</p>
+          {t(strings.france.schedule.friday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
+            <p class="dresscode-desc">{para}</p>
+          ))}
+        </div>
       </div>
 
       <!-- Saturday -->
       <div class="day-section highlight">
         <h2>{t(strings.france.schedule.saturday.heading)}</h2>
-        <p class="day-note">{t(strings.france.schedule.saturday.dayNote)}</p>
         <div class="timeline">
           <div class="timeline-item">
             <span class="time">{t(strings.france.schedule.saturday.breakfast.time)}</span>
@@ -84,10 +84,10 @@ const calendarToken = generateTokenIfPossible(guestId);
             </div>
           </div>
           <div class="timeline-item optional">
-            <span class="time">{t(strings.france.schedule.saturday.excursions.time)}</span>
+            <span class="time">{t(strings.france.schedule.saturday.excursion.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.saturday.excursions.title)}</h4>
-              <p class="placeholder-note">{t(strings.france.schedule.saturday.excursions.placeholder)}</p>
+              <h4>{t(strings.france.schedule.saturday.excursion.title)}</h4>
+              <p>{t(strings.france.schedule.saturday.excursion.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
@@ -112,6 +112,13 @@ const calendarToken = generateTokenIfPossible(guestId);
             </div>
           </div>
         </div>
+        <div class="day-dresscode">
+          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
+          <p class="dresscode-code">{t(strings.france.schedule.saturday.dressCode.code)}</p>
+          {t(strings.france.schedule.saturday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
+            <p class="dresscode-desc">{para}</p>
+          ))}
+        </div>
       </div>
 
       <!-- Sunday -->
@@ -130,15 +137,22 @@ const calendarToken = generateTokenIfPossible(guestId);
             <div class="event">
               <h4>{t(strings.france.schedule.sunday.brunch.title)}</h4>
               <p class="location">{t(strings.france.schedule.sunday.brunch.location)}</p>
+              <p>{t(strings.france.schedule.sunday.brunch.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.sunday.checkout.time)}</span>
+            <span class="time">{t(strings.france.schedule.sunday.venueCloses.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.sunday.checkout.title)}</h4>
-              <p>{t(strings.france.schedule.sunday.checkout.desc)}</p>
+              <h4>{t(strings.france.schedule.sunday.venueCloses.title)}</h4>
             </div>
           </div>
+        </div>
+        <div class="day-dresscode">
+          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
+          <p class="dresscode-code">{t(strings.france.schedule.sunday.dressCode.code)}</p>
+          {t(strings.france.schedule.sunday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
+            <p class="dresscode-desc">{para}</p>
+          ))}
         </div>
       </div>
       </section>
@@ -217,7 +231,31 @@ main {
     background: var(--color-border);
   }
 
-  /* Calendar Subscribe */
+  /* Weather */
+  .weekend-weather {
+    margin-bottom: 2.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .weekend-weather h2 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .weather-value {
+    margin: 0 0 0.25rem;
+  }
+
+  .weather-note {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
   /* Days */
   .days {
     display: flex;
@@ -298,6 +336,40 @@ main {
   .placeholder-note {
     font-style: italic;
     color: var(--color-text-muted) !important;
+  }
+
+  /* Per-day dress code */
+  .day-dresscode {
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    border-left: 3px solid var(--color-accent);
+    background: var(--color-bg);
+  }
+
+  .dresscode-label {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+
+  .dresscode-code {
+    margin: 0.25rem 0 0.5rem 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .dresscode-desc {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+  }
+
+  .dresscode-desc:last-child {
+    margin-bottom: 0;
   }
 
   /* Footer */

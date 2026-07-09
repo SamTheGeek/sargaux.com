@@ -4,6 +4,7 @@ interface Props {
   token?: string | null;
   label: string;
   note?: string;
+  noteHref?: string;
   unavailableNote?: string;
   showNote?: boolean;
   compact?: boolean;
@@ -15,6 +16,7 @@ const {
   token = null,
   label,
   note = '',
+  noteHref = '',
   unavailableNote = '',
   showNote = true,
   compact = false,
@@ -65,7 +67,11 @@ const isNyc = event === 'nyc';
     )}
     {showNote && (
       <p class="calendar-note">
-        {token ? note : unavailableNote}
+        {noteHref ? (
+          <a href={noteHref} class="calendar-note-link">{token ? note : unavailableNote}</a>
+        ) : (
+          token ? note : unavailableNote
+        )}
       </p>
     )}
   </section>
@@ -192,5 +198,11 @@ const isNyc = event === 'nyc';
     color: var(--color-text-muted);
     font-style: italic;
     margin: 0;
+  }
+
+  .calendar-note-link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>

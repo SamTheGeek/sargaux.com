@@ -297,6 +297,7 @@ const submittedAtFallback = submittedAtISO
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.dietary.heading)}</h2>
             <p class="section-note">{t(strings.france.rsvp.form.dietary.note)}</p>
+            <p class="section-note">{t(strings.france.rsvp.form.dietary.childrenNote)}</p>
             <textarea
               name="allergens"
               class="text-input"
@@ -309,20 +310,21 @@ const submittedAtFallback = submittedAtISO
             <div>
               <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
               <div class="recommendation-banner">
-                <strong>{t(strings.france.details.staying.recommendation)}</strong>
-                <p>{t(strings.france.details.staying.recommendationNote)}</p>
+                <p>{t(strings.france.rsvp.form.accommodation.intro)}</p>
               </div>
-              <p class="section-note">{t(strings.france.rsvp.form.accommodation.note)}</p>
+              <p class="section-note">{t(strings.france.rsvp.form.accommodation.question)}</p>
               <select name="accommodation" class="single-line-input">
                 <option value="unsure" selected={existingDetails.accommodation === undefined || existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
                 <option value="yes" selected={existingDetails.accommodation === 'yes'}>{t(strings.france.rsvp.form.accommodation.yes)}</option>
                 <option value="no" selected={existingDetails.accommodation === 'no'}>{t(strings.france.rsvp.form.accommodation.no)}</option>
               </select>
+              <p class="section-note accommodation-followup">{t(strings.france.rsvp.form.accommodation.followup)}</p>
             </div>
           </section>
 
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.message.heading)}</h2>
+            <p class="section-note">{t(strings.france.rsvp.form.message.note)}</p>
             <textarea
               name="message"
               class="text-input"
