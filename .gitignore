@@ -173,3 +173,4 @@ public/apple-touch-icon-precomposed.png
 
 # Generated script outputs (contain guest PII — never commit)
 scripts/output/
+docs/IV_MTR_UserGuide_v2.19.8.pdf

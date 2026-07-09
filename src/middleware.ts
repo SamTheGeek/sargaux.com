@@ -33,7 +33,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // adapter; Netlify only consults it when a response is CDN-cached.
   const withVary = (response: Response): Response => {
     if (!pathname.startsWith('/api/')) {
-      response.headers.set('Netlify-Vary', 'cookie=sargaux_auth|sargaux_lang');
+      // `query=lang` is required: setting a custom Netlify-Vary makes the CDN
+      // stop varying on the query string, so without it `/page?lang=fr` collides
+      // with the cached English variant (same cookies, since `sargaux_lang`
+      // hasn't flipped yet) and is served from cache — the origin never runs, the
+      // language cookie never gets set, and the switcher becomes a silent no-op.
+      response.headers.set('Netlify-Vary', 'query=lang,cookie=sargaux_auth|sargaux_lang');
     }
     return response;
   };
