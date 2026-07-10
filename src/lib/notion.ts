@@ -9,6 +9,7 @@ import { Client } from '@notionhq/client';
 import { getStore } from '@netlify/blobs';
 import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails } from '../types';
 import { normalize } from './normalize';
+import { parseTime } from './calendar';
 
 let notionClient: Client | null = null;
 
@@ -452,6 +453,15 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
       // Description (rich text)
       const description = props['Description']?.rich_text?.[0]?.plain_text || undefined;
 
+      // French variants ("* FR" rich_text properties) — optional; display
+      // falls back to the English field when unset
+      const nameFr = props['Event Name FR']?.rich_text?.[0]?.plain_text || undefined;
+      const timeFr = props['Time FR']?.rich_text?.[0]?.plain_text || undefined;
+      const startTimeFr = props['Start Time FR']?.rich_text?.[0]?.plain_text || undefined;
+      const durationFr = props['Duration FR']?.rich_text?.[0]?.plain_text || undefined;
+      const locationFr = props['Location FR']?.rich_text?.[0]?.plain_text || undefined;
+      const descriptionFr = props['Description FR']?.rich_text?.[0]?.plain_text || undefined;
+
       // Date (date property — YYYY-MM-DD)
       const date: string | undefined = props['Event Date']?.date?.start ?? undefined;
 
@@ -472,6 +482,12 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
         date,
         location,
         description,
+        nameFr,
+        timeFr,
+        startTimeFr,
+        durationFr,
+        locationFr,
+        descriptionFr,
         dayId,
         showOnWebsite,
       });
@@ -479,6 +495,20 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
 
     cursor = response.has_more ? response.next_cursor : undefined;
   } while (cursor);
+
+  // Chronological order: Event Date first, then parsed Start Time.
+  // Events without a date sort last; same-date events without a parseable
+  // start time sort after timed ones.
+  events.sort((a, b) => {
+    const dateA = a.date ?? '9999-12-31';
+    const dateB = b.date ?? '9999-12-31';
+    if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+    const timeA = a.startTime ? parseTime(a.startTime) : undefined;
+    const timeB = b.startTime ? parseTime(b.startTime) : undefined;
+    const minutesA = timeA ? timeA.hour * 60 + timeA.minute : Number.MAX_SAFE_INTEGER;
+    const minutesB = timeB ? timeB.hour * 60 + timeB.minute : Number.MAX_SAFE_INTEGER;
+    return minutesA - minutesB;
+  });
 
   eventCatalogCache.set(wedding, events);
   return events;

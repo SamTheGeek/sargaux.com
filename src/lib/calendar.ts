@@ -10,6 +10,8 @@
 
 import { createHmac } from 'crypto';
 import type { EventRecord } from '../types';
+import type { Lang } from '../content/strings';
+import { localizeEvent } from './event-i18n';
 
 /**
  * Encode a string as URL-safe base64 (no padding).
@@ -204,8 +206,11 @@ export interface EventWithDate extends EventRecord {
  * Build an RFC 5545 ICS calendar string from a list of events.
  * Events without a date are skipped.
  * Events with a date but no parseable time get a DATE-only DTSTART.
+ *
+ * `lang: 'fr'` renders each event's French fields (name, description,
+ * location, start time, duration), falling back per field to English.
  */
-export function buildICS(events: EventWithDate[]): string {
+export function buildICS(events: EventWithDate[], lang: Lang = 'en'): string {
   const stamp = dtstamp();
 
   const vevents = events
@@ -214,18 +219,26 @@ export function buildICS(events: EventWithDate[]): string {
 
       const timezone = event.wedding === 'nyc' ? 'America/New_York' : 'Europe/Paris';
       const uid = `${event.id}@sargaux.com`;
+      const loc = localizeEvent(event, lang);
 
       let dtstart: string;
       let dtend: string;
 
-      const parsed = event.startTime ? parseTime(event.startTime) : undefined;
+      // Timing prefers the localized start time but must never regress to a
+      // date-only event because a French time string failed to parse — fall
+      // back to the canonical English start time in that case.
+      const parsed =
+        (loc.startTime ? parseTime(loc.startTime) : undefined) ??
+        (event.startTime ? parseTime(event.startTime) : undefined);
       if (parsed) {
         const [year, month, day] = event.date.split('-').map(Number);
         const pad = (n: number) => String(n).padStart(2, '0');
         const localStr = `${year}${pad(month)}${pad(day)}T${pad(parsed.hour)}${pad(parsed.minute)}00`;
         // Use explicit duration if provided, otherwise fall back to 2h default
         const durationMinutes =
-          (event.duration ? parseDuration(event.duration) : undefined) ?? 120;
+          (loc.duration ? parseDuration(loc.duration) : undefined) ??
+          (event.duration ? parseDuration(event.duration) : undefined) ??
+          120;
         // Cap at 23:59 to avoid overflow on midnight-crossing events
         const endMinutes = parsed.hour * 60 + parsed.minute + durationMinutes;
         const endH = Math.min(Math.floor(endMinutes / 60), 23);
@@ -245,11 +258,11 @@ export function buildICS(events: EventWithDate[]): string {
         `DTSTAMP:${stamp}`,
         dtstart,
         dtend,
-        `SUMMARY:${escapeICS(event.name)}`,
+        `SUMMARY:${escapeICS(loc.name)}`,
       ];
 
-      if (event.description) lines.push(`DESCRIPTION:${escapeICS(event.description)}`);
-      if (event.location) lines.push(`LOCATION:${escapeICS(event.location)}`);
+      if (loc.description) lines.push(`DESCRIPTION:${escapeICS(loc.description)}`);
+      if (loc.location) lines.push(`LOCATION:${escapeICS(loc.location)}`);
 
       lines.push('END:VEVENT');
       return lines.map(foldLine).join('\r\n');

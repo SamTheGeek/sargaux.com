@@ -18,10 +18,6 @@ export function redactEmail(email?: string): string | undefined {
   return `${localPart[0]}***@${domain}`;
 }
 
-export function getDisplayEventTime(event: EventRecord): string | undefined {
-  return event.time;
-}
-
 export function formatEventDate(dateStr: string | undefined, lang: string): string | undefined {
   if (!dateStr) return undefined;
   const [year, month, day] = dateStr.split('-').map(Number);

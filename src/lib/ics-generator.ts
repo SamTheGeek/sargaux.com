@@ -1,6 +1,7 @@
-import { getAttendingEvents, fetchAllGuests, fetchAllLatestRSVPs, getEventCatalog, rsvpIncludesGuest } from './notion';
+import { getAttendingEvents, getGuestById, fetchAllGuests, fetchAllLatestRSVPs, getEventCatalog, rsvpIncludesGuest } from './notion';
 import { buildICS } from './calendar';
 import { setICS } from './ics-store';
+import { getDefaultLocale } from './locale-routing';
 import type { EventRecord } from '../types';
 
 /**
@@ -8,11 +9,17 @@ import type { EventRecord } from '../types';
  * The calendar contains only the events the guest has RSVP'd to attend
  * (latest non-declined response per wedding) — never the full invitation.
  * Guests who have not RSVP'd get a valid empty calendar.
+ * The calendar language follows the guest's locale (Country → locale rule,
+ * same as the login default) since subscription feeds are polled without a
+ * session.
  * Used by the RSVP trigger.
  */
 export async function generateAndStoreICSForGuest(guestId: string): Promise<void> {
-  const events = await getAttendingEvents(guestId);
-  const ics = buildICS(events);
+  const [events, guest] = await Promise.all([
+    getAttendingEvents(guestId),
+    getGuestById(guestId),
+  ]);
+  const ics = buildICS(events, getDefaultLocale(guest?.country));
   await setICS(guestId, ics);
 }
 
@@ -62,7 +69,7 @@ export async function refreshAllICS(): Promise<{ total: number; succeeded: numbe
         .map((id) => eventMap.get(id))
         .filter((e): e is EventRecord => e !== undefined);
 
-      const ics = buildICS(guestEvents);
+      const ics = buildICS(guestEvents, getDefaultLocale(guest.country));
       await setICS(guest.id, ics);
       succeeded++;
     } catch (err) {

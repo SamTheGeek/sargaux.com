@@ -2,7 +2,8 @@
 import WireframeLayout from '../../../layouts/WireframeLayout.astro';
 import { getGuestParty, getGuestEvents, getLatestRSVPForParty } from '../../../lib/notion';
 import { generateTokenIfPossible } from '../../../lib/calendar';
-import { getAttendingNames, getDisplayEventTime, formatEventDate, redactEmail, sortEventsByDateTime } from '../../../lib/rsvp-display';
+import { getAttendingNames, formatEventDate, redactEmail, sortEventsByDateTime } from '../../../lib/rsvp-display';
+import { localizeEvent } from '../../../lib/event-i18n';
 import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { NYC_EVENT_TIME, strings } from '../../../content/strings';
@@ -251,13 +252,14 @@ const submittedAtFallback = submittedAtISO
                 const isSelected = selectedEventIds.size > 0
                   ? selectedEventIds.has(event.id)
                   : attendingNames.size > 0;
+                const loc = localizeEvent(event, lang);
                 return (
                   <div class="event-row event-row--readonly">
                     <span class:list={['event-check-mark', isSelected && 'event-check-mark--checked']}></span>
                     <div class="event-row-content">
-                      <span class="event-row-name">{event.name}</span>
+                      <span class="event-row-name">{loc.name}</span>
                       <span class="event-row-meta">
-                        {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                        {[loc.time, formatEventDate(event.date, lang), loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                       </span>
                     </div>
                   </div>
@@ -274,13 +276,14 @@ const submittedAtFallback = submittedAtISO
               <div class="event-list">
                 {optionalEvents.map((event) => {
                   const isSelected = selectedEventIds.has(event.id);
+                  const loc = localizeEvent(event, lang);
                   return (
                     <div class="event-row event-row--readonly">
                       <span class:list={['event-check-mark', isSelected && 'event-check-mark--checked']}></span>
                       <div class="event-row-content">
-                        <span class="event-row-name">{event.name}</span>
+                        <span class="event-row-name">{loc.name}</span>
                         <span class="event-row-meta">
-                          {[getDisplayEventTime(event), formatEventDate(event.date, lang), event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
+                          {[loc.time, formatEventDate(event.date, lang), loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}
                         </span>
                       </div>
                     </div>
