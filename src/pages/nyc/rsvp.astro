@@ -7,7 +7,6 @@ import { features } from '../../config/features';
 import { NYC_EVENT_TIME, strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import { getRegistryLink } from '../../lib/registry-routing';
 import LoadingDots from '../../components/LoadingDots.astro';
 import { getDisplayEventTime, formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
@@ -18,7 +17,6 @@ const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
-const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 const PREVIEW_SUBMITTED_AT = '2025-12-13T20:21:00-05:00';
 
 let party: GuestRecord[] = [];
@@ -417,12 +415,6 @@ const submittedAtFallback = submittedAtISO
   <footer class="site-footer">
     <nav>
       <a href="/nyc">{t(strings.nav.home)}</a>
-      <span> · </span>
-      <a
-        href={registryHref}
-        target={registryIsExternal ? '_blank' : undefined}
-        rel={registryIsExternal ? 'noopener' : undefined}
-      >{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
       <span> · </span>

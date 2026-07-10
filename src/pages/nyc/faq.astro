@@ -122,12 +122,6 @@ const faqItems = [
       <nav>
         <a href="/nyc">{t(strings.nav.home)}</a>
         <span> · </span>
-        <a
-          href={registryHref}
-          target={registryIsExternal ? '_blank' : undefined}
-          rel={registryIsExternal ? 'noopener' : undefined}
-        >{t(strings.global.registry)}</a>
-        <span> · </span>
         <span class="guest-name">{guest}</span>
         <span> · </span>
         <a href="/api/logout">{t(strings.global.logout)}</a>

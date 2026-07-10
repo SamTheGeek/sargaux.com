@@ -6,14 +6,12 @@ import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
-import { getRegistryLink } from '../../lib/registry-routing';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
-const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 const t = createTranslator(Astro.locals.lang ?? 'en');
 
 const globResult = import.meta.glob<{ default: ImageMetadata }>(
@@ -67,12 +65,6 @@ const images = Object.entries(globResult)
     <footer class="nyc-moss nyc-footer site-footer">
       <nav>
         <a href="/nyc">{t(strings.nav.home)}</a>
-        <span> · </span>
-        <a
-          href={registryHref}
-          target={registryIsExternal ? '_blank' : undefined}
-          rel={registryIsExternal ? 'noopener' : undefined}
-        >{t(strings.global.registry)}</a>
         <span> · </span>
         <span class="guest-name">{guest}</span>
         <span> · </span>
