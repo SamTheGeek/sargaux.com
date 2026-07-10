@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import {
   validateGuest,
+  getHardcodedGuestCountry,
   createSessionToken,
   AUTH_COOKIE_NAME,
 } from '../../lib/auth';
@@ -23,6 +24,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   let guestName: string | null = null;
   let notionId: string | undefined;
   let eventInvitations: EventInvitation[] = ['nyc', 'france'];
+  let country: string | null = null;
 
   if (features.global.notionBackend) {
     try {
@@ -31,13 +33,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         guestName = record.name;
         notionId = record.id;
         eventInvitations = record.eventInvitations;
+        country = record.country;
       }
     } catch (err) {
       console.error('Notion fetch failed, falling back to hardcoded list:', err);
       guestName = validateGuest(name);
+      country = getHardcodedGuestCountry(name);
     }
   } else {
     guestName = validateGuest(name);
+    country = getHardcodedGuestCountry(name);
   }
 
   if (!guestName) {
@@ -53,7 +58,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   // Create session token and set cookie
-  const token = createSessionToken(guestName, notionId, eventInvitations);
+  const token = createSessionToken(guestName, notionId, eventInvitations, country);
   const redirectPath = getPrimaryEventRoute(eventInvitations);
 
   cookies.set(AUTH_COOKIE_NAME, token, {

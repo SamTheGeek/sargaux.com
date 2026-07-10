@@ -115,6 +115,10 @@
   /* Typography */
   --font-display: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-body: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  /* UI arrow glyph (→) font — mirrors the homepage submit arrow so nav-row
+     arrows render the same wider Helvetica Now Display '→' site-wide. Not
+     overridden in the France theme (Peignot lacks a matching arrow glyph). */
+  --font-arrow: 'Helvetica Now Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-size-hero: 64px;
   --font-size-h2: 34px;
   --font-size-h3: 22px;
