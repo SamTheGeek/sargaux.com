@@ -129,6 +129,7 @@ function parseGuestPage(page: any): GuestRecord | null {
     name: fullName,
     normalizedName: normalize(fullName),
     eventInvitations,
+    country,
     isPlusOne,
     relatedGuestIds,
     email,

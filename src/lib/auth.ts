@@ -10,18 +10,22 @@ import type { GuestRecord } from '../types';
 import { normalize } from './normalize';
 export type EventInvitation = 'nyc' | 'france';
 
-// Hardcoded fallback guest list for local dev without Notion keys
-const AUTHORIZED_GUESTS = [
-  'Sam Gross',
-  'Margaux Ancel',
-  'Charles Gross',
-  'Dorothee Ancel',
-  'Nicolas Ancel',
-  'Toni Waldman',
+// Hardcoded fallback guest list for local dev without Notion keys.
+// `country` mirrors the Notion Guest List `Country` select so the registry
+// split (src/lib/registry-routing.ts) can be exercised locally: the Ancel
+// family log in as France-side guests (external MilleMercis registry), the
+// Grosses as US-side guests (native Joy registry).
+const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
+  { name: 'Sam Gross', country: 'USA' },
+  { name: 'Margaux Ancel', country: 'USA' },
+  { name: 'Charles Gross', country: 'USA' },
+  { name: 'Dorothee Ancel', country: 'FRANCE' },
+  { name: 'Nicolas Ancel', country: 'FRANCE' },
+  { name: 'Toni Waldman', country: 'USA' },
 ];
 
 // Pre-normalize authorized guests for comparison
-const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map(normalize);
+const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map((g) => normalize(g.name));
 
 /**
  * Validate a guest name against a list of GuestRecords (Notion-backed).
@@ -44,10 +48,22 @@ export function validateGuest(input: string): string | null {
   const index = NORMALIZED_GUESTS.indexOf(normalizedInput);
 
   if (index !== -1) {
-    return AUTHORIZED_GUESTS[index];
+    return AUTHORIZED_GUESTS[index].name;
   }
 
   return null;
+}
+
+/**
+ * Look up the origin country for a hardcoded fallback guest (local dev without
+ * Notion). Returns null for unknown names. Mirrors the Country a Notion record
+ * would supply so the registry split works when logging in against the
+ * hardcoded list.
+ */
+export function getHardcodedGuestCountry(input: string): string | null {
+  const normalizedInput = normalize(input);
+  const index = NORMALIZED_GUESTS.indexOf(normalizedInput);
+  return index !== -1 ? AUTHORIZED_GUESTS[index].country : null;
 }
 
 /**
@@ -59,6 +75,7 @@ interface SessionPayload {
   guest: string;
   notionId?: string;
   eventInvitations?: EventInvitation[];
+  country?: string;
   created: number;
 }
 
@@ -69,7 +86,8 @@ interface SessionPayload {
 export function createSessionToken(
   guestName: string,
   notionId?: string,
-  eventInvitations?: EventInvitation[]
+  eventInvitations?: EventInvitation[],
+  country?: string | null
 ): string {
   const payload: SessionPayload = {
     guest: guestName,
@@ -81,6 +99,9 @@ export function createSessionToken(
   if (eventInvitations && eventInvitations.length > 0) {
     payload.eventInvitations = eventInvitations;
   }
+  if (country) {
+    payload.country = country;
+  }
   return Buffer.from(JSON.stringify(payload)).toString('base64url');
 }
 
@@ -90,7 +111,12 @@ export function createSessionToken(
  */
 export function parseSessionToken(
   token: string
-): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
+): {
+  guest: string;
+  notionId?: string;
+  eventInvitations: EventInvitation[];
+  country: string | null;
+} | null {
   try {
     const payload: SessionPayload = JSON.parse(
       Buffer.from(token, 'base64url').toString('utf-8')
@@ -104,6 +130,7 @@ export function parseSessionToken(
         guest: payload.guest,
         notionId: payload.notionId,
         eventInvitations: eventInvitations.length > 0 ? eventInvitations : ['nyc', 'france'],
+        country: typeof payload.country === 'string' ? payload.country : null,
       };
     }
   } catch {
@@ -119,7 +146,12 @@ export function parseSessionToken(
  */
 export function getAuthenticatedGuest(cookies: {
   get: (name: string) => { value: string } | undefined;
-}): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
+}): {
+  guest: string;
+  notionId?: string;
+  eventInvitations: EventInvitation[];
+  country: string | null;
+} | null {
   const cookie = cookies.get(AUTH_COOKIE_NAME);
 
   if (!cookie?.value) {

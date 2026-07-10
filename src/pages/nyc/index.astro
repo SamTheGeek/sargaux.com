@@ -8,11 +8,13 @@ import LangSwitcher from '../../components/LangSwitcher.astro';
 import skylineFill from '../../assets/nyc/skyline-fill.svg?raw';
 import skylineOutline from '../../assets/nyc/skyline.svg?url';
 import { features } from '../../config/features';
+import { getRegistryLink } from '../../lib/registry-routing';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 ---
 
 <WireframeLayout title={t(strings.nyc.pageTitle)} fullTitle="Chez Sargaux | NYC" description="NYC Wedding - October 2026" event="nyc">
@@ -146,7 +148,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
         <span class="nyc-strip-arrow">→</span>
       </a>
       {features.registry.enabled && (
-        <a href="/registry" class="nyc-strip-link">
+        <a
+          href={registryHref}
+          class:list={['nyc-strip-link', { 'nyc-strip-link--external': registryIsExternal }]}
+          target={registryIsExternal ? '_blank' : undefined}
+          rel={registryIsExternal ? 'noopener' : undefined}
+        >
           <span class="nyc-strip-title">{t(strings.nyc.nav.registry.title)}</span>
           <span class="nyc-strip-desc">{t(strings.nyc.nav.registry.desc)}</span>
           <span class="nyc-strip-arrow">→</span>
@@ -163,8 +170,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   <footer class="nyc-moss nyc-footer site-footer">
     <nav>
       <a href="/nyc">{t(strings.nav.home)}</a>
-      <span> · </span>
-      <a href="/registry">{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
       <span> · </span>
@@ -485,7 +490,18 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
     text-align: right;
   }
 
-  html[data-event="nyc"] .nyc-strip-arrow { color: var(--color-burnt-amber); }
+  html[data-event="nyc"] .nyc-strip-arrow { color: var(--color-burnt-amber); font-family: var(--font-arrow); }
+
+  /* External registry row: arrow tilts to ↗ on hover/focus to signal a new tab */
+  html[data-event="nyc"] .nyc-strip-link--external .nyc-strip-arrow {
+    display: inline-block;
+    transition: transform 0.15s ease;
+  }
+
+  html[data-event="nyc"] .nyc-strip-link--external:hover .nyc-strip-arrow,
+  html[data-event="nyc"] .nyc-strip-link--external:focus-visible .nyc-strip-arrow {
+    transform: rotate(-45deg);
+  }
 
   html[data-event="nyc"] .nyc-footer {
     border-top-color: rgba(255, 249, 240, 0.12) !important;

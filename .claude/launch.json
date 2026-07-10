@@ -13,6 +13,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 1213
+    },
+    {
+      "name": "sargaux.com built",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["./dist/server/entry.mjs"],
+      "port": 1213
     }
   ]
 }
