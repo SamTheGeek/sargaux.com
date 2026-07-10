@@ -9,7 +9,6 @@ const faq = strings.france.faq;
 
 const items = [
   faq.items.travelInfo,
-  faq.items.directions,
   faq.items.stay,
   faq.items.wifi,
   faq.items.rsvpDeadline,
@@ -48,7 +47,7 @@ const items = [
             </summary>
             <div class="faq-answer">
               {t(item.a).split('\n\n').filter(Boolean).map((para) => (
-                <p>{para}</p>
+                <p>{para.split('**').map((chunk, i) => (i % 2 === 1 ? <strong>{chunk}</strong> : chunk))}</p>
               ))}
               {'ctaHref' in item && item.ctaHref && 'ctaLabel' in item && (
                 <a class="faq-cta" href={item.ctaHref}>{t(item.ctaLabel)}</a>

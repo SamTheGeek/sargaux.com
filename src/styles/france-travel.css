@@ -206,7 +206,7 @@ html[data-event="france"][data-page="travel"] .info-item {
 html[data-event="france"][data-page="travel"] .info-item h3 {
   font-size: 0.875rem;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: var(--color-burnt-amber);
   margin: 0 0 0.5rem;
 }
 
