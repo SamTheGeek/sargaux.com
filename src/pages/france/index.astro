@@ -425,7 +425,8 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
   }
 
   .strip-arrow {
-    color: var(--color-accent);
+    /* No explicit color: inherits from .strip-link (text color at rest,
+       accent on hover/focus), matching .strip-title's behavior. */
     font-family: var(--font-arrow);
   }
 
@@ -440,7 +441,8 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
     transform: rotate(-45deg);
   }
 
-  .strip-link--cta .strip-title {
+  .strip-link--cta .strip-title,
+  .strip-link--cta .strip-arrow {
     color: var(--color-accent);
   }
 
