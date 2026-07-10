@@ -498,11 +498,76 @@ test.describe('Registry page', () => {
 
   test('NYC index shows a Registry strip link', async () => {
     await page.goto('/nyc');
-    await expect(page.locator('.nyc-strip-link[href="/registry"]')).toBeVisible();
+    const link = page.locator('.nyc-strip-link[href="/registry"]');
+    await expect(link).toBeVisible();
+    // Internal registry: same-tab navigation, no external modifier
+    await expect(link).not.toHaveAttribute('target', '_blank');
+    await expect(link).not.toHaveClass(/nyc-strip-link--external/);
   });
 
   test('France index shows a Registry strip link', async () => {
     await page.goto('/france');
-    await expect(page.locator('.strip-link[href="/registry"]')).toBeVisible();
+    const link = page.locator('.strip-link[href="/registry"]');
+    await expect(link).toBeVisible();
+    await expect(link).not.toHaveAttribute('target', '_blank');
+    await expect(link).not.toHaveClass(/strip-link--external/);
+  });
+});
+
+// ── 8. Registry for French-side guests ────────────────────────────────────────
+// French-side guests (Country = FRANCE / UNITED KINGDOM) get the external
+// MilleMercis registry instead of the native Joy page. The middleware reads
+// country from the session cookie when no Notion lookup is possible, so a
+// hand-built cookie exercises the branch without Notion data.
+
+const MILLEMERCIS_URL = 'https://www.millemercismariage.com/sargaux/liste.html';
+
+test.describe('Registry for French-side guests', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for registry tests');
+  test.describe.configure({ mode: 'serial' });
+
+  let context: BrowserContext;
+  let page: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    // Session cookie with country=FRANCE and no notionId — middleware falls
+    // back to the cookie's country instead of a live Notion lookup.
+    const token = Buffer.from(
+      JSON.stringify({ guest: 'Margaux Ancel', country: 'FRANCE', created: Date.now() })
+    ).toString('base64url');
+    // Host must match the baseURL in playwright.config.ts (port 1213 is sacred)
+    await context.addCookies([
+      { name: 'sargaux_auth', value: token, url: 'http://127.0.0.1:1213' },
+    ]);
+    page = await context.newPage();
+  });
+
+  test.afterAll(async () => {
+    await context.close();
+  });
+
+  test('NYC index Registry row links out to MilleMercis in a new tab', async () => {
+    await page.goto('/nyc');
+    const link = page.locator(`.nyc-strip-link[href="${MILLEMERCIS_URL}"]`);
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener');
+    await expect(link).toHaveClass(/nyc-strip-link--external/);
+  });
+
+  test('France index Registry row links out to MilleMercis in a new tab', async () => {
+    await page.goto('/france');
+    const link = page.locator(`.strip-link[href="${MILLEMERCIS_URL}"]`);
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener');
+    await expect(link).toHaveClass(/strip-link--external/);
+  });
+
+  test('direct /registry visit 302-redirects to MilleMercis', async () => {
+    const response = await context.request.get('/registry', { maxRedirects: 0 });
+    expect(response.status()).toBe(302);
+    expect(response.headers()['location']).toBe(MILLEMERCIS_URL);
   });
 });

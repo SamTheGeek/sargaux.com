@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest } from './lib/auth';
 import { getPrimaryEventRoute } from './lib/event-routing';
+import { getRegistryDestination, FRENCH_REGISTRY_URL } from './lib/registry-routing';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
 import type { Lang } from './content/strings';
@@ -92,18 +93,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return withVary(context.redirect('/'));
   }
 
-  // Resolve event invitations from the live Notion record, not the session
-  // cookie — the cookie lives 90 days and can go stale if invitations change.
-  // getGuestById is served from the in-memory/blob guest cache (15-min TTL),
-  // so this does not add a Notion round-trip to every page load. The cookie
-  // value is only a fallback for the hardcoded-guest-list mode and for
-  // transient Notion failures.
+  // Resolve event invitations (and country) from the live Notion record, not
+  // the session cookie — the cookie lives 90 days and can go stale if the
+  // Notion record changes. getGuestById is served from the in-memory/blob
+  // guest cache (15-min TTL), so this does not add a Notion round-trip to
+  // every page load. The cookie value is only a fallback for the
+  // hardcoded-guest-list mode and for transient Notion failures.
   let eventInvitations = auth.eventInvitations;
+  let country = auth.country;
   if (auth.notionId && features.global.notionBackend) {
     try {
       const record = await getGuestById(auth.notionId);
       if (record) {
         eventInvitations = record.eventInvitations;
+        country = record.country ?? null;
       }
     } catch (error) {
       console.error('Live invitation lookup failed, falling back to session cookie:', error);
@@ -113,8 +116,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Add guest info to locals for use in pages
   context.locals.guest = auth.guest;
   context.locals.eventInvitations = eventInvitations;
+  context.locals.country = country;
   if (auth.notionId) {
     context.locals.guestId = auth.notionId;
+  }
+
+  // French-side guests use the external MilleMercis registry — never the
+  // native Joy page. Redirect direct visits (footer link, bookmarks) there.
+  if (pathname.startsWith('/registry') && getRegistryDestination(country) === 'millemercis') {
+    return withVary(context.redirect(FRENCH_REGISTRY_URL, 302));
   }
 
   const invitedToNyc = eventInvitations.includes('nyc');

@@ -59,6 +59,7 @@ interface SessionPayload {
   guest: string;
   notionId?: string;
   eventInvitations?: EventInvitation[];
+  country?: string;
   created: number;
 }
 
@@ -69,7 +70,8 @@ interface SessionPayload {
 export function createSessionToken(
   guestName: string,
   notionId?: string,
-  eventInvitations?: EventInvitation[]
+  eventInvitations?: EventInvitation[],
+  country?: string | null
 ): string {
   const payload: SessionPayload = {
     guest: guestName,
@@ -81,6 +83,9 @@ export function createSessionToken(
   if (eventInvitations && eventInvitations.length > 0) {
     payload.eventInvitations = eventInvitations;
   }
+  if (country) {
+    payload.country = country;
+  }
   return Buffer.from(JSON.stringify(payload)).toString('base64url');
 }
 
@@ -90,7 +95,12 @@ export function createSessionToken(
  */
 export function parseSessionToken(
   token: string
-): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
+): {
+  guest: string;
+  notionId?: string;
+  eventInvitations: EventInvitation[];
+  country: string | null;
+} | null {
   try {
     const payload: SessionPayload = JSON.parse(
       Buffer.from(token, 'base64url').toString('utf-8')
@@ -104,6 +114,7 @@ export function parseSessionToken(
         guest: payload.guest,
         notionId: payload.notionId,
         eventInvitations: eventInvitations.length > 0 ? eventInvitations : ['nyc', 'france'],
+        country: typeof payload.country === 'string' ? payload.country : null,
       };
     }
   } catch {
@@ -119,7 +130,12 @@ export function parseSessionToken(
  */
 export function getAuthenticatedGuest(cookies: {
   get: (name: string) => { value: string } | undefined;
-}): { guest: string; notionId?: string; eventInvitations: EventInvitation[] } | null {
+}): {
+  guest: string;
+  notionId?: string;
+  eventInvitations: EventInvitation[];
+  country: string | null;
+} | null {
   const cookie = cookies.get(AUTH_COOKIE_NAME);
 
   if (!cookie?.value) {

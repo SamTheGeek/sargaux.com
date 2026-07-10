@@ -5,11 +5,13 @@ import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
 import { features } from '../../config/features';
+import { getRegistryLink } from '../../lib/registry-routing';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 ---
 
 <WireframeLayout title={t(strings.france.pageTitle)} fullTitle="Chez Sargaux | France" description="France Wedding - May 2027" event="france">
@@ -174,7 +176,12 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
           <span class="strip-arrow">→</span>
         </a>
         {features.registry.enabled && (
-          <a href="/registry" class="strip-link">
+          <a
+            href={registryHref}
+            class:list={['strip-link', { 'strip-link--external': registryIsExternal }]}
+            target={registryIsExternal ? '_blank' : undefined}
+            rel={registryIsExternal ? 'noopener' : undefined}
+          >
             <span class="strip-title">{t(strings.france.nav.registry.title)}</span>
             <span class="strip-desc">{t(strings.france.nav.registry.desc)}</span>
             <span class="strip-arrow">→</span>
@@ -419,6 +426,17 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   .strip-arrow {
     color: var(--color-accent);
+  }
+
+  /* External registry row: arrow tilts to ↗ on hover/focus to signal a new tab */
+  .strip-link--external .strip-arrow {
+    display: inline-block;
+    transition: transform 0.15s ease;
+  }
+
+  .strip-link--external:hover .strip-arrow,
+  .strip-link--external:focus-visible .strip-arrow {
+    transform: rotate(-45deg);
   }
 
   .strip-link--cta .strip-title {

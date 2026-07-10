@@ -5,11 +5,13 @@ import '../../styles/nyc-subpages.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { getRegistryLink } from '../../lib/registry-routing';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 
 const faqItems = [
   {
@@ -34,7 +36,8 @@ const faqItems = [
   },
   {
     ...strings.nyc.faq.items.registry,
-    href: '/registry',
+    href: registryHref,
+    external: registryIsExternal,
     linkLabel: strings.nyc.faq.links.registry,
   },
 ];
@@ -93,7 +96,12 @@ const faqItems = [
                         <span> {t(item.linkSuffix)}</span>
                       </>
                     ) : 'href' in item && item.href ? (
-                      <a href={item.href} class="faq-answer-link">{t(item.linkLabel)}</a>
+                      <a
+                        href={item.href}
+                        class="faq-answer-link"
+                        target={'external' in item && item.external ? '_blank' : undefined}
+                        rel={'external' in item && item.external ? 'noopener' : undefined}
+                      >{t(item.linkLabel)}</a>
                     ) : 'linkLabel' in item ? (
                       <span class="faq-answer-note">{t(item.linkLabel)}</span>
                     ) : null}
@@ -114,7 +122,11 @@ const faqItems = [
       <nav>
         <a href="/nyc">{t(strings.nav.home)}</a>
         <span> · </span>
-        <a href="/registry">{t(strings.global.registry)}</a>
+        <a
+          href={registryHref}
+          target={registryIsExternal ? '_blank' : undefined}
+          rel={registryIsExternal ? 'noopener' : undefined}
+        >{t(strings.global.registry)}</a>
         <span> · </span>
         <span class="guest-name">{guest}</span>
         <span> · </span>

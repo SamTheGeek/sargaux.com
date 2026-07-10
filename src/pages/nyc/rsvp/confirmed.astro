@@ -8,6 +8,7 @@ import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { NYC_EVENT_TIME, strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
 import LangSwitcher from '../../../components/LangSwitcher.astro';
+import { getRegistryLink } from '../../../lib/registry-routing';
 import CalendarCta from '../../../components/CalendarCta.astro';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
 
@@ -17,6 +18,7 @@ const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
+const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const isDevMock = import.meta.env.DEV && Astro.url.searchParams.get('mock') === 'dev';
@@ -336,7 +338,11 @@ const submittedAtFallback = submittedAtISO
 
   <footer class="site-footer">
     <nav>
-      <a href="/registry">{t(strings.global.registry)}</a>
+      <a
+        href={registryHref}
+        target={registryIsExternal ? '_blank' : undefined}
+        rel={registryIsExternal ? 'noopener' : undefined}
+      >{t(strings.global.registry)}</a>
       <span> · </span>
       <span class="guest-name">{guest}</span>
       <span> · </span>
