@@ -453,12 +453,11 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
       // Description (rich text)
       const description = props['Description']?.rich_text?.[0]?.plain_text || undefined;
 
-      // French variants ("* FR" rich_text properties) — optional; display
-      // falls back to the English field when unset
+      // French display variants ("* FR" rich_text properties) — optional;
+      // display falls back to the English field when unset. Timing fields
+      // (Start Time/Duration/Event Date) intentionally have no FR variant.
       const nameFr = props['Event Name FR']?.rich_text?.[0]?.plain_text || undefined;
       const timeFr = props['Time FR']?.rich_text?.[0]?.plain_text || undefined;
-      const startTimeFr = props['Start Time FR']?.rich_text?.[0]?.plain_text || undefined;
-      const durationFr = props['Duration FR']?.rich_text?.[0]?.plain_text || undefined;
       const locationFr = props['Location FR']?.rich_text?.[0]?.plain_text || undefined;
       const descriptionFr = props['Description FR']?.rich_text?.[0]?.plain_text || undefined;
 
@@ -484,8 +483,6 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
         description,
         nameFr,
         timeFr,
-        startTimeFr,
-        durationFr,
         locationFr,
         descriptionFr,
         dayId,

@@ -124,17 +124,10 @@ test.describe('buildICS — French localization', () => {
     expect(ics).toContain('DESCRIPTION:Welcome dinner on Friday evening');
   });
 
-  test("lang='fr' keeps canonical timing when no French start time is set", () => {
+  test("lang='fr' keeps canonical timing — DTSTART/DTEND are language-neutral", () => {
     const ics = buildICS([FR_LOCALIZED_EVENT], 'fr');
     expect(ics).toContain('DTSTART;TZID=Europe/Paris:20270528T190000');
     expect(ics).toContain('DTEND;TZID=Europe/Paris:20270528T220000');
-  });
-
-  test("lang='fr' with an unparseable French start time falls back to the English time", () => {
-    const event: EventWithDate = { ...FR_LOCALIZED_EVENT, startTimeFr: '19 h' };
-    const ics = buildICS([event], 'fr');
-    // "19 h" is not parseable — timing must not regress to a DATE-only event
-    expect(ics).toContain('DTSTART;TZID=Europe/Paris:20270528T190000');
   });
 
   test('default lang stays English', () => {

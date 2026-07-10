@@ -207,8 +207,10 @@ export interface EventWithDate extends EventRecord {
  * Events without a date are skipped.
  * Events with a date but no parseable time get a DATE-only DTSTART.
  *
- * `lang: 'fr'` renders each event's French fields (name, description,
- * location, start time, duration), falling back per field to English.
+ * `lang: 'fr'` renders each event's French display fields (name,
+ * description, location), falling back per field to English. Timing is
+ * language-neutral: DTSTART/DTEND always come from the canonical
+ * startTime/duration.
  */
 export function buildICS(events: EventWithDate[], lang: Lang = 'en'): string {
   const stamp = dtstamp();
@@ -224,21 +226,14 @@ export function buildICS(events: EventWithDate[], lang: Lang = 'en'): string {
       let dtstart: string;
       let dtend: string;
 
-      // Timing prefers the localized start time but must never regress to a
-      // date-only event because a French time string failed to parse — fall
-      // back to the canonical English start time in that case.
-      const parsed =
-        (loc.startTime ? parseTime(loc.startTime) : undefined) ??
-        (event.startTime ? parseTime(event.startTime) : undefined);
+      const parsed = event.startTime ? parseTime(event.startTime) : undefined;
       if (parsed) {
         const [year, month, day] = event.date.split('-').map(Number);
         const pad = (n: number) => String(n).padStart(2, '0');
         const localStr = `${year}${pad(month)}${pad(day)}T${pad(parsed.hour)}${pad(parsed.minute)}00`;
         // Use explicit duration if provided, otherwise fall back to 2h default
         const durationMinutes =
-          (loc.duration ? parseDuration(loc.duration) : undefined) ??
-          (event.duration ? parseDuration(event.duration) : undefined) ??
-          120;
+          (event.duration ? parseDuration(event.duration) : undefined) ?? 120;
         // Cap at 23:59 to avoid overflow on midnight-crossing events
         const endMinutes = parsed.hour * 60 + parsed.minute + durationMinutes;
         const endH = Math.min(Math.floor(endMinutes / 60), 23);
