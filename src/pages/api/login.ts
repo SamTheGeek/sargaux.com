@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import {
   validateGuest,
+  getHardcodedGuestCountry,
   createSessionToken,
   AUTH_COOKIE_NAME,
 } from '../../lib/auth';
@@ -37,9 +38,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } catch (err) {
       console.error('Notion fetch failed, falling back to hardcoded list:', err);
       guestName = validateGuest(name);
+      country = getHardcodedGuestCountry(name);
     }
   } else {
     guestName = validateGuest(name);
+    country = getHardcodedGuestCountry(name);
   }
 
   if (!guestName) {

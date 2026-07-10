@@ -10,18 +10,22 @@ import type { GuestRecord } from '../types';
 import { normalize } from './normalize';
 export type EventInvitation = 'nyc' | 'france';
 
-// Hardcoded fallback guest list for local dev without Notion keys
-const AUTHORIZED_GUESTS = [
-  'Sam Gross',
-  'Margaux Ancel',
-  'Charles Gross',
-  'Dorothee Ancel',
-  'Nicolas Ancel',
-  'Toni Waldman',
+// Hardcoded fallback guest list for local dev without Notion keys.
+// `country` mirrors the Notion Guest List `Country` select so the registry
+// split (src/lib/registry-routing.ts) can be exercised locally: the Ancel
+// family log in as France-side guests (external MilleMercis registry), the
+// Grosses as US-side guests (native Joy registry).
+const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
+  { name: 'Sam Gross', country: 'USA' },
+  { name: 'Margaux Ancel', country: 'USA' },
+  { name: 'Charles Gross', country: 'USA' },
+  { name: 'Dorothee Ancel', country: 'FRANCE' },
+  { name: 'Nicolas Ancel', country: 'FRANCE' },
+  { name: 'Toni Waldman', country: 'USA' },
 ];
 
 // Pre-normalize authorized guests for comparison
-const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map(normalize);
+const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map((g) => normalize(g.name));
 
 /**
  * Validate a guest name against a list of GuestRecords (Notion-backed).
@@ -44,10 +48,22 @@ export function validateGuest(input: string): string | null {
   const index = NORMALIZED_GUESTS.indexOf(normalizedInput);
 
   if (index !== -1) {
-    return AUTHORIZED_GUESTS[index];
+    return AUTHORIZED_GUESTS[index].name;
   }
 
   return null;
+}
+
+/**
+ * Look up the origin country for a hardcoded fallback guest (local dev without
+ * Notion). Returns null for unknown names. Mirrors the Country a Notion record
+ * would supply so the registry split works when logging in against the
+ * hardcoded list.
+ */
+export function getHardcodedGuestCountry(input: string): string | null {
+  const normalizedInput = normalize(input);
+  const index = NORMALIZED_GUESTS.indexOf(normalizedInput);
+  return index !== -1 ? AUTHORIZED_GUESTS[index].country : null;
 }
 
 /**
