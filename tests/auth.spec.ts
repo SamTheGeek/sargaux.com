@@ -215,6 +215,57 @@ test.describe('Authentication', () => {
     expect(response.body.redirectPath).toBe('/nyc');
   });
 
+  test('login defaults France-based guests to the French locale', async ({ page, context }) => {
+    await page.goto('/');
+    await context.clearCookies({ name: 'sargaux_lang' });
+
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', 'Dorothee Ancel');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+    expect(response.status).toBe(200);
+
+    const cookies = await context.cookies();
+    const langCookie = cookies.find((c) => c.name === 'sargaux_lang');
+    expect(langCookie?.value).toBe('fr');
+  });
+
+  test('login defaults non-French guests to the English locale', async ({ page, context }) => {
+    await page.goto('/');
+    await context.clearCookies({ name: 'sargaux_lang' });
+
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', 'Samuel Gross');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+    expect(response.status).toBe(200);
+
+    const cookies = await context.cookies();
+    const langCookie = cookies.find((c) => c.name === 'sargaux_lang');
+    expect(langCookie?.value).toBe('en');
+  });
+
+  test('login does not override an existing language preference', async ({ page, context }) => {
+    await page.goto('/?lang=fr');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('name', 'Samuel Gross');
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    });
+    expect(response.status).toBe(200);
+
+    const cookies = await context.cookies();
+    const langCookie = cookies.find((c) => c.name === 'sargaux_lang');
+    expect(langCookie?.value).toBe('fr');
+  });
+
   test('login API returns 401 for unknown guest', async ({ page }) => {
     await page.goto('/');
 

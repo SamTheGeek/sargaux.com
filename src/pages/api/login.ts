@@ -9,6 +9,7 @@ import { features } from '../../config/features';
 import { findGuestByName } from '../../lib/notion';
 import type { EventInvitation } from '../../lib/auth';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
+import { getDefaultLocale } from '../../lib/locale-routing';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
@@ -68,6 +69,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 90, // 90 days
   });
+
+  // Default the site language from the guest's country, but never clobber a
+  // language the guest (or a previous session) already chose explicitly.
+  if (features.global.i18n && !cookies.has('sargaux_lang')) {
+    cookies.set('sargaux_lang', getDefaultLocale(country), {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      httpOnly: false,
+      sameSite: 'lax',
+    });
+  }
 
   // Return success with the canonical guest name
   return new Response(JSON.stringify({ success: true, guest: guestName, redirectPath }), {
