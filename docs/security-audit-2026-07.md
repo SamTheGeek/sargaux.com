@@ -131,6 +131,47 @@ a guest-facing destructive RSVP DELETE path on public deploy previews that run
 against production Notion data. The flag remains enabled for local Playwright
 runs via the `webServer.env` defaults in `playwright.config.ts`.
 
+### Post-audit additions: HSTS + login geo allowlist
+
+**HSTS.** `Strict-Transport-Security: max-age=15552000; includeSubDomains` was
+added to `SECURITY_HEADERS` in `src/middleware.ts` (asserted in
+`tests/security-headers.spec.ts`):
+
+- `max-age=15552000` (180 days) — long enough to be meaningful, short enough
+  that a rollback isn't a half-year outage.
+- **No `preload`** — preload-list inclusion is effectively irreversible and
+  demands `max-age` ≥ 1 year plus `includeSubDomains`; not worth it for a
+  site with a shelf life.
+- `includeSubDomains` — safe here: the only subdomain in use is `www`, a
+  Netlify auto-HTTPS 301 to the apex (verified live). The other subdomain
+  records (SPF/DKIM for Resend) are mail-only and unaffected by HSTS.
+- Scope: page responses only, like the rest of `SECURITY_HEADERS`. Netlify
+  already serves platform-level HSTS (`max-age=31536000`, observed live on
+  every response including redirects), so API responses are covered without
+  adding a second code path.
+
+**Login geo allowlist.** `netlify/edge-functions/login-geo-gate.ts` gates
+`/api/login` by request country (`context.geo`, path-scoped via the in-file
+`export const config = { path: '/api/login' }`), per the owners' explicit
+request — guests browse from a limited set of places, and "people off the
+beaten path will understand."
+
+- Allowlist (`ALLOWED_LOGIN_COUNTRIES`): US, CA, GB, IE, the EU 27,
+  CH/NO/IS/LI + microstates MC/AD/SM/VA, and BR, AR, JP, TW, IN.
+- Blocked countries get `403 {"error": "Login is not available from your
+  region."}` — same error shape as the login endpoint itself.
+- Missing geo data **fails open**: never lock a guest out because the
+  platform couldn't resolve their location.
+- **Deliberately NOT applied to page browsing**: an edge function in front of
+  content pages would bypass the per-guest CDN cache, and page-level
+  geo-blocking would break traveling guests and link-preview fetchers.
+  `/api/login` is never cached, so the gate is cache-neutral. Do not widen
+  the path.
+- The gate only exists on Netlify's edge runtime — the local node-adapter
+  test server never runs it. The pure decision logic is unit-tested in
+  `tests/login-geo-unit.spec.ts`; the live 403 behavior must be verified on a
+  deploy preview.
+
 ## 6. Test cases
 
 See `tests/security.spec.ts` and updates to `tests/auth-unit.spec.ts`:

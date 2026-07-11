@@ -37,6 +37,12 @@ const PUBLIC_ROUTES = [
 // 'unsafe-inline' (Astro inline scripts + scoped styles are used heavily);
 // `img-src https:` covers Google static maps and Joy registry photos.
 const SECURITY_HEADERS: ReadonlyArray<readonly [string, string]> = [
+  // HSTS conventionally belongs on ALL responses (APIs included), but Netlify
+  // already sends platform-level HSTS on every response, so page scope here is
+  // sufficient and keeps this list on the single existing code path.
+  // 180 days, no `preload` (rollback stays possible). `includeSubDomains` is
+  // safe: the only subdomain is www, a Netlify auto-HTTPS 301 to the apex.
+  ['Strict-Transport-Security', 'max-age=15552000; includeSubDomains'],
   ['X-Frame-Options', 'SAMEORIGIN'],
   ['Referrer-Policy', 'strict-origin-when-cross-origin'],
   ['Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()'],

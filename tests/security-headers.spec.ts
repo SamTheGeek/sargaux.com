@@ -18,6 +18,10 @@ const EXPECTED_CSP_REPORT_ONLY =
 
 function expectSecurityHeaders(response: APIResponse): void {
   const headers = response.headers();
+  // 180 days, includeSubDomains (www is a Netlify auto-HTTPS redirect), no preload.
+  expect(headers['strict-transport-security']).toBe(
+    'max-age=15552000; includeSubDomains'
+  );
   expect(headers['x-frame-options']).toBe('SAMEORIGIN');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   expect(headers['permissions-policy']).toBe(
