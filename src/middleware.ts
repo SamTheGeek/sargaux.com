@@ -4,6 +4,7 @@ import { getPrimaryEventRoute } from './lib/event-routing';
 import { getRegistryDestination, FRENCH_REGISTRY_URL } from './lib/registry-routing';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
+import { normalize } from './lib/normalize';
 import type { Lang } from './content/strings';
 
 // Routes that require authentication
@@ -99,12 +100,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // guest cache (15-min TTL), so this does not add a Notion round-trip to
   // every page load. The cookie value is only a fallback for the
   // hardcoded-guest-list mode and for transient Notion failures.
+  //
+  // Also bind cookie display name ↔ live Notion record: a forged session
+  // with a stolen calendar notionId + arbitrary guest name must fail closed.
   let eventInvitations = auth.eventInvitations;
   let country = auth.country;
   if (auth.notionId && features.global.notionBackend) {
     try {
       const record = await getGuestById(auth.notionId);
       if (record) {
+        if (normalize(auth.guest) !== record.normalizedName) {
+          console.warn('Session guest/notionId mismatch — treating as unauthenticated');
+          return withVary(context.redirect('/'));
+        }
         eventInvitations = record.eventInvitations;
         country = record.country ?? null;
       }

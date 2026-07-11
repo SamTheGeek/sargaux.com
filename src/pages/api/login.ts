@@ -10,8 +10,17 @@ import { findGuestByName } from '../../lib/notion';
 import type { EventInvitation } from '../../lib/auth';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
 import { getDefaultLocale } from '../../lib/locale-routing';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../lib/rate-limit';
+
+/** Strict login rate limit — primary name-enumeration vector. */
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`login:${ip}`, LOGIN_LIMIT, LOGIN_WINDOW_MS);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
   const formData = await request.formData();
   const name = formData.get('name');
 
@@ -47,6 +56,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (!guestName) {
+    // Small constant delay to blunt timing/volume enumeration (best-effort)
+    await new Promise((r) => setTimeout(r, 200));
     return new Response(
       JSON.stringify({
         error: 'Name not found, it must match exactly.',

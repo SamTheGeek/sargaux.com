@@ -13,10 +13,18 @@ jobs:
 
     steps:
       - name: Warm cache
+        env:
+          ADMIN_SECRET: ${{ secrets.RESEND_ADMIN_SECRET }}
         run: |
           URL="https://sargaux.com/api/warm"
           echo "Warming cache at: ${URL}"
-          RESPONSE=$(curl -s -w "\n%{http_code}" "${URL}")
+          if [ -z "${ADMIN_SECRET}" ]; then
+            echo "Error: RESEND_ADMIN_SECRET GitHub secret is not set"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${ADMIN_SECRET}" \
+            "${URL}")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -1)
           echo "Response: ${BODY}"
@@ -37,5 +45,10 @@ jobs:
           if [ "${HTTP_CODE}" -ne 200 ]; then
             echo "Error: calendar health check failed with status ${HTTP_CODE}"
             echo "CALENDAR_HMAC_SECRET or NOTION_API_KEY may be missing from Netlify env vars"
+            exit 1
+          fi
+          # Health body must not leak config flags
+          if echo "$BODY" | grep -qE 'hasSecret|hasNotionKey|blobsOk'; then
+            echo "Error: health endpoint leaked config flags"
             exit 1
           fi

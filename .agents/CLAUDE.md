@@ -327,8 +327,9 @@ The project version in `package.json` follows semantic versioning with wedding m
 - When `global.notionBackend` flag is on: validates against Notion Guest List database
 - When flag is off (local dev without keys): falls back to hardcoded list in `src/lib/auth.ts`
 - Names normalized: lowercase, remove accents (NFD), collapse whitespace
-- Cookie: `sargaux_auth` (90-day expiry, httpOnly) — contains guest name + optional Notion page ID
+- Cookie: `sargaux_auth` (90-day expiry, httpOnly) — HMAC-signed (`SESSION_HMAC_SECRET`); format `base64url(payload).hmac`. Unsigned/legacy cookies fail closed (guests re-login once after deploy). Payload contains guest name + optional Notion page ID
 - **Event invitations are resolved live, never trusted from the cookie**: the cookie's `eventInvitations` snapshot is only a fallback (hardcoded-list mode, transient Notion failures). Middleware and the RSVP API read invitations from the live Notion record (`getGuestById`, served by the 15-min guest cache) so invitation changes take effect without re-login.
+- **Session binding**: when `notionId` is present, middleware and RSVP require `normalize(cookie.guest) === liveNotionRecord.normalizedName` so a calendar-leaked page ID cannot be paired with an arbitrary display name
 - Protected routes: `/nyc/*`, `/france/*`, `/registry` — middleware redirects to `/` if unauthenticated
 - `Astro.locals.guest` (string) — guest display name, available in all protected pages
 - `Astro.locals.guestId` (string) — Notion page ID, available when notionBackend is enabled
@@ -373,8 +374,10 @@ Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sund
 - `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
-- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token.
-- `RESEND_ADMIN_SECRET` — bearer token protecting the admin endpoints (`/api/admin/*`). Stored in Netlify as a **write-only secret** (runtime, `process.env`; scoped to production **and** deploy-preview contexts) and mirrored in `.env.local`. `netlify env:get` cannot read it back — it returns a placeholder that the endpoints reject — so treat `.env.local` as the readable copy (never paste the value into code, docs, or commit messages).
+- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token (`{ ok: true }` only — no config flags).
+- `SESSION_HMAC_SECRET` — HMAC-SHA256 signing secret for `sargaux_auth` session cookies. **Do not reuse `CALENDAR_HMAC_SECRET`.** Generate with `openssl rand -hex 32`. Set in Netlify Dashboard (all contexts) and GitHub Secrets. Rotating it forces all guests to re-login.
+- `RESEND_ADMIN_SECRET` — bearer token protecting the admin endpoints (`/api/admin/*`) **and** `GET /api/warm`. Stored in Netlify as a **write-only secret** (runtime, `process.env`; scoped to production **and** deploy-preview contexts) and mirrored in `.env.local`. `netlify env:get` cannot read it back — it returns a placeholder that the endpoints reject — so treat `.env.local` as the readable copy (never paste the value into code, docs, or commit messages).
+- `CALENDAR_TEST_MODE` — when `"true"`, calendar endpoints use the mock blob store. **Keep unset/off in production.**
 - All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
 - The `.gitignore` already excludes `.env` files, but always double-check before committing
 - **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
@@ -388,10 +391,14 @@ The following secrets must be set in GitHub repository settings (Settings → Se
 - `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
 - `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
 - `CALENDAR_HMAC_SECRET` — Signing secret for calendar subscription tokens (must match Netlify)
+- `SESSION_HMAC_SECRET` — Signing secret for session cookies (must match Netlify; distinct from calendar secret)
+- `RESEND_ADMIN_SECRET` — Bearer for admin endpoints and cache warmup
 
 These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
 
-**To add/update secrets**: `gh secret set NOTION_API_KEY` (then paste the value when prompted)
+**To add/update secrets**: `gh secret set SESSION_HMAC_SECRET` (then paste the value when prompted)
+
+**Calendar subscription URLs** are capability secrets: anyone with the link can read that guest's attending schedule, and the token prefix is a decodable Notion page ID. Prefer not forwarding calendar links in group chats. Opaque server-stored tokens are a future improvement if sharing becomes a concern.
 
 ## Feature Flags
 
@@ -444,7 +451,8 @@ See `src/config/features.ts` for the full list. Key flags:
 - `global.i18n` — French language support
 - `nyc.*` / `france.*` — Event-specific features
   - `nyc.wytheRoomBlock` — Controls visibility of the entire Wythe Hotel row on the travel page (default: false, enables when room block is bookable)
-  - `nyc.rsvpPreview` — Renders RSVP forms (NYC and France) with mock party data (Sam Gross + Margaux Ancel, invited to everything) when no Notion guestId is present. Used for local dev without Notion backend.
+  - `nyc.rsvpPreview` — Renders RSVP forms (NYC and France) with mock party data when no Notion guestId is present. Used for local/preview without Notion backend. **Keep off in production** (enabled on deploy-preview via `netlify.toml`).
+- `global.rsvpDeleteEnabled` — Allows authenticated guests to `DELETE /api/rsvp` (test cleanup). **Keep off in production**; enabled in Playwright and deploy-preview. Admin Bearer can also authorize DELETE when the flag is off.
 - `registry.enabled` — Registry page visibility
 
 ### For Netlify Preview Deploys

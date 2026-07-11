@@ -19,9 +19,11 @@ declare namespace NodeJS {
     NOTION_EVENT_CATALOG_DB?: string; // Event Catalog database page ID
     NOTION_RSVP_RESPONSES_DB?: string; // RSVP Responses database page ID
     CALENDAR_HMAC_SECRET?: string; // Signing secret for personalized calendar tokens (never commit)
+    SESSION_HMAC_SECRET?: string; // Signing secret for sargaux_auth session cookies (never commit; do NOT reuse CALENDAR_HMAC_SECRET)
     RESEND_API_KEY?: string; // Resend transactional email API key (never commit)
     RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
-    RESEND_ADMIN_SECRET?: string; // Secret for protecting admin endpoints (never commit)
+    RESEND_ADMIN_SECRET?: string; // Bearer secret for admin + /api/warm endpoints (never commit)
+    CALENDAR_TEST_MODE?: string; // When "true", calendar endpoints use mock blob store (tests only — keep off in prod)
     GOOGLE_MAPS_STATIC_API_KEY?: string; // Google Maps Static API key (domain-restricted, visible in HTML)
     JOY_EVENT_HANDLE?: string; // Joy registry event handle (withjoy.com/<handle>)
     JOY_EVENT_ID?: string; // Joy registry event ID for the GraphQL registry query
@@ -59,6 +61,7 @@ interface ImportMetaEnv {
   readonly FEATURE_REGISTRY_ENABLED?: string;
   readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
   readonly FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS?: string;
+  readonly FEATURE_GLOBAL_RSVP_DELETE_ENABLED?: string;
 }
 
 interface ImportMeta {

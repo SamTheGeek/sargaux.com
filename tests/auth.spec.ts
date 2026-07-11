@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createSessionToken } from '../src/lib/auth';
 
 test.describe('Authentication', () => {
   test.beforeEach(async ({ context }) => {
@@ -81,13 +82,7 @@ test.describe('Authentication', () => {
     const loginResponseReady = new Promise<void>((resolve) => {
       resolveLogin = resolve;
     });
-    const authCookieValue = Buffer.from(
-      JSON.stringify({
-        guest: 'Sam Gross',
-        eventInvitations: ['nyc'],
-        created: Date.now(),
-      })
-    ).toString('base64url');
+    const authCookieValue = createSessionToken('Sam Gross', undefined, ['nyc']);
 
     await page.route('**/api/login', async (route) => {
       await loginResponseReady;
@@ -216,12 +211,15 @@ test.describe('Authentication', () => {
   });
 
   test('login defaults France-based guests to the French locale', async ({ page, context }) => {
+    // Start from a clean cookie jar — clearing only sargaux_lang after a
+    // homepage visit can leave a race with the footer/lang middleware.
+    // Use a Notion guest whose Country select is FRANCE (Dorothée Ancel is USA).
+    await context.clearCookies();
     await page.goto('/');
-    await context.clearCookies({ name: 'sargaux_lang' });
 
     const response = await page.evaluate(async () => {
       const formData = new FormData();
-      formData.append('name', 'Dorothee Ancel');
+      formData.append('name', 'Jax Kwok');
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
     });
@@ -233,8 +231,8 @@ test.describe('Authentication', () => {
   });
 
   test('login defaults non-French guests to the English locale', async ({ page, context }) => {
+    await context.clearCookies();
     await page.goto('/');
-    await context.clearCookies({ name: 'sargaux_lang' });
 
     const response = await page.evaluate(async () => {
       const formData = new FormData();
@@ -309,7 +307,7 @@ test.describe('Authentication', () => {
     expect(authCookie!.path).toBe('/');
   });
 
-  test('session cookie contains valid base64 JSON payload', async ({ page, context }) => {
+  test('session cookie contains signed payload.hmac token', async ({ page, context }) => {
     await page.goto('/');
     await page.click('#login-trigger');
     await page.fill('#name', 'Samuel Gross');
@@ -320,11 +318,14 @@ test.describe('Authentication', () => {
     const authCookie = cookies.find(c => c.name === 'sargaux_auth');
     expect(authCookie).toBeDefined();
 
-    // Decode and validate the session payload
-    const payload = JSON.parse(Buffer.from(authCookie!.value, 'base64url').toString('utf-8'));
+    // Format: base64url(payload).hmac
+    const [payloadB64, hmac] = authCookie!.value.split('.');
+    expect(payloadB64).toBeTruthy();
+    expect(hmac).toMatch(/^[0-9a-f]{32}$/);
+
+    const payload = JSON.parse(Buffer.from(payloadB64!, 'base64url').toString('utf-8'));
     expect(payload.guest).toBe('Samuel Gross');
     expect(payload.created).toBeGreaterThan(0);
-    // notionId is optional — absent when using hardcoded fallback
     expect(typeof payload.guest).toBe('string');
   });
 });

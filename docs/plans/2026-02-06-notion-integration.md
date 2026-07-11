@@ -166,14 +166,14 @@ export interface GuestRecord {
 
 ### Notion setup (manual) ✅ COMPLETE
 
-- ✅ Created Event Catalog database (data source: `dc1fe06b-5729-4ea9-af65-a32e6eab0151`)
+- ✅ Created Event Catalog database (data source: `$NOTION_EVENT_CATALOG_DB`)
 - ✅ Created bidirectional relation between Event Catalog (`Guests Invited`) and Guest List (`Events Invited`)
 - ✅ Added `Event Invitations` multi-select (`NYC`, `France`) to Guest List
 - ✅ Added `Wedding` select (`NYC`, `France`) to Event Catalog
 - ✅ Updated Wedding Timeline: `Location` property changed from text to select, NYC Event page added
 - ✅ Populated all 8 events (4 NYC + 4 France) with guest assignments via `Guests Invited` relation
 - ✅ Set `Event Invitations` on all active guests: 37 dual-invited (`NYC, France`), 101 NYC-only (`NYC`), 161 France (`France`)
-- ✅ Created RSVP Responses database (data source: `de976342-07ce-422a-892b-73d46832bf6f`)
+- ✅ Created RSVP Responses database (data source: `$NOTION_RSVP_RESPONSES_DB`)
 - ✅ Shared both new databases with the Notion integration
 - ✅ Added `NOTION_EVENT_CATALOG_DB` and `NOTION_RSVP_RESPONSES_DB` to Netlify Dashboard and GitHub Secrets
 - ⏳ `Days Invited` relation kept for now (not yet removed) — `Events Invited` is the canonical source

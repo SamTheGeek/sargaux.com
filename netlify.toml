@@ -35,6 +35,17 @@
   [headers.values]
     Access-Control-Allow-Origin = "https://withjoy.com"
 
+# Global security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    # Report-Only first — tune against Astro ClientRouter + Joy fonts before enforcing.
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
+  FEATURE_GLOBAL_RSVP_DELETE_ENABLED = "true"

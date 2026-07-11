@@ -27,3 +27,7 @@ jobs:
             echo "CALENDAR_HMAC_SECRET or NOTION_API_KEY may be missing from Netlify env vars"
             exit 1
           fi
+          if echo "$BODY" | grep -qE 'hasSecret|hasNotionKey|blobsOk'; then
+            echo "Error: health endpoint leaked config flags"
+            exit 1
+          fi

@@ -533,9 +533,8 @@ test.describe('Registry for French-side guests', () => {
     context = await browser.newContext();
     // Session cookie with country=FRANCE and no notionId — middleware falls
     // back to the cookie's country instead of a live Notion lookup.
-    const token = Buffer.from(
-      JSON.stringify({ guest: 'Margaux Ancel', country: 'FRANCE', created: Date.now() })
-    ).toString('base64url');
+    const { createSessionToken } = await import('../src/lib/auth');
+    const token = createSessionToken('Riley Dubois', undefined, ['nyc', 'france'], 'FRANCE');
     // Host must match the baseURL in playwright.config.ts (port 1213 is sacred)
     await context.addCookies([
       { name: 'sargaux_auth', value: token, url: 'http://127.0.0.1:1213' },

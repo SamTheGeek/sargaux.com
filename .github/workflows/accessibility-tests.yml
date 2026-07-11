@@ -80,6 +80,8 @@ jobs:
           NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
           NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
           CALENDAR_HMAC_SECRET: ${{ secrets.CALENDAR_HMAC_SECRET }}
+          SESSION_HMAC_SECRET: ${{ secrets.SESSION_HMAC_SECRET }}
+          RESEND_ADMIN_SECRET: ${{ secrets.RESEND_ADMIN_SECRET }}
 
       - name: Upload test results
         if: steps.filter.outputs.docs_only != 'true'

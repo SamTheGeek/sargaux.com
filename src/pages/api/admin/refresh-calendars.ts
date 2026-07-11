@@ -13,17 +13,16 @@ import type { APIRoute } from 'astro';
 import { refreshAllICS } from '../../../lib/ics-generator';
 import { fetchAllGuests } from '../../../lib/notion';
 import { generateToken } from '../../../lib/calendar';
+import { requireAdminAuth } from '../../../lib/admin-auth';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../../lib/rate-limit';
 
 export const POST: APIRoute = async ({ request, cache }) => {
-  // Auth check
-  const authHeader = request.headers.get('Authorization');
-  const adminSecret = process.env.RESEND_ADMIN_SECRET;
-  if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`admin:${ip}`, 10, 15 * 60 * 1000);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
+  const unauthorized = requireAdminAuth(request, '/api/admin/refresh-calendars');
+  if (unauthorized) return unauthorized;
 
   try {
     const result = await refreshAllICS();
@@ -46,9 +45,9 @@ export const POST: APIRoute = async ({ request, cache }) => {
     });
   } catch (err) {
     console.error('[refresh-calendars] Refresh failed:', err);
-    return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : 'Refresh failed' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Refresh failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 };

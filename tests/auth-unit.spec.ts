@@ -1,79 +1,58 @@
 import { test, expect } from '@playwright/test';
+import {
+  createSessionToken,
+  parseSessionToken,
+  validateGuest,
+  validateGuestFromRecords,
+} from '../src/lib/auth';
+import { normalize } from '../src/lib/normalize';
 
 /**
  * Unit-style tests for auth functions. These run in the Playwright Node context
  * (not the browser) to directly test the auth module's logic.
- *
- * Since the auth module uses Buffer (Node API), we import and test server-side.
  */
 
 test.describe('Auth Module — Session Tokens', () => {
   test('session token round-trips guest name', async () => {
-    // Simulate createSessionToken + parseSessionToken
-    const payload = { guest: 'Sam Gross', created: Date.now() };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
+    const token = createSessionToken('Alex Rivera');
+    const parsed = parseSessionToken(token);
 
-    expect(parsed.guest).toBe('Sam Gross');
-    expect(parsed.created).toBeGreaterThan(0);
-    expect(parsed.notionId).toBeUndefined();
+    expect(parsed).not.toBeNull();
+    expect(parsed!.guest).toBe('Alex Rivera');
+    expect(parsed!.notionId).toBeUndefined();
   });
 
   test('session token includes notionId when provided', async () => {
     const notionId = 'abc123-def456';
-    const payload = { guest: 'Chad Kosie', notionId, created: Date.now() };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
+    const token = createSessionToken('Jordan Chen', notionId);
+    const parsed = parseSessionToken(token);
 
-    expect(parsed.guest).toBe('Chad Kosie');
-    expect(parsed.notionId).toBe(notionId);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.guest).toBe('Jordan Chen');
+    expect(parsed!.notionId).toBe(notionId);
   });
 
-  test('old tokens without notionId still parse correctly', async () => {
-    // Simulate a token created before the Notion integration
-    const payload = { guest: 'Margaux Ancel', created: 1700000000000 };
-    const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
+  test('unsigned legacy tokens are rejected', async () => {
+    const payload = { guest: 'Alex Rivera', created: 1700000000000 };
+    const unsigned = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    expect(parseSessionToken(unsigned)).toBeNull();
+  });
 
-    expect(parsed.guest).toBe('Margaux Ancel');
-    expect(parsed.notionId).toBeUndefined();
+  test('tampered HMAC is rejected', async () => {
+    const token = createSessionToken('Alex Rivera');
+    const [payloadB64] = token.split('.');
+    expect(parseSessionToken(`${payloadB64}.00000000000000000000000000000000`)).toBeNull();
   });
 
   test('invalid base64 token returns null on parse', async () => {
-    const badToken = 'not-valid-base64!!!';
-    let result = null;
-    try {
-      const parsed = JSON.parse(Buffer.from(badToken, 'base64url').toString('utf-8'));
-      if (parsed.guest && typeof parsed.guest === 'string') {
-        result = { guest: parsed.guest, notionId: parsed.notionId };
-      }
-    } catch {
-      result = null;
-    }
-
-    expect(result).toBeNull();
+    expect(parseSessionToken('not-valid-base64!!!')).toBeNull();
   });
 });
 
 test.describe('Auth Module — Name Normalization', () => {
-  /**
-   * These tests verify the normalization logic that auth.ts uses.
-   * We replicate the normalize function here since we can't directly import
-   * the server module (it uses import.meta.env which Playwright doesn't support).
-   */
-  function normalize(input: string): string {
-    return input
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/-/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
   test('normalizes case', async () => {
-    expect(normalize('SAM GROSS')).toBe('sam gross');
-    expect(normalize('sam gross')).toBe('sam gross');
+    expect(normalize('ALEX RIVERA')).toBe('alex rivera');
+    expect(normalize('alex rivera')).toBe('alex rivera');
   });
 
   test('removes accents', async () => {
@@ -82,7 +61,7 @@ test.describe('Auth Module — Name Normalization', () => {
   });
 
   test('collapses whitespace', async () => {
-    expect(normalize('  Sam   Gross  ')).toBe('sam gross');
+    expect(normalize('  Alex   Rivera  ')).toBe('alex rivera');
   });
 
   test('treats hyphens as word separators', async () => {
@@ -97,72 +76,57 @@ test.describe('Auth Module — Name Normalization', () => {
 });
 
 test.describe('Auth Module — Guest Validation', () => {
-  // Replicate validateGuestFromRecords logic for testing
-  interface TestGuestRecord {
-    id: string;
-    name: string;
-    normalizedName: string;
-  }
-
-  function normalize(input: string): string {
-    return input
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/-/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  const mockGuests: TestGuestRecord[] = [
-    { id: 'notion-1', name: 'Sam Gross', normalizedName: 'sam gross' },
-    { id: 'notion-2', name: 'Margaux Ancel', normalizedName: 'margaux ancel' },
-    { id: 'notion-3', name: 'Dorothée Ancel', normalizedName: 'dorothee ancel' },
+  const mockGuests = [
+    { id: 'notion-1', name: 'Alex Rivera', normalizedName: 'alex rivera', eventInvitations: ['nyc'] as const, isPlusOne: false, relatedGuestIds: [] },
+    { id: 'notion-2', name: 'Jordan Chen', normalizedName: 'jordan chen', eventInvitations: ['nyc'] as const, isPlusOne: false, relatedGuestIds: [] },
+    { id: 'notion-3', name: 'Dorothée Ancel', normalizedName: 'dorothee ancel', eventInvitations: ['france'] as const, isPlusOne: false, relatedGuestIds: [] },
     {
       id: 'notion-4',
       name: 'Jean-Pierre Delacroix',
       normalizedName: 'jean pierre delacroix',
+      eventInvitations: ['france'] as const,
+      isPlusOne: false,
+      relatedGuestIds: [],
     },
   ];
 
   test('finds guest by exact name', async () => {
-    const input = normalize('Sam Gross');
-    const found = mockGuests.find((g) => g.normalizedName === input);
+    const found = validateGuestFromRecords('Alex Rivera', [...mockGuests]);
     expect(found).toBeDefined();
     expect(found!.id).toBe('notion-1');
   });
 
   test('finds guest by case-insensitive name', async () => {
-    const input = normalize('sam gross');
-    const found = mockGuests.find((g) => g.normalizedName === input);
+    const found = validateGuestFromRecords('alex rivera', [...mockGuests]);
     expect(found).toBeDefined();
-    expect(found!.name).toBe('Sam Gross');
+    expect(found!.name).toBe('Alex Rivera');
   });
 
   test('finds guest with accent normalization', async () => {
-    const input = normalize('Dorothee Ancel');
-    const found = mockGuests.find((g) => g.normalizedName === input);
+    const found = validateGuestFromRecords('Dorothee Ancel', [...mockGuests]);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Dorothée Ancel');
   });
 
   test('finds hyphenated-name guest when input omits the hyphen', async () => {
-    const input = normalize('Jean Pierre Delacroix');
-    const found = mockGuests.find((g) => g.normalizedName === input);
+    const found = validateGuestFromRecords('Jean Pierre Delacroix', [...mockGuests]);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Jean-Pierre Delacroix');
   });
 
   test('finds hyphenated-name guest when input includes the hyphen', async () => {
-    const input = normalize('jean-pierre delacroix');
-    const found = mockGuests.find((g) => g.normalizedName === input);
+    const found = validateGuestFromRecords('jean-pierre delacroix', [...mockGuests]);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Jean-Pierre Delacroix');
   });
 
-  test('returns undefined for unknown guest', async () => {
-    const input = normalize('Unknown Person');
-    const found = mockGuests.find((g) => g.normalizedName === input);
-    expect(found).toBeUndefined();
+  test('returns null for unknown guest', async () => {
+    const found = validateGuestFromRecords('Unknown Person', [...mockGuests]);
+    expect(found).toBeNull();
+  });
+
+  test('hardcoded fallback accepts synthetic names', async () => {
+    expect(validateGuest('Alex Rivera')).toBe('Alex Rivera');
+    expect(validateGuest('Unknown Person')).toBeNull();
   });
 });

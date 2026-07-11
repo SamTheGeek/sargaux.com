@@ -2,18 +2,18 @@ import type { GuestRecord, EventRecord, RSVPSubmission } from '../src/types';
 
 export const mockGuest: GuestRecord = {
   id: 'notion-1',
-  name: 'Sam Gross',
-  normalizedName: 'sam gross',
+  name: 'Alex Rivera',
+  normalizedName: 'alex rivera',
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-2'],
-  email: 'sam@example.com',
+  email: 'alex@example.com',
 };
 
 export const mockCompanionGuest: GuestRecord = {
   id: 'notion-2',
-  name: 'Margaux Ancel',
-  normalizedName: 'margaux ancel',
+  name: 'Jordan Chen',
+  normalizedName: 'jordan chen',
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-1'],
@@ -21,8 +21,8 @@ export const mockCompanionGuest: GuestRecord = {
 
 export const mockNycGuest: GuestRecord = {
   id: 'notion-3',
-  name: 'Charles Gross',
-  normalizedName: 'charles gross',
+  name: 'Casey Morgan',
+  normalizedName: 'casey morgan',
   eventInvitations: ['nyc'],
   isPlusOne: false,
   relatedGuestIds: [],
@@ -30,8 +30,8 @@ export const mockNycGuest: GuestRecord = {
 
 export const mockFranceGuest: GuestRecord = {
   id: 'notion-4',
-  name: 'Dorothée Ancel',
-  normalizedName: 'dorothee ancel',
+  name: 'Riley Dubois',
+  normalizedName: 'riley dubois',
   eventInvitations: ['france'],
   isPlusOne: false,
   relatedGuestIds: [],
@@ -98,5 +98,5 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
 
 // Matches the Notion "Full Name" formula (First Name + Last Name) for the
 // real guest record used in Notion-backed login tests, not the invitation
-// title ("Sam Gross") — see Full Name vs Name of Guest mismatch.
+// title — see Full Name vs Name of Guest mismatch.
 export const TEST_GUEST_NAME = 'Samuel Gross';

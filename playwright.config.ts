@@ -24,6 +24,14 @@ function loadDotEnvLocal(): void {
 
 loadDotEnvLocal();
 
+// Ensure session signing works for hand-built cookies in unit/e2e helpers
+if (!process.env.SESSION_HMAC_SECRET) {
+  process.env.SESSION_HMAC_SECRET = 'test-session-hmac-secret-for-playwright';
+}
+if (!process.env.CALENDAR_HMAC_SECRET) {
+  process.env.CALENDAR_HMAC_SECRET = 'test-calendar-hmac-secret-for-playwright';
+}
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -55,11 +63,18 @@ export default defineConfig({
       PORT: '1213',
       ASTRO_ADAPTER: 'node',
       ASTRO_CHECK_ORIGIN: 'false',
+      RATE_LIMIT_DISABLED: 'true',
       RESEND_ADMIN_SECRET: process.env.RESEND_ADMIN_SECRET ?? 'test-secret-not-set',
+      SESSION_HMAC_SECRET:
+        process.env.SESSION_HMAC_SECRET ?? 'test-session-hmac-secret-for-playwright',
+      CALENDAR_HMAC_SECRET:
+        process.env.CALENDAR_HMAC_SECRET ?? 'test-calendar-hmac-secret-for-playwright',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
       FEATURE_GLOBAL_I18N: process.env.FEATURE_GLOBAL_I18N ?? 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',
+      FEATURE_GLOBAL_RSVP_DELETE_ENABLED:
+        process.env.FEATURE_GLOBAL_RSVP_DELETE_ENABLED ?? 'true',
       FEATURE_NYC_RSVP_ENABLED: process.env.FEATURE_NYC_RSVP_ENABLED ?? 'true',
       FEATURE_FRANCE_RSVP_ENABLED:
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',
