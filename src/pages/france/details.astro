@@ -4,8 +4,17 @@ import '../../styles/france-details.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
+import { features } from '../../config/features';
 import { Image } from 'astro:assets';
 import fromabove from '../../assets/images/france/fromabove.jpg';
+import laplace from '../../assets/images/france/laplace.jpg';
+import bistrotdesamis from '../../assets/images/france/bistrotdesamis.jpg';
+import felixpotin from '../../assets/images/france/felixpotin.png';
+import lagare from '../../assets/images/france/lagare.jpg';
+import mairie from '../../assets/images/france/mairie.png';
+import villageroom from '../../assets/images/france/villageroom.png';
+import orientexpress from '../../assets/images/france/orientexpress.png';
+import louisiane from '../../assets/images/france/louisiane.jpg';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const details = strings.france.details;
@@ -66,23 +75,38 @@ const details = strings.france.details;
       <section class="venue-spaces">
         <h2>{t(details.highlights.heading)}</h2>
         <div class="spaces-grid">
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={laplace} alt={t(details.highlights.place.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.highlights.place.title)}</h3>
             <p>{t(details.highlights.place.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={bistrotdesamis} alt={t(details.highlights.bistrot.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.highlights.bistrot.title)}</h3>
             <p>{t(details.highlights.bistrot.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={felixpotin} alt={t(details.highlights.felix.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.highlights.felix.title)}</h3>
             <p>{t(details.highlights.felix.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={lagare} alt={t(details.highlights.gare.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.highlights.gare.title)}</h3>
             <p>{t(details.highlights.gare.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={mairie} alt={t(details.highlights.mairie.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.highlights.mairie.title)}</h3>
             <p>{t(details.highlights.mairie.desc)}</p>
           </div>
@@ -96,14 +120,16 @@ const details = strings.france.details;
           <p>{t(details.staying.callout)}</p>
         </div>
 
-        <div class="accommodation-info">
-          <h3>{t(details.overview.heading)}</h3>
-          <ul>
-            {details.overview.items.map((item) => (
-              <li>{t(item)}</li>
-            ))}
-          </ul>
-        </div>
+        {features.france.stayingOverview && (
+          <div class="accommodation-info">
+            <h3>{t(details.overview.heading)}</h3>
+            <ul>
+              {details.overview.items.map((item) => (
+                <li>{t(item)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div class="accommodation-info accommodation-info--booking">
           <h3>{t(details.booking.heading)}</h3>
@@ -116,15 +142,24 @@ const details = strings.france.details;
       <section class="venue-spaces">
         <h2>{t(details.roomTypes.heading)}</h2>
         <div class="spaces-grid">
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={villageroom} alt={t(details.roomTypes.village.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.roomTypes.village.title)}</h3>
             <p>{t(details.roomTypes.village.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={orientexpress} alt={t(details.roomTypes.orient.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.roomTypes.orient.title)}</h3>
             <p>{t(details.roomTypes.orient.desc)}</p>
           </div>
-          <div class="space-card space-card--text">
+          <div class="space-card">
+            <div class="venue-image-frame venue-image-frame--card">
+              <Image src={louisiane} alt={t(details.roomTypes.louisiana.title)} class="venue-image" width={560} />
+            </div>
             <h3>{t(details.roomTypes.louisiana.title)}</h3>
             <p>{t(details.roomTypes.louisiana.desc)}</p>
           </div>

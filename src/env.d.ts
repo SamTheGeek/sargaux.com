@@ -56,6 +56,7 @@ interface ImportMetaEnv {
   readonly FEATURE_NYC_RSVP_ENABLED?: string;
   readonly FEATURE_NYC_RSVP_PREVIEW?: string;
   readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
+  readonly FEATURE_FRANCE_STAYING_OVERVIEW?: string;
   readonly FEATURE_REGISTRY_ENABLED?: string;
   readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
   readonly FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS?: string;
