@@ -17,6 +17,7 @@ export type EventInvitation = 'nyc' | 'france';
 // Grosses as US-side guests (native Joy registry).
 const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
   { name: 'Sam Gross', country: 'USA' },
+  { name: 'Samuel Gross', country: 'USA' },
   { name: 'Margaux Ancel', country: 'USA' },
   { name: 'Charles Gross', country: 'USA' },
   { name: 'Dorothee Ancel', country: 'FRANCE' },

@@ -56,6 +56,7 @@ type FeatureFlags = {
     euAllergens: boolean;
     locationMap: boolean;
     rsvpEnabled: boolean;
+    stayingOverview: boolean;
   };
   registry: {
     enabled: boolean;
@@ -102,6 +103,7 @@ const features: FeatureFlags = {
     euAllergens: flag(import.meta.env.FEATURE_FRANCE_EU_ALLERGENS, false),
     locationMap: flag(import.meta.env.FEATURE_FRANCE_LOCATION_MAP, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_FRANCE_RSVP_ENABLED, false),
+    stayingOverview: flag(import.meta.env.FEATURE_FRANCE_STAYING_OVERVIEW, false),
   },
   registry: {
     enabled: flag(import.meta.env.FEATURE_REGISTRY_ENABLED, false),
