@@ -848,8 +848,8 @@ export const strings = {
         heading: s('Booking', 'Réservation'),
         reserve: s('Reserve your accommodations through your RSVP.', 'Réservez votre chambre lors de votre RSVP.'),
         pricing: s(
-          'Room options and pricing vary depending on your party size, with rooms starting at €150 per night for double occupancy.',
-          'Les tarifs varient selon la taille de votre groupe, avec des chambres doubles à partir de 150 € la nuit.',
+          'Room options and pricing vary depending on your party size, with rooms starting at €150 per night for double occupancy. Private accommodations are available for couples, families, and larger groups.',
+          'Les tarifs varient selon la taille de votre groupe, avec des chambres doubles à partir de 150 € la nuit. Des chambres sont disponibles pour les couples, les familles et les groupes.',
         ),
         followup: s(
           "We'll be in touch after the RSVP deadline to confirm your room assignment and accommodation details. If you have any questions or need special accommodations, please reach out by email or text.",
