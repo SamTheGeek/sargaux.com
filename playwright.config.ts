@@ -37,7 +37,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Public-repo GitHub-hosted runners have 4 vCPUs. Suites that must not
+  // parallelize declare `mode: 'serial'` themselves (rsvp-api, security RSVP
+  // hardening); env-mutating unit specs are safe because each worker is its
+  // own process. The performance workflow pins --workers=1 on the CLI since
+  // its tests assert wall-clock thresholds.
+  workers: process.env.CI ? 4 : undefined,
   reporter: 'html',
   use: {
     baseURL: 'http://127.0.0.1:1213',

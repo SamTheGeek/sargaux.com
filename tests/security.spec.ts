@@ -79,24 +79,25 @@ test.describe('Security — RSVP hardening', () => {
   let authCookie: string | undefined;
   let guestNotionId: string | undefined;
 
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  test.beforeAll(async ({ playwright }) => {
+    // Log in via the API directly — no browser needed for a form POST.
+    const context = await playwright.request.newContext({
+      baseURL: 'http://127.0.0.1:1213',
+    });
 
-    await page.goto('/');
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.press('#name', 'Enter');
-    await page.waitForURL(/\/nyc$/);
+    const response = await context.post('/api/login', {
+      form: { name: TEST_GUEST_NAME },
+    });
+    expect(response.status()).toBe(200);
 
-    const cookies = await context.cookies();
+    const { cookies } = await context.storageState();
     authCookie = cookies.find((c) => c.name === 'sargaux_auth')?.value;
     if (authCookie) {
       const parsed = parseSessionToken(authCookie);
       guestNotionId = parsed?.notionId;
     }
 
-    await context.close();
+    await context.dispose();
     expect(authCookie).toBeTruthy();
     expect(guestNotionId).toBeTruthy();
   });
