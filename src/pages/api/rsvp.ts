@@ -31,6 +31,12 @@ import type { RSVPSubmission } from '../../types';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 /** Hard cap on JSON-serialized `details` blob to prevent oversized Notion writes. */
 const DETAILS_MAX_BYTES = 8_192;
+/**
+ * Cap on free-text fields (`dietary`, `message`). Notion rejects a single
+ * rich_text content block over 2,000 chars, and notion.ts writes each of
+ * these as one block — anything larger would turn into a 500.
+ */
+const TEXT_FIELD_MAX_CHARS = 2_000;
 
 function normalizeOptionalEmail(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -135,6 +141,19 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
       }
     } catch {
       return jsonError(400, 'details payload too large');
+    }
+  }
+
+  // Free-text fields flow into Notion rich_text blocks and the confirmation
+  // email — reject non-strings and oversized values instead of 500ing later.
+  for (const field of ['dietary', 'message'] as const) {
+    const value: unknown = body[field];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== 'string') {
+      return jsonError(400, `${field} must be a string`);
+    }
+    if (value.length > TEXT_FIELD_MAX_CHARS) {
+      return jsonError(400, `${field} payload too large`);
     }
   }
 

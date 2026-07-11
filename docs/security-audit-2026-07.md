@@ -99,6 +99,38 @@ Protected pages (`/nyc/*`, `/france/*`, `/registry`, `/couple`) require a valid 
 | 3 | Rate limits (login/RSVP/admin), auth-gate `/api/warm`, minimal calendar health, strip 500 details, security headers (CSP Report-Only) |
 | 4 | Redact DB UUIDs, synthetic fallback guests, timing-safe admin compare + audit log, env docs, secret-scan script |
 
+### P1-5 implementation note (revised after review)
+
+The security headers were first shipped as a `[[headers]] for = "/*"` block in
+`netlify.toml`. That implementation was **wrong**: Netlify header rules apply
+only to statically-served files, never to function responses, and under the
+Netlify adapter every SSR page is served by a function — so the headers landed
+on static assets (useless) and were absent from HTML (where they matter). The
+block was removed and the headers now ship from `src/middleware.ts` on every
+non-API page response, including redirects, via the same code path as
+`Netlify-Vary`.
+
+Header set (see `SECURITY_HEADERS` in `src/middleware.ts`):
+
+- `X-Frame-Options: SAMEORIGIN` — changed from `DENY`, which contradicted the
+  CSP's `frame-ancestors 'self'`. XFO is kept alongside `frame-ancestors`
+  because `frame-ancestors` is ignored in a Report-Only policy.
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+- `Content-Security-Policy-Report-Only` — still report-only. There is no
+  `report-to`/`report-uri` endpoint yet, so violations are visible only in
+  guests' devtools; enforcement should wait until reporting is wired up.
+
+Regression coverage: `tests/security-headers.spec.ts`.
+
+### Deploy-preview RSVP delete flag (revised after review)
+
+`FEATURE_GLOBAL_RSVP_DELETE_ENABLED = "true"` has been removed from the
+`[context.deploy-preview.environment]` section of `netlify.toml` — it enabled
+a guest-facing destructive RSVP DELETE path on public deploy previews that run
+against production Notion data. The flag remains enabled for local Playwright
+runs via the `webServer.env` defaults in `playwright.config.ts`.
+
 ## 6. Test cases
 
 See `tests/security.spec.ts` and updates to `tests/auth-unit.spec.ts`:
@@ -117,7 +149,7 @@ See `tests/security.spec.ts` and updates to `tests/auth-unit.spec.ts`:
 - Alert on admin **401** spikes (secret probing)
 - Watch `/api/warm` volume (should be CI/cron only)
 - Confirm `CALENDAR_TEST_MODE` unset in production
-- Confirm `FEATURE_NYC_RSVP_PREVIEW` / `FEATURE_GLOBAL_RSVP_DELETE_ENABLED` are preview/local only
+- Confirm `FEATURE_NYC_RSVP_PREVIEW` is preview/local only and `FEATURE_GLOBAL_RSVP_DELETE_ENABLED` is local-test only (removed from deploy previews — they run against production Notion data)
 - Enable MFA on GitHub, Netlify, and Notion (ops)
 
 ## 8. Manual ops after deploy

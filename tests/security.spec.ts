@@ -4,7 +4,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createSessionToken, parseSessionToken } from '../src/lib/auth';
+import { createSessionToken, parseSessionToken, SESSION_MAX_AGE_SECONDS } from '../src/lib/auth';
+import { hmacSha256Hex } from '../src/lib/hmac';
 import { TEST_GUEST_NAME } from './fixtures';
 
 const notionRequired =
@@ -48,6 +49,26 @@ test.describe('Security — Session tokens', () => {
       maxRedirects: 0,
     });
     expect([302, 303, 307]).toContain(response.status());
+  });
+
+  test('validly signed but expired cookie is treated as logged out', async ({ request }) => {
+    // Mint a token with the real HMAC routine but a `created` older than the
+    // 90-day session lifetime — the signature is valid, only the age is not.
+    const payload = {
+      guest: 'Forged Guest',
+      eventInvitations: ['nyc'],
+      created: Date.now() - (SESSION_MAX_AGE_SECONDS + 24 * 60 * 60) * 1000,
+    };
+    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const hmac = hmacSha256Hex(process.env.SESSION_HMAC_SECRET!, payloadB64, 32);
+
+    const response = await request.get('/nyc', {
+      headers: { Cookie: `sargaux_auth=${payloadB64}.${hmac}` },
+      maxRedirects: 0,
+    });
+    // Middleware treats the expired session as unauthenticated — no crash
+    expect([302, 303, 307]).toContain(response.status());
+    expect(response.headers()['location']).toMatch(/\/$/);
   });
 });
 
@@ -158,6 +179,82 @@ test.describe('Security — RSVP hardening', () => {
     expect(response.status()).toBe(400);
     const body = await response.json();
     expect(body.error).toMatch(/too large/i);
+  });
+
+  test('oversized dietary text is rejected', async ({ request }) => {
+    const response = await request.post('/api/rsvp', {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        eventsAttending: [],
+        dietary: 'x'.repeat(5_000),
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/too large/i);
+  });
+
+  test('non-string dietary is rejected', async ({ request }) => {
+    const response = await request.post('/api/rsvp', {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        eventsAttending: [],
+        dietary: { sneaky: 'object' },
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/must be a string/i);
+  });
+
+  test('oversized message text is rejected', async ({ request }) => {
+    const response = await request.post('/api/rsvp', {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        eventsAttending: [],
+        message: 'x'.repeat(5_000),
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/too large/i);
+  });
+
+  test('non-string message is rejected', async ({ request }) => {
+    const response = await request.post('/api/rsvp', {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        eventsAttending: [],
+        message: 12345,
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/must be a string/i);
   });
 });
 

@@ -4,13 +4,26 @@ import {
   parseSessionToken,
   validateGuest,
   validateGuestFromRecords,
+  SESSION_MAX_AGE_SECONDS,
+  SessionSecretMissingError,
 } from '../src/lib/auth';
 import { normalize } from '../src/lib/normalize';
+import { hmacSha256Hex } from '../src/lib/hmac';
 
 /**
  * Unit-style tests for auth functions. These run in the Playwright Node context
  * (not the browser) to directly test the auth module's logic.
  */
+
+/**
+ * Sign an arbitrary payload with the real session HMAC routine so tests can
+ * mint validly-signed tokens with backdated or malformed `created` fields.
+ */
+function signSessionPayload(payload: Record<string, unknown>): string {
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const hmac = hmacSha256Hex(process.env.SESSION_HMAC_SECRET!, payloadB64, 32);
+  return `${payloadB64}.${hmac}`;
+}
 
 test.describe('Auth Module — Session Tokens', () => {
   test('session token round-trips guest name', async () => {
@@ -46,6 +59,78 @@ test.describe('Auth Module — Session Tokens', () => {
 
   test('invalid base64 token returns null on parse', async () => {
     expect(parseSessionToken('not-valid-base64!!!')).toBeNull();
+  });
+});
+
+test.describe('Auth Module — Missing signing secret', () => {
+  test('createSessionToken throws SessionSecretMissingError when secret is unset', async () => {
+    const saved = process.env.SESSION_HMAC_SECRET;
+    delete process.env.SESSION_HMAC_SECRET;
+    try {
+      expect(() => createSessionToken('Alex Rivera')).toThrow(SessionSecretMissingError);
+      expect(() => createSessionToken('Alex Rivera')).toThrow(/SESSION_HMAC_SECRET/);
+    } finally {
+      process.env.SESSION_HMAC_SECRET = saved;
+    }
+  });
+
+  test('parseSessionToken fails closed when secret is unset', async () => {
+    const token = createSessionToken('Alex Rivera');
+    const saved = process.env.SESSION_HMAC_SECRET;
+    delete process.env.SESSION_HMAC_SECRET;
+    try {
+      expect(parseSessionToken(token)).toBeNull();
+    } finally {
+      process.env.SESSION_HMAC_SECRET = saved;
+    }
+  });
+});
+
+test.describe('Auth Module — Session expiry', () => {
+  const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  test('freshly minted token carries a valid created timestamp', async () => {
+    // Guards the fail-closed rule below: parseSessionToken may reject tokens
+    // without `created` only because createSessionToken always sets it.
+    const token = createSessionToken('Alex Rivera');
+    const [payloadB64] = token.split('.');
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'));
+    expect(typeof payload.created).toBe('number');
+    expect(payload.created).toBeGreaterThan(Date.now() - 5_000);
+  });
+
+  test('signed token older than 90 days is rejected', async () => {
+    const token = signSessionPayload({
+      guest: 'Alex Rivera',
+      created: Date.now() - SESSION_MAX_AGE_MS - DAY_MS,
+    });
+    expect(parseSessionToken(token)).toBeNull();
+  });
+
+  test('signed token younger than 90 days is accepted', async () => {
+    const token = signSessionPayload({
+      guest: 'Alex Rivera',
+      created: Date.now() - SESSION_MAX_AGE_MS + DAY_MS,
+    });
+    const parsed = parseSessionToken(token);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.guest).toBe('Alex Rivera');
+  });
+
+  test('signed token with missing created is rejected', async () => {
+    const token = signSessionPayload({ guest: 'Alex Rivera' });
+    expect(parseSessionToken(token)).toBeNull();
+  });
+
+  test('signed token with garbage created is rejected', async () => {
+    expect(
+      parseSessionToken(signSessionPayload({ guest: 'Alex Rivera', created: 'yesterday' }))
+    ).toBeNull();
+    // JSON.stringify turns NaN into null — still a non-number, still rejected
+    expect(
+      parseSessionToken(signSessionPayload({ guest: 'Alex Rivera', created: NaN }))
+    ).toBeNull();
   });
 });
 

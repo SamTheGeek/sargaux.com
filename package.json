@@ -14,6 +14,7 @@
     "test:ui": "playwright test --ui",
     "test:quick": "playwright test tests/accessibility.spec.ts",
     "test:install": "playwright install --with-deps chromium",
+    "test:security": "playwright test tests/security.spec.ts tests/security-headers.spec.ts tests/auth.spec.ts tests/auth-unit.spec.ts tests/rate-limit-unit.spec.ts tests/rsvp-api.spec.ts tests/access-control.spec.ts",
     "secret-scan": "bash scripts/secret-scan.sh",
     "gen:lookbook-webp": "tsx scripts/generate-lookbook-webp.ts",
     "verify": "npm run build && npm test"

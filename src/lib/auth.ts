@@ -74,6 +74,24 @@ export function getHardcodedGuestCountry(input: string): string | null {
  */
 export const AUTH_COOKIE_NAME = 'sargaux_auth';
 
+/**
+ * Session lifetime (90 days) — single source of truth for both the browser
+ * cookie maxAge and the server-side token age check in parseSessionToken.
+ */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+
+/**
+ * Thrown when SESSION_HMAC_SECRET is not configured. Callers must fail closed:
+ * no session may ever be minted unsigned. The login endpoint maps this to a 503.
+ */
+export class SessionSecretMissingError extends Error {
+  constructor() {
+    super('SESSION_HMAC_SECRET is not set.');
+    this.name = 'SessionSecretMissingError';
+  }
+}
+
 interface SessionPayload {
   guest: string;
   notionId?: string;
@@ -85,7 +103,7 @@ interface SessionPayload {
 function getSessionSecret(): string {
   const secret = process.env.SESSION_HMAC_SECRET;
   if (!secret) {
-    throw new Error('SESSION_HMAC_SECRET is not set.');
+    throw new SessionSecretMissingError();
   }
   return secret;
 }
@@ -124,7 +142,8 @@ export function createSessionToken(
 
 /**
  * Parse and verify a signed session token.
- * Rejects unsigned (legacy base64-only) and tampered tokens.
+ * Rejects unsigned (legacy base64-only), tampered, and expired tokens
+ * (older than SESSION_MAX_AGE_SECONDS, or with a missing/invalid `created`).
  * Returns { guest, notionId, ... } if valid, null otherwise.
  */
 export function parseSessionToken(
@@ -161,6 +180,17 @@ export function parseSessionToken(
     const payload: SessionPayload = JSON.parse(
       Buffer.from(payloadB64, 'base64url').toString('utf-8')
     );
+
+    // Server-side expiry: browser cookie maxAge alone doesn't invalidate a
+    // stolen cookie value. Every signed token is minted by createSessionToken
+    // with a numeric `created`, so a missing/invalid one also fails closed.
+    if (
+      typeof payload.created !== 'number' ||
+      !Number.isFinite(payload.created) ||
+      Date.now() - payload.created > SESSION_MAX_AGE_MS
+    ) {
+      return null;
+    }
 
     if (payload.guest && typeof payload.guest === 'string') {
       const eventInvitations = (payload.eventInvitations || []).filter(

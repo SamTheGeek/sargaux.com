@@ -55,7 +55,18 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): Ra
   return { ok: true };
 }
 
-/** Client IP from Netlify / proxy headers, falling back to a shared key. */
+/**
+ * Client IP from Netlify / proxy headers, falling back to a shared key.
+ *
+ * Trust model: on Netlify production, `x-nf-client-connection-ip` is set by
+ * the platform on every request and cannot be spoofed by clients, so it is
+ * the authoritative source. The `X-Forwarded-For` / `cf-connecting-ip`
+ * fallbacks only apply under the node adapter (local dev, Playwright), where
+ * they are client-controlled — rate limits there are best-effort and
+ * spoofable, which is acceptable for non-production use. Buckets are also
+ * per-instance and in-memory, so they reset on serverless cold starts;
+ * this limiter is a burst brake, not a global distributed quota.
+ */
 export function clientIp(request: Request): string {
   return (
     request.headers.get('x-nf-client-connection-ip') ||
