@@ -13,6 +13,7 @@
  */
 
 import { readFileSync } from 'fs';
+import { excludeTestGuestPages } from './lib/test-guests.mjs';
 
 // Load .env.local
 const envPath = new URL('../.env.local', import.meta.url).pathname;
@@ -95,7 +96,7 @@ async function main() {
   console.log('Fetching all guests from Notion...\n');
 
   // Fetch ALL guests to build the full relation graph (Option B: transitive grouping)
-  const allPages = await queryAll(NOTION_GUEST_LIST_DB, undefined);
+  const allPages = excludeTestGuestPages(await queryAll(NOTION_GUEST_LIST_DB, undefined));
   console.log(`Total guests in database: ${allPages.length}`);
 
   const isNYC = p => (p.properties['Event Invitations']?.multi_select || []).some(s => s.name === 'NYC');

@@ -45,6 +45,7 @@ import { execFileSync } from 'child_process';
 import { encodeImb } from './lib/usps-imb.mjs';
 import { mailpieceKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
 import { USPS_MAILER_ID, USPS_SERVICE_TYPE, USPS_BARCODE_ID, USPS_SERIAL_DIGITS, MAIL_PIECES } from './lib/usps-mailer-config.mjs';
+import { excludeTestGuestPages } from './lib/test-guests.mjs';
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
@@ -348,7 +349,7 @@ async function generateCSV(eventName) {
   const notionEventName = eventName === 'nyc' ? 'NYC' : 'France';
   console.log(`\n── Generating ${notionEventName} CSV ──`);
 
-  const allPages = await queryAll(NOTION_GUEST_LIST_DB, undefined);
+  const allPages = excludeTestGuestPages(await queryAll(NOTION_GUEST_LIST_DB, undefined));
   console.log(`  Total guests in database: ${allPages.length}`);
 
   const isEvent = p => getEventInvitations(p.properties).includes(notionEventName);

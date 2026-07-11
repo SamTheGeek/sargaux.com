@@ -3,21 +3,40 @@
  *
  * POST /api/rsvp - Submit or update an RSVP
  * GET /api/rsvp?event=nyc|france - Fetch existing RSVP for pre-fill
- * DELETE /api/rsvp?event=nyc|france - Delete RSVP (for testing)
+ * DELETE /api/rsvp?event=nyc|france - Delete RSVP (gated: feature flag or admin Bearer)
  */
 
 import { promises as dnsPromises } from 'node:dns';
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../lib/auth';
-import { submitRSVP, getLatestRSVPForParty, deleteRSVP, updateGuestEmail, getGuestEvents, getGuestParty } from '../../lib/notion';
-import { isEnabled } from '../../config/features';
+import {
+  submitRSVP,
+  getLatestRSVPForParty,
+  deleteRSVP,
+  updateGuestEmail,
+  getGuestEvents,
+  getGuestParty,
+  getGuestById,
+} from '../../lib/notion';
+import { isEnabled, features } from '../../config/features';
 import { sendToGuests } from '../../lib/email';
 import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
 import { generateAndStoreICSForGuest } from '../../lib/ics-generator';
+import { normalize } from '../../lib/normalize';
+import { verifyAdminBearer } from '../../lib/admin-auth';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../lib/rate-limit';
 import type { RSVPSubmission } from '../../types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+/** Hard cap on JSON-serialized `details` blob to prevent oversized Notion writes. */
+const DETAILS_MAX_BYTES = 8_192;
+/**
+ * Cap on free-text fields (`dietary`, `message`). Notion rejects a single
+ * rich_text content block over 2,000 chars, and notion.ts writes each of
+ * these as one block — anything larger would turn into a 500.
+ */
+const TEXT_FIELD_MAX_CHARS = 2_000;
 
 function normalizeOptionalEmail(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -36,78 +55,106 @@ async function hasMxRecord(email: string): Promise<boolean> {
   }
 }
 
+function jsonError(status: number, error: string, extra?: Record<string, unknown>): Response {
+  return new Response(JSON.stringify({ error, ...extra }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/**
+ * Bind session cookie identity to the live Notion record.
+ * Rejects forged notionId + mismatched display name.
+ */
+async function bindSessionToNotion(
+  auth: NonNullable<ReturnType<typeof getAuthenticatedGuest>>,
+  guestId: string
+): Promise<Response | null> {
+  try {
+    const record = await getGuestById(guestId);
+    if (!record) {
+      return jsonError(401, 'Invalid session');
+    }
+    if (normalize(auth.guest) !== record.normalizedName) {
+      return jsonError(401, 'Invalid session');
+    }
+  } catch (error) {
+    console.error('Session Notion bind failed:', error);
+    return jsonError(500, 'Failed to verify session');
+  }
+  return null;
+}
+
 /**
  * POST - Submit or update an RSVP
  */
 export const POST: APIRoute = async ({ request, cookies, cache }) => {
-  // Check authentication
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`rsvp:${ip}`, 30, 60_000);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
   const authCookie = cookies.get('sargaux_auth');
   if (!authCookie) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Unauthorized');
   }
 
   const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
-    return new Response(JSON.stringify({ error: 'Invalid session' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Invalid session');
   }
 
   const guestId = auth.notionId;
   if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Notion backend required for RSVPs');
   }
 
-  // Parse request body
+  const bindError = await bindSessionToNotion(auth, guestId);
+  if (bindError) return bindError;
+
   let body: RSVPSubmission;
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(400, 'Invalid JSON');
   }
 
-  // Validate required fields
   if (!body.event || !['nyc', 'france'].includes(body.event)) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid event (must be "nyc" or "france")' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Invalid event (must be "nyc" or "france")');
   }
 
   if (!Array.isArray(body.guestsAttending)) {
-    return new Response(
-      JSON.stringify({ error: 'guestsAttending must be an array' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'guestsAttending must be an array');
   }
 
   if (!Array.isArray(body.eventsAttending)) {
-    return new Response(
-      JSON.stringify({ error: 'eventsAttending must be an array' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+    return jsonError(400, 'eventsAttending must be an array');
+  }
+
+  if (body.details !== undefined && body.details !== null) {
+    if (typeof body.details !== 'object' || Array.isArray(body.details)) {
+      return jsonError(400, 'details must be an object');
+    }
+    try {
+      const size = Buffer.byteLength(JSON.stringify(body.details), 'utf8');
+      if (size > DETAILS_MAX_BYTES) {
+        return jsonError(400, 'details payload too large');
       }
-    );
+    } catch {
+      return jsonError(400, 'details payload too large');
+    }
+  }
+
+  // Free-text fields flow into Notion rich_text blocks and the confirmation
+  // email — reject non-strings and oversized values instead of 500ing later.
+  for (const field of ['dietary', 'message'] as const) {
+    const value: unknown = body[field];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== 'string') {
+      return jsonError(400, `${field} must be a string`);
+    }
+    if (value.length > TEXT_FIELD_MAX_CHARS) {
+      return jsonError(400, `${field} payload too large`);
+    }
   }
 
   const sendConfirmation = body.sendConfirmation === true;
@@ -117,13 +164,7 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     party = await getGuestParty(guestId);
   } catch (error) {
     console.error('Failed to load guest party for RSVP:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to load guest party details' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(500, 'Failed to load guest party details');
   }
 
   // Event access is validated against the live Notion record, never the
@@ -131,10 +172,36 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
   const primaryGuest = party.find((member) => member.id === guestId);
   const liveInvitations = primaryGuest?.eventInvitations ?? [];
   if (!liveInvitations.includes(body.event)) {
-    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(403, 'Forbidden for this event');
+  }
+
+  // guestsAttending names must match the party roster (normalized)
+  const partyNames = new Set(party.map((m) => m.normalizedName));
+  for (const entry of body.guestsAttending) {
+    if (!entry || typeof entry.name !== 'string') {
+      return jsonError(400, 'guestsAttending entries must include a name');
+    }
+    if (!partyNames.has(normalize(entry.name))) {
+      return jsonError(400, 'guestsAttending includes a name outside this party');
+    }
+  }
+
+  // eventsAttending must be ⊆ events the guest is invited to
+  let invitedEventIds: Set<string>;
+  try {
+    const invitedEvents = await getGuestEvents(guestId);
+    invitedEventIds = new Set(
+      invitedEvents.filter((e) => e.wedding === body.event).map((e) => e.id)
+    );
+  } catch (error) {
+    console.error('Failed to load guest events for RSVP validation:', error);
+    return jsonError(500, 'Failed to validate events');
+  }
+
+  for (const eventId of body.eventsAttending) {
+    if (typeof eventId !== 'string' || !invitedEventIds.has(eventId)) {
+      return jsonError(400, 'eventsAttending includes an invalid event');
+    }
   }
 
   const partyById = new Map(party.map((guest) => [guest.id, guest]));
@@ -143,25 +210,18 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
   if (Array.isArray(body.guestEmails)) {
     for (const entry of body.guestEmails) {
       if (!entry || typeof entry.guestId !== 'string') {
-        return new Response(JSON.stringify({ error: 'guestEmails entries must include a guestId' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return jsonError(400, 'guestEmails entries must include a guestId');
       }
 
       if (!partyById.has(entry.guestId)) {
-        return new Response(JSON.stringify({ error: 'guestEmails includes a guest outside this party' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return jsonError(400, 'guestEmails includes a guest outside this party');
       }
 
       const normalizedEmail = normalizeOptionalEmail(entry.email);
       if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
         const guestName = partyById.get(entry.guestId)?.name ?? entry.name ?? 'this guest';
-        return new Response(JSON.stringify({ error: `Enter a valid email address for ${guestName}.`, fieldGuestId: entry.guestId }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
+        return jsonError(400, `Enter a valid email address for ${guestName}.`, {
+          fieldGuestId: entry.guestId,
         });
       }
 
@@ -171,10 +231,7 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     const fallbackEmail = normalizeOptionalEmail(body.email);
     if (fallbackEmail) {
       if (!EMAIL_PATTERN.test(fallbackEmail)) {
-        return new Response(JSON.stringify({ error: 'Enter a valid email address.' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return jsonError(400, 'Enter a valid email address.');
       }
       submittedGuestEmails.set(guestId, fallbackEmail);
     }
@@ -189,29 +246,20 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
       : normalizeOptionalEmail(partyGuest.email),
   }));
 
-  // At least one email is always required
   if (partyContacts.every((guest) => !guest.email)) {
-    return new Response(
-      JSON.stringify({
-        error:
-          'At least one email address is required. We recommend adding an email address for everyone in your party.',
-      }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    return jsonError(
+      400,
+      'At least one email address is required. We recommend adding an email address for everyone in your party.'
     );
   }
 
-  // When requireAllEmails flag is on, every guest must have an email
   if (isEnabled('global.rsvpRequireAllEmails')) {
     const missing = partyContacts.find((guest) => !guest.email);
     if (missing) {
-      return new Response(
-        JSON.stringify({ error: `An email address is required for ${missing.name}.` }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return jsonError(400, `An email address is required for ${missing.name}.`);
     }
   }
 
-  // MX record check on all provided emails
   const emailsToValidate = partyContacts.filter((guest) => guest.email);
   const mxResults = await Promise.all(
     emailsToValidate.map(async (guest) => ({
@@ -222,13 +270,11 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
   );
   const invalidMx = mxResults.find((r) => !r.valid);
   if (invalidMx) {
-    return new Response(
-      JSON.stringify({ error: `Enter a valid email address for ${invalidMx.name}.`, fieldGuestId: invalidMx.id }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return jsonError(400, `Enter a valid email address for ${invalidMx.name}.`, {
+      fieldGuestId: invalidMx.id,
+    });
   }
 
-  // Submit to Notion
   let responseId: string;
   try {
     await Promise.all(
@@ -240,26 +286,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     responseId = await submitRSVP(guestId, body);
   } catch (error) {
     console.error('RSVP submission error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to submit RSVP',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(500, 'Failed to submit RSVP');
   }
 
-  // ICS regeneration — awaited but errors never fail the RSVP response.
-  // Awaited (not fire-and-forget) because Netlify terminates the function
-  // when the response is sent — detached promises don't complete reliably.
   try {
     await Promise.all(party.map((member) => generateAndStoreICSForGuest(member.id)));
 
-    // Purge the CDN-cached calendar files so subscriptions pick up the new
-    // ICS promptly instead of waiting out the stale-while-revalidate window.
     if (cache.enabled) {
       await Promise.all(
         party.map((member) =>
@@ -271,7 +303,6 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     console.error('ICS regeneration after RSVP failed (non-fatal):', err);
   }
 
-  // Email logic — non-blocking, never fails the RSVP response
   if (isEnabled('global.emailEnabled') && sendConfirmation) {
     const recipients = Array.from(
       partyContacts
@@ -288,13 +319,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
 
     if (recipients.length > 0) {
       try {
-        const attending = (body.guestsAttending ?? []).some((g: any) => g.attending);
+        const attending = (body.guestsAttending ?? []).some((g: { attending?: boolean }) => g.attending);
         const guestsAttendingStr = (body.guestsAttending ?? [])
-          .filter((g: any) => g.attending)
-          .map((g: any) => g.name)
+          .filter((g: { attending?: boolean }) => g.attending)
+          .map((g: { name: string }) => g.name)
           .join(', ');
 
-        // Fetch events the guest is attending, split into core and optional
         let coreEvents: EventInfo[] | undefined;
         let optionalEvents: EventInfo[] | undefined;
         const attendingEventIds = new Set(body.eventsAttending ?? []);
@@ -313,7 +343,6 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
           }
         }
 
-        // Generate personalised calendar URL (requires CALENDAR_HMAC_SECRET)
         let calendarUrl: string | undefined;
         try {
           const token = generateToken(guestId);
@@ -361,58 +390,36 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
  * GET - Fetch existing RSVP for pre-fill
  */
 export const GET: APIRoute = async ({ request, cookies }) => {
-  // Check authentication
   const authCookie = cookies.get('sargaux_auth');
   if (!authCookie) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Unauthorized');
   }
 
   const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
-    return new Response(JSON.stringify({ error: 'Invalid session' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Invalid session');
   }
 
   const guestId = auth.notionId;
   if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Notion backend required for RSVPs');
   }
 
-  // Parse query params
+  const bindError = await bindSessionToNotion(auth, guestId);
+  if (bindError) return bindError;
+
   const url = new URL(request.url);
   const event = url.searchParams.get('event');
 
   if (!event || !['nyc', 'france'].includes(event)) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid event (must be "nyc" or "france")' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Invalid event (must be "nyc" or "france")');
   }
 
-  // Fetch from Notion
   try {
-    // Validate event access against the live Notion record, not the cookie
     const party = await getGuestParty(guestId);
     const primaryGuest = party.find((member) => member.id === guestId);
     if (!primaryGuest?.eventInvitations.includes(event as 'nyc' | 'france')) {
-      return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return jsonError(403, 'Forbidden for this event');
     }
 
     const rsvp = await getLatestRSVPForParty(
@@ -433,73 +440,58 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error) {
     console.error('RSVP fetch error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to fetch RSVP',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(500, 'Failed to fetch RSVP');
   }
 };
 
 /**
- * DELETE - Delete an RSVP (for testing)
+ * DELETE - Delete an RSVP (testing / admin only).
+ * Gated behind FEATURE_GLOBAL_RSVP_DELETE_ENABLED or admin Bearer.
+ * Not open in production for casual guest use.
  */
 export const DELETE: APIRoute = async ({ request, cookies }) => {
-  // Check authentication
+  const deleteAllowed = features.global.rsvpDeleteEnabled || verifyAdminBearer(request);
+  if (!deleteAllowed) {
+    return jsonError(403, 'RSVP delete is disabled');
+  }
+
   const authCookie = cookies.get('sargaux_auth');
   if (!authCookie) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Unauthorized');
   }
 
   const auth = getAuthenticatedGuest(cookies);
   if (!auth) {
-    return new Response(JSON.stringify({ error: 'Invalid session' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Invalid session');
   }
 
   const guestId = auth.notionId;
   if (!guestId) {
-    return new Response(
-      JSON.stringify({ error: 'Notion backend required for RSVPs' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Notion backend required for RSVPs');
   }
 
-  // Parse query params
+  const bindError = await bindSessionToNotion(auth, guestId);
+  if (bindError) return bindError;
+
   const url = new URL(request.url);
   const event = url.searchParams.get('event');
 
   if (!event || !['nyc', 'france'].includes(event)) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid event (must be "nyc" or "france")' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(400, 'Invalid event (must be "nyc" or "france")');
   }
 
-  if (!auth.eventInvitations.includes(event as 'nyc' | 'france')) {
-    return new Response(JSON.stringify({ error: 'Forbidden for this event' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // Live invitations — never trust stale cookie eventInvitations
+  try {
+    const party = await getGuestParty(guestId);
+    const primaryGuest = party.find((member) => member.id === guestId);
+    if (!primaryGuest?.eventInvitations.includes(event as 'nyc' | 'france')) {
+      return jsonError(403, 'Forbidden for this event');
+    }
+  } catch (error) {
+    console.error('Failed to verify invitations for RSVP delete:', error);
+    return jsonError(500, 'Failed to verify event access');
   }
 
-  // Delete from Notion
   try {
     const deleted = await deleteRSVP(guestId, event as 'nyc' | 'france');
 
@@ -522,15 +514,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     );
   } catch (error) {
     console.error('RSVP deletion error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to delete RSVP',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(500, 'Failed to delete RSVP');
   }
 };

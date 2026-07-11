@@ -59,19 +59,37 @@ jobs:
         if: steps.filter.outputs.docs_only != 'true'
         run: npm ci
 
+      - name: Get Playwright version
+        if: steps.filter.outputs.docs_only != 'true'
+        id: playwright-version
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: steps.filter.outputs.docs_only != 'true'
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      # CI runs are always headless, so the chromium headless shell is enough
+      # (roughly half the download of full chromium). Local test:install keeps
+      # the full browser for headed debugging.
       - name: Install Playwright browsers
-        if: steps.filter.outputs.docs_only != 'true'
-        run: npm run test:install
+        if: steps.filter.outputs.docs_only != 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
 
-      - name: Build site
-        if: steps.filter.outputs.docs_only != 'true'
-        run: npm run build
-        env:
-          FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
+      - name: Install Playwright system dependencies
+        if: steps.filter.outputs.docs_only != 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
+      # No separate build step — the Playwright webServer command runs
+      # `npm run build` itself, so a standalone build would run twice.
+      # --workers=1: these tests assert wall-clock thresholds (FCP, TTI, server
+      # response time), so parallel browsers on a shared runner would add noise.
       - name: Run performance tests
         if: steps.filter.outputs.docs_only != 'true'
-        run: npx playwright test tests/performance.spec.ts
+        run: npx playwright test tests/performance.spec.ts --workers=1
         env:
           FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
           FEATURE_GLOBAL_NOTION_BACKEND: 'true'
@@ -80,6 +98,8 @@ jobs:
           NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
           NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
           CALENDAR_HMAC_SECRET: ${{ secrets.CALENDAR_HMAC_SECRET }}
+          SESSION_HMAC_SECRET: ${{ secrets.SESSION_HMAC_SECRET }}
+          RESEND_ADMIN_SECRET: ${{ secrets.RESEND_ADMIN_SECRET }}
 
       - name: Upload test results
         if: steps.filter.outputs.docs_only != 'true'

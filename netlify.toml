@@ -36,6 +36,12 @@
   [headers.values]
     Access-Control-Allow-Origin = "https://withjoy.com"
 
+# NOTE: Global security headers (X-Frame-Options, Referrer-Policy,
+# Permissions-Policy, CSP Report-Only) are set in src/middleware.ts, NOT here.
+# Netlify [[headers]] rules only apply to statically-served files — never to
+# function responses — and under the Netlify adapter every SSR page is served
+# by a function, so a `for = "/*"` block here would miss all HTML.
+
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"

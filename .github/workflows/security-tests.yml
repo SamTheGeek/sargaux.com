@@ -1,4 +1,4 @@
-name: Accessibility Tests
+name: Security Tests
 
 on:
   pull_request:
@@ -8,8 +8,8 @@ on:
     branches: [main]
 
 jobs:
-  accessibility:
-    name: Accessibility & Best Practices
+  security:
+    name: Security, Auth & Access Control
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Skip tests for draft PRs
@@ -85,9 +85,9 @@ jobs:
 
       # No separate build step — the Playwright webServer command runs
       # `npm run build` itself, so a standalone build would run twice.
-      - name: Run accessibility tests
+      - name: Run security tests
         if: steps.filter.outputs.docs_only != 'true'
-        run: npx playwright test tests/accessibility.spec.ts tests/best-practices.spec.ts
+        run: npm run test:security
         env:
           FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
           FEATURE_GLOBAL_NOTION_BACKEND: 'true'
@@ -103,7 +103,7 @@ jobs:
         if: steps.filter.outputs.docs_only != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: accessibility-test-report
+          name: security-test-report
           path: playwright-report/
           retention-days: 30
 
@@ -111,7 +111,7 @@ jobs:
         if: steps.filter.outputs.docs_only != 'true' && failure()
         uses: actions/upload-artifact@v7
         with:
-          name: accessibility-test-traces
+          name: security-test-traces
           path: test-results/
           retention-days: 30
 

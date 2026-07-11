@@ -20,6 +20,8 @@
  */
 
 import { Resend } from 'resend';
+import { excludeTestGuests, isTestGuest, isTestGuestFromNotionProps } from '../src/lib/test-guests';
+import { normalize } from '../src/lib/normalize';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +122,8 @@ async function fetchNotionGuests(): Promise<NotionGuest[]> {
       if (!fullName) continue;
 
       const email: string | undefined = props['Guest Email']?.email ?? undefined;
+      const normalizedName = normalize(fullName);
+      if (isTestGuestFromNotionProps(props) || isTestGuest({ normalizedName })) continue;
 
       // Derive event invitations
       let eventInvitations: ('nyc' | 'france')[];
@@ -348,7 +352,7 @@ async function main() {
 
   // Fetch guests from Notion
   console.log('Fetching guests from Notion...');
-  const allGuests = await fetchNotionGuests();
+  const allGuests = excludeTestGuests(await fetchNotionGuests());
   console.log(`  Found ${allGuests.length} guests total`);
 
   const withEmail = allGuests.filter((g) => g.email);

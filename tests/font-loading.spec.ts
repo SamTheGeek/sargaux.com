@@ -1,24 +1,8 @@
 import { test, expect, type BrowserContext } from '@playwright/test';
-
-type EventInvitation = 'nyc' | 'france';
-
-function makeSessionCookiePayload(
-  guest: string,
-  eventInvitations: EventInvitation[],
-  notionId = 'font-loading-test'
-): string {
-  return Buffer.from(
-    JSON.stringify({
-      guest,
-      notionId,
-      eventInvitations,
-      created: Date.now(),
-    })
-  ).toString('base64url');
-}
+import { createSessionToken } from '../src/lib/auth';
 
 async function setDualEventSession(context: BrowserContext) {
-  const value = makeSessionCookiePayload('Font Test Guest', ['nyc', 'france']);
+  const value = createSessionToken('Font Test Guest', undefined, ['nyc', 'france']);
   await context.addCookies([
     {
       name: 'sargaux_auth',

@@ -4,6 +4,7 @@ import { getPrimaryEventRoute } from './lib/event-routing';
 import { getRegistryDestination, FRENCH_REGISTRY_URL } from './lib/registry-routing';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
+import { normalize } from './lib/normalize';
 import type { Lang } from './content/strings';
 
 // Routes that require authentication
@@ -19,6 +20,36 @@ const PUBLIC_ROUTES = [
   '/',
   '/api/login',
   '/api/logout',
+];
+
+// Security headers for every SSR page response (audit P1-5).
+//
+// Frame policy: X-Frame-Options SAMEORIGIN + CSP `frame-ancestors 'self'` are
+// deliberately equivalent. X-Frame-Options is kept (rather than relying on
+// frame-ancestors alone) because `frame-ancestors` is ignored in a
+// Report-Only policy, so until the CSP is enforced it is the only header
+// actually blocking framing.
+//
+// The CSP stays Report-Only: there is no `report-to`/`report-uri` endpoint,
+// so violations are only visible in guests' devtools consoles. Do not switch
+// to enforcement until reporting is wired up and the policy has been tuned
+// against real traffic. Policy notes: `script-src`/`style-src` need
+// 'unsafe-inline' (Astro inline scripts + scoped styles are used heavily);
+// `img-src https:` covers Google static maps and Joy registry photos.
+const SECURITY_HEADERS: ReadonlyArray<readonly [string, string]> = [
+  // HSTS conventionally belongs on ALL responses (APIs included), but Netlify
+  // already sends platform-level HSTS on every response, so page scope here is
+  // sufficient and keeps this list on the single existing code path.
+  // 180 days, no `preload` (rollback stays possible). `includeSubDomains` is
+  // safe: the only subdomain is www, a Netlify auto-HTTPS 301 to the apex.
+  ['Strict-Transport-Security', 'max-age=15552000; includeSubDomains'],
+  ['X-Frame-Options', 'SAMEORIGIN'],
+  ['Referrer-Policy', 'strict-origin-when-cross-origin'],
+  ['Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()'],
+  [
+    'Content-Security-Policy-Report-Only',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'",
+  ],
 ];
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -40,6 +71,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // hasn't flipped yet) and is served from cache — the origin never runs, the
       // language cookie never gets set, and the switcher becomes a silent no-op.
       response.headers.set('Netlify-Vary', 'query=lang,cookie=sargaux_auth|sargaux_lang');
+
+      // Security headers (audit P1-5). These must be set here, not in
+      // netlify.toml: Netlify [[headers]] rules apply only to statically-served
+      // files, never to function responses — and under the Netlify adapter every
+      // SSR page (i.e. the whole site) is a function response. Applied to
+      // redirects too, mirroring Netlify-Vary above.
+      for (const [name, value] of SECURITY_HEADERS) {
+        response.headers.set(name, value);
+      }
     }
     return response;
   };
@@ -99,12 +139,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // guest cache (15-min TTL), so this does not add a Notion round-trip to
   // every page load. The cookie value is only a fallback for the
   // hardcoded-guest-list mode and for transient Notion failures.
+  //
+  // Also bind cookie display name ↔ live Notion record: a forged session
+  // with a stolen calendar notionId + arbitrary guest name must fail closed.
   let eventInvitations = auth.eventInvitations;
   let country = auth.country;
   if (auth.notionId && features.global.notionBackend) {
     try {
       const record = await getGuestById(auth.notionId);
       if (record) {
+        if (normalize(auth.guest) !== record.normalizedName) {
+          console.warn('Session guest/notionId mismatch — treating as unauthenticated');
+          return withVary(context.redirect('/'));
+        }
         eventInvitations = record.eventInvitations;
         country = record.country ?? null;
       }

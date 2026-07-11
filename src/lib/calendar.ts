@@ -8,36 +8,10 @@
  * CALENDAR_HMAC_SECRET is a runtime secret (process.env, never committed).
  */
 
-import { createHmac } from 'crypto';
 import type { EventRecord } from '../types';
 import type { Lang } from '../content/strings';
 import { localizeEvent } from './event-i18n';
-
-/**
- * Encode a string as URL-safe base64 (no padding).
- */
-function toBase64Url(input: string): string {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
-/**
- * Decode a base64url string back to a UTF-8 string.
- * Returns null if decoding fails.
- */
-function fromBase64Url(input: string): string | null {
-  try {
-    const padded = input.replace(/-/g, '+').replace(/_/g, '/');
-    const pad = padded.length % 4;
-    const b64 = pad === 0 ? padded : padded + '='.repeat(4 - pad);
-    return Buffer.from(b64, 'base64').toString('utf-8');
-  } catch {
-    return null;
-  }
-}
+import { toBase64Url, fromBase64Url, hmacSha256Hex, timingSafeEqualString } from './hmac';
 
 /**
  * Compute HMAC-SHA256 of guestId using CALENDAR_HMAC_SECRET.
@@ -46,7 +20,7 @@ function fromBase64Url(input: string): string | null {
 function computeHmac(guestId: string): string {
   const secret = process.env.CALENDAR_HMAC_SECRET;
   if (!secret) throw new Error('CALENDAR_HMAC_SECRET is not set.');
-  return createHmac('sha256', secret).update(guestId).digest('hex').slice(0, 32);
+  return hmacSha256Hex(secret, guestId, 32);
 }
 
 /**
@@ -92,13 +66,8 @@ export function verifyToken(token: string): string | null {
     return null;
   }
 
-  // Constant-time comparison to prevent timing attacks
-  if (providedHmac.length !== expectedHmac.length) return null;
-  const a = Buffer.from(providedHmac);
-  const b = Buffer.from(expectedHmac);
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0 ? guestId : null;
+  if (!timingSafeEqualString(providedHmac, expectedHmac)) return null;
+  return guestId;
 }
 
 /**

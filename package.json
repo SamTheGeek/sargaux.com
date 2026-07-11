@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "1.1.5",
+  "version": "1.1.7",
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
@@ -14,6 +14,8 @@
     "test:ui": "playwright test --ui",
     "test:quick": "playwright test tests/accessibility.spec.ts",
     "test:install": "playwright install --with-deps chromium",
+    "test:security": "playwright test tests/security.spec.ts tests/security-headers.spec.ts tests/auth.spec.ts tests/auth-unit.spec.ts tests/rate-limit-unit.spec.ts tests/rsvp-api.spec.ts tests/access-control.spec.ts",
+    "secret-scan": "bash scripts/secret-scan.sh",
     "gen:lookbook-webp": "tsx scripts/generate-lookbook-webp.ts",
     "verify": "npm run build && npm test"
   },
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@axe-core/playwright": "^4.12.1",
+    "@netlify/edge-functions": "^3.0.8",
     "@netlify/functions": "^5.3.0",
     "@playwright/test": "^1.61.1",
     "@types/sharp": "^0.32.0",

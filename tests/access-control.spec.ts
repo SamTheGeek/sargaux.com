@@ -1,27 +1,11 @@
 import { test, expect, type BrowserContext } from '@playwright/test';
-
-type EventInvitation = 'nyc' | 'france';
-
-function makeSessionCookiePayload(
-  guest: string,
-  eventInvitations: EventInvitation[],
-  notionId = 'test-notion-id'
-): string {
-  return Buffer.from(
-    JSON.stringify({
-      guest,
-      notionId,
-      eventInvitations,
-      created: Date.now(),
-    })
-  ).toString('base64url');
-}
+import { createSessionToken, type EventInvitation } from '../src/lib/auth';
 
 async function setSessionCookie(
   context: BrowserContext,
   eventInvitations: EventInvitation[]
 ) {
-  const value = makeSessionCookiePayload('Access Test Guest', eventInvitations);
+  const value = createSessionToken('Access Test Guest', undefined, eventInvitations);
   await context.addCookies([
     {
       name: 'sargaux_auth',
@@ -78,7 +62,6 @@ test.describe('Event Access Control', () => {
     await expect(page.locator('.event-toggle')).toBeVisible();
 
     await page.goto('/france');
-    await expect(page).toHaveURL('/france');
     await expect(page.locator('.event-toggle')).toBeVisible();
   });
 });

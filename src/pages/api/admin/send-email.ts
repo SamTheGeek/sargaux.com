@@ -15,21 +15,21 @@
 
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
+import { excludeTestGuests } from '../../../lib/test-guests';
 import { sendToGuests } from '../../../lib/email';
 import { TEMPLATES } from '../../../lib/email-templates';
 import type { TemplateName } from '../../../lib/email-templates';
 import { isEnabled } from '../../../config/features';
+import { requireAdminAuth } from '../../../lib/admin-auth';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../../lib/rate-limit';
 
 export const POST: APIRoute = async ({ request }) => {
-  // Auth check
-  const authHeader = request.headers.get('Authorization');
-  const adminSecret = process.env.RESEND_ADMIN_SECRET;
-  if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`admin:${ip}`, 10, 15 * 60 * 1000);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
+  const unauthorized = requireAdminAuth(request, '/api/admin/send-email');
+  if (unauthorized) return unauthorized;
 
   // Parse body
   let body: { templateId?: string; guestIds?: unknown; templateData?: Record<string, string> };
@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
   const guestIds = body.guestIds as string[];
 
   // Fetch guest records
-  const allGuests = await fetchAllGuests();
+  const allGuests = excludeTestGuests(await fetchAllGuests());
   const requested = guestIds.map((id) => allGuests.find((g) => g.id === id)).filter(Boolean) as typeof allGuests;
   const withEmail = requested.filter((g) => g.email);
   const noEmail = requested.length - withEmail.length;
@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const templateFn = TEMPLATES[templateId] as (params: any) => ReturnType<typeof TEMPLATES[typeof templateId]>;
+  const templateFn = TEMPLATES[templateId] as (params: Record<string, unknown>) => ReturnType<(typeof TEMPLATES)[typeof templateId]>;
   const templateData = body.templateData ?? {};
 
   const { sent, failed } = await sendToGuests(guestList, (guest) =>

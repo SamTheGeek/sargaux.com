@@ -10,20 +10,20 @@
 
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
+import { excludeTestGuests } from '../../../lib/test-guests';
 import { sendToGuests } from '../../../lib/email';
 import { saveTheDateNYC, saveTheDateFrance } from '../../../lib/email-templates';
 import { isEnabled } from '../../../config/features';
+import { requireAdminAuth } from '../../../lib/admin-auth';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../../lib/rate-limit';
 
 export const POST: APIRoute = async ({ request }) => {
-  // Auth check
-  const authHeader = request.headers.get('Authorization');
-  const adminSecret = process.env.RESEND_ADMIN_SECRET;
-  if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`admin:${ip}`, 10, 15 * 60 * 1000);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
+  const unauthorized = requireAdminAuth(request, '/api/admin/send-stds');
+  if (unauthorized) return unauthorized;
 
   // Parse body
   let body: { event?: string };
@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // Fetch guests
-  const allGuests = await fetchAllGuests();
+  const allGuests = excludeTestGuests(await fetchAllGuests());
   const invited = allGuests.filter((g) => g.eventInvitations.includes(event));
   const withEmail = invited.filter((g) => g.email);
   const noEmail = invited.length - withEmail.length;

@@ -4,14 +4,25 @@ import {
   getHardcodedGuestCountry,
   createSessionToken,
   AUTH_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+  SessionSecretMissingError,
 } from '../../lib/auth';
 import { features } from '../../config/features';
 import { findGuestByName } from '../../lib/notion';
 import type { EventInvitation } from '../../lib/auth';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
 import { getDefaultLocale } from '../../lib/locale-routing';
+import { checkRateLimit, clientIp, rateLimitResponse } from '../../lib/rate-limit';
+
+/** Strict login rate limit — primary name-enumeration vector. */
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const ip = clientIp(request);
+  const limit = checkRateLimit(`login:${ip}`, LOGIN_LIMIT, LOGIN_WINDOW_MS);
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSec);
+
   const formData = await request.formData();
   const name = formData.get('name');
 
@@ -47,6 +58,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (!guestName) {
+    // Small constant delay to blunt timing/volume enumeration (best-effort)
+    await new Promise((r) => setTimeout(r, 200));
     return new Response(
       JSON.stringify({
         error: 'Name not found, it must match exactly.',
@@ -58,8 +71,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 
-  // Create session token and set cookie
-  const token = createSessionToken(guestName, notionId, eventInvitations, country);
+  // Create session token and set cookie. Sessions are never minted unsigned —
+  // if the signing secret is missing, login is unavailable (503), not broken (500).
+  let token: string;
+  try {
+    token = createSessionToken(guestName, notionId, eventInvitations, country);
+  } catch (err) {
+    if (err instanceof SessionSecretMissingError) {
+      console.error(
+        'Login unavailable: SESSION_HMAC_SECRET is not set, so session cookies cannot be signed. Set it in the runtime environment (Netlify Dashboard / .env.local).'
+      );
+      return new Response(
+        JSON.stringify({ error: 'Login is temporarily unavailable. Please try again later.' }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    throw err;
+  }
   const redirectPath = getPrimaryEventRoute(eventInvitations);
 
   cookies.set(AUTH_COOKIE_NAME, token, {
@@ -67,7 +98,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     httpOnly: true,
     secure: import.meta.env.PROD,
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 90, // 90 days
+    maxAge: SESSION_MAX_AGE_SECONDS, // 90 days — matches server-side expiry in parseSessionToken
   });
 
   // Default the site language from the guest's country, but never clobber a

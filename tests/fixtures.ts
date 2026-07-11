@@ -2,18 +2,18 @@ import type { GuestRecord, EventRecord, RSVPSubmission } from '../src/types';
 
 export const mockGuest: GuestRecord = {
   id: 'notion-1',
-  name: 'Sam Gross',
-  normalizedName: 'sam gross',
+  name: 'Alex Rivera',
+  normalizedName: 'alex rivera',
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-2'],
-  email: 'sam@example.com',
+  email: 'alex@example.com',
 };
 
 export const mockCompanionGuest: GuestRecord = {
   id: 'notion-2',
-  name: 'Margaux Ancel',
-  normalizedName: 'margaux ancel',
+  name: 'Jordan Chen',
+  normalizedName: 'jordan chen',
   eventInvitations: ['nyc', 'france'],
   isPlusOne: false,
   relatedGuestIds: ['notion-1'],
@@ -21,8 +21,8 @@ export const mockCompanionGuest: GuestRecord = {
 
 export const mockNycGuest: GuestRecord = {
   id: 'notion-3',
-  name: 'Charles Gross',
-  normalizedName: 'charles gross',
+  name: 'Casey Morgan',
+  normalizedName: 'casey morgan',
   eventInvitations: ['nyc'],
   isPlusOne: false,
   relatedGuestIds: [],
@@ -30,8 +30,8 @@ export const mockNycGuest: GuestRecord = {
 
 export const mockFranceGuest: GuestRecord = {
   id: 'notion-4',
-  name: 'Dorothée Ancel',
-  normalizedName: 'dorothee ancel',
+  name: 'Riley Dubois',
+  normalizedName: 'riley dubois',
   eventInvitations: ['france'],
   isPlusOne: false,
   relatedGuestIds: [],
@@ -96,7 +96,11 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
   };
 }
 
-// Matches the Notion "Full Name" formula (First Name + Last Name) for the
-// real guest record used in Notion-backed login tests, not the invitation
-// title ("Sam Gross") — see Full Name vs Name of Guest mismatch.
-export const TEST_GUEST_NAME = 'Samuel Gross';
+// Dedicated synthetic test guest that exists BOTH in the Notion Guest List
+// (party of two with Jordan Chen, invited to NYC + France, Country USA;
+// created 2026-07-11) AND in the hardcoded dev fallback list in
+// src/lib/auth.ts, so login works in every backend mode. Notion-backed RSVP
+// tests write and delete real rows for this party — it exists precisely so
+// those tests never touch the couple's or any real guest's records. Matches
+// the Notion "Full Name" formula (First Name + Last Name).
+export const TEST_GUEST_NAME = 'Alex Rivera';

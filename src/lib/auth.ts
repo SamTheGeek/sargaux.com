@@ -4,25 +4,33 @@
  *
  * When the notionBackend feature flag is enabled, validates against Notion.
  * Otherwise, falls back to the hardcoded guest list (for local dev without keys).
+ *
+ * Session cookies are HMAC-signed with SESSION_HMAC_SECRET
+ * (format: base64url(payload).hmac — same shape as calendar tokens).
+ * Unsigned or tampered cookies fail closed.
  */
 
 import type { GuestRecord } from '../types';
 import { normalize } from './normalize';
+import { hmacSha256Hex, timingSafeEqualString } from './hmac';
 export type EventInvitation = 'nyc' | 'france';
 
-// Hardcoded fallback guest list for local dev without Notion keys.
-// `country` mirrors the Notion Guest List `Country` select so the registry
-// split (src/lib/registry-routing.ts) can be exercised locally: the Ancel
-// family log in as France-side guests (external MilleMercis registry), the
-// Grosses as US-side guests (native Joy registry).
+// Synthetic fallback guests for local dev without Notion keys.
+// Real guest names live in Notion; do not commit family PII here.
+// Country values exercise the registry split (src/lib/registry-routing.ts).
+// 'Alex Rivera' + 'Jordan Chen' also exist as a synthetic party in the real
+// Notion Guest List, mirroring TEST_GUEST_NAME (tests/fixtures.ts) so the
+// same login works in both backend modes without touching real guest data.
+// 'Samuel Gross' is the one real name kept (dev login added on main); it
+// already appears publicly in site copy, but tests must not use it.
 const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
-  { name: 'Sam Gross', country: 'USA' },
   { name: 'Samuel Gross', country: 'USA' },
-  { name: 'Margaux Ancel', country: 'USA' },
-  { name: 'Charles Gross', country: 'USA' },
-  { name: 'Dorothee Ancel', country: 'FRANCE' },
-  { name: 'Nicolas Ancel', country: 'FRANCE' },
-  { name: 'Toni Waldman', country: 'USA' },
+  { name: 'Alex Rivera', country: 'USA' },
+  { name: 'Jordan Chen', country: 'USA' },
+  { name: 'Casey Morgan', country: 'USA' },
+  { name: 'Riley Dubois', country: 'FRANCE' },
+  { name: 'Samir Benoit', country: 'FRANCE' },
+  { name: 'Taylor Quinn', country: 'USA' },
 ];
 
 // Pre-normalize authorized guests for comparison
@@ -72,6 +80,24 @@ export function getHardcodedGuestCountry(input: string): string | null {
  */
 export const AUTH_COOKIE_NAME = 'sargaux_auth';
 
+/**
+ * Session lifetime (90 days) — single source of truth for both the browser
+ * cookie maxAge and the server-side token age check in parseSessionToken.
+ */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+
+/**
+ * Thrown when SESSION_HMAC_SECRET is not configured. Callers must fail closed:
+ * no session may ever be minted unsigned. The login endpoint maps this to a 503.
+ */
+export class SessionSecretMissingError extends Error {
+  constructor() {
+    super('SESSION_HMAC_SECRET is not set.');
+    this.name = 'SessionSecretMissingError';
+  }
+}
+
 interface SessionPayload {
   guest: string;
   notionId?: string;
@@ -80,9 +106,21 @@ interface SessionPayload {
   created: number;
 }
 
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_HMAC_SECRET;
+  if (!secret) {
+    throw new SessionSecretMissingError();
+  }
+  return secret;
+}
+
+function computeSessionHmac(payloadB64: string): string {
+  return hmacSha256Hex(getSessionSecret(), payloadB64, 32);
+}
+
 /**
- * Create a session token from a guest name and optional Notion ID.
- * For MVP, this is just base64-encoded. In production, use proper signing.
+ * Create a signed session token from a guest name and optional Notion ID.
+ * Format: base64url(payload).hmac[0:32]
  */
 export function createSessionToken(
   guestName: string,
@@ -103,12 +141,16 @@ export function createSessionToken(
   if (country) {
     payload.country = country;
   }
-  return Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const hmac = computeSessionHmac(payloadB64);
+  return `${payloadB64}.${hmac}`;
 }
 
 /**
- * Parse and validate a session token.
- * Returns { guest, notionId } if valid, null otherwise.
+ * Parse and verify a signed session token.
+ * Rejects unsigned (legacy base64-only), tampered, and expired tokens
+ * (older than SESSION_MAX_AGE_SECONDS, or with a missing/invalid `created`).
+ * Returns { guest, notionId, ... } if valid, null otherwise.
  */
 export function parseSessionToken(
   token: string
@@ -119,14 +161,47 @@ export function parseSessionToken(
   country: string | null;
 } | null {
   try {
+    const dotIndex = token.indexOf('.');
+    if (dotIndex === -1) {
+      // Unsigned legacy cookie — fail closed
+      return null;
+    }
+
+    const payloadB64 = token.slice(0, dotIndex);
+    const providedHmac = token.slice(dotIndex + 1);
+    if (!payloadB64 || !providedHmac) return null;
+
+    let expectedHmac: string;
+    try {
+      expectedHmac = computeSessionHmac(payloadB64);
+    } catch {
+      // Missing SESSION_HMAC_SECRET
+      return null;
+    }
+
+    if (!timingSafeEqualString(providedHmac, expectedHmac)) {
+      return null;
+    }
+
     const payload: SessionPayload = JSON.parse(
-      Buffer.from(token, 'base64url').toString('utf-8')
+      Buffer.from(payloadB64, 'base64url').toString('utf-8')
     );
 
-    // Validate the guest name is still recognizable
+    // Server-side expiry: browser cookie maxAge alone doesn't invalidate a
+    // stolen cookie value. Every signed token is minted by createSessionToken
+    // with a numeric `created`, so a missing/invalid one also fails closed.
+    if (
+      typeof payload.created !== 'number' ||
+      !Number.isFinite(payload.created) ||
+      Date.now() - payload.created > SESSION_MAX_AGE_MS
+    ) {
+      return null;
+    }
+
     if (payload.guest && typeof payload.guest === 'string') {
-      const eventInvitations = (payload.eventInvitations || [])
-        .filter((event): event is EventInvitation => event === 'nyc' || event === 'france');
+      const eventInvitations = (payload.eventInvitations || []).filter(
+        (event): event is EventInvitation => event === 'nyc' || event === 'france'
+      );
       return {
         guest: payload.guest,
         notionId: payload.notionId,

@@ -25,6 +25,7 @@
 
 import { readFileSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
+import { excludeTestGuestPages } from './lib/test-guests.mjs';
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ async function main() {
   console.log('── Finding envelopes with no mailing address ──');
   if (groupFilters.length) console.log(`  Filtering to group(s): ${groupFilters.join(', ')}`);
 
-  const allPages = await queryAll(NOTION_GUEST_LIST_DB, undefined);
+  const allPages = excludeTestGuestPages(await queryAll(NOTION_GUEST_LIST_DB, undefined));
   console.log(`  Total guests in database: ${allPages.length}`);
 
   const isInvited = p => getEventInvitations(p.properties).length > 0;

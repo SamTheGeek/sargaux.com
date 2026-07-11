@@ -30,13 +30,19 @@ FEATURE_GLOBAL_NOTION_BACKEND=true
 FEATURE_GLOBAL_I18N=true
 FEATURE_NYC_RSVP_ENABLED=true
 FEATURE_FRANCE_RSVP_ENABLED=true
+FEATURE_GLOBAL_RSVP_DELETE_ENABLED=true
 
 NOTION_API_KEY=$NOTION_API_KEY
 NOTION_GUEST_LIST_DB=$NOTION_GUEST_LIST_DB
 NOTION_EVENT_CATALOG_DB=$NOTION_EVENT_CATALOG_DB
 NOTION_RSVP_RESPONSES_DB=$NOTION_RSVP_RESPONSES_DB
+
+# Generate fresh secrets for local signing (do not reuse across environments)
+SESSION_HMAC_SECRET=$(openssl rand -hex 32)
+CALENDAR_HMAC_SECRET=$(openssl rand -hex 32)
 EOT
 
 echo "Wrote $ENV_FILE"
+echo "Add RESEND_ADMIN_SECRET and LOCAL_TESTING_USERNAME manually if needed."
 echo "You can now run: npm run dev"
 echo "And RSVP tests with: npx playwright test tests/rsvp.spec.ts"
