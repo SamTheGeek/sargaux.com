@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { createSessionToken } from '../src/lib/auth';
+import { TEST_GUEST_NAME } from './fixtures';
+
+// Name variants for normalization tests, derived from the synthetic test
+// guest so no real guest record is exercised by the suite.
+const TEST_GUEST_LOWERCASE = TEST_GUEST_NAME.toLowerCase();
+const TEST_GUEST_WHITESPACE = `  ${TEST_GUEST_NAME.split(' ').join('   ')}  `;
 
 test.describe('Authentication', () => {
   test.beforeEach(async ({ context }) => {
@@ -60,18 +66,18 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
-    await expect(page.locator('.guest-name')).toContainText('Samuel Gross');
+    await expect(page.locator('.guest-name')).toContainText(TEST_GUEST_NAME);
   });
 
   test('should submit login when clicking inline arrow button', async ({ page }) => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.click('#inline-submit');
 
     await expect(page).toHaveURL('/nyc');
@@ -115,7 +121,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', 'samuel gross');
+    await page.fill('#name', TEST_GUEST_LOWERCASE);
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
@@ -125,7 +131,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     await page.click('#login-trigger');
-    await page.fill('#name', '  Samuel   Gross  ');
+    await page.fill('#name', TEST_GUEST_WHITESPACE);
     await page.press('#name', 'Enter');
 
     await expect(page).toHaveURL('/nyc');
@@ -142,7 +148,7 @@ test.describe('Authentication', () => {
   test('should redirect authenticated users from homepage to /nyc', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -154,7 +160,7 @@ test.describe('Authentication', () => {
   test('should logout and redirect to homepage', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -172,7 +178,7 @@ test.describe('Authentication', () => {
   test('should have a visible back link on RSVP pages', async ({ page }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -197,16 +203,16 @@ test.describe('Authentication', () => {
     await page.goto('/');
 
     // Call the login API directly
-    const response = await page.evaluate(async () => {
+    const response = await page.evaluate(async (guestName) => {
       const formData = new FormData();
-      formData.append('name', 'Samuel Gross');
+      formData.append('name', guestName);
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
-    });
+    }, TEST_GUEST_NAME);
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.guest).toBe('Samuel Gross');
+    expect(response.body.guest).toBe(TEST_GUEST_NAME);
     expect(response.body.redirectPath).toBe('/nyc');
   });
 
@@ -234,12 +240,12 @@ test.describe('Authentication', () => {
     await context.clearCookies();
     await page.goto('/');
 
-    const response = await page.evaluate(async () => {
+    const response = await page.evaluate(async (guestName) => {
       const formData = new FormData();
-      formData.append('name', 'Samuel Gross');
+      formData.append('name', guestName);
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
-    });
+    }, TEST_GUEST_NAME);
     expect(response.status).toBe(200);
 
     const cookies = await context.cookies();
@@ -251,12 +257,12 @@ test.describe('Authentication', () => {
     await page.goto('/?lang=fr');
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 
-    const response = await page.evaluate(async () => {
+    const response = await page.evaluate(async (guestName) => {
       const formData = new FormData();
-      formData.append('name', 'Samuel Gross');
+      formData.append('name', guestName);
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
-    });
+    }, TEST_GUEST_NAME);
     expect(response.status).toBe(200);
 
     const cookies = await context.cookies();
@@ -295,7 +301,7 @@ test.describe('Authentication', () => {
   test('session cookie is set as httpOnly after login', async ({ page, context }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -310,7 +316,7 @@ test.describe('Authentication', () => {
   test('session cookie contains signed payload.hmac token', async ({ page, context }) => {
     await page.goto('/');
     await page.click('#login-trigger');
-    await page.fill('#name', 'Samuel Gross');
+    await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
     await expect(page).toHaveURL('/nyc');
 
@@ -324,7 +330,7 @@ test.describe('Authentication', () => {
     expect(hmac).toMatch(/^[0-9a-f]{32}$/);
 
     const payload = JSON.parse(Buffer.from(payloadB64!, 'base64url').toString('utf-8'));
-    expect(payload.guest).toBe('Samuel Gross');
+    expect(payload.guest).toBe(TEST_GUEST_NAME);
     expect(payload.created).toBeGreaterThan(0);
     expect(typeof payload.guest).toBe('string');
   });

@@ -184,6 +184,8 @@ npm run test:quick
 
 - `.env.local` defines `LOCAL_TESTING_USERNAME` — a guest name that logs in successfully in a local environment (it must match a Notion Guest List `Full Name`, so display names like "Sam Gross" may not work; the stored value does). Use it whenever a test, script, or browser session needs an authenticated guest:
 
+- **The test login is a dedicated synthetic guest, never a real person.** `LOCAL_TESTING_USERNAME` and `TEST_GUEST_NAME` (`tests/fixtures.ts`) point at **Alex Rivera**, a synthetic Notion Guest List record (party of two with **Jordan Chen**, invited to NYC + France, Country USA, robot icon 🤖). The RSVP test suites write to and delete this party's real RSVP Responses rows on every run, and rewrite the party's Guest List `RSVP` status — that churn is expected and isolated. Never point tests at the couple's or any real guest's records (this previously wiped Sam & Margaux's real RSVP), and never delete the synthetic guest pages (page IDs are baked into calendar tokens; deletion breaks them permanently). The same two names exist in the hardcoded dev fallback list in `src/lib/auth.ts`, so the login works in both backend modes. See `docs/test-guests.md` and `isTestGuest()` in `src/lib/test-guests.ts` for how synthetic records are excluded from invitation counts, outbound email, and `scripts/` reporting utilities. See `docs/test-guests.md` and `isTestGuest()` in `src/lib/test-guests.ts` for how synthetic records are excluded from invitation counts, outbound email, and `scripts/` reporting utilities.
+
   ```bash
   curl -s -X POST http://localhost:1213/api/login \
     -H "Origin: http://localhost:1213" \

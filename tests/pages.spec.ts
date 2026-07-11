@@ -1,5 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { TEST_GUEST_NAME } from './fixtures';
+import { TEST_GUEST_NAME, mockCompanionGuest } from './fixtures';
 
 const weddingSiteEnabled = process.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED === 'true';
 
@@ -147,14 +147,14 @@ test.describe('RSVP preview mode — NYC', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('NYC RSVP guest names include "Samuel Gross" and "Margaux Ancel"', async () => {
+  test('NYC RSVP guest names include the synthetic test party', async () => {
     await page.goto('/nyc/rsvp');
     const nameInputs = page.locator('[data-guest-row] .guest-name');
     const values = await nameInputs.evaluateAll((inputs) =>
       inputs.map((el) => (el as HTMLInputElement).value)
     );
-    expect(values).toContain('Samuel Gross');
-    expect(values).toContain('Margaux Ancel');
+    expect(values).toContain(TEST_GUEST_NAME);
+    expect(values).toContain(mockCompanionGuest.name);
   });
 
   test('NYC RSVP has at least one .event-checkbox in the core events section', async () => {

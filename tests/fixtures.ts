@@ -96,7 +96,11 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
   };
 }
 
-// Matches the Notion "Full Name" formula (First Name + Last Name) for the
-// real guest record used in Notion-backed login tests, not the invitation
-// title — see Full Name vs Name of Guest mismatch.
-export const TEST_GUEST_NAME = 'Samuel Gross';
+// Dedicated synthetic test guest that exists BOTH in the Notion Guest List
+// (party of two with Jordan Chen, invited to NYC + France, Country USA;
+// created 2026-07-11) AND in the hardcoded dev fallback list in
+// src/lib/auth.ts, so login works in every backend mode. Notion-backed RSVP
+// tests write and delete real rows for this party — it exists precisely so
+// those tests never touch the couple's or any real guest's records. Matches
+// the Notion "Full Name" formula (First Name + Last Name).
+export const TEST_GUEST_NAME = 'Alex Rivera';

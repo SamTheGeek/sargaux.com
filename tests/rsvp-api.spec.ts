@@ -6,7 +6,8 @@
  * NOTE: These tests require:
  * - Notion backend enabled (FEATURE_GLOBAL_NOTION_BACKEND=true)
  * - Valid NOTION_API_KEY, NOTION_GUEST_LIST_DB, NOTION_RSVP_RESPONSES_DB env vars
- * - Test guest (Sam Gross) exists in Notion Guest List database
+ * - The synthetic test guest (TEST_GUEST_NAME, see fixtures.ts) exists in the
+ *   Notion Guest List database as a party of two invited to both weddings
  *
  * Skip these tests if Notion backend is not configured.
  */
@@ -15,8 +16,8 @@ import { test, expect } from '@playwright/test';
 import { TEST_GUEST_NAME } from './fixtures';
 
 test.describe('RSVP API Endpoints', () => {
-  // Run tests serially — they write to shared Notion state (Sam Gross's RSVPs)
-  // and must not run in parallel with each other.
+  // Run tests serially — they write to shared Notion state (the synthetic
+  // test party's RSVPs) and must not run in parallel with each other.
   test.describe.configure({ mode: 'serial' });
 
   let authCookie: string | undefined;
@@ -30,43 +31,51 @@ test.describe('RSVP API Endpoints', () => {
     'Notion backend not configured'
   );
 
-  test.beforeAll(async ({ browser }) => {
-    // Login once to get auth cookie — use relative URLs so host matches
-    // playwright baseURL (127.0.0.1:1213), not localhost.
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  test.beforeAll(async ({ playwright }) => {
+    // Login once via the API to get the auth cookie — a form POST needs no
+    // browser. The request context keeps the cookie for subsequent calls.
+    const context = await playwright.request.newContext({
+      baseURL: 'http://127.0.0.1:1213',
+    });
 
-    await page.goto('/');
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.press('#name', 'Enter');
-    await page.waitForURL(/\/nyc$/);
+    const loginResponse = await context.post('/api/login', {
+      form: { name: TEST_GUEST_NAME },
+    });
+    expect(loginResponse.status()).toBe(200);
 
-    const cookies = await context.cookies();
-    const auth = cookies.find(c => c.name === 'sargaux_auth');
-    authCookie = auth?.value;
+    const { cookies } = await context.storageState();
+    authCookie = cookies.find((c) => c.name === 'sargaux_auth')?.value;
+    expect(authCookie).toBeTruthy();
 
-    await page.goto('/nyc/rsvp');
-    partyGuestIds = await page.locator('[data-guest-email-id]').evaluateAll((inputs) =>
-      inputs
-        .map((input) => input.getAttribute('data-guest-email-id'))
-        .filter((value): value is string => Boolean(value))
-    );
+    // Send the cookie explicitly on every request: the auth cookie is Secure,
+    // and the request-context jar refuses to attach Secure cookies over plain
+    // http://127.0.0.1 (unlike a real browser, which trusts localhost).
+    const authHeaders = { Cookie: `sargaux_auth=${authCookie}` };
+
+    // The party's guest IDs are rendered as data-guest-email-id attributes on
+    // the RSVP form — extract them from the server-rendered HTML. Anchor the
+    // match to <input tags: the page's inline script also contains the literal
+    // text data-guest-email-id="${...}" inside a querySelector template.
+    const rsvpPage = await context.get('/nyc/rsvp', { headers: authHeaders });
+    expect(rsvpPage.status()).toBe(200);
+    const html = await rsvpPage.text();
+    partyGuestIds = [
+      ...html.matchAll(/<input[^>]*data-guest-email-id="([^"]+)"/g),
+    ].map((match) => match[1]);
+    expect(partyGuestIds.length).toBeGreaterThan(0);
 
     // Clean up any existing RSVPs for the test guest to ensure a clean slate.
     // Loop until all RSVPs are deleted (there may be multiple from prior test runs).
-    if (authCookie) {
-      for (const event of ['nyc', 'france'] as const) {
-        for (let i = 0; i < 10; i++) {
-          const r = await page.request.delete(`/api/rsvp?event=${event}`, {
-            headers: { Cookie: `sargaux_auth=${authCookie}` },
-          });
-          if (r.status() !== 200) break; // 404 = none left, stop
-        }
+    for (const event of ['nyc', 'france'] as const) {
+      for (let i = 0; i < 10; i++) {
+        const r = await context.delete(`/api/rsvp?event=${event}`, {
+          headers: authHeaders,
+        });
+        if (r.status() !== 200) break; // 404 = none left, stop
       }
     }
 
-    await context.close();
+    await context.dispose();
 
     expect(authCookie).toBeTruthy();
   });
