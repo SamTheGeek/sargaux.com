@@ -42,6 +42,7 @@ import { readFileSync } from 'fs';
 import { mailpieceKey, lookupSerial, formatSerial } from './lib/usps-serial-registry.mjs';
 import { USPS_MAILER_ID, USPS_SERVICE_TYPE, USPS_SERIAL_DIGITS, MAIL_PIECES } from './lib/usps-mailer-config.mjs';
 import { authenticate, getBarcodesByMidSerial, getPieceByImb } from './lib/usps-iv-mtr.mjs';
+import { excludeTestGuestPages } from './lib/test-guests.mjs';
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
@@ -252,7 +253,7 @@ async function main() {
     password: USPS_BCG_PASSWORD,
   });
 
-  const allPages = await queryAll(NOTION_GUEST_LIST_DB);
+  const allPages = excludeTestGuestPages(await queryAll(NOTION_GUEST_LIST_DB));
   const byId = Object.fromEntries(allPages.map(p => [p.id, p]));
   const uf = makeUF(allPages.map(p => p.id));
   for (const page of allPages) {

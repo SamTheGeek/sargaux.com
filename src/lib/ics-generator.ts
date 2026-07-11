@@ -2,6 +2,7 @@ import { getAttendingEvents, getGuestById, fetchAllGuests, fetchAllLatestRSVPs, 
 import { buildICS } from './calendar';
 import { setICS } from './ics-store';
 import { getDefaultLocale } from './locale-routing';
+import { excludeTestGuests, isTestGuest } from './test-guests';
 import type { EventRecord } from '../types';
 
 /**
@@ -38,6 +39,7 @@ export async function generateAndStoreICSForGuest(guestId: string): Promise<void
 export async function refreshAllICS(): Promise<{ total: number; succeeded: number; failed: number }> {
   // 1. Fetch all guests — always cold in a Netlify Function invocation
   const guests = await fetchAllGuests();
+  const productionGuests = excludeTestGuests(guests);
 
   // 2. Fetch event catalog for both weddings + latest RSVP per guest/event
   const [nycEvents, franceEvents, latestRSVPs] = await Promise.all([
@@ -71,12 +73,12 @@ export async function refreshAllICS(): Promise<{ total: number; succeeded: numbe
 
       const ics = buildICS(guestEvents, getDefaultLocale(guest.country));
       await setICS(guest.id, ics);
-      succeeded++;
+      if (!isTestGuest(guest)) succeeded++;
     } catch (err) {
       console.error(`[ics-refresh] Failed for guest ${guest.id}:`, err);
-      failed++;
+      if (!isTestGuest(guest)) failed++;
     }
   }
 
-  return { total: guests.length, succeeded, failed };
+  return { total: productionGuests.length, succeeded, failed };
 }

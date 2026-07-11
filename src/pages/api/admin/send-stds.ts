@@ -10,6 +10,7 @@
 
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
+import { excludeTestGuests } from '../../../lib/test-guests';
 import { sendToGuests } from '../../../lib/email';
 import { saveTheDateNYC, saveTheDateFrance } from '../../../lib/email-templates';
 import { isEnabled } from '../../../config/features';
@@ -44,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // Fetch guests
-  const allGuests = await fetchAllGuests();
+  const allGuests = excludeTestGuests(await fetchAllGuests());
   const invited = allGuests.filter((g) => g.eventInvitations.includes(event));
   const withEmail = invited.filter((g) => g.email);
   const noEmail = invited.length - withEmail.length;

@@ -15,6 +15,7 @@
 
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
+import { excludeTestGuests } from '../../../lib/test-guests';
 import { sendToGuests } from '../../../lib/email';
 import { TEMPLATES } from '../../../lib/email-templates';
 import type { TemplateName } from '../../../lib/email-templates';
@@ -62,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
   const guestIds = body.guestIds as string[];
 
   // Fetch guest records
-  const allGuests = await fetchAllGuests();
+  const allGuests = excludeTestGuests(await fetchAllGuests());
   const requested = guestIds.map((id) => allGuests.find((g) => g.id === id)).filter(Boolean) as typeof allGuests;
   const withEmail = requested.filter((g) => g.email);
   const noEmail = requested.length - withEmail.length;

@@ -10,6 +10,7 @@ import { getStore } from '@netlify/blobs';
 import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetails } from '../types';
 import { normalize } from './normalize';
 import { parseTime } from './calendar';
+import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 
 let notionClient: Client | null = null;
 
@@ -124,16 +125,20 @@ function parseGuestPage(page: any): GuestRecord | null {
   }
 
   const email: string | undefined = props['Guest Email']?.email ?? undefined;
+  const normalizedName = normalize(fullName);
+  const testGuest =
+    isTestGuestFromNotionProps(props) || isTestGuest({ normalizedName });
 
   return {
     id: page.id,
     name: fullName,
-    normalizedName: normalize(fullName),
+    normalizedName,
     eventInvitations,
     country,
     isPlusOne,
     relatedGuestIds,
     email,
+    isTestGuest: testGuest,
   };
 }
 
