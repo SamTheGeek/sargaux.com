@@ -5,7 +5,9 @@ import { createTranslator } from '../../lib/i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 import '../../styles/france-travel.css';
 
-const t = createTranslator(Astro.locals.lang ?? 'en');
+const lang = Astro.locals.lang ?? 'en';
+const t = createTranslator(lang);
+const travel = strings.france.travel;
 ---
 
 <WireframeLayout title={t(strings.france.travel.pageTitle)} event="france" page="travel">
@@ -58,20 +60,27 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
         <!-- Getting to the Venue from Paris (shown to everyone) -->
         <article class="travel-card">
-          <h2>{t(strings.france.travel.toVenue.heading)}</h2>
+          <h2>{t(travel.toVenue.heading)}</h2>
 
-          <h3>{t(strings.france.travel.toVenue.train.heading)}</h3>
+          <h3>{t(travel.toVenue.train.heading)}</h3>
           <ul>
-            <li>{t(strings.france.travel.toVenue.train.step1)}</li>
-            <li>{t(strings.france.travel.toVenue.train.step2)}</li>
-            <li>{t(strings.france.travel.toVenue.train.step3)}</li>
+            <li>{t(travel.toVenue.train.step1)}</li>
+            <li>{t(travel.toVenue.train.step2)}</li>
+            <li>{t(travel.toVenue.train.step3)}</li>
           </ul>
+          <p>{t(travel.toVenue.train.mobilitesNote)}</p>
+          <a
+            class="travel-btn"
+            href="https://www.iledefrance-mobilites.fr/en"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{t(travel.toVenue.train.mobilitesBtn)} ↗</a>
 
-          <h3>{t(strings.france.travel.toVenue.car.heading)}</h3>
-          <p>{t(strings.france.travel.toVenue.car.text)}</p>
+          <h3>{t(travel.toVenue.car.heading)}</h3>
+          <p>{t(travel.toVenue.car.text)}</p>
           <ul>
             <li>
-              {t(strings.france.travel.toVenue.car.directionsBeforeLink)}
+              {t(travel.toVenue.car.directionsBeforeLink)}
               {' '}
               <a
                 class="travel-inline-link"
@@ -79,43 +88,90 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {t(strings.france.travel.toVenue.car.directionsLinkText)}
+                {t(travel.toVenue.car.directionsLinkText)}
               </a>
               {' '}
-              {t(strings.france.travel.toVenue.car.directionsAfterLink)}
+              {t(travel.toVenue.car.directionsAfterLink)}
             </li>
-            <li>{t(strings.france.travel.toVenue.car.tolls)}</li>
+            {t(travel.toVenue.car.tolls) && <li>{t(travel.toVenue.car.tolls)}</li>}
           </ul>
         </article>
 
-        <!-- Practical Info -->
-        <article class="travel-card">
-          <h2>{t(strings.france.travel.practical.heading)}</h2>
-          <p class="date-ref">{t(strings.france.travel.practical.dateRef)}</p>
+        {lang === 'en' && (
+          <>
+          <!-- ETIAS Travel Authorization (English only) -->
+          <article class="travel-card">
+            <h2>{t(travel.etias.heading)}</h2>
+            <p>{t(travel.etias.text)}</p>
+            <p>{t(travel.etias.passportNote)}</p>
+            <a
+              class="travel-btn"
+              href="https://travel-europe.europa.eu/etias_en"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{t(travel.etias.btn)} ↗</a>
+          </article>
 
-          <div class="info-grid">
-            <div class="info-item">
-              <h3>{t(strings.france.travel.practical.timezone.heading)}</h3>
-              <p><strong>{t(strings.france.travel.practical.timezone.value)}</strong></p>
-              <p>{t(strings.france.travel.practical.timezone.note)}</p>
+          <!-- International Driving Permit (English only) -->
+          <article class="travel-card">
+            <h2>{t(travel.idp.heading)}</h2>
+            <p>{t(travel.idp.text)}</p>
+            <a
+              class="travel-btn"
+              href="https://www.aaa.com/vacation/idpf.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{t(travel.idp.btn)} ↗</a>
+          </article>
+
+          <!-- Practical Information (English only) -->
+          <article class="travel-card">
+            <h2>{t(travel.practical.heading)}</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <h3>{t(travel.practical.timezone.heading)}</h3>
+                <p>{t(travel.practical.timezone.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.weather.heading)}</h3>
+                <p>{t(travel.practical.weather.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.payment.heading)}</h3>
+                <p>{t(travel.practical.payment.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.electricity.heading)}</h3>
+                <p>{t(travel.practical.electricity.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.mobile.heading)}</h3>
+                <p>{t(travel.practical.mobile.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.whatsapp.heading)}</h3>
+                <p>{t(travel.practical.whatsapp.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.water.heading)}</h3>
+                <p>{t(travel.practical.water.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.pharmacies.heading)}</h3>
+                <p>{t(travel.practical.pharmacies.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.tipping.heading)}</h3>
+                <p>{t(travel.practical.tipping.text)}</p>
+              </div>
+              <div class="info-item">
+                <h3>{t(travel.practical.uber.heading)}</h3>
+                <p>{t(travel.practical.uber.text)}</p>
+              </div>
             </div>
-            <div class="info-item">
-              <h3>{t(strings.france.travel.practical.currency.heading)}</h3>
-              <p><strong>{t(strings.france.travel.practical.currency.value)}</strong></p>
-              <p>{t(strings.france.travel.practical.currency.note)}</p>
-            </div>
-            <div class="info-item">
-              <h3>{t(strings.france.travel.practical.language.heading)}</h3>
-              <p><strong>{t(strings.france.travel.practical.language.value)}</strong></p>
-              <p>{t(strings.france.travel.practical.language.note)}</p>
-            </div>
-            <div class="info-item">
-              <h3>{t(strings.france.travel.practical.weather.heading)}</h3>
-              <p><strong>{t(strings.france.travel.practical.weather.value)}</strong></p>
-              <p>{t(strings.france.travel.practical.weather.note)}</p>
-            </div>
-          </div>
-        </article>
+          </article>
+          </>
+        )}
       </section>
     </div>
   </main>

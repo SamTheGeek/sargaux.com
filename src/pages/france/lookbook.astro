@@ -10,14 +10,26 @@ import type { ImageMetadata } from 'astro';
 
 const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const lb = strings.france.lookbook;
 
-const globResult = import.meta.glob<{ default: ImageMetadata }>(
-  '../../assets/images/france/lookbook/*.{jpg,jpeg}',
-  { eager: true }
+function sortedImages(glob: Record<string, { default: ImageMetadata }>): ImageMetadata[] {
+  return Object.entries(glob)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, mod]) => mod.default);
+}
+
+const fridayImages = sortedImages(
+  import.meta.glob<{ default: ImageMetadata }>(
+    '../../assets/images/france/lookbook/friday/*.{jpg,jpeg}',
+    { eager: true }
+  )
 );
-const images = Object.entries(globResult)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([, mod]) => mod.default);
+const saturdayImages = sortedImages(
+  import.meta.glob<{ default: ImageMetadata }>(
+    '../../assets/images/france/lookbook/saturday/*.{jpg,jpeg}',
+    { eager: true }
+  )
+);
 ---
 
 <WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
@@ -31,25 +43,101 @@ const images = Object.entries(globResult)
   <main>
     <div class="france-lookbook-shell" transition:name="france-lookbook-content">
       <div class="france-lookbook-intro">
-        <h1 class="lookbook-heading" aria-label={t(strings.france.lookbook.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
-        <p class="subtitle">{t(strings.france.lookbook.subtitle)}</p>
+        <h1 class="lookbook-heading" aria-label={t(lb.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
+        <p class="subtitle">{t(lb.subtitle)}</p>
       </div>
 
       <div class="france-lookbook-gallery">
-        {images.length > 0 ? (
-          <div class="lookbook-grid">
-            {images.map(img => (
-              <figure class="lookbook-item">
-                <Image src={img} alt="" loading="lazy" width={800} />
-              </figure>
+        <section class="dresscode-day">
+          <div class="dresscode-day-head">
+            <span class="dresscode-day-label">{t(lb.friday.day)}</span>
+            <h2 class="dresscode-day-code">{t(lb.friday.code)}</h2>
+          </div>
+          <div class="dresscode-day-body">
+            {t(lb.friday.desc).split('\n\n').filter(Boolean).map((para) => (
+              <p>{para}</p>
             ))}
           </div>
-        ) : (
-          <p class="lookbook-empty">{t(strings.global.detailsToCome)}</p>
-        )}
+          {fridayImages.length > 0 && (
+            <div class="lookbook-grid">
+              {fridayImages.map(img => (
+                <figure class="lookbook-item">
+                  <Image src={img} alt="" loading="lazy" width={800} />
+                </figure>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section class="dresscode-day">
+          <div class="dresscode-day-head">
+            <span class="dresscode-day-label">{t(lb.saturday.day)}</span>
+            <h2 class="dresscode-day-code">{t(lb.saturday.code)}</h2>
+          </div>
+          <div class="dresscode-day-body">
+            {t(lb.saturday.desc).split('\n\n').filter(Boolean).map((para) => (
+              <p>{para}</p>
+            ))}
+          </div>
+          {saturdayImages.length > 0 && (
+            <div class="lookbook-grid">
+              {saturdayImages.map(img => (
+                <figure class="lookbook-item">
+                  <Image src={img} alt="" loading="lazy" width={800} />
+                </figure>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   </main>
 
   <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
+
+<style>
+  .dresscode-day {
+    max-width: 760px;
+    margin: 0 auto 3.5rem;
+    padding: 0 2rem;
+  }
+
+  .dresscode-day-head {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dresscode-day-label {
+    display: block;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .dresscode-day-code {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 400;
+    margin: 0;
+  }
+
+  .dresscode-day-body p {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem;
+    max-width: 60ch;
+  }
+
+  .dresscode-day-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .dresscode-day .lookbook-grid {
+    margin-top: 1.5rem;
+  }
+</style>

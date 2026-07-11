@@ -28,9 +28,19 @@ function s(en: string, fr: string): T {
   return { en, fr };
 }
 
+/**
+ * English-only content. Used for sections that only render on the English site
+ * (e.g. the France Travel page's ETIAS, International Driving Permit, and
+ * Practical Information sections, which the French page intentionally omits).
+ * The French slot mirrors the English so the type is satisfied but is never shown.
+ */
+function en(str: string): T {
+  return { en: str, fr: str };
+}
+
 /** RSVP deadline dates — single source of truth for each event */
 export const RSVP_DEADLINE_NYC    = { en: 'September 1, 2026',  fr: '1er septembre 2026' } satisfies T;
-export const RSVP_DEADLINE_FRANCE = { en: 'April 15, 2027',     fr: '15 avril 2027'      } satisfies T;
+export const RSVP_DEADLINE_FRANCE = { en: 'April 1, 2027',      fr: '1er avril 2027'     } satisfies T;
 export const NYC_EVENT_TIME       = { en: '5:30 PM — 9 PM',     fr: '17 h 30 à 21 h'     } satisfies T;
 
 export const strings = {
@@ -42,7 +52,7 @@ export const strings = {
     rsvpBtn:      s('RSVP', 'RSVP'),
     registry:     s('Registry', 'Liste de mariage'),
     logout:       s('Logout', 'Se déconnecter'),
-    explore:      s('Explore', 'Navigation'),
+    explore:      s('Explore', 'Explorer'),
     copyright:    s('© 2026 Sam Gross', '© 2026 Sam Gross'),
     detailsToCome: s('Details to come', 'Détails à venir'),
     attending:    s('Attending', 'Présent'),
@@ -527,8 +537,9 @@ export const strings = {
     heroEventType: s('A Weekend Celebration', 'Un week-end de célébration'),
     heroTagline:   s('Margaux and Sam are getting married!', 'Margaux et Sam se marient !'),
     sections: {
-      programme: s('Programme of Events', 'Programme des événements'),
-      details:   s('The Details', 'Les détails'),
+      programme:         s('The Weekend', 'Le Week-end'),
+      programmeSubtitle: s('All events will take place at the Village de Sully.', 'Tous les événements du week-end auront lieu au Village de Sully.'),
+      details:           s('The Details', 'Infos pratiques'),
     },
     when: {
       heading: s('When', 'Quand'),
@@ -537,43 +548,56 @@ export const strings = {
     },
     where: {
       heading:       s('Where', 'Où'),
-      venueLabel:    s('Venue', 'Lieu'),
+      venueLabel:    s('Venue', 'Où'),
       datesLabel:    s('Dates', 'Dates'),
       mapLabel:      s('Map', 'Carte'),
-      venue:         s('Village De Sully', 'Village De Sully'),
-      location:      s('Île-de-France, near Paris', 'Île-de-France, près de Paris'),
-      appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Plans ↗'),
+      venue:         s('Village de Sully', 'Village de Sully'),
+      location:      s('Rosny-sur-Seine, France', 'Rosny-sur-Seine, France'),
+      appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Maps ↗'),
       googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
     },
     accommodation: {
-      heading:         s('Stay', 'Hébergement'),
-      stayAtVillage:   s('Rooms at the venue', 'Séjour au village'),
-      price:           s('€75 per person, per night (double occupancy)', '75 € par personne et par nuit (occupation double)'),
-      reserveNote:     s('Reserve through RSVP', 'Réservez via le RSVP'),
+      heading:       s('Stay', 'Hébergement'),
+      stayAtVillage: s('Stay at Village de Sully', 'Dormir au Village de Sully'),
+      desc:          s(
+        'We encourage all guests to stay on site to enjoy the full wedding weekend and spend more time together. Accommodations include traditional Village Rooms and restored private train car suites, with options for couples, families, and larger groups.',
+        "Nous vous encourageons à rester sur place afin de profiter pleinement du week-end et de partager davantage de temps tous ensemble. Le Village propose des chambres traditionnelles ainsi que d'anciens wagons réaménagés en suites privées, avec des options pour les couples, les familles et les groupes.",
+      ),
+      exploreBtn:    s('Explore Accommodations', 'Découvrir les hébergements'),
     },
     weekend: {
       friday: {
-        day:          s('Friday', 'Vendredi'),
-        timeEvening:  s('Evening', 'Soirée'),
-        welcomeDinner: s('Welcome Dinner', 'Dîner de bienvenue'),
-        welcomeDesc:  s('Casual gathering as guests arrive', "Retrouvailles informelles à l'arrivée des invités"),
+        day:     s('Friday', 'Vendredi'),
+        checkin: {
+          time: s('5:30 PM', '17 h 30'),
+          name: s('Check-in opens at the Village de Sully', 'Accueil au Village de Sully'),
+        },
+        dinner: {
+          time: s('Around 7:00 PM', 'Vers 19 h'),
+          name: s('Dinner at the Village Market', 'Dîner au Marché du Village'),
+        },
       },
       saturday: {
-        day:           s('Saturday', 'Samedi'),
-        timeMorning:   s('Morning', 'Matin'),
-        breakfast:     s('Breakfast', 'Petit-déj'),
-        timeAfternoon: s('Afternoon', 'Après-midi'),
-        ceremony:      s('Ceremony', 'Cérémonie'),
-        cocktail:      s('Cocktail Hour', 'Cocktail'),
-        timeEvening:   s('Evening', 'Soirée'),
-        reception:     s('Reception & Dinner', 'Réception & Dîner'),
+        day:       s('Saturday', 'Samedi'),
+        excursion: {
+          time: s('Morning', 'Matin'),
+          name: s('Optional Excursion to Giverny', 'Option excursion à Giverny'),
+        },
+        ceremony: {
+          time: s('Around 5:00 PM', 'Vers 17 h'),
+          name: s('Ceremony', 'Cérémonie'),
+        },
+        celebration: {
+          time: s('Starting at 6:30 PM', 'Vers 18 h 30'),
+          name: s('Cocktail Hour, Dinner & Dancing', 'Cocktail, dîner & soirée dansante'),
+        },
       },
       sunday: {
-        day:           s('Sunday', 'Dimanche'),
-        timeMorning:   s('Morning', 'Matin'),
-        breakfast:     s('Breakfast', 'Petit-déj'),
-        timeMidday:    s('Midday', 'Midi'),
-        farewellBrunch: s('Farewell Brunch', "Brunch d'adieu"),
+        day:    s('Sunday', 'Dimanche'),
+        brunch: {
+          time: s('11:30 AM–2:00 PM', '11 h 30–14 h'),
+          name: s('Farewell Brunch & Pétanque', 'Brunch & Pétanque'),
+        },
       },
     },
     location: {
@@ -588,195 +612,263 @@ export const strings = {
     },
     nav: {
       schedule: {
-        title: s('Schedule', 'Programme'),
-        desc:  s('Full weekend timeline', 'Programme du week-end complet'),
+        title: s('The Weekend', 'Le Week-end'),
+        desc:  s('Schedule', 'Le programme du mariage'),
       },
       venue: {
-        title: s('The Venue', 'Le Lieu'),
-        desc:  s('Village De Sully & grounds', 'Village De Sully & domaine'),
+        title: s('The Village', 'Le Village'),
+        desc:  s('Venue & Accommodations', 'Le Village & les hébergements'),
       },
       couple: {
-        title: s('The Couple', 'Le Couple'),
-        desc:  s('Read our story', 'Lire notre histoire'),
+        title: s('The Couple', 'Les Mariés'),
+        desc:  s('About Us', 'Notre histoire'),
       },
       travel: {
-        title: s('Travel', 'Voyager'),
-        desc:  s('Getting there & around', 'Comment venir & se déplacer'),
+        title: s('The Journey', 'Le Voyage'),
+        desc:  s('Directions & Travel Tips', 'Préparer votre visite'),
       },
       lookbook: {
-        title: s('Lookbook', 'Lookbook'),
-        desc:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
+        title: s('The Look Book', 'Le Dress Code'),
+        desc:  s('Dress Code & Inspiration', 'Inspiration & idées'),
       },
       registry: {
-        title: s('Registry', 'Liste de mariage'),
-        // TODO(sam/margaux): French copy needed — English placeholder
-        desc:  s('Gifts, funds & wishes', 'Gifts, funds & wishes'),
+        title: s('The Registry', 'La Liste de mariage'),
+        desc:  s('If You Wish', 'Si vous le souhaitez'),
       },
       rsvp: {
         title: s('RSVP', 'RSVP'),
-        desc:  s('Confirm & request accommodation', "Confirmer & réserver l'hébergement"),
+        desc:  s("Let Us Know You're Coming", 'On vous attend !'),
+      },
+      faq: {
+        title: s('FAQ', 'FAQ'),
+        desc:  s('Frequently Asked Questions', 'Questions fréquentes'),
       },
     },
 
-    // /france/lookbook
+    // /france/lookbook — Look Book (EN) / Dress Code (FR)
     lookbook: {
-      pageTitle: s('France Lookbook', 'Lookbook France'),
-      heading:   s('Lookbook', 'Lookbook'),
-      subtitle:  s('Outfit inspiration & ideas', 'Inspiration tenues & idées'),
+      pageTitle: s('Look Book', 'Dress Code'),
+      heading:   s('Look Book', 'Dress Code'),
+      subtitle:  s('Dress Code & Inspiration', 'Inspiration & idées'),
+      friday: {
+        day:  s('Friday', 'Vendredi'),
+        code: s('Garden Party', 'Garden Party'),
+        desc: s(
+          'Our Friday evening Welcome Dinner will take place outdoors throughout the Village.\n\nExpect a relaxed evening spent mingling, enjoying market-style food stations, and celebrating together under the open sky.\n\nThe Village grounds are paved, so heels are perfectly suitable.',
+          'Le dîner de bienvenue du vendredi soir se déroulera en extérieur, dans les différents espaces du Village.\n\nVous passerez la soirée à circuler entre les différents stands, à profiter du dîner et à passer du temps ensemble.\n\nLes allées du Village sont pavées ; les talons ne poseront donc aucun problème.',
+        ),
+      },
+      saturday: {
+        day:  s('Saturday', 'Samedi'),
+        code: s('Cocktail Attire', 'Cocktail'),
+        desc: s(
+          "Our ceremony and cocktail hour will take place outdoors on paved surfaces, followed by dinner and dancing indoors.\n\nWe invite you to wear something colorful for the occasion.\n\nThe Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.\n\nFollowing the French wedding tradition, women are encouraged to wear hats or fascinators.",
+          "La cérémonie et le cocktail auront lieu en extérieur, sur des surfaces pavées. Le dîner et la soirée dansante se dérouleront ensuite en intérieur.\n\nNous vous invitons à porter une tenue colorée pour l'occasion.\n\nL'ambiance du Village, avec son charme rétro inspiré des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous en inspirer.\n\nDans la belle tradition des mariages français, les chapeaux sont les bienvenus !",
+        ),
+      },
     },
 
     // /france/schedule
     schedule: {
-      pageTitle:      s('France Schedule', 'Programme France'),
-      heading:        s('Weekend Schedule', 'Programme du week-end'),
+      pageTitle:      s('The Weekend', 'Le Week-end'),
+      heading:        s('The Weekend', 'Le programme du week-end'),
       subtitle:       s('May 28–30, 2027', '28–30 mai 2027'),
-      checkin:        s('Check-in', 'Arrivée'),
-      checkinValue:   s('Friday, 5:00 PM', 'Vendredi, 17h00'),
-      checkout:       s('Check-out', 'Départ'),
-      checkoutValue:  s('Sunday, 3:00 PM', 'Dimanche, 15h00'),
-      calendarBtn:    s('Add Weekend to Calendar', "Ajouter le week-end à l'agenda"),
-      calendarNote:   s("Personalized calendar with your RSVP'd events", 'Calendrier personnalisé avec vos événements RSVP'),
+      calendarBtn:    s('Add events to calendar', 'Ajouter des événements à votre calendrier'),
+      calendarNote:   s(
+        'RSVP to unlock your personalized weekend schedule and add it to your calendar.',
+        'Répondez à votre invitation pour ajouter votre programme personnalisé à votre calendrier.',
+      ),
+      dressCodeLabel: s('Dress Code', 'Dress Code'),
+      weather: {
+        heading: s('Weather', 'Météo'),
+        value:   s('Late May: 60–72°F (15–22°C)', 'Fin mai : 15–22°C (60–72°F)'),
+        note:    s('Spring weather varies widely and changes quickly. Layers are recommended to deal with the evening chill.', 'Les températures en mai peuvent varier au cours de la journée. Nous vous recommandons de prévoir une veste légère ou un pull pour les soirées plus fraîches.'),
+      },
       friday: {
         heading: s('Friday, May 28', 'Vendredi 28 mai'),
         checkin: {
-          time:  s('5:00 PM', '17h00'),
-          title: s('Check-in Opens', 'Ouverture des arrivées'),
-          desc:  s('Settle into your accommodations at the village', 'Installez-vous dans votre hébergement au village'),
+          time:  s('5:30 PM', '17 h 30'),
+          title: s('Check-in Opens', 'Accueil au Village de Sully'),
+          desc:  s('Settle into your accommodations at the Village.', 'Prenez le temps de vous installer avant le dîner.'),
         },
         dinner: {
-          time:     s('7:00 PM', '19h00'),
-          title:    s('Welcome Dinner', 'Dîner de bienvenue'),
-          location: s('Village Square', 'Village Square'),
-          desc:     s('Casual gathering to kick off the weekend', 'Retrouvailles informelles pour démarrer le week-end'),
+          time:     s('7:00 PM', 'Vers 19 h'),
+          title:    s('Dinner at the Village Market', 'Dîner au Marché du Village'),
+          location: s('Village Square', 'La Place du Village'),
+          desc:     s(
+            'Join us for a relaxed evening inspired by a traditional French village market, with seasonal specialties, drinks, and plenty of time to mingle.',
+            "Rejoignez-nous pour une soirée conviviale inspirée d'un marché de village, avec des spécialités de saison, des boissons et tout le plaisir de se retrouver.",
+          ),
+        },
+        dressCode: {
+          code: s('Garden Party', 'Garden Party'),
+          desc: s(
+            'The Welcome Dinner will take place outdoors. Come ready to mingle, enjoy market-style food stations, and celebrate together under the open sky. The Village grounds are paved, so heels are perfectly suitable.',
+            'Le dîner du vendredi se déroulera en extérieur. Les allées étant pavées, les talons sont parfaitement adaptés.',
+          ),
         },
       },
       saturday: {
         heading: s('Saturday, May 29', 'Samedi 29 mai'),
-        dayNote: s('Event Day', 'Jour principal'),
         breakfast: {
-          time:  s('Morning', 'Matin'),
-          title: s('Breakfast', 'Petit-déjeuner'),
-          desc:  s('Included for overnight guests', 'Inclus pour les résidents'),
+          time:  s('9:00 AM–11:00 AM', '9 h à 11 h'),
+          title: s('Breakfast', 'Petit déjeuner'),
+          desc:  s('Included for guests staying at Village de Sully.', 'Inclus pour les personnes logeant au Village de Sully.'),
         },
-        excursions: {
-          time:        s('Late Morning', 'Fin de matinée'),
-          title:       s('Optional Excursion', 'Excursions optionnelles'),
-          placeholder: s('An adventure to Giverny', 'Détails à confirmer'),
+        excursion: {
+          time:  s('10:00 AM', 'Matin'),
+          title: s('Optional Excursion to Giverny', 'Option excursion à Giverny'),
+          desc:  s("Explore Claude Monet's home and gardens.", 'Découvrez la maison et les jardins de Claude Monet.'),
         },
         ceremony: {
-          time:     s('5:30 PM', '17h30'),
+          time:     s('5:00 PM', 'Vers 17 h'),
           title:    s('Ceremony', 'Cérémonie'),
-          location: s('La Mairie', 'La Mairie'),
+          location: s('La Mairie du Village', 'La Mairie du Village'),
         },
         cocktail: {
-          time:     s('Following', 'Ensuite'),
+          time:     s('6:30 PM', 'Vers 18 h 30'),
           title:    s('Cocktail Hour', 'Cocktail'),
-          location: s('Village Square', 'Village Square'),
+          location: s('Village Square', 'La Place du Village'),
         },
         reception: {
           time:  s('Evening', 'Soirée'),
-          title: s('Reception & Dinner', 'Réception & Dîner'),
-          desc:  s('Dinner, toasts, and dancing into the night', "Dîner, discours et danse jusqu'au bout de la nuit"),
+          title: s('Dinner & Dancing', 'Dîner & soirée dansante'),
+          desc:  s('Dinner, speeches, and dancing late into the night.', 'Dîner, discours et soirée dansante jusque tard dans la nuit.'),
+        },
+        dressCode: {
+          code: s('Cocktail Attire', 'Cocktail'),
+          desc: s(
+            "We invite you to wear something colorful for the occasion.\n\nThe Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.\n\nFollowing the French wedding tradition, women are encouraged to wear hats or fascinators.",
+            "Nous vous invitons à porter une tenue colorée pour l'occasion.\n\nL'ambiance du Village, avec son charme rétro des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous inspirer du charme rétro années 70-80 du Village !\n\nEt si vous cherchiez une bonne occasion de porter un chapeau, la voici !",
+          ),
         },
       },
       sunday: {
         heading: s('Sunday, May 30', 'Dimanche 30 mai'),
         breakfast: {
-          time:  s('Morning', 'Matin'),
-          title: s('Breakfast', 'Petit-déjeuner'),
-          desc:  s('Included for overnight guests', 'Inclus pour les résidents'),
+          time:  s('9:00 AM–11:00 AM', '9 h à 11 h'),
+          title: s('Breakfast', 'Petit déjeuner'),
+          desc:  s('Included for guests staying at Village de Sully.', 'Inclus pour les personnes logeant au Village de Sully.'),
         },
         brunch: {
-          time:     s('11:00 AM', '11h00'),
-          title:    s('Farewell Brunch', "Brunch d'adieu"),
-          location: s('Village Square', 'Village Square'),
-          desc:     s('Village Square', 'Village Square'),
+          time:     s('11:30 AM–2:00 PM', '11 h 30–14 h'),
+          title:    s('Farewell Brunch & Games', 'Brunch & jeux'),
+          location: s('Village Square', 'La Place du Village'),
+          desc:     s(
+            'Join us for one last morning of brunch, games, and good company before the weekend comes to a close.',
+            'Rejoignez-nous pour un brunch, quelques parties de pétanque et pour profiter ensemble des derniers instants du week-end.',
+          ),
         },
-        checkout: {
-          time:  s('3:00 PM', '15h00'),
-          title: s('Check-out', 'Départ'),
-          desc:  s('Please vacate rooms by this time', 'Merci de libérer vos chambres à cette heure'),
+        dressCode: {
+          code: s('Casual', 'Décontracté'),
+          desc: s('', ''),
+        },
+        venueCloses: {
+          time:  s('4:00 PM', '16 h'),
+          title: s('Venue Closes', 'Fermeture du Village'),
         },
       },
     },
 
-    // /france/details
+    // /france/details — The Village
     details: {
-      pageTitle: s('France Details', 'Détails France'),
-      heading:   s('The Venue', 'Le Lieu'),
-      subtitle:  s('Village De Sully', 'Village De Sully'),
-      about: {
-        heading:       s('About the Venue', 'À propos du lieu'),
-        name:          s('Village De Sully', 'Village De Sully'),
-        location:      s('Île-de-France, approximately 60km west of Paris', "Île-de-France, à environ 60 km à l'ouest de Paris"),
-        appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Plans ↗'),
+      pageTitle: s('The Village', 'Le Village'),
+      heading:   s('The Village', 'Le Village'),
+      subtitle:  s('Village de Sully', 'Village de Sully'),
+      intro:     s(
+        "We'll be spending the entire wedding weekend together at Village de Sully. Every event, from Friday evening's welcome dinner to Sunday's brunch, takes place within the Village, so once you arrive, all you have to do is settle in and enjoy the weekend with us.",
+        "Nous passerons tout notre week-end de mariage au Village de Sully. Tous les événements, du dîner de bienvenue du vendredi soir au brunch du dimanche, se dérouleront au sein du Village. Une fois sur place, il ne vous restera plus qu'à vous installer et profiter pleinement du week-end avec nous.",
+      ),
+      location: {
+        heading:       s('Location', 'Où'),
+        line1:         s('Rosny-sur-Seine, France', 'Rosny-sur-Seine, France'),
+        line2:         s('Approximately 45 minutes from Paris', 'À environ 45 minutes de Paris'),
+        appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Maps ↗'),
         googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
-        websiteLink:   s('Venue Website ↗', 'Site du lieu ↗'),
-        desc:          s(
-          'Clos de Malassis was a small farming village that appeared on the first map of France, published in 1744. Now restored as an event space, Le Village de Sully offers a charming, throwback atmosphere nestled in the French countryside.',
-          'Un charmant domaine champêtre avec de beaux jardins, parfait pour un week-end de célébration en famille et entre amis.',
-        ),
       },
-      spaces: {
-        heading: s('The Spaces', 'Les Espaces'),
-        grounds: {
-          title: s('The Grounds', 'Le Domaine'),
-          desc:  s('A reproduction of a village square, with indoor and outdoor spaces for gathering, socializing, and celebrating', 'De beaux jardins et espaces extérieurs pour se retrouver tout au long du week-end.'),
+      highlights: {
+        heading: s('Village Highlights', 'Les incontournables du Village'),
+        place: {
+          title: s('La Place du Village', 'La Place du Village'),
+          desc:  s(
+            "The heart of the Village and the setting for much of the weekend's celebrations.",
+            'Le cœur du Village, où nous nous retrouverons pour les cocktails, les repas et les festivités tout au long du week-end.',
+          ),
         },
-        ceremony: {
-          title: s('Ceremony Space', 'Espace cérémonie'),
-          desc:  s('An outdoor, paved space for our ceremony with seating for all guests.', 'Une cérémonie en plein air entourée par la nature dans le domaine.'),
+        bistrot: {
+          title: s('Bistrot des Amis', 'Le Bistrot des Amis'),
+          desc:  s(
+            'The perfect spot to grab a drink, play a game, and unwind throughout the weekend.',
+            "L'endroit idéal pour prendre un verre, jouer au baby-foot ou simplement profiter du Village tout au long du week-end.",
+          ),
         },
-        accommodation: {
-          title: s('Accommodations', 'Hébergements'),
-          desc:  s('Comfortable guest rooms with ensuite bathrooms and a variety of sleeping arrangements', 'Des chambres confortables au sein du domaine.'),
+        felix: {
+          title: s('Félix Potin', 'Félix Potin'),
+          desc:  s(
+            'A nod to the village grocery stores of another era.',
+            "Un clin d'œil à l'épicerie de village d'autrefois.",
+          ),
+        },
+        gare: {
+          title: s('La Gare', 'La Gare'),
+          desc:  s(
+            'The historic train station, platform, terrace, and beautifully restored Orient Express train cars that guests will call home for the weekend.',
+            'Son quai, sa terrasse et ses anciens wagons transformés en chambres.',
+          ),
+        },
+        mairie: {
+          title: s('La Mairie', 'La Mairie'),
+          desc:  s(
+            'Our outdoor ceremony will take place in front of the Village Mairie, with seating for all guests.',
+            'La cérémonie se déroulera en plein air, devant la Mairie du Village.',
+          ),
         },
       },
       staying: {
-        heading:            s('Staying at the Village', 'Séjourner au village'),
-        recommendation:     s('We strongly recommend staying on-site.', 'Nous recommandons vivement de séjourner sur place.'),
-        recommendationNote: s(
-          'The village is in a rural area with very limited nearby hotel options. Staying on-site means you can fully enjoy the weekend without worrying about transportation.',
-          "Le village est en zone rurale avec très peu d'hôtels à proximité. Séjourner sur place vous permet de profiter pleinement du week-end sans vous soucier des déplacements.",
+        heading: s('Staying at the Village', 'Dormir au Village'),
+        callout: s(
+          "Staying at the Village is the best way to enjoy the full wedding weekend. You'll be just steps away from every event, with more time to relax, celebrate, and enjoy the Village together.",
+          'Dormir sur place est la meilleure façon de profiter pleinement du week-end. Vous serez à quelques pas de chaque événement, avec plus de temps pour vous détendre, célébrer et profiter du Village ensemble.',
         ),
-        roomDetails: {
-          heading:     s('Room Details', 'Détails des chambres'),
-          price:       s('€75 per person, per night', '75 € par personne par nuit'),
-          breakfast:   s('Breakfast included each morning', 'Petit-déjeuner inclus chaque matin'),
-          checkin:     s('Check-in: Friday, 5:00 PM', 'Arrivée : vendredi à 17h00'),
-          checkout:    s('Check-out: Sunday, 3:00 PM', 'Départ : dimanche à 15h00'),
-          bookingNote: s(
-            "Reserve your room through the RSVP form. We'll confirm your booking closer to the event.",
-            "Réservez votre chambre via le formulaire RSVP. Nous confirmerons votre réservation à l'approche de l'événement.",
-          ),
-        },
-        rsvpDeadline: {
-          heading: s('RSVP', 'RSVP'),
-          value:   { en: `By ${RSVP_DEADLINE_FRANCE.en}`, fr: `Avant le ${RSVP_DEADLINE_FRANCE.fr}` },
-        },
       },
-      dressCode: {
-        heading: s('Dress Code', 'Code vestimentaire'),
-        friday: {
-          event: s('Friday Welcome Dinner', 'Dîner de bienvenue du vendredi'),
-          code:  s('Garden Party', 'Smart Casual'),
-          note:  s(
-            'The dinner will be outdoors on the village square, which is paved. Guests should expect some walking and standing, though seating will be available.',
-            '',
-          ),
+      overview: {
+        heading: s('Overview', 'Votre séjour'),
+        items: [
+          s('Private accommodations are available for couples, families, and larger groups.', 'Des chambres sont disponibles pour les couples, les familles et les groupes.'),
+          s('Village Rooms (limited availability)', 'Chambres du Village (Disponibilité limitée)'),
+          s('Orient-Express train car suites', 'Suites dans les wagons Orient-Express'),
+          s('Louisiana train car suites', 'Suites dans les wagons Louisiane'),
+          s('Breakfast included each morning', 'Petit déjeuner inclus chaque matin'),
+          s('Check-in: Friday from 5:30 PM', 'Arrivée le vendredi à partir de 17 h 30'),
+          s('Rooms should be cleared by Sunday, 12:00 PM. Bag storage will be available.', 'Les chambres devront être libérées le dimanche avant 12 h. Une bagagerie sera disponible.'),
+          s("You're welcome to continue enjoying the Village until 4:00 PM.", 'Vous pourrez ensuite continuer à profiter du Village jusqu\'à 16 h.'),
+        ],
+      },
+      booking: {
+        heading: s('Booking', 'Réservation'),
+        reserve: s('Reserve your accommodations through your RSVP.', 'Réservez votre chambre lors de votre RSVP.'),
+        pricing: s(
+          'Room options and pricing vary depending on your party size, with rooms starting at €150 per night for double occupancy.',
+          'Les tarifs varient selon la taille de votre groupe, avec des chambres doubles à partir de 150 € la nuit.',
+        ),
+        followup: s(
+          "We'll be in touch after the RSVP deadline to confirm your room assignment and accommodation details. If you have any questions or need special accommodations, please reach out by email or text.",
+          "Nous vous contacterons après la date limite des RSVP pour confirmer les détails de votre chambre. Si vous avez des questions ou des besoins particuliers, n'hésitez pas à nous écrire ou à nous envoyer un texto.",
+        ),
+      },
+      roomTypes: {
+        heading: s('Room Types', 'Types de chambres'),
+        village: {
+          title: s('Village Rooms (Limited Availability)', 'Chambres du Village (Disponibilité limitée)'),
+          desc:  s('Traditional guest rooms located throughout the Village buildings.', 'Réparties dans les bâtiments historiques du Village.'),
         },
-        saturday: {
-          event: s('Saturday Ceremony & Reception', 'Cérémonie & réception du samedi'),
-          code:  s('Cocktail Attire', 'Tenue de garden party'),
-          note:  s(
-            'The outdoor ceremony will be on paved ground. No worries about sharp heels or grass.',
-            "La cérémonie est en extérieur — chaussures confortables recommandées pour marcher sur l'herbe et les allées du jardin.",
-          ),
+        orient: {
+          title: s('Orient-Express Train Cars', 'Wagons Orient-Express'),
+          desc:  s('Restored Orient-Express train car suites with private bathrooms and air conditioning.', "Chambres avec salle de bain privée aménagées dans d'anciens wagons de l'Orient-Express entièrement restaurés. Tous les wagons sont climatisés."),
         },
-        sunday: {
-          event: s('Sunday Brunch', 'Brunch du dimanche'),
-          code:  s('Very Casual', 'Décontracté'),
-          note:  s('Street clothes for relaxing.', ''),
+        louisiana: {
+          title: s('Louisiana Train Cars', 'Wagons Louisiane'),
+          desc:  s('Restored Louisiana train car suites with private bathrooms and air conditioning.', "Chambres avec salle de bain privée aménagées dans d'anciens wagons entièrement restaurés. Tous les wagons sont climatisés."),
         },
       },
     },
@@ -784,8 +876,8 @@ export const strings = {
     // /france/travel
     travel: {
       pageTitle: s('France Travel', 'Voyager en France'),
-      heading:   s('Travel', 'Voyager'),
-      subtitle:  s('Getting to Village De Sully', 'Comment se rendre au Village De Sully'),
+      heading:   s('Travel', 'Voyage'),
+      subtitle:  s('Getting to Village de Sully', 'Comment se rendre au Village de Sully'),
       toFrance: {
         heading: s('Getting to France', 'Comment venir en France'),
         air: {
@@ -815,7 +907,7 @@ export const strings = {
       },
       toVenue: {
         heading: s('Getting to the Venue from Paris', 'Comment se rendre au lieu depuis Paris'),
-        intro:   s('Village De Sully is in the Île-de-France region, approximately 60km west of Paris.', "Le Village De Sully est en Île-de-France, à environ 60 km à l'ouest de Paris."),
+        intro:   s('Village de Sully is in the Île-de-France region, approximately 60km west of Paris.', "Le Village de Sully est en Île-de-France, à environ 60 km à l'ouest de Paris."),
         train: {
           heading: s('By Train', 'En train'),
           step1:   s(
@@ -830,39 +922,46 @@ export const strings = {
             'From Mantes-la-Jolie, the venue is only a 10 minute drive. Ubers are available around the station, and taxis are right in front.',
             "Depuis Mantes-la-Jolie, le lieu n'est qu'à 10 minutes en voiture. Des Uber sont disponibles autour de la gare et des taxis se trouvent juste devant.",
           ),
+          mobilitesNote: s('We recommend downloading the Île-de-France Mobilités app before you travel.', "Nous vous recommandons de télécharger l'application Île-de-France Mobilités avant votre voyage."),
+          mobilitesBtn:  s('Île-de-France Mobilités', 'Île-de-France Mobilités'),
         },
         car: {
           heading:              s('By Car', 'En voiture'),
-          text:                 s('From central Paris: ~1 hour via the A13 motorway. Free parking available at the village.', "Depuis le centre de Paris : ~1 heure via l'autoroute A13. Parking gratuit disponible au village."),
+          text:                 s(
+            'Approximately one hour from central Paris via the A13, depending on traffic. Travel times may be longer during rush hour. Complimentary parking is available at Village de Sully.',
+            "Environ une heure depuis le centre de Paris via l'A13, selon la circulation. Le trajet peut être plus long aux heures de pointe. Le Village de Sully dispose d'un parking gratuit.",
+          ),
           directionsBeforeLink: s('Driving directions are available', 'Les indications routières sont disponibles'),
           directionsLinkText:   s('here', 'ici'),
           directionsAfterLink:  s('.', '.'),
-          tolls:                s('French highways use automated tolling and have frequent speed cameras.', 'Les autoroutes françaises utilisent un péage automatisé et comportent de nombreux radars.'),
+          tolls:                s('Please note that France uses automated speed cameras and many highways include tolls.', ''),
         },
       },
+      // ETIAS & International Driving Permit — English site only (French page omits both)
+      etias: {
+        heading:      en('ETIAS Travel Authorization'),
+        text:         en('Beginning in 2027, U.S. passport holders traveling to France will need an ETIAS travel authorization before departure. Applications are completed online through the official European Union website. Most applications are approved within minutes, though some may take up to 30 days. We recommend applying several weeks before your trip. The application fee is €20.'),
+        passportNote: en('Make sure your passport is valid for your trip and check its expiration date well before departure.'),
+        btn:          en('Official ETIAS Website'),
+      },
+      idp: {
+        heading: en('International Driving Permit'),
+        text:    en('Visitors from the United States planning to rent a car should obtain an International Driving Permit before leaving the U.S. It is required in France and must be obtained before departure.'),
+        btn:     en('International Driving Permit (AAA)'),
+      },
+      // Practical Information — English site only (French page omits this section)
       practical: {
-        heading: s('Practical Info', 'Informations pratiques'),
-        dateRef: s('For the weekend of May 28–30, 2027:', 'Pour le week-end du 28–30 mai 2027 :'),
-        timezone: {
-          heading: s('Time Zone', 'Fuseau horaire'),
-          value:   s('CEST (UTC+2)', 'CEST (UTC+2)'),
-          note:    s('6 hours ahead of New York', "6 heures d'avance sur New York"),
-        },
-        currency: {
-          heading: s('Currency', 'Monnaie'),
-          value:   s('Euro (€)', 'Euro (€)'),
-          note:    s('Tap-to-pay and chip cards are widely accepted but swipes are not. Cash is rarely required and usually only used for transactions less than €10-20. American Express is usually only accepted at large chains, tourist attractions, and luxury retailers.', 'Les cartes sans contact et à puce sont largement acceptées, mais pas le glissement. Les espèces sont rarement nécessaires et généralement utilisées uniquement pour les transactions inférieures à 10-20 €. American Express est généralement accepté uniquement dans les grandes chaînes, les attractions touristiques et les commerces de luxe.'),
-        },
-        language: {
-          heading: s('Language', 'Langue'),
-          value:   s('French', 'Français'),
-          note:    s('English is widely understood but outside of Paris and tourist areas people will strongly prefer French.', "L'anglais est largement compris, mais en dehors de Paris et des zones touristiques, les gens préféreront nettement le français."),
-        },
-        weather: {
-          heading: s('Weather', 'Météo'),
-          value:   s('Late May: 60–72°F (15–22°C)', 'Fin mai : 15–22°C (60–72°F)'),
-          note:    s('Spring weather varies widely and changes quickly. Layers are recommended to deal with the evening chill.', "Le temps printanier varie beaucoup et change vite. Des couches sont recommandées pour faire face à la fraîcheur du soir."),
-        },
+        heading: en('Practical Information'),
+        timezone:    { heading: en('Time Zone'),        text: en('France is six hours ahead of New York.') },
+        weather:     { heading: en('Weather'),          text: en('Late May: 60–72°F (15–22°C). Spring weather varies widely and changes quickly. Layers are recommended to deal with the evening chill.') },
+        payment:     { heading: en('Payment Methods'),  text: en('Contactless payment and chip cards are widely accepted. Cash is still preferred for some smaller purchases, particularly at markets and local bakeries. American Express is not accepted at many businesses.') },
+        electricity: { heading: en('Electricity'),      text: en('France uses Type C and Type E electrical outlets (230V). Travelers from the U.S. will need a plug adapter.') },
+        mobile:      { heading: en('Mobile Service'),   text: en('International roaming plans are available through most carriers. Free Wi-Fi is available throughout Village de Sully.') },
+        whatsapp:    { heading: en('WhatsApp'),         text: en('WhatsApp is widely used in France. We recommend downloading it before your trip, as many people, businesses, and service providers prefer it for communication.') },
+        water:       { heading: en('Drinking Water'),   text: en('Tap water is safe to drink throughout France. We recommend bringing a reusable water bottle to refill during your stay.') },
+        pharmacies:  { heading: en('Pharmacies'),       text: en('Pharmacies are easy to find throughout France and are an excellent resource for minor illnesses, medications, and health advice.') },
+        tipping:     { heading: en('Tipping'),          text: en('Service is included at restaurants in France. Tipping is never expected but is always appreciated for exceptional service.') },
+        uber:        { heading: en('Uber & Taxis'),     text: en('Uber is available in Paris and the surrounding area, though availability may be more limited near Village de Sully. Local taxis are also available.') },
       },
     },
 
@@ -906,25 +1005,31 @@ export const strings = {
         },
         coreEvents: {
           heading: s('Events', 'Événements'),
-          note:    s('These events are part of your invitation.', 'Ces événements font partie de votre invitation.'),
+          note:    s('Please confirm your attendance for the following events.', 'Merci de nous indiquer les événements auxquels vous participerez.'),
           empty:   s('No core events are assigned to this invitation yet.', "Aucun événement principal n'est encore assigné à cette invitation."),
         },
         optionalEvents: {
-          heading: s('Special Activities', 'Activités spéciales'),
-          note:    s("Choose any extra celebrations you'd like to attend.", 'Choisissez les célébrations supplémentaires auxquelles vous souhaitez participer.'),
+          heading: s('Morning Excursion to Giverny', 'Excursion à Giverny'),
+          note:    s("Let us know if you'd like to join us for the excursion! More details coming soon.", "Dites-nous si vous souhaitez participer à cette excursion ! Plus d'informations seront communiquées prochainement."),
           empty:   s('No optional events are assigned right now.', "Aucun événement optionnel n'est assigné pour le moment."),
         },
         dietary: {
-          heading:     s('Dietary Needs & Allergens', 'Besoins alimentaires & allergènes'),
-          note:        s('Share any allergies or dietary requirements.', 'Indiquez vos allergies ou régimes alimentaires.'),
-          placeholder: s('List allergens or dietary restrictions', 'Listez les allergènes ou restrictions alimentaires'),
+          heading:      s('Dietary Needs & Allergens', 'Besoins alimentaires & allergènes'),
+          note:         s('Please let us know about any allergies or dietary restrictions.', 'Merci de nous indiquer toute allergie ou restriction alimentaire.'),
+          childrenNote: s("For children, a children's menu is available. Please let us know if you'd like us to reserve one for your child.", 'Un menu enfant est également proposé. Merci de nous indiquer si vous souhaitez en réserver un pour votre enfant.'),
+          placeholder:  s('List allergens or dietary restrictions', 'Listez les allergènes ou restrictions alimentaires'),
         },
         accommodation: {
-          heading: s('Accommodation', 'Hébergement'),
-          note:    s('Request accommodation at Village De Sully.', 'Demandez un hébergement au Village De Sully.'),
-          unsure:  s('Not sure yet', 'Pas encore sûr(e)'),
-          yes:     s('Yes, please include me', 'Oui, incluez-moi'),
-          no:      s('No, I do not need accommodation', "Non, je n'ai pas besoin d'hébergement"),
+          heading:  s('Accommodations', 'Chambre'),
+          intro:    s(
+            "We hope you'll choose to stay with us at Village de Sully. Staying on site is the best way to enjoy the full wedding weekend. You'll be just steps away from every event, with more time to relax, celebrate, and enjoy the Village together.",
+            'Dormir sur place est la meilleure façon de profiter pleinement du week-end. Vous serez à quelques pas de chaque événement, avec plus de temps pour vous détendre, célébrer et profiter du Village ensemble.',
+          ),
+          question: s('Would you like to reserve accommodations at Village de Sully?', 'Souhaitez-vous réserver une chambre au Village de Sully ?'),
+          unsure:   s("I'm not sure yet", "J'y réfléchis"),
+          yes:      s("Yes, I'd like to stay at Village de Sully", 'Oui, je souhaite dormir au Village de Sully'),
+          no:       s("No thanks, I won't need accommodations", "Non merci, je n'aurai pas besoin de chambre"),
+          followup: s("We'll be in touch after the RSVP deadline to confirm your room assignment and accommodation details.", 'Nous vous contacterons après la date limite des RSVP pour confirmer les détails de votre chambre.'),
         },
         transport: {
           heading: s('Transport Help', 'Aide au transport'),
@@ -935,6 +1040,7 @@ export const strings = {
         },
         message: {
           heading:     s('Message for Us', 'Message pour nous'),
+          note:        s("Anything else you'd like us to know? Please use this space to share any additional accommodation, accessibility, or other special requests.", "Y a-t-il autre chose que nous devrions savoir ? Merci d'utiliser cet espace pour nous faire part de tout besoin particulier concernant votre chambre, l'accessibilité ou toute autre demande."),
           placeholder: s('Share your well wishes or anything else we should know', 'Partagez vos vœux ou tout ce que nous devrions savoir'),
         },
         email: {
@@ -943,7 +1049,7 @@ export const strings = {
           optional:         s('(optional)', '(facultatif)'),
           placeholder:      s('you@example.com', 'vous@exemple.com'),
           sendConfirmation: s('Send me an email confirmation', "M'envoyer une confirmation par e-mail"),
-          note:             s('Everyone below with an email address will receive the confirmation.', 'Toutes les adresses e-mail renseignées ci-dessous recevront un e-mail de confirmation.'),
+          note:             s("We'll send a confirmation of your RSVP to the email addresses below. We'll also use these addresses to share any important wedding updates.", 'Nous vous enverrons une confirmation de votre RSVP aux adresses e-mail ci-dessous. Nous utiliserons également ces adresses pour vous communiquer toute information importante concernant le week-end du mariage.'),
           requireOne:       s('At least one email address is required. We recommend adding an email address for everyone in your party.', 'Au moins une adresse email est requise. Nous recommandons de renseigner une adresse email pour chaque membre de votre groupe.'),
           requireAll:       s('An email address is required for each guest.', 'Une adresse email est requise pour chaque invité.'),
         },
@@ -954,6 +1060,145 @@ export const strings = {
         errorMsg:   s('We could not submit your RSVP. Please try again.', "Nous n'avons pas pu envoyer votre RSVP. Veuillez réessayer."),
         signedInAs: s('Signed in as', 'Vous répondez en tant que'),
         canUpdate:  { en: 'You can update your response anytime before the deadline.', fr: `Vous pourrez modifier votre réponse à tout moment jusqu'au ${RSVP_DEADLINE_FRANCE.fr}.` },
+      },
+    },
+
+    // /france/faq
+    faq: {
+      pageTitle: s('FAQ', 'FAQ'),
+      heading:   s('FAQ', 'FAQ'),
+      subtitle:  s('Frequently Asked Questions', 'Questions fréquentes'),
+      moreQuestions: s('Still have questions? Email us at', 'Vous avez encore des questions ? Écrivez-nous à'),
+      items: {
+        travelInfo: {
+          q: s('How do I get to the Village de Sully?', 'Comment rejoindre le Village de Sully ?'),
+          a: s(
+            "Most travel questions are answered on the Travel page, including flights, trains, driving, and practical information for your trip.\n\nIf you still have questions, please don't hesitate to reach out to us by email or text. We'd be happy to help.",
+            "Consultez la page Voyage pour tout savoir sur les transports et l'organisation de votre séjour. Si vous avez d'autres questions, n'hésitez pas à nous écrire.",
+          ),
+          ctaHref:  '/france/travel',
+          ctaLabel: s('Go to the Travel page →', 'Voir la page Voyage →'),
+        },
+        stay: {
+          q: s('Where should I stay?', 'Où puis-je trouver des informations sur les hébergements ?'),
+          a: s(
+            "We hope you'll stay with us at Village de Sully. Room options, pricing, and reservation details are available on The Village page.",
+            'Consultez la page Le Village & les hébergements pour découvrir les différents types de chambres, les modalités de réservation et toutes les informations utiles concernant votre séjour.',
+          ),
+          ctaHref:  '/france/details',
+          ctaLabel: s('Go to The Village page →', 'Voir la page Le Village →'),
+        },
+        wifi: {
+          q: s('Is Wi-Fi available?', 'Le Village dispose-t-il du Wi-Fi ?'),
+          a: s(
+            'Yes! Wifi is available throughout the Village.',
+            'Oui, le Wi-Fi est disponible gratuitement dans tout le Village de Sully.',
+          ),
+        },
+        rsvpDeadline: {
+          q: s('When is the RSVP deadline?', 'Jusqu\'à quand puis-je répondre ?'),
+          a: { en: `Please RSVP by ${RSVP_DEADLINE_FRANCE.en}.`, fr: `Merci de nous répondre avant le ${RSVP_DEADLINE_FRANCE.fr}.` },
+        },
+        updateRsvp: {
+          q: s('Can I update my RSVP if my plans change?', 'Puis-je modifier mon RSVP ?'),
+          a: s(
+            'Of course. You can update your RSVP through the web form at any time until the RSVP deadline.',
+            'Bien sûr ! Si vos projets changent après votre réponse, merci de nous prévenir dès que possible par e-mail ou par message.',
+          ),
+        },
+        plusOne: {
+          q: s('Can I bring a plus-one?', 'Puis-je venir avec un(e) invité(e) ?'),
+          a: s(
+            'Due to limited space, we are only able to accommodate the guests listed on your invitation.',
+            'En raison du nombre de places limité, seules les personnes mentionnées sur votre invitation pourront être accueillies.',
+          ),
+        },
+        children: {
+          q: s('Are children invited?', 'Les enfants sont-ils invités ?'),
+          a: s(
+            'Only children listed on your RSVP are included in the invitation. Children are welcome to join us for Friday evening\'s festivities and Sunday\'s brunch.\n\nFor Saturday, we have chosen to reserve the ceremony and reception for adults. We would be happy to recommend childcare options for families who need them.',
+            'Toutes les personnes invitées, y compris les enfants, figurent sur votre RSVP. Les enfants sont les bienvenus le vendredi soir et le dimanche pour le brunch. Le samedi, la cérémonie et la réception seront réservées aux adultes. Si besoin, nous serons ravis de vous recommander des solutions de garde d\'enfants à proximité.',
+          ),
+        },
+        dressCode: {
+          q: s('Is there a dress code?', 'Y a-t-il un dress code ?'),
+          a: s(
+            "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Cocktail Attire**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nIn true French wedding tradition, we'd also love to see a few fabulous hats and fascinators!\n\nPlease visit the **Look Book** page for additional inspiration.",
+            'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail. Nous vous invitons également à porter une tenue colorée. Dans la belle tradition des mariages français, les chapeaux sont les bienvenus ! Rendez-vous sur la page Dress Code pour plus de détails et quelques inspirations.',
+          ),
+          ctaHref:  '/france/lookbook',
+          ctaLabel: s('Go to the Look Book page →', 'Voir la page Dress Code →'),
+        },
+        parking: {
+          q: s('Where should I park?', 'Où puis-je me garer ?'),
+          a: s(
+            'Complimentary parking is available at Village de Sully throughout the weekend.',
+            'Un parking gratuit est à la disposition de tous les invités au Village de Sully.',
+          ),
+        },
+        partWeekend: {
+          q: s('Can I attend only part of the weekend?', 'Puis-je participer à seulement une partie du week-end ?'),
+          a: s(
+            "Absolutely. While we'd love for you to join us for the entire weekend, we understand that everyone's travel plans are different. Please RSVP for the events you'll be attending so we can plan accordingly.",
+            'Bien sûr ! Nous serions ravis de vous retrouver tout au long du week-end, mais nous comprenons que chacun ait ses contraintes. Merci de répondre uniquement aux événements auxquels vous pourrez participer.',
+          ),
+        },
+        dietary: {
+          q: s('What if I have dietary restrictions?', "Que faire si j'ai un régime alimentaire particulier ?"),
+          a: s(
+            '**Friday:** The Friday evening menu will include vegetarian and pescatarian options.\n\n**Saturday:** Cocktail hour will include vegetarian and pescatarian options, and dinner will be fully vegetarian.\n\n**Sunday:** Brunch will include vegetarian options.\n\nPlease note, the food will not be prepared in a kosher kitchen.\n\nIf you have a serious allergy or require another accommodation, please let us know when you RSVP.',
+            "Le vendredi soir, plusieurs options végétariennes et pescétariennes seront proposées, mais les plats ne seront pas préparés dans une cuisine casher.\n\nLe samedi, le cocktail et le dîner proposeront également des options végétariennes et pescétariennes. Le dîner sera entièrement végétarien. Si vous avez une allergie ou un besoin alimentaire particulier, merci de nous l'indiquer lors de votre RSVP.",
+          ),
+        },
+        saturdayMorning: {
+          q: s('Is anything happening Saturday morning?', 'Que se passe-t-il le samedi matin ?'),
+          a: s(
+            "Nothing formal is planned before the ceremony, so we encourage you to explore the area.\n\nWe'll also be offering an optional excursion to Giverny to visit Claude Monet's home and water lily gardens. More details will be shared soon, but if you're interested, please RSVP so we can plan accordingly.\n\nIf you're looking for lunch before the festivities begin, you'll find plenty of great options nearby in Mantes-la-Jolie.\n\nIf you are Shomer Shabbat, please reach out to us.",
+            "Rien de formel n'est prévu avant la cérémonie. Nous vous invitons à profiter de la région ou à participer à notre excursion facultative à Giverny pour découvrir la maison et les jardins de Claude Monet. Plus d'informations seront communiquées prochainement. Si cette sortie vous intéresse, merci de l'indiquer dans votre RSVP afin que nous puissions nous organiser. Si vous souhaitez déjeuner avant les festivités, vous trouverez de nombreuses bonnes adresses à Mantes-la-Jolie.",
+          ),
+        },
+        rain: {
+          q: s('What happens in case of rain?', 'Que se passe-t-il en cas de pluie ?'),
+          a: s(
+            'We have a rain plan in place, so the celebration will go on rain or shine.',
+            'En cas de pluie, tout est prévu pour que les festivités se déroulent dans les meilleures conditions.',
+          ),
+        },
+        unplugged: {
+          q: s('Is the ceremony unplugged?', 'Puis-je prendre des photos pendant la cérémonie ?'),
+          a: s(
+            "Yes.\n\nWe kindly ask that you keep phones and cameras tucked away during the ceremony so everyone can be fully present.\n\nOur photographer will capture the moment, and we'll be excited to share the photos with you afterward on our website.",
+            'Nous vous remercions de garder vos téléphones et appareils photo de côté pendant la cérémonie afin que chacun puisse profiter pleinement de ce moment. Nos photographes immortaliseront ces instants et nous serons ravis de partager la galerie sur notre site après le mariage.',
+          ),
+        },
+        registry: {
+          q: s('Is there a gift registry?', 'Avez-vous une liste de mariage ?'),
+          a: s(
+            "We're so grateful to celebrate with you. Your presence is the greatest gift.\n\nShould you feel inclined to give a gift, we've included a few ideas on our registry.",
+            'Votre présence est le plus beau des cadeaux, et nous sommes très heureux de partager ce week-end avec vous. Si vous souhaitez nous faire plaisir, vous trouverez quelques idées sur notre liste de mariage.',
+          ),
+          ctaHref:  '/registry',
+          ctaLabel: s('Go to the Registry page →', 'Voir la liste de mariage →'),
+        },
+      },
+      hairMakeup: {
+        q:     s('Hair & Makeup', 'Où puis-je me faire coiffer ou maquiller ?'),
+        intro: s(
+          'There are several salons located nearby in Mantes-la-Jolie. Recommendations include:',
+          'Plusieurs salons de coiffure et instituts de beauté se trouvent à Mantes-la-Jolie, à une quinzaine de minutes du Village. En voici quelques-uns que nous vous recommandons :',
+        ),
+        salons: [
+          { name: "Natur'al Coiffure", href: 'https://www.natural-coiffure.com/#bookAppointment' },
+          { name: 'Nel Glow Up',       href: 'https://www.planity.com/nel-glow-up-yumi-lashes-expert-lpg-78200-mantes-la-jolie' },
+          { name: 'Beauty Ladys 78',   href: 'https://www.planity.com/beauty-ladys-78-78200-mantes-la-jolie' },
+        ],
+      },
+      contact: {
+        q:       s('Who should I contact if I have questions?', "Qui contacter si j'ai une question ?"),
+        intro:   s("Please don't hesitate to reach out to us.", "N'hésitez pas à nous écrire !"),
+        email:   'hello@sargaux.com',
+        margaux: s('Margaux: +1 (203) 260-3260 (Text or WhatsApp)', 'Margaux : +1 203-260-3260 (SMS ou WhatsApp)'),
+        sam:     s('Sam: (202) 374-1076', 'Sam : +1 202-374-1076 (SMS ou WhatsApp)'),
       },
     },
   },

@@ -1,0 +1,279 @@
+---
+import WireframeLayout from '../../layouts/WireframeLayout.astro';
+import { strings } from '../../content/strings';
+import { createTranslator } from '../../lib/i18n';
+import LangSwitcher from '../../components/LangSwitcher.astro';
+
+const t = createTranslator(Astro.locals.lang ?? 'en');
+const faq = strings.france.faq;
+
+const items = [
+  faq.items.travelInfo,
+  faq.items.stay,
+  faq.items.wifi,
+  faq.items.rsvpDeadline,
+  faq.items.updateRsvp,
+  faq.items.plusOne,
+  faq.items.children,
+  faq.items.dressCode,
+  faq.items.parking,
+  faq.items.partWeekend,
+  faq.items.dietary,
+  faq.items.saturdayMorning,
+  faq.items.rain,
+  faq.items.unplugged,
+];
+---
+
+<WireframeLayout title={t(faq.pageTitle)} fullTitle="Chez Sargaux | France — FAQ" event="france" page="faq">
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
+      <a href="/france" class="back-link">{t(strings.nav.backToEvent)}</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="france-page-content" transition:name="france-faq-content">
+      <h1>{t(faq.heading)}</h1>
+      <p class="subtitle">{t(faq.subtitle)}</p>
+
+      <div class="faq-list">
+        {items.map((item, index) => (
+          <details class="faq-item" open={index === 0}>
+            <summary class="faq-trigger">
+              <span class="faq-question">{t(item.q)}</span>
+              <span class="faq-indicator" aria-hidden="true"></span>
+            </summary>
+            <div class="faq-answer">
+              {t(item.a).split('\n\n').filter(Boolean).map((para) => (
+                <p>{para.split('**').map((chunk, i) => (i % 2 === 1 ? <strong>{chunk}</strong> : chunk))}</p>
+              ))}
+              {'ctaHref' in item && item.ctaHref && 'ctaLabel' in item && (
+                <a class="faq-cta" href={item.ctaHref}>{t(item.ctaLabel)}</a>
+              )}
+            </div>
+          </details>
+        ))}
+
+        <details class="faq-item">
+          <summary class="faq-trigger">
+            <span class="faq-question">{t(faq.hairMakeup.q)}</span>
+            <span class="faq-indicator" aria-hidden="true"></span>
+          </summary>
+          <div class="faq-answer">
+            <p>{t(faq.hairMakeup.intro)}</p>
+            <ul class="faq-salons">
+              {faq.hairMakeup.salons.map((salon) => (
+                <li>
+                  <a href={salon.href} target="_blank" rel="noopener noreferrer">{salon.name} ↗</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-trigger">
+            <span class="faq-question">{t(faq.items.registry.q)}</span>
+            <span class="faq-indicator" aria-hidden="true"></span>
+          </summary>
+          <div class="faq-answer">
+            {t(faq.items.registry.a).split('\n\n').filter(Boolean).map((para) => (
+              <p>{para}</p>
+            ))}
+            <a class="faq-cta" href={faq.items.registry.ctaHref}>{t(faq.items.registry.ctaLabel)}</a>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-trigger">
+            <span class="faq-question">{t(faq.contact.q)}</span>
+            <span class="faq-indicator" aria-hidden="true"></span>
+          </summary>
+          <div class="faq-answer">
+            <p>{t(faq.contact.intro)}</p>
+            <ul class="faq-contact-list">
+              <li><a href={`mailto:${faq.contact.email}`}>{faq.contact.email}</a></li>
+              <li>{t(faq.contact.margaux)}</li>
+              <li>{t(faq.contact.sam)}</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <p class="faq-more">
+        <span>{t(faq.moreQuestions)}</span>{' '}
+        <a href="mailto:hello@sargaux.com">hello@sargaux.com</a>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <nav class="footer-nav">
+      <a href="/france">{t(strings.nav.home)}</a>
+    </nav>
+    <div class="footer-row">
+      <p>{t(strings.global.copyright)}</p>
+      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
+    </div>
+  </footer>
+</WireframeLayout>
+
+<style>
+  header {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .faq-list {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .faq-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq-trigger::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question {
+    font-family: var(--font-display);
+    font-size: 1.1875rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .faq-indicator {
+    position: relative;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  .faq-indicator::before,
+  .faq-indicator::after {
+    content: '';
+    position: absolute;
+    background: var(--color-accent);
+  }
+
+  .faq-indicator::before {
+    top: 7px;
+    left: 0;
+    width: 16px;
+    height: 2px;
+  }
+
+  .faq-indicator::after {
+    top: 0;
+    left: 7px;
+    width: 2px;
+    height: 16px;
+    transition: transform 0.2s;
+  }
+
+  .faq-item[open] .faq-indicator::after {
+    transform: scaleY(0);
+  }
+
+  .faq-answer {
+    padding: 0 0 1.5rem;
+  }
+
+  .faq-answer p {
+    margin: 0 0 1rem;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+
+  .faq-answer p:last-child {
+    margin-bottom: 0;
+  }
+
+  .faq-cta {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.9375rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .faq-salons,
+  .faq-contact-list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+  }
+
+  .faq-salons li,
+  .faq-contact-list li {
+    margin-bottom: 0.4rem;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  .faq-salons a,
+  .faq-contact-list a {
+    color: var(--color-accent);
+  }
+
+  .faq-more {
+    margin-top: 2rem;
+    color: var(--color-text-muted);
+  }
+
+  .faq-more a {
+    color: var(--color-accent);
+  }
+
+  footer {
+    padding: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .footer-row p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+</style>

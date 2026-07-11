@@ -9,6 +9,14 @@ export interface EventRecord {
   date?: string; // YYYY-MM-DD
   location?: string;
   description?: string;
+  // French display variants ("* FR" rich_text properties in the Event
+  // Catalog). Always optional — display falls back to the English field when
+  // unset. Timing (startTime/duration/date) is language-neutral by design:
+  // events happen at the same moment in every language.
+  nameFr?: string;
+  timeFr?: string;
+  locationFr?: string;
+  descriptionFr?: string;
   dayId?: string; // Wedding Timeline page ID (optional)
   showOnWebsite: boolean;
 }

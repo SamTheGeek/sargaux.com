@@ -96,6 +96,47 @@ test.describe('buildICS', () => {
   });
 });
 
+test.describe('buildICS — French localization', () => {
+  const FR_LOCALIZED_EVENT: EventWithDate = {
+    id: 'event-france-2',
+    name: 'Friday Welcome Dinner',
+    type: 'Core',
+    wedding: 'france',
+    date: '2027-05-28',
+    startTime: '7:00 PM',
+    duration: '3h',
+    location: 'Village Square',
+    description: 'Welcome dinner on Friday evening',
+    nameFr: 'Dîner au Marché du Village',
+    locationFr: 'La Place du Village',
+    showOnWebsite: true,
+  };
+
+  test("lang='fr' uses the French name and location", () => {
+    const ics = buildICS([FR_LOCALIZED_EVENT], 'fr');
+    expect(ics).toContain('SUMMARY:Dîner au Marché du Village');
+    expect(ics).toContain('LOCATION:La Place du Village');
+  });
+
+  test("lang='fr' falls back to English fields when French is unset", () => {
+    const ics = buildICS([FR_LOCALIZED_EVENT], 'fr');
+    // No Description FR on the event — English description is kept
+    expect(ics).toContain('DESCRIPTION:Welcome dinner on Friday evening');
+  });
+
+  test("lang='fr' keeps canonical timing — DTSTART/DTEND are language-neutral", () => {
+    const ics = buildICS([FR_LOCALIZED_EVENT], 'fr');
+    expect(ics).toContain('DTSTART;TZID=Europe/Paris:20270528T190000');
+    expect(ics).toContain('DTEND;TZID=Europe/Paris:20270528T220000');
+  });
+
+  test('default lang stays English', () => {
+    const ics = buildICS([FR_LOCALIZED_EVENT]);
+    expect(ics).toContain('SUMMARY:Friday Welcome Dinner');
+    expect(ics).toContain('LOCATION:Village Square');
+  });
+});
+
 test.describe('generateToken / verifyToken', () => {
   test('verifyToken recovers the guestId from a valid token', () => {
     const token = generateToken(TEST_GUEST_ID);

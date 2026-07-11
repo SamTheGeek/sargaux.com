@@ -4,6 +4,7 @@ import { getGuestParty, getGuestEvents, getLatestRSVPForParty } from '../../lib/
 import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
+import { localizeEvent } from '../../lib/event-i18n';
 import LangSwitcher from '../../components/LangSwitcher.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
@@ -43,34 +44,61 @@ if (isPreview) {
       email: undefined,
     },
   ];
+  // Mirrors the live Event Catalog rows (incl. the "* FR" French variants)
+  // so preview mode exercises the same ordering and localization paths.
   coreEvents = [
     {
-      id: 'preview-event-ceremony',
-      name: 'Ceremony',
+      id: 'preview-event-friday-dinner',
+      name: 'Friday Welcome Dinner',
       type: 'Core',
       wedding: 'france',
-      time: 'May 29, 2027',
-      location: 'Village De Sully',
+      time: '7:00 PM',
+      date: '2027-05-28',
+      location: 'Village Square',
+      nameFr: 'Dîner au Marché du Village',
+      timeFr: 'Vers 19 h',
+      locationFr: 'La Place du Village',
       showOnWebsite: true,
     },
     {
-      id: 'preview-event-reception',
-      name: 'Reception',
+      id: 'preview-event-ceremony',
+      name: 'Saturday Ceremony & Reception',
       type: 'Core',
       wedding: 'france',
-      time: 'May 29, 2027',
-      location: 'Village De Sully',
+      time: '2:00 PM',
+      date: '2027-05-29',
+      location: 'La Mairie',
+      nameFr: 'Cérémonie, cocktail, dîner & soirée dansante',
+      timeFr: 'À partir de 17 h',
+      locationFr: 'La Mairie',
+      showOnWebsite: true,
+    },
+    {
+      id: 'preview-event-brunch',
+      name: 'Sunday Farewell Brunch',
+      type: 'Core',
+      wedding: 'france',
+      time: '10:00 AM',
+      date: '2027-05-30',
+      location: 'Village Square',
+      nameFr: 'Brunch & jeux',
+      timeFr: '11 h 30–14 h',
+      locationFr: 'La Place du Village',
       showOnWebsite: true,
     },
   ];
   optionalEvents = [
     {
       id: 'preview-event-excursion',
-      name: 'Sunday Excursion',
+      name: 'Giverny Excursion',
       type: 'Optional',
       wedding: 'france',
-      time: 'May 30, 2027',
-      location: 'TBD',
+      time: '10:00 AM',
+      date: '2027-05-29',
+      location: 'Departs from Village to Giverny',
+      nameFr: 'Option excursion à Giverny',
+      timeFr: '10 h',
+      locationFr: 'Départ du Village',
       showOnWebsite: true,
     },
   ];
@@ -86,7 +114,7 @@ if (isPreview) {
     details: {
       accommodation: 'yes',
     },
-    eventsAttending: ['preview-event-ceremony', 'preview-event-reception'],
+    eventsAttending: ['preview-event-friday-dinner', 'preview-event-ceremony', 'preview-event-brunch'],
   };
 } else if (guestId) {
   try {
@@ -246,7 +274,9 @@ const submittedAtFallback = submittedAtISO
               <p class="placeholder-note">{t(strings.france.rsvp.form.coreEvents.empty)}</p>
             ) : (
               <div class="event-list">
-                {coreEvents.map((event) => (
+                {coreEvents.map((event) => {
+                  const loc = localizeEvent(event, lang);
+                  return (
                   <label class="event-checkbox is-core">
                     <input
                       type="checkbox"
@@ -257,11 +287,12 @@ const submittedAtFallback = submittedAtISO
                     />
                     <span class="checkbox-mark"></span>
                     <div class="event-details">
-                      <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
+                      <strong>{loc.name}</strong>
+                      <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -274,7 +305,9 @@ const submittedAtFallback = submittedAtISO
               <p class="placeholder-note" data-testid="no-optional-events">{t(strings.france.rsvp.form.optionalEvents.empty)}</p>
             ) : (
               <div class="event-list">
-                {optionalEvents.map((event) => (
+                {optionalEvents.map((event) => {
+                  const loc = localizeEvent(event, lang);
+                  return (
                   <label class="event-checkbox optional-event">
                     <input
                       type="checkbox"
@@ -285,11 +318,12 @@ const submittedAtFallback = submittedAtISO
                     />
                     <span class="checkbox-mark"></span>
                     <div class="event-details">
-                      <strong>{event.name}</strong>
-                      <span class="event-info">{[event.time, event.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
+                      <strong>{loc.name}</strong>
+                      <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -297,6 +331,7 @@ const submittedAtFallback = submittedAtISO
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.dietary.heading)}</h2>
             <p class="section-note">{t(strings.france.rsvp.form.dietary.note)}</p>
+            <p class="section-note">{t(strings.france.rsvp.form.dietary.childrenNote)}</p>
             <textarea
               name="allergens"
               class="text-input"
@@ -309,20 +344,21 @@ const submittedAtFallback = submittedAtISO
             <div>
               <h2>{t(strings.france.rsvp.form.accommodation.heading)}</h2>
               <div class="recommendation-banner">
-                <strong>{t(strings.france.details.staying.recommendation)}</strong>
-                <p>{t(strings.france.details.staying.recommendationNote)}</p>
+                <p>{t(strings.france.rsvp.form.accommodation.intro)}</p>
               </div>
-              <p class="section-note">{t(strings.france.rsvp.form.accommodation.note)}</p>
+              <p class="section-note">{t(strings.france.rsvp.form.accommodation.question)}</p>
               <select name="accommodation" class="single-line-input">
                 <option value="unsure" selected={existingDetails.accommodation === undefined || existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
                 <option value="yes" selected={existingDetails.accommodation === 'yes'}>{t(strings.france.rsvp.form.accommodation.yes)}</option>
                 <option value="no" selected={existingDetails.accommodation === 'no'}>{t(strings.france.rsvp.form.accommodation.no)}</option>
               </select>
+              <p class="section-note accommodation-followup">{t(strings.france.rsvp.form.accommodation.followup)}</p>
             </div>
           </section>
 
           <section class="form-section">
             <h2>{t(strings.france.rsvp.form.message.heading)}</h2>
+            <p class="section-note">{t(strings.france.rsvp.form.message.note)}</p>
             <textarea
               name="message"
               class="text-input"

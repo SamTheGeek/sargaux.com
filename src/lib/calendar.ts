@@ -10,6 +10,8 @@
 
 import { createHmac } from 'crypto';
 import type { EventRecord } from '../types';
+import type { Lang } from '../content/strings';
+import { localizeEvent } from './event-i18n';
 
 /**
  * Encode a string as URL-safe base64 (no padding).
@@ -204,8 +206,13 @@ export interface EventWithDate extends EventRecord {
  * Build an RFC 5545 ICS calendar string from a list of events.
  * Events without a date are skipped.
  * Events with a date but no parseable time get a DATE-only DTSTART.
+ *
+ * `lang: 'fr'` renders each event's French display fields (name,
+ * description, location), falling back per field to English. Timing is
+ * language-neutral: DTSTART/DTEND always come from the canonical
+ * startTime/duration.
  */
-export function buildICS(events: EventWithDate[]): string {
+export function buildICS(events: EventWithDate[], lang: Lang = 'en'): string {
   const stamp = dtstamp();
 
   const vevents = events
@@ -214,6 +221,7 @@ export function buildICS(events: EventWithDate[]): string {
 
       const timezone = event.wedding === 'nyc' ? 'America/New_York' : 'Europe/Paris';
       const uid = `${event.id}@sargaux.com`;
+      const loc = localizeEvent(event, lang);
 
       let dtstart: string;
       let dtend: string;
@@ -245,11 +253,11 @@ export function buildICS(events: EventWithDate[]): string {
         `DTSTAMP:${stamp}`,
         dtstart,
         dtend,
-        `SUMMARY:${escapeICS(event.name)}`,
+        `SUMMARY:${escapeICS(loc.name)}`,
       ];
 
-      if (event.description) lines.push(`DESCRIPTION:${escapeICS(event.description)}`);
-      if (event.location) lines.push(`LOCATION:${escapeICS(event.location)}`);
+      if (loc.description) lines.push(`DESCRIPTION:${escapeICS(loc.description)}`);
+      if (loc.location) lines.push(`LOCATION:${escapeICS(loc.location)}`);
 
       lines.push('END:VEVENT');
       return lines.map(foldLine).join('\r\n');
