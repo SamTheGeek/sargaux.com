@@ -26,6 +26,7 @@
   FEATURE_FRANCE_EU_ALLERGENS = "true"
   FEATURE_FRANCE_LOCATION_MAP = "true"
   FEATURE_FRANCE_RSVP_ENABLED = "true"
+  FEATURE_FRANCE_STAYING_OVERVIEW = "false"
   FEATURE_REGISTRY_ENABLED = "true"
 
 # Fonts are loaded cross-origin by the Joy registry theme
@@ -44,3 +45,4 @@
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
+  FEATURE_FRANCE_STAYING_OVERVIEW = "false"

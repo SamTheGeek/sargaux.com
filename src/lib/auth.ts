@@ -18,7 +18,11 @@ export type EventInvitation = 'nyc' | 'france';
 // Synthetic fallback guests for local dev without Notion keys.
 // Real guest names live in Notion; do not commit family PII here.
 // Country values exercise the registry split (src/lib/registry-routing.ts).
+// 'Samuel Gross' is the one real name kept (dev login added on main): it
+// mirrors TEST_GUEST_NAME so the fallback accepts the same login used
+// against Notion, and it already appears publicly in tests and site copy.
 const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
+  { name: 'Samuel Gross', country: 'USA' },
   { name: 'Alex Rivera', country: 'USA' },
   { name: 'Jordan Chen', country: 'USA' },
   { name: 'Casey Morgan', country: 'USA' },

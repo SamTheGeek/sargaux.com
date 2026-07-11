@@ -15,16 +15,6 @@ html[data-event="france"][data-page="travel"] main {
   padding-bottom: 3rem;
 }
 
-html[data-event="france"][data-page="travel"] .travel-page::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(255, 249, 240, 0.1) 0%, rgba(255, 249, 240, 0) 42%),
-    linear-gradient(180deg, rgba(230, 90, 23, 0.08) 0%, rgba(230, 90, 23, 0) 28%);
-  pointer-events: none;
-}
-
 html[data-event="france"][data-page="travel"] .travel-disc-stage {
   position: fixed;
   top: 8rem;
@@ -39,9 +29,7 @@ html[data-event="france"][data-page="travel"] .travel-disc {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 34%, rgba(255, 249, 240, 0.28) 0%, rgba(255, 249, 240, 0) 30%),
-    var(--color-accent);
+  background: var(--color-accent);
   box-shadow:
     inset 0 0 0 1px rgba(255, 249, 240, 0.14),
     0 24px 64px rgba(13, 36, 77, 0.16);
