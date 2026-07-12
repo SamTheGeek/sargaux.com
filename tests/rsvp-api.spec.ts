@@ -223,6 +223,79 @@ test.describe('RSVP API Endpoints', () => {
     expect(responseId2).toBe(responseId1);
   });
 
+  test('POST /api/rsvp - accepts guestId-threaded entries (name write-back path)', async ({
+    request,
+  }) => {
+    // Clean slate.
+    for (let i = 0; i < 10; i++) {
+      const r = await request.delete(`/api/rsvp?event=nyc`, {
+        headers: { Cookie: `sargaux_auth=${authCookie}` },
+      });
+      if (r.status() !== 200) break;
+    }
+
+    // Pull each party member's current id + name straight from the form so we
+    // submit matching names — exercising the guestId branch (validation +
+    // per-member attendance) WITHOUT triggering a name edit on the shared test
+    // party.
+    const page = await request.get('/nyc/rsvp', {
+      headers: { Cookie: `sargaux_auth=${authCookie}` },
+    });
+    const html = await page.text();
+    const pairs = [
+      ...html.matchAll(/data-guest-id="([^"]+)"[\s\S]*?class="guest-name"\s+value="([^"]*)"/g),
+    ].map((m) => ({ guestId: m[1], name: m[2], attending: true }));
+    expect(pairs.length).toBeGreaterThan(0);
+
+    const response = await request.post(`/api/rsvp`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: pairs,
+        eventsAttending: [],
+        dietary: 'Test dietary',
+      },
+    });
+
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+
+    // Round-trips through GET pre-fill with everyone marked attending.
+    const getRes = await request.get(`/api/rsvp?event=nyc`, {
+      headers: { Cookie: `sargaux_auth=${authCookie}` },
+    });
+    expect(getRes.status()).toBe(200);
+    const getBody = await getRes.json();
+    expect(getBody.rsvp?.status).toBe('Attending');
+    for (const p of pairs) {
+      expect(getBody.rsvp.guestsAttending).toContain(p.name);
+    }
+  });
+
+  test('POST /api/rsvp - rejects a guestId outside the party', async ({ request }) => {
+    const response = await request.post(`/api/rsvp`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [
+          { guestId: '00000000-0000-0000-0000-000000000000', name: 'Mallory', attending: true },
+        ],
+        eventsAttending: [],
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain('outside this party');
+  });
+
   test('GET /api/rsvp - requires authentication', async ({ request }) => {
     const response = await request.get(`/api/rsvp?event=nyc`);
 

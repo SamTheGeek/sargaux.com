@@ -8,4 +8,8 @@ export interface GuestRecord {
   relatedGuestIds: string[]; // Notion IDs of party members
   email?: string; // Guest email address (optional — may not be on file)
   isTestGuest?: boolean; // Synthetic record — excluded from counts and outbound email
+  // Per-event physical-mail status (Notion status props). Read so RSVP write-back
+  // can advance them to 'Received' without an extra fetch. Undefined for mocks.
+  nycInviteStatus?: string | null; // 'NYC Invite Sent' status option name
+  franceSaveTheDateStatus?: string | null; // 'France Save the Date Sent' status option name
 }
