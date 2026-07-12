@@ -3,13 +3,14 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { generateTokenIfPossible } from '../../lib/calendar';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
 import '../../styles/france-details.css';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
 const guestId = Astro.locals.guestId;
+const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const calendarToken = generateTokenIfPossible(guestId);
 ---
@@ -160,15 +161,7 @@ const calendarToken = generateTokenIfPossible(guestId);
 
   </main>
 
-  <footer>
-    <nav class="footer-nav">
-      <a href="/france">{t(strings.nav.home)}</a>
-    </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
 
 <style>
@@ -372,24 +365,6 @@ main {
     margin-bottom: 0;
   }
 
-  /* Footer */
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
 
   @media (max-width: 480px) {
     .stay-info {

@@ -2,11 +2,12 @@
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import '../../styles/france-travel.css';
 
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
+const guest = Astro.locals.guest;
 const travel = strings.france.travel;
 ---
 
@@ -176,13 +177,5 @@ const travel = strings.france.travel;
     </div>
   </main>
 
-  <footer>
-    <nav class="footer-nav">
-      <a href="/france">{t(strings.nav.home)}</a>
-    </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={lang} homeHref="/france" />
 </WireframeLayout>

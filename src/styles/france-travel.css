@@ -208,25 +208,6 @@ html[data-event="france"][data-page="travel"] .info-item p:last-child {
   color: var(--color-text-muted);
 }
 
-html[data-event="france"][data-page="travel"] footer {
-  padding: 2rem;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg);
-}
-
-html[data-event="france"][data-page="travel"] .footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-}
-
-html[data-event="france"][data-page="travel"] .footer-row p {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
 @media (max-width: 900px) {
   html[data-event="france"][data-page="travel"] .travel-disc-stage {
     position: absolute;

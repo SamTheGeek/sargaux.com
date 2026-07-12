@@ -3,7 +3,7 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/france-details.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import { features } from '../../config/features';
 import { Image } from 'astro:assets';
 import fromabove from '../../assets/images/france/fromabove.jpg';
@@ -17,6 +17,7 @@ import orientexpress from '../../assets/images/france/orientexpress.png';
 import louisiane from '../../assets/images/france/louisiane.jpg';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const guest = Astro.locals.guest;
 const details = strings.france.details;
 ---
 
@@ -168,13 +169,5 @@ const details = strings.france.details;
     </div>
   </main>
 
-  <footer>
-    <nav class="footer-nav">
-      <a href="/france">{t(strings.nav.home)}</a>
-    </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
