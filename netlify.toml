@@ -29,6 +29,19 @@
   FEATURE_FRANCE_STAYING_OVERVIEW = "false"
   FEATURE_REGISTRY_ENABLED = "true"
 
+# `netlify dev`: the Astro dev server runs on the project's sacred port 1213
+# (astro.config.mjs `server.port`), NOT Astro's 4321 default — so point Netlify's
+# targetPort at 1213, otherwise it waits forever on 4321. Netlify's proxy (which
+# injects the Blobs context + edge functions) then listens on `port` (8888).
+# Browse the proxy port to exercise Blobs/edge/redirects; the raw Astro server is
+# still on 1213.
+[dev]
+  command = "npm run dev"
+  framework = "#custom"
+  targetPort = 1213
+  port = 8888
+  autoLaunch = false
+
 # Fonts are loaded cross-origin by the Joy registry theme
 # (docs/joy-custom-css/joy-theme.css), which requires CORS on font files.
 [[headers]]

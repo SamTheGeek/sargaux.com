@@ -244,7 +244,7 @@ const submittedAtFallback = submittedAtISO
               {party.map((partyGuest) => {
                 const isAttending = attendingNames.size > 0 ? attendingNames.has(partyGuest.name) : !partyGuest.isPlusOne;
                 return (
-                  <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row>
+                  <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row data-guest-id={partyGuest.id}>
                     <label class="guest-toggle">
                       <input type="checkbox" class="guest-attending" checked={isAttending} />
                       <span class="toggle-slider"></span>
@@ -1197,6 +1197,7 @@ const submittedAtFallback = submittedAtISO
         const nameInput = row.querySelector('.guest-name');
         const checkbox = row.querySelector('.guest-attending');
         return {
+          guestId: row.dataset.guestId || undefined,
           name: nameInput?.value?.trim() || 'Guest',
           attending: checkbox?.checked === true,
         };

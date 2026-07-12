@@ -8,7 +8,12 @@
 
 import { promises as dnsPromises } from 'node:dns';
 import type { APIRoute } from 'astro';
-import { getAuthenticatedGuest } from '../../lib/auth';
+import {
+  getAuthenticatedGuest,
+  createSessionToken,
+  AUTH_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+} from '../../lib/auth';
 import {
   submitRSVP,
   getLatestRSVPForParty,
@@ -37,6 +42,8 @@ const DETAILS_MAX_BYTES = 8_192;
  * these as one block — anything larger would turn into a 500.
  */
 const TEXT_FIELD_MAX_CHARS = 2_000;
+/** Cap on a submitted guest display name persisted back to the Notion Guest List. */
+const NAME_MAX_CHARS = 100;
 
 function normalizeOptionalEmail(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -175,13 +182,24 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     return jsonError(403, 'Forbidden for this event');
   }
 
-  // guestsAttending names must match the party roster (normalized)
+  // Validate guestsAttending. When an entry carries a guestId it must belong to
+  // this party (that member's name may be edited on the form and persisted);
+  // otherwise the name must match the party roster (legacy clients without ids).
+  const partyIdSet = new Set(party.map((m) => m.id));
   const partyNames = new Set(party.map((m) => m.normalizedName));
   for (const entry of body.guestsAttending) {
     if (!entry || typeof entry.name !== 'string') {
       return jsonError(400, 'guestsAttending entries must include a name');
     }
-    if (!partyNames.has(normalize(entry.name))) {
+    const trimmedName = entry.name.trim();
+    if (trimmedName.length === 0 || trimmedName.length > NAME_MAX_CHARS) {
+      return jsonError(400, 'guestsAttending includes an invalid name');
+    }
+    if (entry.guestId !== undefined) {
+      if (typeof entry.guestId !== 'string' || !partyIdSet.has(entry.guestId)) {
+        return jsonError(400, 'guestsAttending includes a guest outside this party');
+      }
+    } else if (!partyNames.has(normalize(trimmedName))) {
       return jsonError(400, 'guestsAttending includes a name outside this party');
     }
   }
@@ -287,6 +305,29 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
   } catch (error) {
     console.error('RSVP submission error:', error);
     return jsonError(500, 'Failed to submit RSVP');
+  }
+
+  // If the authenticated guest renamed themselves, the session cookie's display
+  // name no longer matches the live Notion record — re-sign it so subsequent
+  // requests (bindSessionToNotion) don't fail closed with a 401. submitRSVP
+  // cleared the guest cache, so this read reflects the new name.
+  try {
+    const refreshed = await getGuestById(guestId);
+    if (refreshed && normalize(refreshed.name) !== normalize(auth.guest)) {
+      cookies.set(
+        AUTH_COOKIE_NAME,
+        createSessionToken(refreshed.name, guestId, auth.eventInvitations, auth.country),
+        {
+          path: '/',
+          httpOnly: true,
+          secure: import.meta.env.PROD,
+          sameSite: 'lax',
+          maxAge: SESSION_MAX_AGE_SECONDS,
+        }
+      );
+    }
+  } catch (err) {
+    console.error('Post-RSVP session re-sign failed (non-fatal):', err);
   }
 
   try {

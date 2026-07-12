@@ -69,6 +69,10 @@ export default defineConfig({
       ASTRO_ADAPTER: 'node',
       ASTRO_CHECK_ORIGIN: 'false',
       RATE_LIMIT_DISABLED: 'true',
+      // Use the in-memory ICS store instead of Netlify Blobs — the built server
+      // runs outside the Netlify runtime, so getStore() would otherwise throw
+      // MissingBlobsEnvironmentError during post-RSVP ICS regeneration.
+      CALENDAR_TEST_MODE: 'true',
       RESEND_ADMIN_SECRET: process.env.RESEND_ADMIN_SECRET ?? 'test-secret-not-set',
       SESSION_HMAC_SECRET:
         process.env.SESSION_HMAC_SECRET ?? 'test-session-hmac-secret-for-playwright',

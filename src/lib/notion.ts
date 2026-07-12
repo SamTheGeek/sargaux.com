@@ -129,6 +129,13 @@ function parseGuestPage(page: any): GuestRecord | null {
   const testGuest =
     isTestGuestFromNotionProps(props) || isTestGuest({ normalizedName });
 
+  // Per-event physical-mail status (Notion `status` props). Read so RSVP
+  // write-back can advance them to 'Received' (advance-forward only) without a
+  // second fetch. Absent props parse to null.
+  const nycInviteStatus: string | null = props['NYC Invite Sent']?.status?.name ?? null;
+  const franceSaveTheDateStatus: string | null =
+    props['France Save the Date Sent']?.status?.name ?? null;
+
   return {
     id: page.id,
     name: fullName,
@@ -139,6 +146,8 @@ function parseGuestPage(page: any): GuestRecord | null {
     relatedGuestIds,
     email,
     isTestGuest: testGuest,
+    nycInviteStatus,
+    franceSaveTheDateStatus,
   };
 }
 
@@ -644,6 +653,27 @@ export async function submitRSVP(
   const guest = party.find((member) => member.id === guestId) ?? null;
   const guestName = guest?.name || 'Unknown Guest';
 
+  // Index submitted attendance by member page ID when the form threads it, so
+  // name edits and attendance resolve to the right member even if the displayed
+  // name was changed on the form. Entries without a guestId (legacy clients)
+  // fall back to normalized-name matching.
+  const submittedById = new Map<string, { name: string; attending: boolean }>();
+  for (const entry of submission.guestsAttending) {
+    if (entry.guestId) {
+      submittedById.set(entry.guestId, { name: entry.name, attending: entry.attending });
+    }
+  }
+  const submittedAttendingNamesLegacy = new Set(
+    submission.guestsAttending
+      .filter((g) => g.attending && !g.guestId)
+      .map((g) => normalize(g.name))
+  );
+  const memberAttendsSubmitted = (member: GuestRecord): boolean => {
+    const byId = submittedById.get(member.id);
+    if (byId) return byId.attending;
+    return submittedAttendingNamesLegacy.has(member.normalizedName);
+  };
+
   // Determine status
   const attendingCount = submission.guestsAttending.filter(g => g.attending).length;
   const totalCount = submission.guestsAttending.length;
@@ -746,43 +776,122 @@ export async function submitRSVP(
     )
   );
 
-  const attendingNamesFor = (event: 'nyc' | 'france'): Set<string> | null => {
-    if (event === submission.event) {
-      return new Set(
-        submission.guestsAttending.filter((g) => g.attending).map((g) => normalize(g.name))
-      );
-    }
+  // Attendee name set from a stored response, for events OTHER than the one just
+  // submitted — those resolve by name against the stored row, whose names match
+  // the in-memory party's pre-write names.
+  const otherAttendingNames = (event: 'nyc' | 'france'): Set<string> | null => {
     const rsvp = otherRSVPs.get(event);
     if (!rsvp) return null; // no response yet for this event — don't count it
     return new Set(
-      rsvp.guestsAttending
-        .split(',')
-        .map((name) => normalize(name))
-        .filter(Boolean)
+      rsvp.guestsAttending.split(',').map((name) => normalize(name)).filter(Boolean)
     );
   };
 
-  await Promise.all(
-    party.map((member) => {
-      const attendance: boolean[] = [];
-      for (const event of member.eventInvitations) {
-        const names = attendingNamesFor(event);
+  // Resolve a member's RSVP status across every event they're invited to.
+  const memberRsvpStatus = (
+    member: GuestRecord
+  ): 'Attending' | 'Declined' | 'Partial' | null => {
+    const attendance: boolean[] = [];
+    for (const event of member.eventInvitations) {
+      if (event === submission.event) {
+        attendance.push(memberAttendsSubmitted(member));
+      } else {
+        const names = otherAttendingNames(event);
         if (names === null) continue;
         attendance.push(names.has(member.normalizedName));
       }
-      if (attendance.length === 0) return Promise.resolve(null);
+    }
+    if (attendance.length === 0) return null;
+    const anyYes = attendance.some(Boolean);
+    const anyNo = attendance.some((a) => !a);
+    return anyYes && anyNo ? 'Partial' : anyYes ? 'Attending' : 'Declined';
+  };
 
-      const anyYes = attendance.some(Boolean);
-      const anyNo = attendance.some((a) => !a);
-      const memberStatus = anyYes && anyNo ? 'Partial' : anyYes ? 'Attending' : 'Declined';
+  // Resolve the specific Event Catalog pages a member has RSVP'd to attend: the
+  // submitted event from this submission (so name edits don't break it), other
+  // events from their latest non-declined stored response. Mirrors
+  // getAttendingEvents but reads the current submission directly.
+  const eventsAttendingForMember = (member: GuestRecord): string[] => {
+    const ids = new Set<string>();
+    for (const event of member.eventInvitations) {
+      if (event === submission.event) {
+        if (memberAttendsSubmitted(member)) {
+          for (const id of submission.eventsAttending) ids.add(id);
+        }
+      } else {
+        const rsvp = otherRSVPs.get(event);
+        if (!rsvp || rsvp.status === 'Declined') continue;
+        if (!rsvpIncludesGuest(rsvp, member.normalizedName)) continue;
+        for (const id of rsvp.eventsAttending ?? []) ids.add(id);
+      }
+    }
+    return Array.from(ids);
+  };
+
+  // Split a typed full name into First/Last (drives the Full Name login
+  // formula). Last token is the surname; everything before it is the first name.
+  const splitName = (full: string): { first: string; last: string } | null => {
+    const parts = full.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return null;
+    if (parts.length === 1) return { first: parts[0], last: '' };
+    return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+  };
+
+  const nowIso = new Date().toISOString();
+
+  // One merged Guest List write per party member: RSVP status, per-event invite
+  // status → Received (advance-forward only), Last RSVP, Events Attending
+  // relation, party dietary text, and — when the form threaded a guestId — a
+  // persisted name edit.
+  await Promise.all(
+    party.map((member) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const props: Record<string, any> = {};
+
+      const rsvpStatus = memberRsvpStatus(member);
+      if (rsvpStatus) props.RSVP = { status: { name: rsvpStatus } };
+
+      if (member.eventInvitations.includes(submission.event)) {
+        if (submission.event === 'nyc' && member.nycInviteStatus !== 'Received') {
+          props['NYC Invite Sent'] = { status: { name: 'Received' } };
+        } else if (
+          submission.event === 'france' &&
+          member.franceSaveTheDateStatus !== 'Received'
+        ) {
+          props['France Save the Date Sent'] = { status: { name: 'Received' } };
+        }
+      }
+
+      props['Last RSVP'] = { date: { start: nowIso } };
+      props['Events Attending'] = {
+        relation: eventsAttendingForMember(member).map((id) => ({ id })),
+      };
+      props['Dietary Needs'] = {
+        rich_text: submission.dietary ? [{ text: { content: submission.dietary } }] : [],
+      };
+
+      // Persist a name edit only when the form threaded this member's guestId
+      // and the typed name differs. Writes First/Last (drives Full Name) and the
+      // Name of Guest title so login and display stay consistent.
+      const typedName = submittedById.get(member.id)?.name?.trim();
+      if (typedName && typedName !== member.name) {
+        const split = splitName(typedName);
+        if (split) {
+          props['First Name'] = { rich_text: [{ text: { content: split.first } }] };
+          props['Last Name'] = { rich_text: [{ text: { content: split.last } }] };
+          props['Name of Guest'] = { title: [{ text: { content: typedName } }] };
+        }
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return notion.pages.update({
-        page_id: member.id,
-        properties: { RSVP: { status: { name: memberStatus } } } as any,
-      });
+      return notion.pages.update({ page_id: member.id, properties: props as any });
     })
   );
+
+  // Guest List rows changed (status, name, attending events) — drop the cache so
+  // reads (middleware, RSVP pre-fill, the API's post-submit name re-sign) see the
+  // new values instead of a stale 15-min entry.
+  clearGuestCache();
 
   return responseId;
 }
@@ -1003,6 +1112,116 @@ export async function fetchAllLatestRSVPs(): Promise<Map<string, RSVPResponse[]>
   return new Map(
     Array.from(latestByGuest, ([guestId, byEvent]) => [guestId, Array.from(byEvent.values())])
   );
+}
+
+export interface BackfillReport {
+  totalGuests: number;
+  guestsWithResponses: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  changes: Array<{
+    id: string;
+    name: string;
+    eventsAttending: number;
+    lastRSVP: string | null;
+    dietary: string | null;
+  }>;
+}
+
+/**
+ * One-off backfill: populate the newer Guest List columns (`Events Attending`,
+ * `Last RSVP`, `Dietary Needs`) for guests who RSVP'd before the RSVP write-back
+ * shipped. Sourced entirely from stored RSVP Responses — it does NOT touch
+ * `RSVP` status (already maintained) or the invite-status fields (mail
+ * pipeline). Idempotent; safe to re-run. Pass `{ dryRun: true }` to compute the
+ * report without writing.
+ */
+export async function backfillGuestListFromRSVPs(
+  opts: { dryRun?: boolean } = {}
+): Promise<BackfillReport> {
+  const notion = getClient();
+  const dryRun = opts.dryRun === true;
+
+  const [guests, rsvpMap, nycCatalog, franceCatalog] = await Promise.all([
+    fetchAllGuests(),
+    fetchAllLatestRSVPs(),
+    getEventCatalog('nyc'),
+    getEventCatalog('france'),
+  ]);
+  const validEventIds = new Set([...nycCatalog, ...franceCatalog].map((e) => e.id));
+
+  const report: BackfillReport = {
+    totalGuests: guests.length,
+    guestsWithResponses: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    changes: [],
+  };
+
+  for (const guest of guests) {
+    const responses = rsvpMap.get(guest.id) ?? [];
+    if (responses.length === 0) continue;
+    report.guestsWithResponses++;
+
+    // Events this guest is attending: union of eventsAttending across their
+    // non-declined responses where they're named, filtered to live catalog IDs.
+    const attendingIds = new Set<string>();
+    for (const rsvp of responses) {
+      if (rsvp.status === 'Declined') continue;
+      if (!rsvpIncludesGuest(rsvp, guest.normalizedName)) continue;
+      for (const id of rsvp.eventsAttending ?? []) {
+        if (validEventIds.has(id)) attendingIds.add(id);
+      }
+    }
+
+    // Latest submission time across their party's responses.
+    const lastRSVP = responses
+      .map((r) => r.submittedAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1) ?? null;
+
+    // Party-level dietary text from their most recent response that carries one.
+    const dietary =
+      [...responses]
+        .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1))
+        .map((r) => r.dietary)
+        .find((d) => d && d.trim().length > 0) ?? null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props: Record<string, any> = {
+      'Events Attending': { relation: Array.from(attendingIds).map((id) => ({ id })) },
+    };
+    if (lastRSVP) props['Last RSVP'] = { date: { start: lastRSVP } };
+    if (dietary) props['Dietary Needs'] = { rich_text: [{ text: { content: dietary } }] };
+
+    report.changes.push({
+      id: guest.id,
+      name: guest.name,
+      eventsAttending: attendingIds.size,
+      lastRSVP,
+      dietary,
+    });
+
+    if (dryRun) {
+      report.skipped++;
+      continue;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await notion.pages.update({ page_id: guest.id, properties: props as any });
+      report.updated++;
+    } catch (err) {
+      console.error('Backfill update failed for', guest.id, guest.name, err);
+      report.failed++;
+    }
+  }
+
+  if (!dryRun) clearGuestCache();
+  return report;
 }
 
 /**

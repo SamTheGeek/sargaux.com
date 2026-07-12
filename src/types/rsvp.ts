@@ -4,6 +4,7 @@
 export interface RSVPSubmission {
   event: 'nyc' | 'france';
   guestsAttending: {
+    guestId?: string; // Notion page ID — when present, allows name edits to persist
     name: string;
     attending: boolean;
   }[];
