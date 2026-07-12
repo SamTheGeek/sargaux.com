@@ -143,6 +143,9 @@ a:hover {
   z-index: 100;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+  /* Fill the iOS status-bar / notch area with the header background so content
+   * sits below the system UI on devices with a safe-area inset (0 elsewhere). */
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Extend header background above viewport to cover springy overscroll bleed */
@@ -240,6 +243,10 @@ a:hover {
 
 .site-footer {
   padding: var(--space-lg) var(--page-margin);
+  /* Extend the footer's background into the iOS home-indicator / bottom bar
+   * safe area (viewport-fit=cover) so its color reaches the screen edge instead
+   * of exposing the page's base background. Resolves to var(--space-lg) elsewhere. */
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
   text-align: center;
   margin-top: auto;
@@ -282,6 +289,7 @@ a:hover {
 @media (max-width: 768px) {
   .site-footer {
     padding: var(--space-lg) var(--page-margin-mobile);
+    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
   }
 
   .site-footer-meta {

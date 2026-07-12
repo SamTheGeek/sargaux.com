@@ -230,24 +230,6 @@ html[data-event="france"][data-page="details"] .dress-note {
   font-style: italic;
 }
 
-html[data-event="france"][data-page="details"] footer {
-  padding: 2rem;
-  border-top: 1px solid var(--color-border);
-}
-
-html[data-event="france"][data-page="details"] .footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-}
-
-html[data-event="france"][data-page="details"] .footer-row p {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
 html[data-event="france"][data-page="details"] .accommodation-info--booking {
   margin-top: 1.5rem;
 }

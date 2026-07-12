@@ -4,7 +4,7 @@ import '../../styles/nyc-subpages.css';
 import { features } from '../../config/features';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
@@ -157,19 +157,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
   </section>
 
   <!-- Footer -->
-  <footer class="nyc-moss nyc-footer site-footer">
-    <nav>
-      <a href="/nyc">{t(strings.nav.home)}</a>
-      <span> · </span>
-      <span class="guest-name">{guest}</span>
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div class="nyc-footer-meta">
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter className="nyc-moss nyc-footer" guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/nyc" />
 
   </div><!-- .nyc-page-moss -->
 
@@ -470,14 +458,6 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
     color: var(--color-warm-cream) !important;
-  }
-
-  html[data-event="nyc"] .nyc-footer-meta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
   }
 
   /* ── Dark mode ────────────────────────────────────── */

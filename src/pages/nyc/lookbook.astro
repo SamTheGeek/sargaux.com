@@ -5,7 +5,7 @@ import '../../styles/nyc-lookbook.css';
 import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 
@@ -62,19 +62,7 @@ const images = Object.entries(globResult)
       </div>
     </section>
 
-    <footer class="nyc-moss nyc-footer site-footer">
-      <nav>
-        <a href="/nyc">{t(strings.nav.home)}</a>
-        <span> · </span>
-        <span class="guest-name">{guest}</span>
-        <span> · </span>
-        <a href="/api/logout">{t(strings.global.logout)}</a>
-      </nav>
-      <div class="nyc-footer-meta">
-        <p class="copyright">{t(strings.global.copyright)}</p>
-        <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-      </div>
-    </footer>
+    <SiteFooter className="nyc-moss nyc-footer" guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/nyc" />
   </div>
 
 </WireframeLayout>
@@ -191,14 +179,6 @@ const images = Object.entries(globResult)
 
   html[data-event="nyc"] .nyc-footer nav a:hover {
     color: var(--color-warm-cream) !important;
-  }
-
-  html[data-event="nyc"] .nyc-footer-meta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
   }
 
   @media (prefers-color-scheme: dark) {

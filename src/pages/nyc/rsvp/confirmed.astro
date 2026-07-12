@@ -8,7 +8,7 @@ import mBulletSrc from '../../../assets/nyc/subway-bullet-m.svg?url';
 import sfBulletSrc from '../../../assets/nyc/subway-bullet-sf.svg?url';
 import { NYC_EVENT_TIME, strings } from '../../../content/strings';
 import { createTranslator } from '../../../lib/i18n';
-import LangSwitcher from '../../../components/LangSwitcher.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
 import CalendarCta from '../../../components/CalendarCta.astro';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
 
@@ -337,17 +337,7 @@ const submittedAtFallback = submittedAtISO
     )}
   </main>
 
-  <footer class="site-footer">
-    <nav>
-      <span class="guest-name">{guest}</span>
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div>
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} />
 </WireframeLayout>
 
 <script is:inline>

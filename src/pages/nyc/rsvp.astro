@@ -6,7 +6,7 @@ import sfBulletSrc from '../../assets/nyc/subway-bullet-sf.svg?url';
 import { features } from '../../config/features';
 import { NYC_EVENT_TIME, strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
 import { formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import { localizeEvent } from '../../lib/event-i18n';
@@ -419,19 +419,7 @@ const submittedAtFallback = submittedAtISO
 
   </main>
 
-  <footer class="site-footer">
-    <nav>
-      <a href="/nyc">{t(strings.nav.home)}</a>
-      <span> · </span>
-      <span class="guest-name">{guest}</span>
-      <span> · </span>
-      <a href="/api/logout">{t(strings.global.logout)}</a>
-    </nav>
-    <div>
-      <p class="copyright">{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/nyc" />
 </WireframeLayout>
 
 <style is:global>

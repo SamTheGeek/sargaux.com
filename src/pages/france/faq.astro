@@ -2,9 +2,10 @@
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { strings } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
-import LangSwitcher from '../../components/LangSwitcher.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
+const guest = Astro.locals.guest;
 const faq = strings.france.faq;
 
 const items = [
@@ -109,15 +110,7 @@ const items = [
     </div>
   </main>
 
-  <footer>
-    <nav class="footer-nav">
-      <a href="/france">{t(strings.nav.home)}</a>
-    </nav>
-    <div class="footer-row">
-      <p>{t(strings.global.copyright)}</p>
-      <LangSwitcher lang={Astro.locals.lang ?? 'en'} />
-    </div>
-  </footer>
+  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
 
 <style>
@@ -259,21 +252,4 @@ const items = [
     color: var(--color-accent);
   }
 
-  footer {
-    padding: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .footer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-  }
-
-  .footer-row p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
 </style>
