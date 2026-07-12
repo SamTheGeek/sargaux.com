@@ -1114,6 +1114,116 @@ export async function fetchAllLatestRSVPs(): Promise<Map<string, RSVPResponse[]>
   );
 }
 
+export interface BackfillReport {
+  totalGuests: number;
+  guestsWithResponses: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  changes: Array<{
+    id: string;
+    name: string;
+    eventsAttending: number;
+    lastRSVP: string | null;
+    dietary: string | null;
+  }>;
+}
+
+/**
+ * One-off backfill: populate the newer Guest List columns (`Events Attending`,
+ * `Last RSVP`, `Dietary Needs`) for guests who RSVP'd before the RSVP write-back
+ * shipped. Sourced entirely from stored RSVP Responses — it does NOT touch
+ * `RSVP` status (already maintained) or the invite-status fields (mail
+ * pipeline). Idempotent; safe to re-run. Pass `{ dryRun: true }` to compute the
+ * report without writing.
+ */
+export async function backfillGuestListFromRSVPs(
+  opts: { dryRun?: boolean } = {}
+): Promise<BackfillReport> {
+  const notion = getClient();
+  const dryRun = opts.dryRun === true;
+
+  const [guests, rsvpMap, nycCatalog, franceCatalog] = await Promise.all([
+    fetchAllGuests(),
+    fetchAllLatestRSVPs(),
+    getEventCatalog('nyc'),
+    getEventCatalog('france'),
+  ]);
+  const validEventIds = new Set([...nycCatalog, ...franceCatalog].map((e) => e.id));
+
+  const report: BackfillReport = {
+    totalGuests: guests.length,
+    guestsWithResponses: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    changes: [],
+  };
+
+  for (const guest of guests) {
+    const responses = rsvpMap.get(guest.id) ?? [];
+    if (responses.length === 0) continue;
+    report.guestsWithResponses++;
+
+    // Events this guest is attending: union of eventsAttending across their
+    // non-declined responses where they're named, filtered to live catalog IDs.
+    const attendingIds = new Set<string>();
+    for (const rsvp of responses) {
+      if (rsvp.status === 'Declined') continue;
+      if (!rsvpIncludesGuest(rsvp, guest.normalizedName)) continue;
+      for (const id of rsvp.eventsAttending ?? []) {
+        if (validEventIds.has(id)) attendingIds.add(id);
+      }
+    }
+
+    // Latest submission time across their party's responses.
+    const lastRSVP = responses
+      .map((r) => r.submittedAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1) ?? null;
+
+    // Party-level dietary text from their most recent response that carries one.
+    const dietary =
+      [...responses]
+        .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1))
+        .map((r) => r.dietary)
+        .find((d) => d && d.trim().length > 0) ?? null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props: Record<string, any> = {
+      'Events Attending': { relation: Array.from(attendingIds).map((id) => ({ id })) },
+    };
+    if (lastRSVP) props['Last RSVP'] = { date: { start: lastRSVP } };
+    if (dietary) props['Dietary Needs'] = { rich_text: [{ text: { content: dietary } }] };
+
+    report.changes.push({
+      id: guest.id,
+      name: guest.name,
+      eventsAttending: attendingIds.size,
+      lastRSVP,
+      dietary,
+    });
+
+    if (dryRun) {
+      report.skipped++;
+      continue;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await notion.pages.update({ page_id: guest.id, properties: props as any });
+      report.updated++;
+    } catch (err) {
+      console.error('Backfill update failed for', guest.id, guest.name, err);
+      report.failed++;
+    }
+  }
+
+  if (!dryRun) clearGuestCache();
+  return report;
+}
+
 /**
  * Delete an RSVP response (for testing "new RSVP" flows).
  * Returns true if deleted, false if not found.
