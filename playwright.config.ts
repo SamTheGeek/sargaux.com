@@ -24,6 +24,23 @@ function loadDotEnvLocal(): void {
 
 loadDotEnvLocal();
 
+/**
+ * Resolve a pre-installed Chromium when running in a managed cloud/CI image
+ * (e.g. Claude Code on the web), which ships a browser under
+ * PLAYWRIGHT_BROWSERS_PATH whose build number may not match this
+ * @playwright/test version. Pointing executablePath straight at it avoids a
+ * `playwright install` download (blocked in those sandboxes). Returns undefined
+ * on local machines (e.g. a dev Mac) so the normal managed-browser flow is used.
+ */
+function resolvePreinstalledChromium(): string | undefined {
+  const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  if (!browsersPath) return undefined;
+  const candidate = path.join(browsersPath, 'chromium');
+  return fs.existsSync(candidate) ? candidate : undefined;
+}
+
+const preinstalledChromium = resolvePreinstalledChromium();
+
 // Ensure session signing works for hand-built cookies in unit/e2e helpers
 if (!process.env.SESSION_HMAC_SECRET) {
   process.env.SESSION_HMAC_SECRET = 'test-session-hmac-secret-for-playwright';
@@ -54,7 +71,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(preinstalledChromium
+          ? { launchOptions: { executablePath: preinstalledChromium } }
+          : {}),
+      },
     },
   ],
   webServer: {
