@@ -53,6 +53,10 @@ html[data-event="france"][data-page="details"] .venue-image-frame--hero {
 
 html[data-event="france"][data-page="details"] .venue-image-frame--card {
   aspect-ratio: 4 / 3;
+  /* Bleed the photo over the card's top and side borders so it sits edge to
+     edge; the bottom border keeps framing the text below. */
+  width: calc(100% + 2px);
+  margin: -1px -1px 0;
 }
 
 html[data-event="france"][data-page="details"] .venue-image {
@@ -111,7 +115,6 @@ html[data-event="france"][data-page="details"] .spaces-grid {
 
 html[data-event="france"][data-page="details"] .space-card {
   border: 1px solid var(--color-border);
-  overflow: hidden;
 }
 
 html[data-event="france"][data-page="details"] .space-card h3 {
