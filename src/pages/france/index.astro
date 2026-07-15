@@ -494,7 +494,10 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
     }
 
     .sun-disc-large {
-      top: 0;
+      /* Nudge the disc down a touch so it isn't kissing the header bottom on
+         narrow (iPhone-size) screens. Deliberately not matched to the NYC
+         disc's position — just clearly clear of the header. */
+      top: 40px;
       right: -20%;
       transform: none;
     }
