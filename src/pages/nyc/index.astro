@@ -322,18 +322,25 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
   html[data-event="nyc"] .nyc-skyline-wrap {
     position: relative;
     z-index: 3;
-    /* 5px bleed on left/right to avoid edge artifacting */
-    width: calc(100% + 10px);
-    margin-left: -5px;
+    width: 100%;
     height: clamp(220px, 48vh, 520px);
-    /* No overflow:hidden — building tops overflow upward into cream (transparent sky is invisible) */
+    /* Clip the image's ±5px horizontal bleed here (see .nyc-skyline-img) so the
+       wrap stays exactly viewport-wide and never adds to the document's scroll
+       width — an oversized wrap left a 5px horizontally-scrollable strip that
+       exposed cream to the right of the full-width moss sections.
+       overflow-x:clip keeps overflow-y visible (unlike hidden/auto), so building
+       tops still overflow upward into the cream sky and sticky isn't broken. */
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   html[data-event="nyc"] .nyc-skyline-img {
     position: absolute;
     bottom: -5px; /* 5px bleed at bottom eliminates hairline against moss section */
-    left: 0;
-    width: 100%;
+    /* 5px bleed on left/right to avoid edge artifacting; clipped by the wrap's
+       overflow-x:clip so it doesn't overflow the document horizontally. */
+    left: -5px;
+    width: calc(100% + 10px);
     height: auto;
     display: block;
   }
