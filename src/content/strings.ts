@@ -628,7 +628,7 @@ export const strings = {
         desc:  s('Directions & Travel Tips', 'Préparer votre visite'),
       },
       lookbook: {
-        title: s('The Look Book', 'Le Dress Code'),
+        title: s('The Lookbook', 'Le Dress Code'),
         desc:  s('Dress Code & Inspiration', 'Inspiration & idées'),
       },
       registry: {
@@ -645,10 +645,10 @@ export const strings = {
       },
     },
 
-    // /france/lookbook — Look Book (EN) / Dress Code (FR)
+    // /france/lookbook — Lookbook (EN) / Dress Code (FR)
     lookbook: {
-      pageTitle: s('Look Book', 'Dress Code'),
-      heading:   s('Look Book', 'Dress Code'),
+      pageTitle: s('Lookbook', 'Dress Code'),
+      heading:   s('Lookbook', 'Dress Code'),
       subtitle:  s('Dress Code & Inspiration', 'Inspiration & idées'),
       friday: {
         day:  s('Friday', 'Vendredi'),
@@ -1123,11 +1123,11 @@ export const strings = {
         dressCode: {
           q: s('Is there a dress code?', 'Y a-t-il un dress code ?'),
           a: s(
-            "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Cocktail Attire**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nIn true French wedding tradition, we'd also love to see a few fabulous hats and fascinators!\n\nPlease visit the **Look Book** page for additional inspiration.",
+            "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Cocktail Attire**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nIn true French wedding tradition, we'd also love to see a few fabulous hats and fascinators!\n\nPlease visit the **Lookbook** page for additional inspiration.",
             'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail. Nous vous invitons également à porter une tenue colorée. Dans la belle tradition des mariages français, les chapeaux sont les bienvenus ! Rendez-vous sur la page Dress Code pour plus de détails et quelques inspirations.',
           ),
           ctaHref:  '/france/lookbook',
-          ctaLabel: s('Go to the Look Book page →', 'Voir la page Dress Code →'),
+          ctaLabel: s('Go to the Lookbook page →', 'Voir la page Dress Code →'),
         },
         parking: {
           q: s('Where should I park?', 'Où puis-je me garer ?'),

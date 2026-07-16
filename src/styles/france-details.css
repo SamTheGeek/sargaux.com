@@ -110,8 +110,19 @@ html[data-event="france"][data-page="details"] .spaces-grid {
 }
 
 html[data-event="france"][data-page="details"] .space-card {
+  position: relative;
+}
+
+/* Draw the card border as an overlay so it paints on top of the photo, which
+   fills the card edge to edge underneath it (a real CSS border always paints
+   below descendant content, leaving a seam where the full-bleed photo meets
+   it). The frame still outlines the text region below the photo. */
+html[data-event="france"][data-page="details"] .space-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   border: 1px solid var(--color-border);
-  overflow: hidden;
+  pointer-events: none;
 }
 
 html[data-event="france"][data-page="details"] .space-card h3 {
