@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { getAuthenticatedGuest } from './lib/auth';
+import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from './lib/auth';
 import { getPrimaryEventRoute } from './lib/event-routing';
 import { getRegistryDestination, FRENCH_REGISTRY_URL } from './lib/registry-routing';
 import { isSiteEnabled, features } from './config/features';
@@ -149,7 +149,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const record = await getGuestById(auth.notionId);
       if (record) {
         if (normalize(auth.guest) !== record.normalizedName) {
-          console.warn('Session guest/notionId mismatch — treating as unauthenticated');
+          // Delete the cookie, don't just redirect: the homepage trusts any
+          // HMAC-valid cookie and redirects to the primary event route, so a
+          // stale-but-signed session (e.g. the guest's name was edited in
+          // Notion after login) would otherwise ping-pong `/` ↔ `/nyc` forever
+          // ("too many redirects"). Clearing it lands the guest on the login
+          // page, self-repairing every affected device on its next visit.
+          // The signature verified, so this is a genuine record mismatch — not
+          // a transient config failure like a missing SESSION_HMAC_SECRET.
+          console.warn('Session guest/notionId mismatch — clearing session cookie');
+          context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
           return withVary(context.redirect('/'));
         }
         eventInvitations = record.eventInvitations;

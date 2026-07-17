@@ -158,6 +158,24 @@ test.describe('Auth Module — Name Normalization', () => {
   test('handles combined normalization', async () => {
     expect(normalize('  DOROTHÉE   ANCEL  ')).toBe('dorothee ancel');
   });
+
+  test('removes apostrophes regardless of form', async () => {
+    // iOS smart punctuation types U+2019 (’) when the guest presses ' — all
+    // apostrophe-like characters must collapse to the same normalized name.
+    expect(normalize("Rebecca O'Reilly")).toBe('rebecca oreilly'); // straight U+0027
+    expect(normalize('Rebecca O’Reilly')).toBe('rebecca oreilly'); // curly U+2019
+    expect(normalize('Rebecca O‘Reilly')).toBe('rebecca oreilly'); // curly U+2018
+    expect(normalize('Rebecca OʼReilly')).toBe('rebecca oreilly'); // modifier U+02BC
+    expect(normalize('Rebecca O`Reilly')).toBe('rebecca oreilly'); // backtick U+0060
+    expect(normalize('Rebecca O´Reilly')).toBe('rebecca oreilly'); // acute U+00B4
+  });
+
+  test('treats Unicode dashes as word separators', async () => {
+    // iOS smart punctuation can also produce en/em dashes.
+    expect(normalize('Jean–Pierre Delacroix')).toBe('jean pierre delacroix'); // en dash
+    expect(normalize('Jean—Pierre Delacroix')).toBe('jean pierre delacroix'); // em dash
+    expect(normalize('Jean‑Pierre Delacroix')).toBe('jean pierre delacroix'); // non-breaking hyphen
+  });
 });
 
 test.describe('Auth Module — Guest Validation', () => {
@@ -170,6 +188,14 @@ test.describe('Auth Module — Guest Validation', () => {
       name: 'Jean-Pierre Delacroix',
       normalizedName: 'jean pierre delacroix',
       eventInvitations: ['france'] as const,
+      isPlusOne: false,
+      relatedGuestIds: [],
+    },
+    {
+      id: 'notion-5',
+      name: "Rebecca O'Reilly",
+      normalizedName: 'rebecca oreilly',
+      eventInvitations: ['nyc'] as const,
       isPlusOne: false,
       relatedGuestIds: [],
     },
@@ -203,6 +229,16 @@ test.describe('Auth Module — Guest Validation', () => {
     const found = validateGuestFromRecords('jean-pierre delacroix', [...mockGuests]);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Jean-Pierre Delacroix');
+  });
+
+  test('finds apostrophe-name guest for any apostrophe form the keyboard produces', async () => {
+    // Straight apostrophe, iOS smart-punctuation curly apostrophe, and no
+    // apostrophe at all must all resolve to the stored record.
+    for (const typed of ["Rebecca O'Reilly", 'Rebecca O’Reilly', 'Rebecca OReilly']) {
+      const found = validateGuestFromRecords(typed, [...mockGuests]);
+      expect(found, `input: ${typed}`).not.toBeNull();
+      expect(found!.id).toBe('notion-5');
+    }
   });
 
   test('returns null for unknown guest', async () => {
