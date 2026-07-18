@@ -157,16 +157,69 @@ test.describe('RSVP preview mode — NYC', () => {
     expect(values).toContain(mockCompanionGuest.name);
   });
 
-  test('NYC RSVP has at least one .event-checkbox in the core events section', async () => {
+  test('NYC RSVP renders an attendance dropdown per event with a blank default option', async () => {
     await page.goto('/nyc/rsvp');
-    const count = await page.locator('.event-checkbox').count();
+    const selects = page.locator('select.event-attending');
+    const count = await selects.count();
     expect(count).toBeGreaterThan(0);
+    const placeholder = selects.first().locator('option').first();
+    await expect(placeholder).toHaveAttribute('value', '');
+    await expect(placeholder).toBeDisabled();
+  });
+
+  test('NYC RSVP shows an inline error and blocks submission when an event has no selection', async () => {
+    await page.goto('/nyc/rsvp');
+    const firstSelect = page.locator('select.event-attending').first();
+    await firstSelect.evaluate((el) => {
+      (el as HTMLSelectElement).value = '';
+    });
+    await page.click('button[type="submit"]');
+    const firstError = page.locator('.event-row-error').first();
+    await expect(firstError).toBeVisible();
+    await expect(firstSelect).toHaveClass(/has-error/);
+    await expect(page).toHaveURL(/\/nyc\/rsvp$/);
+    // Choosing a value clears the error state
+    await firstSelect.selectOption('yes');
+    await expect(firstError).toBeHidden();
+    await expect(firstSelect).not.toHaveClass(/has-error/);
+  });
+
+  test('NYC RSVP submit button switches to Regretfully Decline when every event is declined', async () => {
+    await page.goto('/nyc/rsvp');
+    const selects = page.locator('select.event-attending');
+    const count = await selects.count();
+    for (let i = 0; i < count; i++) {
+      await selects.nth(i).selectOption('no');
+    }
+    await expect(page.locator('button[type="submit"] .btn-label')).toHaveText('Regretfully Decline');
+    await selects.first().selectOption('yes');
+    await expect(page.locator('button[type="submit"] .btn-label')).not.toHaveText('Regretfully Decline');
   });
 
   test('France RSVP form also renders with mock data', async () => {
     await page.goto('/france/rsvp');
     await expect(page.locator('[data-testid="notion-required"]')).not.toBeVisible();
     await expect(page.locator('#rsvp-form')).toBeVisible();
+  });
+
+  test('France RSVP accommodation dropdown requires an active choice', async () => {
+    await page.goto('/france/rsvp');
+    const accommodation = page.locator('select[name="accommodation"]');
+    const placeholder = accommodation.locator('option').first();
+    await expect(placeholder).toHaveAttribute('value', '');
+    await expect(placeholder).toBeDisabled();
+    await accommodation.evaluate((el) => {
+      (el as HTMLSelectElement).value = '';
+    });
+    await page.click('button[type="submit"]');
+    const error = page.locator('.accommodation-error');
+    await expect(error).toBeVisible();
+    await expect(accommodation).toHaveClass(/has-error/);
+    await expect(page).toHaveURL(/\/france\/rsvp$/);
+    // Any active choice — including "I'm not sure yet" — clears the error
+    await accommodation.selectOption('unsure');
+    await expect(error).toBeHidden();
+    await expect(accommodation).not.toHaveClass(/has-error/);
   });
 });
 

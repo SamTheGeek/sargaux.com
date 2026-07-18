@@ -24,6 +24,16 @@ async function loginAndNavigateToRSVP(page: Page, event: 'nyc' | 'france') {
   await expect(page.locator('#rsvp-form')).toBeVisible();
 }
 
+// Every event dropdown is required (blank by default when no RSVP exists),
+// so tests must pick an option before the form will submit.
+async function fillEventSelections(page: Page, value: 'yes' | 'no' = 'yes') {
+  const selects = page.locator('select.event-attending');
+  const count = await selects.count();
+  for (let i = 0; i < count; i++) {
+    await selects.nth(i).selectOption(value);
+  }
+}
+
 async function getAuthCookie(context: BrowserContext): Promise<string> {
   const cookies = await context.cookies();
   const authCookie = cookies.find((cookie) => cookie.name === 'sargaux_auth')?.value;
@@ -98,6 +108,7 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
+    await fillEventSelections(page);
     await page.fill('textarea[name="dietary"]', 'Vegetarian');
     await page.fill('textarea[name="message"]', 'Excited to celebrate!');
     await Promise.all([
@@ -116,6 +127,7 @@ test.describe('RSVP Dynamic Forms', () => {
 
   test('NYC shows error message when API submission fails', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
+    await fillEventSelections(page);
 
     await page.route('**/api/rsvp', async (route) => {
       await route.fulfill({
@@ -179,6 +191,7 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
+    await fillEventSelections(page);
     await page.fill('textarea[name="allergens"]', 'Peanut allergy');
     await page.selectOption('select[name="accommodation"]', 'yes');
     await page.fill('textarea[name="message"]', 'Merci!');
@@ -231,6 +244,7 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
+    await fillEventSelections(page);
     await Promise.all([
       page.waitForURL('/nyc/rsvp/confirmed'),
       page.click('button[type="submit"]'),
@@ -254,6 +268,7 @@ test.describe('RSVP Dynamic Forms', () => {
       });
     });
 
+    await fillEventSelections(page);
     await page.locator('[data-testid="send-confirmation-checkbox"]').check({ force: true });
     await Promise.all([
       page.waitForURL('/nyc/rsvp/confirmed'),
@@ -265,6 +280,7 @@ test.describe('RSVP Dynamic Forms', () => {
 
   test('NYC requires at least one group email', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
+    await fillEventSelections(page);
 
     await page.locator('[data-testid="group-email-input"]').evaluateAll((inputs) => {
       for (const input of inputs) {
@@ -280,6 +296,7 @@ test.describe('RSVP Dynamic Forms', () => {
 
   test('NYC invalid email shows field-level error state and global error', async ({ page }) => {
     await loginAndNavigateToRSVP(page, 'nyc');
+    await fillEventSelections(page);
 
     await page.locator('[data-testid="group-email-input"]').first().fill('bad@notarealdomain.invalid');
 
