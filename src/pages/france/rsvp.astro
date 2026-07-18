@@ -153,6 +153,12 @@ const confirmationEmailAllRequired = t(strings.france.rsvp.form.email.requireAll
 const requireAllEmails = features.global.rsvpRequireAllEmails;
 const attendingLabel = t(strings.global.attending);
 const notAttendingLabel = t(strings.global.notAttending);
+const eventYesLabel = t(strings.global.eventAttendingOption);
+const eventNoLabel = t(strings.global.eventNotAttendingOption);
+const declineLabel = t(strings.global.regretfullyDecline);
+// A stored response records a yes/no per event; without one every dropdown
+// starts blank and the guest must choose for each event.
+const hasEventSelections = existingRSVP?.eventsAttending !== undefined;
 
 function formatSubmittedAt(dateString: string, locale: string): string {
   const date = new Date(dateString);
@@ -233,6 +239,7 @@ const submittedAtFallback = submittedAtISO
             data-require-all-emails={requireAllEmails}
             data-attending-label={attendingLabel}
             data-not-attending-label={notAttendingLabel}
+            data-decline-label={declineLabel}
             data-is-local-dev={import.meta.env.DEV}
           >
           <section class="form-section">
@@ -277,20 +284,23 @@ const submittedAtFallback = submittedAtISO
                 {coreEvents.map((event) => {
                   const loc = localizeEvent(event, lang);
                   return (
-                  <label class="event-checkbox is-core">
-                    <input
-                      type="checkbox"
-                      class="event-attending"
-                      data-event-id={event.id}
-                      data-event-type="core"
-                      checked={selectedEventIds.size > 0 ? selectedEventIds.has(event.id) : true}
-                    />
-                    <span class="checkbox-mark"></span>
+                  <div class="event-row is-core">
                     <div class="event-details">
                       <strong>{loc.name}</strong>
                       <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
-                  </label>
+                    <select
+                      class="event-attending event-select"
+                      data-event-id={event.id}
+                      data-event-type="core"
+                      required
+                      aria-label={loc.name}
+                    >
+                      <option value="" disabled selected={!hasEventSelections}>—</option>
+                      <option value="yes" selected={hasEventSelections && selectedEventIds.has(event.id)}>{eventYesLabel}</option>
+                      <option value="no" selected={hasEventSelections && !selectedEventIds.has(event.id)}>{eventNoLabel}</option>
+                    </select>
+                  </div>
                   );
                 })}
               </div>
@@ -308,20 +318,23 @@ const submittedAtFallback = submittedAtISO
                 {optionalEvents.map((event) => {
                   const loc = localizeEvent(event, lang);
                   return (
-                  <label class="event-checkbox optional-event">
-                    <input
-                      type="checkbox"
-                      class="event-attending"
-                      data-event-id={event.id}
-                      data-event-type="optional"
-                      checked={selectedEventIds.has(event.id)}
-                    />
-                    <span class="checkbox-mark"></span>
+                  <div class="event-row optional-event">
                     <div class="event-details">
                       <strong>{loc.name}</strong>
                       <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
                     </div>
-                  </label>
+                    <select
+                      class="event-attending event-select"
+                      data-event-id={event.id}
+                      data-event-type="optional"
+                      required
+                      aria-label={loc.name}
+                    >
+                      <option value="" disabled selected={!hasEventSelections}>—</option>
+                      <option value="yes" selected={hasEventSelections && selectedEventIds.has(event.id)}>{eventYesLabel}</option>
+                      <option value="no" selected={hasEventSelections && !selectedEventIds.has(event.id)}>{eventNoLabel}</option>
+                    </select>
+                  </div>
                   );
                 })}
               </div>
@@ -588,46 +601,32 @@ main {
     gap: 0.75rem;
   }
 
-  .event-checkbox {
+  .event-row {
     display: flex;
-    align-items: start;
+    align-items: center;
     gap: 0.65rem;
     padding: 0.85rem;
     border: 1px solid var(--color-border);
-
-    cursor: pointer;
   }
 
-  .event-checkbox.is-core {
+  .event-row.is-core {
     background: var(--color-bg);
   }
 
-  .checkbox-mark {
-    width: 18px;
-    height: 18px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    margin-top: 2px;
+  .event-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .event-select {
     flex-shrink: 0;
-    position: relative;
-  }
-
-  .event-checkbox input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .event-checkbox input:checked + .checkbox-mark::after {
-    content: '';
-    position: absolute;
-    left: 5px;
-    top: 1px;
-    width: 5px;
-    height: 10px;
-    border: solid var(--color-text);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    border: 1px solid var(--color-border);
+    padding: 0.5rem 0.6rem;
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--color-bg);
+    color: var(--color-text);
+    cursor: pointer;
   }
 
   .event-details strong {
@@ -846,6 +845,22 @@ main {
       row.querySelector('.guest-attending')?.addEventListener('change', () => updateGuestStatus(row));
     });
 
+    // Submit button reads "Regretfully Decline" when every event is declined.
+    const declineLabel = form.dataset.declineLabel ?? 'Regretfully Decline';
+    const eventSelects = Array.from(form.querySelectorAll('select.event-attending'));
+    const submitLabel = submitButton?.querySelector('.btn-label');
+    const defaultSubmitLabel = submitLabel?.textContent ?? '';
+
+    const updateSubmitLabel = () => {
+      if (!submitLabel) return;
+      const allDeclined =
+        eventSelects.length > 0 && eventSelects.every((select) => select.value === 'no');
+      submitLabel.textContent = allDeclined ? declineLabel : defaultSubmitLabel;
+    };
+
+    eventSelects.forEach((select) => select.addEventListener('change', updateSubmitLabel));
+    updateSubmitLabel();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
@@ -874,11 +889,9 @@ main {
         };
       });
 
-      const optionalEvents = Array.from(form.querySelectorAll('.event-attending[data-event-type="optional"]'));
-      const coreEventIds = Array.from(form.querySelectorAll('.event-attending[data-event-type="core"]')).map((input) => input.dataset.eventId).filter(Boolean);
-      const optionalEventIds = optionalEvents
-        .filter((input) => input.checked)
-        .map((input) => input.dataset.eventId)
+      const attendingEventIds = eventSelects
+        .filter((select) => select.value === 'yes')
+        .map((select) => select.dataset.eventId)
         .filter(Boolean);
 
       const allergens = form.querySelector('textarea[name="allergens"]')?.value?.trim();
@@ -930,7 +943,7 @@ main {
         event: form.dataset.event,
         guestsAttending,
         guestEmails,
-        eventsAttending: anyAttending ? [...coreEventIds, ...optionalEventIds] : [],
+        eventsAttending: anyAttending ? attendingEventIds : [],
         dietary: allergens || undefined,
         message: form.querySelector('textarea[name="message"]')?.value?.trim() || undefined,
         details: {

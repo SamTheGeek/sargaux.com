@@ -57,6 +57,10 @@ export const strings = {
     detailsToCome: s('Details to come', 'Détails à venir'),
     attending:    s('Attending', 'Présent'),
     notAttending: s('Not attending', 'Absent'),
+    // Event dropdown options + decline button — French provided by Sam (2026-07-18)
+    eventAttendingOption:    s('Attending', 'Oui'),
+    eventNotAttendingOption: s('Not attending', 'Non'),
+    regretfullyDecline:      s('Regretfully Decline', 'Décline avec regret'),
     // French provided by Sam (2026-07-04) — do not machine-translate
     savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {

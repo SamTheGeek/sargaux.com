@@ -157,10 +157,26 @@ test.describe('RSVP preview mode — NYC', () => {
     expect(values).toContain(mockCompanionGuest.name);
   });
 
-  test('NYC RSVP has at least one .event-checkbox in the core events section', async () => {
+  test('NYC RSVP renders an attendance dropdown per event with a blank default option', async () => {
     await page.goto('/nyc/rsvp');
-    const count = await page.locator('.event-checkbox').count();
+    const selects = page.locator('select.event-attending');
+    const count = await selects.count();
     expect(count).toBeGreaterThan(0);
+    const placeholder = selects.first().locator('option').first();
+    await expect(placeholder).toHaveAttribute('value', '');
+    await expect(placeholder).toBeDisabled();
+  });
+
+  test('NYC RSVP submit button switches to Regretfully Decline when every event is declined', async () => {
+    await page.goto('/nyc/rsvp');
+    const selects = page.locator('select.event-attending');
+    const count = await selects.count();
+    for (let i = 0; i < count; i++) {
+      await selects.nth(i).selectOption('no');
+    }
+    await expect(page.locator('button[type="submit"] .btn-label')).toHaveText('Regretfully Decline');
+    await selects.first().selectOption('yes');
+    await expect(page.locator('button[type="submit"] .btn-label')).not.toHaveText('Regretfully Decline');
   });
 
   test('France RSVP form also renders with mock data', async () => {
