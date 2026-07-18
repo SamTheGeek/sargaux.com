@@ -61,8 +61,8 @@ export const strings = {
     eventAttendingOption:    s('Attending', 'Oui'),
     eventNotAttendingOption: s('Not attending', 'Non'),
     regretfullyDecline:      s('Regretfully Decline', 'Décline avec regret'),
-    // TODO: French translation pending from Sam — en() is a placeholder
-    eventSelectionRequired:  en("Please let us know if you'll be joining us for this event."),
+    // French provided by Sam (2026-07-18) — provisional, may be revised
+    eventSelectionRequired:  s("Please let us know if you'll be joining us for this event.", 'Merci de choisir votre réponse'),
     // French provided by Sam (2026-07-04) — do not machine-translate
     savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {
@@ -1035,6 +1035,8 @@ export const strings = {
           unsure:   s("I'm not sure yet", "J'y réfléchis"),
           yes:      s("Yes, I'd like to stay at Village de Sully", 'Oui, je souhaite dormir au Village de Sully'),
           no:       s("No thanks, I won't need accommodations", "Non merci, je n'aurai pas besoin de chambre"),
+          // French provided by Sam (2026-07-18) — provisional, shared with the event error for now
+          required: s("Please let us know if you'd like to reserve accommodations.", 'Merci de choisir votre réponse'),
           followup: s("We'll be in touch after the RSVP deadline to confirm your room assignment and accommodation details.", 'Nous vous contacterons après la date limite des RSVP pour confirmer les détails de votre chambre.'),
         },
         transport: {

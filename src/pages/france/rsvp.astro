@@ -157,6 +157,7 @@ const eventYesLabel = t(strings.global.eventAttendingOption);
 const eventNoLabel = t(strings.global.eventNotAttendingOption);
 const declineLabel = t(strings.global.regretfullyDecline);
 const eventSelectionRequired = t(strings.global.eventSelectionRequired);
+const accommodationSelectionRequired = t(strings.france.rsvp.form.accommodation.required);
 // A stored response records a yes/no per event; without one every dropdown
 // starts blank and the guest must choose for each event.
 const hasEventSelections = existingRSVP?.eventsAttending !== undefined;
@@ -364,11 +365,13 @@ const submittedAtFallback = submittedAtISO
                 <p>{t(strings.france.rsvp.form.accommodation.intro)}</p>
               </div>
               <p class="section-note">{t(strings.france.rsvp.form.accommodation.question)}</p>
-              <select name="accommodation" class="single-line-input">
-                <option value="unsure" selected={existingDetails.accommodation === undefined || existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
+              <select name="accommodation" class="single-line-input" required>
+                <option value="" disabled selected={existingDetails.accommodation === undefined}>—</option>
+                <option value="unsure" selected={existingDetails.accommodation === 'unsure'}>{t(strings.france.rsvp.form.accommodation.unsure)}</option>
                 <option value="yes" selected={existingDetails.accommodation === 'yes'}>{t(strings.france.rsvp.form.accommodation.yes)}</option>
                 <option value="no" selected={existingDetails.accommodation === 'no'}>{t(strings.france.rsvp.form.accommodation.no)}</option>
               </select>
+              <p class="accommodation-error" hidden>{accommodationSelectionRequired}</p>
               <p class="section-note accommodation-followup">{t(strings.france.rsvp.form.accommodation.followup)}</p>
             </div>
           </section>
@@ -643,6 +646,16 @@ main {
     color: var(--color-burnt-amber);
   }
 
+  select[name='accommodation'].has-error {
+    border-color: var(--color-burnt-amber);
+  }
+
+  .accommodation-error {
+    margin: 0.3rem 0 0.9rem;
+    font-size: 0.9rem;
+    color: var(--color-burnt-amber);
+  }
+
   .event-details strong {
     display: block;
     margin-bottom: 0.1rem;
@@ -883,11 +896,28 @@ main {
       if (errorEl) errorEl.hidden = !hasError;
     };
 
+    // querySelector returns the first match in document order, so the scroll
+    // always lands on the highest error on the page.
     const scrollToFirstError = () => {
       form
-        .querySelector('.event-select.has-error, .group-email-input.has-error')
+        .querySelector('.event-select.has-error, select[name="accommodation"].has-error, .group-email-input.has-error')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
+
+    const accommodationSelect = form.querySelector('select[name="accommodation"]');
+    const setAccommodationError = (hasError) => {
+      if (!accommodationSelect) return;
+      accommodationSelect.classList.toggle('has-error', hasError);
+      if (hasError) {
+        accommodationSelect.setAttribute('aria-invalid', 'true');
+      } else {
+        accommodationSelect.removeAttribute('aria-invalid');
+      }
+      const errorEl = form.querySelector('.accommodation-error');
+      if (errorEl) errorEl.hidden = !hasError;
+    };
+
+    accommodationSelect?.addEventListener('change', () => setAccommodationError(false));
 
     eventSelects.forEach((select) =>
       select.addEventListener('change', () => {
@@ -920,11 +950,15 @@ main {
       form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
       form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
       eventSelects.forEach((select) => setEventError(select, false));
+      setAccommodationError(false);
 
-      // Every event needs an explicit Attending / Not attending choice.
+      // Every event needs an explicit Attending / Not attending choice, and
+      // the accommodation question needs an active answer.
       const missingSelections = eventSelects.filter((select) => !select.value);
-      if (missingSelections.length > 0) {
+      const accommodationMissing = accommodationSelect && !accommodationSelect.value;
+      if (missingSelections.length > 0 || accommodationMissing) {
         missingSelections.forEach((select) => setEventError(select, true));
+        if (accommodationMissing) setAccommodationError(true);
         scrollToFirstError();
         restoreSubmitButton();
         return;

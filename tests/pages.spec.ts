@@ -201,6 +201,26 @@ test.describe('RSVP preview mode — NYC', () => {
     await expect(page.locator('[data-testid="notion-required"]')).not.toBeVisible();
     await expect(page.locator('#rsvp-form')).toBeVisible();
   });
+
+  test('France RSVP accommodation dropdown requires an active choice', async () => {
+    await page.goto('/france/rsvp');
+    const accommodation = page.locator('select[name="accommodation"]');
+    const placeholder = accommodation.locator('option').first();
+    await expect(placeholder).toHaveAttribute('value', '');
+    await expect(placeholder).toBeDisabled();
+    await accommodation.evaluate((el) => {
+      (el as HTMLSelectElement).value = '';
+    });
+    await page.click('button[type="submit"]');
+    const error = page.locator('.accommodation-error');
+    await expect(error).toBeVisible();
+    await expect(accommodation).toHaveClass(/has-error/);
+    await expect(page).toHaveURL(/\/france\/rsvp$/);
+    // Any active choice — including "I'm not sure yet" — clears the error
+    await accommodation.selectOption('unsure');
+    await expect(error).toBeHidden();
+    await expect(accommodation).not.toHaveClass(/has-error/);
+  });
 });
 
 // ── 4. Lookbook pages — disc-as-O heading ─────────────────────────────────────
