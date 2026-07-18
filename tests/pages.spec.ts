@@ -167,6 +167,23 @@ test.describe('RSVP preview mode — NYC', () => {
     await expect(placeholder).toBeDisabled();
   });
 
+  test('NYC RSVP shows an inline error and blocks submission when an event has no selection', async () => {
+    await page.goto('/nyc/rsvp');
+    const firstSelect = page.locator('select.event-attending').first();
+    await firstSelect.evaluate((el) => {
+      (el as HTMLSelectElement).value = '';
+    });
+    await page.click('button[type="submit"]');
+    const firstError = page.locator('.event-row-error').first();
+    await expect(firstError).toBeVisible();
+    await expect(firstSelect).toHaveClass(/has-error/);
+    await expect(page).toHaveURL(/\/nyc\/rsvp$/);
+    // Choosing a value clears the error state
+    await firstSelect.selectOption('yes');
+    await expect(firstError).toBeHidden();
+    await expect(firstSelect).not.toHaveClass(/has-error/);
+  });
+
   test('NYC RSVP submit button switches to Regretfully Decline when every event is declined', async () => {
     await page.goto('/nyc/rsvp');
     const selects = page.locator('select.event-attending');

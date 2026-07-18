@@ -156,6 +156,7 @@ const notAttendingLabel = t(strings.global.notAttending);
 const eventYesLabel = t(strings.global.eventAttendingOption);
 const eventNoLabel = t(strings.global.eventNotAttendingOption);
 const declineLabel = t(strings.global.regretfullyDecline);
+const eventSelectionRequired = t(strings.global.eventSelectionRequired);
 // A stored response records a yes/no per event; without one every dropdown
 // starts blank and the guest must choose for each event.
 const hasEventSelections = existingRSVP?.eventsAttending !== undefined;
@@ -233,6 +234,7 @@ const submittedAtFallback = submittedAtISO
           <form
             class="rsvp-form"
             id="rsvp-form"
+            novalidate
             data-event="france"
             data-confirm-email-required={confirmationEmailRequired}
             data-confirm-email-all-required={confirmationEmailAllRequired}
@@ -288,6 +290,7 @@ const submittedAtFallback = submittedAtISO
                     <div class="event-details">
                       <strong>{loc.name}</strong>
                       <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
+                      <p class="event-row-error" hidden>{eventSelectionRequired}</p>
                     </div>
                     <select
                       class="event-attending event-select"
@@ -322,6 +325,7 @@ const submittedAtFallback = submittedAtISO
                     <div class="event-details">
                       <strong>{loc.name}</strong>
                       <span class="event-info">{[loc.time, loc.location].filter(Boolean).join(' · ') || t(strings.global.detailsToCome)}</span>
+                      <p class="event-row-error" hidden>{eventSelectionRequired}</p>
                     </div>
                     <select
                       class="event-attending event-select"
@@ -629,6 +633,16 @@ main {
     cursor: pointer;
   }
 
+  .event-select.has-error {
+    border-color: var(--color-error);
+  }
+
+  .event-row-error {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    color: var(--color-error);
+  }
+
   .event-details strong {
     display: block;
     margin-bottom: 0.1rem;
@@ -858,8 +872,37 @@ main {
       submitLabel.textContent = allDeclined ? declineLabel : defaultSubmitLabel;
     };
 
-    eventSelects.forEach((select) => select.addEventListener('change', updateSubmitLabel));
+    const setEventError = (select, hasError) => {
+      select.classList.toggle('has-error', hasError);
+      if (hasError) {
+        select.setAttribute('aria-invalid', 'true');
+      } else {
+        select.removeAttribute('aria-invalid');
+      }
+      const errorEl = select.closest('.event-row')?.querySelector('.event-row-error');
+      if (errorEl) errorEl.hidden = !hasError;
+    };
+
+    const scrollToFirstError = () => {
+      form
+        .querySelector('.event-select.has-error, .group-email-input.has-error')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    eventSelects.forEach((select) =>
+      select.addEventListener('change', () => {
+        setEventError(select, false);
+        updateSubmitLabel();
+      })
+    );
     updateSubmitLabel();
+
+    const restoreSubmitButton = () => {
+      if (!submitButton) return;
+      submitButton.disabled = false;
+      submitButton.classList.remove('is-loading');
+      submitButton.removeAttribute('aria-busy');
+    };
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -876,6 +919,16 @@ main {
       }
       form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
       form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
+      eventSelects.forEach((select) => setEventError(select, false));
+
+      // Every event needs an explicit Attending / Not attending choice.
+      const missingSelections = eventSelects.filter((select) => !select.value);
+      if (missingSelections.length > 0) {
+        missingSelections.forEach((select) => setEventError(select, true));
+        scrollToFirstError();
+        restoreSubmitButton();
+        return;
+      }
 
       const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
 
@@ -917,11 +970,8 @@ main {
       if (guestEmails.every((guest) => !guest.email)) {
         guestEmails.forEach((guest) => markEmailError(guest.guestId));
         showError(confirmationEmailRequired);
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.classList.remove('is-loading');
-          submitButton.removeAttribute('aria-busy');
-        }
+        scrollToFirstError();
+        restoreSubmitButton();
         return;
       }
 
@@ -930,11 +980,8 @@ main {
         if (missing) {
           markEmailError(missing.guestId);
           showError(confirmationEmailAllRequired);
-          if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.classList.remove('is-loading');
-            submitButton.removeAttribute('aria-busy');
-          }
+          scrollToFirstError();
+          restoreSubmitButton();
           return;
         }
       }
@@ -979,11 +1026,7 @@ main {
           return;
         }
 
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.classList.remove('is-loading');
-          submitButton.removeAttribute('aria-busy');
-        }
+        restoreSubmitButton();
       }
     });
   }

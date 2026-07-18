@@ -61,6 +61,8 @@ export const strings = {
     eventAttendingOption:    s('Attending', 'Oui'),
     eventNotAttendingOption: s('Not attending', 'Non'),
     regretfullyDecline:      s('Regretfully Decline', 'Décline avec regret'),
+    // TODO: French translation pending from Sam — en() is a placeholder
+    eventSelectionRequired:  en("Please let us know if you'll be joining us for this event."),
     // French provided by Sam (2026-07-04) — do not machine-translate
     savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {
