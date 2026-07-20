@@ -870,10 +870,19 @@ main {
       }
     };
 
+    // Toggle states remembered while every event is declined, so restoring is
+    // possible when an event flips back to "Attending". Null outside that state.
+    let preDeclineToggles = null;
+
     const guestRows = form.querySelectorAll('[data-guest-row]');
     guestRows.forEach((row) => {
       updateGuestStatus(row);
-      row.querySelector('.guest-attending')?.addEventListener('change', () => updateGuestStatus(row));
+      const checkbox = row.querySelector('.guest-attending');
+      checkbox?.addEventListener('change', () => {
+        // A toggle the guest sets by hand wins over the automatic restore.
+        preDeclineToggles?.delete(checkbox);
+        updateGuestStatus(row);
+      });
     });
 
     // Submit button reads "Regretfully Decline" when every event is declined.
@@ -882,11 +891,37 @@ main {
     const submitLabel = submitButton?.querySelector('.btn-label');
     const defaultSubmitLabel = submitLabel?.textContent ?? '';
 
+    const allEventsDeclined = () =>
+      eventSelects.length > 0 && eventSelects.every((select) => select.value === 'no');
+
     const updateSubmitLabel = () => {
       if (!submitLabel) return;
-      const allDeclined =
-        eventSelects.length > 0 && eventSelects.every((select) => select.value === 'no');
-      submitLabel.textContent = allDeclined ? declineLabel : defaultSubmitLabel;
+      submitLabel.textContent = allEventsDeclined() ? declineLabel : defaultSubmitLabel;
+    };
+
+    // Declining every event flips the guest toggles off so the form shows the
+    // decline it will submit. Choosing "Attending" for an event again restores
+    // the toggles as they were before the decline.
+    const syncTogglesToDecline = () => {
+      if (allEventsDeclined()) {
+        if (preDeclineToggles) return;
+        preDeclineToggles = new Map();
+        guestRows.forEach((row) => {
+          const checkbox = row.querySelector('.guest-attending');
+          if (!checkbox) return;
+          preDeclineToggles.set(checkbox, checkbox.checked);
+          checkbox.checked = false;
+          updateGuestStatus(row);
+        });
+      } else if (preDeclineToggles) {
+        guestRows.forEach((row) => {
+          const checkbox = row.querySelector('.guest-attending');
+          if (!checkbox || !preDeclineToggles.has(checkbox)) return;
+          checkbox.checked = preDeclineToggles.get(checkbox);
+          updateGuestStatus(row);
+        });
+        preDeclineToggles = null;
+      }
     };
 
     const setEventError = (select, hasError) => {
@@ -927,9 +962,11 @@ main {
       select.addEventListener('change', () => {
         setEventError(select, false);
         updateSubmitLabel();
+        syncTogglesToDecline();
       })
     );
     updateSubmitLabel();
+    syncTogglesToDecline();
 
     const restoreSubmitButton = () => {
       if (!submitButton) return;
