@@ -250,8 +250,12 @@ const submittedAtFallback = submittedAtISO
             <p class="section-note">{t(strings.france.rsvp.form.whosComing.note)}</p>
 
             {party.map((partyGuest) => {
-              const isAttending =
-                attendingNames.size > 0 ? attendingNames.has(partyGuest.name) : !partyGuest.isPlusOne;
+              // With a stored response, the toggle mirrors it exactly — a
+              // declined RSVP (empty attendee list) re-opens with everyone
+              // off, not the first-visit default of checked non-plus-ones.
+              const isAttending = existingRSVP
+                ? attendingNames.has(partyGuest.name)
+                : !partyGuest.isPlusOne;
 
               return (
                 <div class:list={["guest-row", partyGuest.isPlusOne && 'plus-one']} data-guest-row data-guest-id={partyGuest.id}>

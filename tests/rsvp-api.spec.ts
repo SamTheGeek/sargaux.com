@@ -22,6 +22,7 @@ test.describe('RSVP API Endpoints', () => {
 
   let authCookie: string | undefined;
   let partyGuestIds: string[] = [];
+  let nycEventIds: string[] = [];
 
   // Skip all tests if Notion backend is not enabled
   // This is detected by checking if the login redirects to /nyc (Notion enabled) or stays on / (hardcoded list)
@@ -63,6 +64,14 @@ test.describe('RSVP API Endpoints', () => {
       ...html.matchAll(/<input[^>]*data-guest-email-id="([^"]+)"/g),
     ].map((match) => match[1]);
     expect(partyGuestIds.length).toBeGreaterThan(0);
+
+    // The NYC event catalog ids come from the form's per-event dropdowns —
+    // submissions that mean "attending" must name at least one event, since
+    // an empty eventsAttending is treated as a decline for the whole party.
+    nycEventIds = [
+      ...html.matchAll(/<select[^>]*data-event-id="([^"]+)"/g),
+    ].map((match) => match[1]);
+    expect(nycEventIds.length).toBeGreaterThan(0);
 
     // Clean up any existing RSVPs for the test guest to ensure a clean slate.
     // Loop until all RSVPs are deleted (there may be multiple from prior test runs).
@@ -223,6 +232,63 @@ test.describe('RSVP API Endpoints', () => {
     expect(responseId2).toBe(responseId1);
   });
 
+  test('POST /api/rsvp - declining every event records a decline even when guest toggles stay checked', async ({
+    request,
+  }) => {
+    // The form's guest toggles default to checked; a guest who declines by
+    // answering "Not attending" to every event dropdown never touches them.
+    // That submission arrives as attending guests + zero events, and must be
+    // stored as a decline, not as Attending.
+    const response = await request.post(`/api/rsvp`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
+        eventsAttending: [],
+      },
+    });
+    expect(response.status()).toBe(200);
+
+    const getRes = await request.get(`/api/rsvp?event=nyc`, {
+      headers: { Cookie: `sargaux_auth=${authCookie}` },
+    });
+    expect(getRes.status()).toBe(200);
+    const getBody = await getRes.json();
+    expect(getBody.rsvp?.status).toBe('Declined');
+    expect(getBody.rsvp?.guestsAttending ?? '').toBe('');
+    expect(getBody.rsvp?.details?.eventsAttending ?? []).toEqual([]);
+  });
+
+  test('POST /api/rsvp - unchecking every guest clears the attended events', async ({
+    request,
+  }) => {
+    // The converse normalization: no attendees means no attended events, even
+    // if the payload still names event ids.
+    const response = await request.post(`/api/rsvp`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `sargaux_auth=${authCookie}`,
+      },
+      data: {
+        event: 'nyc',
+        guestsAttending: [{ name: TEST_GUEST_NAME, attending: false }],
+        eventsAttending: nycEventIds,
+      },
+    });
+    expect(response.status()).toBe(200);
+
+    const getRes = await request.get(`/api/rsvp?event=nyc`, {
+      headers: { Cookie: `sargaux_auth=${authCookie}` },
+    });
+    expect(getRes.status()).toBe(200);
+    const getBody = await getRes.json();
+    expect(getBody.rsvp?.status).toBe('Declined');
+    expect(getBody.rsvp?.details?.eventsAttending ?? []).toEqual([]);
+  });
+
   test('POST /api/rsvp - accepts guestId-threaded entries (name write-back path)', async ({
     request,
   }) => {
@@ -255,7 +321,7 @@ test.describe('RSVP API Endpoints', () => {
       data: {
         event: 'nyc',
         guestsAttending: pairs,
-        eventsAttending: [],
+        eventsAttending: nycEventIds,
         dietary: 'Test dietary',
       },
     });
@@ -342,7 +408,7 @@ test.describe('RSVP API Endpoints', () => {
       data: {
         event: 'nyc',
         guestsAttending: [{ name: TEST_GUEST_NAME, attending: true }],
-        eventsAttending: [],
+        eventsAttending: nycEventIds,
         dietary: 'Gluten-free',
         message: 'Can\'t wait!',
         details: {},
@@ -361,7 +427,7 @@ test.describe('RSVP API Endpoints', () => {
     expect(body.rsvp.status).toBe('Attending');
     expect(body.rsvp.dietary).toBe('Gluten-free');
     expect(body.rsvp.message).toBe('Can\'t wait!');
-    expect(body.rsvp.details?.eventsAttending ?? []).toEqual([]);
+    expect(body.rsvp.details?.eventsAttending ?? []).toEqual(nycEventIds);
   });
 
   test('DELETE /api/rsvp - requires authentication', async ({ request }) => {
