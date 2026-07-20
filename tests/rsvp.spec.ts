@@ -75,6 +75,33 @@ test.describe('RSVP Dynamic Forms', () => {
     await expect(status).not.toHaveText(initialStatus ?? '');
   });
 
+  test('NYC declining every event flips the guest toggles off, and re-attending restores them', async ({
+    page,
+  }) => {
+    await loginAndNavigateToRSVP(page, 'nyc');
+
+    const toggles = page.locator('.guest-attending');
+    const toggleCount = await toggles.count();
+    expect(toggleCount).toBeGreaterThan(0);
+
+    // The primary guest's toggle starts checked (first-visit default).
+    const firstToggle = page.locator('[data-guest-row]').first().locator('.guest-attending');
+    await expect(firstToggle).toBeChecked();
+
+    // Declining every event flips every toggle off before submit.
+    await fillEventSelections(page, 'no');
+    for (let i = 0; i < toggleCount; i++) {
+      await expect(toggles.nth(i)).not.toBeChecked();
+    }
+    await expect(
+      page.locator('[data-guest-row]').first().locator('.guest-status')
+    ).not.toHaveText('Attending');
+
+    // Attending an event again restores the pre-decline toggle state.
+    await page.locator('select.event-attending').first().selectOption('yes');
+    await expect(firstToggle).toBeChecked();
+  });
+
   test('calendar CTA is removed from the NYC main page and shown on the details page', async ({ page }) => {
     await login(page);
 

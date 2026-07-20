@@ -222,6 +222,24 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     }
   }
 
+  // A submission that attends zero events is a decline for the whole party,
+  // even when the per-guest toggles were left in their default checked state —
+  // the per-event dropdowns are the authoritative signal (the form's submit
+  // button already reads "Regretfully Decline" in that state). Normalize
+  // before writing so the response row, the Guest List write-back, and the
+  // confirmation email all record the decline. Guarded on invitedEventIds so
+  // a guest with no listed events can't be declined by an empty catalog.
+  if (invitedEventIds.size > 0 && body.eventsAttending.length === 0) {
+    body.guestsAttending = body.guestsAttending.map((entry) => ({
+      ...entry,
+      attending: false,
+    }));
+  }
+  // Converse: with nobody attending, no events are attended either.
+  if (!body.guestsAttending.some((entry) => entry.attending)) {
+    body.eventsAttending = [];
+  }
+
   const partyById = new Map(party.map((guest) => [guest.id, guest]));
   const submittedGuestEmails = new Map<string, string | undefined>();
 
