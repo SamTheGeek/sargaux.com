@@ -514,10 +514,13 @@ const identityExpired = t(strings.home.identity.expired);
         }
 
         /* In dark mode, --color-text (background) and --color-surface-text
-           both resolve to warm-cream — use --color-bg for legible text. */
+           both resolve to warm-cream — use --color-bg for legible text. Any
+           control painted with that background pair belongs in this list;
+           .identity-option is one, since it deliberately matches the entry bar. */
         .login-trigger-panel,
         input.inline-name-input,
-        .inline-progress-label {
+        .inline-progress-label,
+        .identity-option {
           color: var(--color-bg);
           -webkit-text-fill-color: var(--color-bg);
         }
