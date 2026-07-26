@@ -56,6 +56,15 @@
  * the clipping regression is confirmed fixed across Safari versions.
  */
 
+// Type-only import: erased at compile time, so this adds no runtime dependency
+// on astro:transitions/client. It also makes this file a module, which
+// `declare global` below requires. ClientRouter still owns transition
+// interception — nothing here imports its runtime.
+import type {
+  TransitionBeforePreparationEvent,
+  TransitionBeforeSwapEvent,
+} from 'astro:transitions/client';
+
 declare global {
   interface Window {
     __sargauxDiscTransitionSetup?: boolean;
@@ -99,8 +108,12 @@ if (!window.__sargauxDiscTransitionSetup) {
     }
   };
 
-  const suppress = (el: Element | null) =>
-    (el as HTMLElement | null)?.style.setProperty('view-transition-name', 'none');
+  // querySelector returns Element, which has no `style`; every VT-name write
+  // goes through these two so the cast lives in exactly one place.
+  const setVTName = (el: Element | null, name: string) =>
+    (el as HTMLElement | null)?.style.setProperty('view-transition-name', name);
+
+  const suppress = (el: Element | null) => setVTName(el, 'none');
 
   document.addEventListener('astro:before-preparation', (e) => {
     _navFrom = (e as TransitionBeforePreparationEvent).from;
@@ -127,7 +140,7 @@ if (!window.__sargauxDiscTransitionSetup) {
 
     // Give old-page moss its own VT group before the old snapshot.
     if (!useSafariMossFallback) {
-      document.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+      setVTName(document.querySelector('.nyc-page-moss'), 'nyc-page-moss');
     }
 
     const suppressHeader = () => {
@@ -142,11 +155,11 @@ if (!window.__sargauxDiscTransitionSetup) {
       // the content renders above the disc (z:2) during the FLIP animation.
       // Only the /nyc index page has .nyc-hero-text; on sub-pages this is a no-op.
       if (isNycIndexToSubpage) {
-        document.querySelector('.nyc-hero-text')?.style.setProperty('view-transition-name', 'nyc-hero-text');
+        setVTName(document.querySelector('.nyc-hero-text'), 'nyc-hero-text');
       }
     } else if (isNycBackwardNav) {
       // Returning to /nyc must recreate a two-sided event-disc pair.
-      document.querySelector('.nyc-disc')?.style.setProperty('view-transition-name', 'event-disc');
+      setVTName(document.querySelector('.nyc-disc'), 'event-disc');
       suppressHeader();
     } else if (isNycSiblingNav) {
       suppressHeader();
@@ -193,7 +206,7 @@ if (!window.__sargauxDiscTransitionSetup) {
     // Leaving the VT name in place keeps the element in the compositor
     // snapshot path, which is the branch that clips on the travel page.
     if (!useSafariMossFallback) {
-      event.newDocument.querySelector('.nyc-page-moss')?.style.setProperty('view-transition-name', 'nyc-page-moss');
+      setVTName(event.newDocument.querySelector('.nyc-page-moss'), 'nyc-page-moss');
     } else {
       (event.newDocument.querySelector('.nyc-page-moss') as HTMLElement | null)?.style.removeProperty('view-transition-name');
     }
@@ -208,8 +221,7 @@ if (!window.__sargauxDiscTransitionSetup) {
     }
 
     if (isNycIndexToSubpage) {
-      (event.newDocument.querySelector('.nyc-page-main') as HTMLElement | null)
-        ?.style.setProperty('view-transition-name', 'nyc-subpage-hero');
+      setVTName(event.newDocument.querySelector('.nyc-page-main'), 'nyc-subpage-hero');
     }
 
     if (useSafariMossFallback) {
@@ -218,8 +230,7 @@ if (!window.__sargauxDiscTransitionSetup) {
 
     // Skyline fade-in when arriving at /nyc.
     if (to === '/nyc') {
-      (event.newDocument.querySelector('.nyc-skyline-wrap') as HTMLElement | null)
-        ?.style.setProperty('view-transition-name', 'nyc-skyline');
+      setVTName(event.newDocument.querySelector('.nyc-skyline-wrap'), 'nyc-skyline');
       event.viewTransition?.ready?.finally(() => {
         (document.querySelector('.nyc-skyline-wrap') as HTMLElement | null)
           ?.style.removeProperty('view-transition-name');

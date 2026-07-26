@@ -50,13 +50,22 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Framework**: Astro v7.x with SSR server mode (Vite 8 / Rolldown, Rust compiler)
 - **Adapter**: @astrojs/node v11 (standalone mode for local dev/tests); @astrojs/netlify v8 for production
 - **CDN caching**: Astro route caching with `@astrojs/netlify/cache` provider (see Architecture Notes)
-- **Language**: TypeScript with strict mode enabled
+- **Language**: TypeScript **6.x**, strict mode enabled — pinned, see below
 - **CSS**: Astro scoped styles (Tailwind optional for design phase)
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
 - **Node.js**: v24.12.0 (LTS v22.x recommended)
 - **Package Manager**: npm v11.6.2
+
+### TypeScript must stay on 6.x
+
+**Do not upgrade to TypeScript 7.** TS 7.0 is the native Go rewrite and **ships no compiler API** — its package `main` entry is `./lib/version.cjs`, a version string, with everything else under `./unstable/*`. Tools that embed the compiler break outright:
+
+- `@astrojs/check` peer-requires `^5 || ^6`, and the Netlify bundler's `ts-api-utils` (via `@netlify/zip-it-and-ship-it` → `precinct` → `@typescript-eslint/typescript-estree`) reads compiler internals that no longer exist. Both `astro build` and `astro check` fail at config load with `Cannot read properties of undefined (reading 'Intrinsic')`.
+- Microsoft explicitly lists **Astro** (with Vue, Svelte, MDX, Angular) among the ecosystems that must stay on 6.x, and plans the replacement API for **7.1** (reported for ~October 2026).
+
+`.github/dependabot.yml` ignores `typescript` `7.0.x` — scoped to 7.0 deliberately, so 7.1 still gets proposed when it ships. Re-evaluate then, and verify with `npm run build`, not `tsc` alone, since the failure is in config loading rather than type-checking.
 
 ## Environment Setup
 
@@ -99,6 +108,10 @@ npm run build
 # Preview production build locally
 npm run preview
 
+# Type-check the whole repo (.ts, .astro, and bundled <script> blocks)
+# Must stay at 0 errors — CI gates on this
+npm run typecheck
+
 # Run all tests (accessibility, best practices, auth, and performance)
 # Note: This automatically installs Playwright browsers if needed
 # Tests run against the built server configured in playwright.config.ts
@@ -122,6 +135,19 @@ npm run test:install
 **Note**: The `npm test` command includes a `pretest` hook that automatically checks for and installs Playwright browsers if they're not already installed, so you don't need to run `test:install` manually in most cases.
 
 **Cloud sessions (Claude Code on the web) — do NOT run `playwright install`.** These images ship a pre-installed Chromium under `PLAYWRIGHT_BROWSERS_PATH` (`/opt/pw-browsers/chromium`) whose build number often won't match the `@playwright/test` version, so `npm run test:install` fails to download and is unnecessary. `playwright.config.ts` auto-detects that pre-installed browser and points `launchOptions.executablePath` at it (via `resolvePreinstalledChromium()`); the detection is a no-op on local Macs, so the normal managed-browser flow is unaffected there. Just run the tests directly (e.g. `npx playwright test …`).
+
+## Type Checking
+
+**`npm run typecheck` (`astro check`) must report 0 errors.** `.github/workflows/typecheck.yml` gates every non-draft PR on it, using the same draft-PR and docs-only skips as the test workflows. It needs no Playwright browsers, so it's the cheapest job in CI — run it before `npm test`.
+
+Things worth knowing:
+
+- **`astro build` does not type-check.** Vite/Rolldown strips types without checking them, so a build passing says nothing about type correctness. `astro check` is the only thing that checks `.astro` files and the `<script>` blocks inside them.
+- **`npx tsc --noEmit` is not a substitute** — it misses `.astro` files entirely and reports different (fewer) errors. Always use `astro check`.
+- **Bundled `<script>` blocks are type-checked and may use TypeScript syntax.** Annotations there are stripped at build like any other module. This does *not* apply to `<script is:inline>`, which ships verbatim to the browser — TS syntax in an inline script is a runtime SyntaxError.
+- **DOM queries need generics, not casts.** `querySelector('.x')` returns `Element`, which has no `.value`/`.checked`/`.dataset`/`.hidden`/`.style`. Write `querySelector<HTMLInputElement>('.x')`. This is the single most common error class in this repo.
+- **Narrowing does not survive into a callback.** A `let x: T | null` checked non-null before a `forEach` is still `T | null` inside it. Assign to a local `const` first and use that (see `preDeclineToggles` in the RSVP pages).
+- Warnings and hints do not fail the build (`astro check` fails on errors only), but the repo is currently at 0 errors *and* 0 warnings — keep it there.
 
 ## Testing
 
@@ -160,6 +186,11 @@ The project includes automated tests that run on every PR:
    - NYC travel page hotel section content
    - RSVP preview mode form rendering
    - Couple page scattered gallery (exactly 6 cards)
+
+6. **Email Unit Tests** (`tests/email-unit.spec.ts`)
+   - `withRecipient` attaches `to` and can't be overridden by a template
+   - Every template in `TEMPLATES` composes into a complete, sendable payload
+   - Runs with `emailEnabled` off, which is why it catches what `admin.spec.ts` can't
 
 All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
@@ -235,17 +266,18 @@ npm run test:quick
 1. Create a new branch for your changes
 2. Make commits to your branch
 3. **BEFORE pushing**: Verify changes locally
+   - **Always run**: `npm run typecheck` — must be 0 errors, and it's fast (no browsers)
    - **Always run**: `npm run build` to ensure the build succeeds
    - **Prefer to run**: `npm test` to run all tests (accessibility, best practices, performance)
    - If Playwright browsers aren't installed, run `npm run test:install`
 4. Push your branch and create a pull request **in draft mode**
 5. Only humans should mark PRs as "Ready for review" via the GitHub website
-6. Wait for automated tests to pass (accessibility, best practices, and performance run in parallel)
+6. Wait for automated tests to pass (type check, accessibility, best practices, and performance run in parallel)
 7. Merge via pull request after approval
 
 **Note**: Always open PRs as drafts initially. Draft PRs do NOT trigger the automated test suite in CI - tests only run when a PR is marked as "Ready for review". This allows for review and iteration before consuming CI resources.
 
-**Local Testing Requirement**: You MUST verify builds and tests locally before creating PRs since draft PRs don't run CI tests. Even for non-code changes (documentation, configuration), always run at least `npm run build` to ensure nothing is broken. Use `npm run verify` for a complete local check (build + all tests).
+**Local Testing Requirement**: You MUST verify builds and tests locally before creating PRs since draft PRs don't run CI tests. Even for non-code changes (documentation, configuration), always run at least `npm run build` to ensure nothing is broken. Use `npm run verify` for a complete local check (build + all tests), and `npm run typecheck` alongside it — `verify` does not type-check.
 
 **Test Skipping**: Automated tests are automatically skipped for PRs that only modify:
 
@@ -317,7 +349,8 @@ The project version in `package.json` follows semantic versioning with wedding m
 - SSR enabled with `@astrojs/node` adapter (standalone mode)
 - **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
 - **Script gotcha**: The Astro 7 Rust compiler strips custom attributes (including `data-astro-rerun`) from `define:vars` inline scripts — the attribute never reaches the browser, so ClientRouter silently stops re-executing the script after swaps. Don't combine `define:vars` with `data-astro-rerun`; pass server values via `data-*` attributes and use the `astro:page-load` + init-guard pattern instead (see the homepage login script).
-- **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept.
+- **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept. **Type-only** imports are the exception and are how `src/scripts/transitions.ts` gets `TransitionBeforePreparationEvent` / `TransitionBeforeSwapEvent`: it is a bundled module (not inline), and `import type` is fully erased, so no runtime import reaches the browser. Verify with `grep -r "astro:transitions/client" dist/` after a build — it must return nothing.
+- **Script gotcha**: A `.ts` file with no top-level `import`/`export` is a *global script*, not a module, so `declare global { interface Window { … } }` inside it is invalid (`ts(2669)`) and every custom `window.*` property errors. `src/scripts/transitions.ts` is loaded via `import '../scripts/transitions'` but was still script-scoped until a type-only import made it a module. If you add a file with `declare global`, give it at least one import or `export {}`.
 - **Script gotcha**: Never suppress view transition animations for named elements using `html[data-astro-transition] ::view-transition-group(name)` CSS — this selector does not reliably fire because `data-astro-transition` may not be set at the right moment relative to pseudo-element creation. Use the `astro:after-preparation` event in JavaScript instead to modify `view-transition-name` on the element directly before the VT snapshot.
 - **Transition contract**: The shared amber disc uses `transition:name="event-disc"` (NO `transition:persist`) on all NYC pages (index, details, travel). Removing `transition:persist` was required to let the VT API reliably FLIP between pages. Forward navigation (clicking into sub-pages) suppresses the disc FLIP via `astro:after-preparation` in `WireframeLayout`: if `toDepth > fromDepth` (by URL path segment count), the disc's `view-transition-name` is temporarily set to `none` on the old element before the VT snapshot, preventing an unwanted cross-screen animation. The disc FLIP only plays on backward navigation (returning to a parent page). The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
 - **`WireframeLayout` `page` prop**: `WireframeLayout` accepts a `page` prop that sets `data-page` on `<html>` statically, allowing per-page CSS scoping without inline scripts. Currently used by `nyc/travel.astro` (passes `page="travel"`) to position the disc on the right side.
@@ -381,6 +414,10 @@ All admin endpoints live under `/api/admin/*` and require an
 
 - `POST /api/admin/send-stds` — bulk-send save-the-date emails for one event. Body: `{ "event": "nyc" | "france" }`.
 - `POST /api/admin/send-email` — send a single transactional email (see endpoint source for body shape).
+
+**Outbound email payload contract**: template functions in `src/lib/email-templates.ts` return `EmailTemplate` (`{ subject, html, text }`) and carry **no recipient**. `sendToGuests` requires a full `EmailPayload`, which adds `to`. Always compose the two with `withRecipient(guest, template(...))` from `src/lib/email.ts` — it sets `to` last so a stray recipient on a template can't redirect the mail. Passing a bare template result is a silent failure: Resend rejects it, `sendToGuests` catches the throw, and every guest lands in the `failed` count with nothing logged per-guest.
+
+**Both bulk senders are untestable through the endpoint.** `global.emailEnabled` defaults to `false`, so `/api/admin/send-stds` and `/api/admin/send-email` short-circuit to `{ skipped: true }` before building any payload — `tests/admin.spec.ts` only ever reaches auth and validation. This is exactly how the missing-`to` bug survived from PR #40 to July 2026. Cover payload assembly at the unit level instead (`tests/email-unit.spec.ts`), where the flag is irrelevant. **Never flip `FEATURE_GLOBAL_EMAIL_ENABLED` to verify a change** — that sends real mail to real guests.
 
 Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sunday 03:00 UTC; `ics-refresh-daily` runs at 03:00 UTC but only inside the pre-wedding windows (Sep 27–Oct 13 2026, May 14–May 31 2027). Neither can be invoked over HTTP in production — use the admin endpoint above for on-demand refreshes.
 

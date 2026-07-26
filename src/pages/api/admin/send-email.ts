@@ -16,9 +16,9 @@
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
 import { excludeTestGuests } from '../../../lib/test-guests';
-import { sendToGuests } from '../../../lib/email';
+import { sendToGuests, withRecipient } from '../../../lib/email';
 import { TEMPLATES } from '../../../lib/email-templates';
-import type { TemplateName } from '../../../lib/email-templates';
+import type { EmailTemplate, TemplateName } from '../../../lib/email-templates';
 import { isEnabled } from '../../../config/features';
 import { requireAdminAuth } from '../../../lib/admin-auth';
 import { checkRateLimit, clientIp, rateLimitResponse } from '../../../lib/rate-limit';
@@ -88,11 +88,15 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const templateFn = TEMPLATES[templateId] as (params: Record<string, unknown>) => ReturnType<(typeof TEMPLATES)[typeof templateId]>;
+  // templateData arrives as untyped JSON, so the per-template parameter types
+  // can't be checked here — the double assertion is the honest admission of that.
+  const templateFn = TEMPLATES[templateId] as unknown as (
+    params: Record<string, unknown>
+  ) => EmailTemplate;
   const templateData = body.templateData ?? {};
 
   const { sent, failed } = await sendToGuests(guestList, (guest) =>
-    templateFn({ guestName: guest.name, ...templateData })
+    withRecipient(guest, templateFn({ guestName: guest.name, ...templateData }))
   );
 
   return new Response(

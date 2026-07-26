@@ -47,6 +47,23 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
 }
 
 /**
+ * Attach a recipient to a template result.
+ *
+ * Templates in email-templates.ts return { subject, html, text } and carry no
+ * recipient, so they are not a complete EmailPayload on their own. Routing every
+ * bulk send through this helper keeps `to` from going missing — Resend rejects a
+ * payload without one, and sendToGuests would silently count every guest as failed.
+ */
+export function withRecipient(
+  guest: { email: string },
+  template: Omit<EmailPayload, 'to'>
+): EmailPayload {
+  // `to` is set last so a stray recipient on a template result can never
+  // redirect the mail away from the intended guest.
+  return { ...template, to: guest.email };
+}
+
+/**
  * Send one email per guest, isolating failures so one bad address
  * doesn't stop the rest (fire-and-forget bulk).
  */

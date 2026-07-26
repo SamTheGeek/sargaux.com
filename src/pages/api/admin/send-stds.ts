@@ -11,7 +11,7 @@
 import type { APIRoute } from 'astro';
 import { fetchAllGuests } from '../../../lib/notion';
 import { excludeTestGuests } from '../../../lib/test-guests';
-import { sendToGuests } from '../../../lib/email';
+import { sendToGuests, withRecipient } from '../../../lib/email';
 import { saveTheDateNYC, saveTheDateFrance } from '../../../lib/email-templates';
 import { isEnabled } from '../../../config/features';
 import { requireAdminAuth } from '../../../lib/admin-auth';
@@ -72,9 +72,9 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const buildPayload = event === 'nyc'
-    ? (g: { email: string; name: string }) => saveTheDateNYC({ guestName: g.name })
-    : (g: { email: string; name: string }) => saveTheDateFrance({ guestName: g.name });
+  const template = event === 'nyc' ? saveTheDateNYC : saveTheDateFrance;
+  const buildPayload = (g: { email: string; name: string }) =>
+    withRecipient(g, template({ guestName: g.name }));
 
   const { sent, failed } = await sendToGuests(guestList, buildPayload);
 
