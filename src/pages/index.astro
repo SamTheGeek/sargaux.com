@@ -31,6 +31,10 @@ const defaultError = t(strings.home.modal.errorDefault);
 const checkingLabel = t(strings.home.modal.checkingBtn);
 const submitLabel = t(strings.home.modal.submitBtn);
 const loginDelay = features.dev.loginDelay;
+const identityPrompt = t(strings.home.identity.prompt);
+const identityGroupLabel = t(strings.home.identity.groupLabel);
+const identityBack = t(strings.home.identity.back);
+const identityExpired = t(strings.home.identity.expired);
 ---
 
 {isSiteEnabled() ? (
@@ -55,6 +59,7 @@ const loginDelay = features.dev.loginDelay;
               data-checking-label={checkingLabel}
               data-submit-label={submitLabel}
               data-login-delay={loginDelay ? 'true' : 'false'}
+              data-identity-expired={identityExpired}
             >
               <label for="name" class="visually-hidden">{t(strings.home.modal.nameLabel)}</label>
               <div class="inline-entry-control" id="inline-entry-control">
@@ -79,6 +84,17 @@ const loginDelay = features.dev.loginDelay;
                     <span class="submit-dots" aria-hidden="true"><span class="submit-dot">.</span><span class="submit-dot">.</span><span class="submit-dot">.</span></span>
                   </button>
                 </div>
+              </div>
+              <!--
+                Shown only when a name matches a whole envelope (e.g. "Sam &
+                Margaux Gross") instead of one guest. `hidden` keeps the buttons
+                out of the focus order while collapsed — the same contract the
+                name input relies on, and asserted by the accessibility suite.
+              -->
+              <div class="inline-identity" id="identity-picker" hidden>
+                <p class="identity-prompt">{identityPrompt}</p>
+                <div class="identity-options" id="identity-options" role="group" aria-label={identityGroupLabel}></div>
+                <button type="button" class="identity-back" id="identity-back">{identityBack}</button>
               </div>
               <button type="submit" class="visually-hidden" id="submit-btn">
                 {t(strings.home.modal.submitBtn)}
@@ -287,6 +303,64 @@ const loginDelay = features.dev.loginDelay;
         outline: none;
         border: none;
         cursor: text;
+      }
+
+      /*
+        Identity picker. `[hidden]` is the source of truth for visibility — the
+        display rule is scoped to :not([hidden]) so it can never resurrect a
+        collapsed picker into the focus order.
+      */
+      .inline-identity:not([hidden]) {
+        display: grid;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .identity-prompt {
+        font-size: var(--font-size-small);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        text-align: center;
+      }
+
+      .identity-options {
+        display: grid;
+        gap: 8px;
+      }
+
+      /* Matches the entry bar so the picker reads as the same control. */
+      .identity-option {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        padding: 12px 24px;
+        background: var(--color-text);
+        color: var(--color-surface-text);
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-h3);
+        font-weight: 500;
+        font-size: var(--font-size-body);
+        line-height: 1;
+        text-align: center;
+        border-radius: 0;
+        appearance: none;
+        cursor: pointer;
+      }
+
+      .identity-back {
+        background: none;
+        border: none;
+        padding: 4px;
+        font-size: var(--font-size-small);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        text-decoration: underline;
+        cursor: pointer;
       }
 
       .inline-entry-control.is-active .login-trigger-panel {
@@ -525,6 +599,7 @@ const loginDelay = features.dev.loginDelay;
         const checkingLabel = form.dataset.checkingLabel || 'Checking';
         const submitLabel = form.dataset.submitLabel || 'Submit';
         const loginDelay = form.dataset.loginDelay === 'true';
+        const identityExpired = form.dataset.identityExpired || 'That took too long. Please enter your name again.';
 
         window.__homeLoginController?.abort?.();
 
@@ -538,8 +613,14 @@ const loginDelay = features.dev.loginDelay;
         const errorMessage = document.getElementById('error-message');
         const submitBtn = document.getElementById('submit-btn');
         const inlineSubmit = document.getElementById('inline-submit');
+        const identityPicker = document.getElementById('identity-picker');
+        const identityOptions = document.getElementById('identity-options');
+        const identityBack = document.getElementById('identity-back');
 
         if (!form || !entryControl || !trigger || !nameInput || !errorMessage || !submitBtn || !inlineSubmit) {
+          return;
+        }
+        if (!identityPicker || !identityOptions || !identityBack) {
           return;
         }
 
@@ -584,6 +665,81 @@ const loginDelay = features.dev.loginDelay;
           redirectLink.remove();
         };
 
+        // POST to /api/login and act on the result. Shared by the name step and
+        // the identity-picker step, which differ only in what they send.
+        const submitLogin = async (body, onExpired) => {
+          showError('');
+          setSubmitState(true);
+
+          try {
+            const response = await fetch('/api/login', { method: 'POST', body });
+            const data = await response.json();
+
+            if (response.ok && data.needsIdentity) {
+              // The name matched an envelope, not a person. No session exists
+              // yet — the claim authorizes the follow-up request.
+              showIdentityPicker(data.claim, data.candidates || []);
+              return true;
+            }
+
+            if (response.ok) {
+              if (loginDelay) await new Promise((r) => setTimeout(r, 2000));
+              navigateWithTransition(data.redirectPath || '/nyc');
+              return true;
+            }
+
+            if (data.claimExpired && onExpired) onExpired();
+            showError(data.error || defaultError);
+          } catch (error) {
+            showError(defaultError);
+          }
+
+          return false;
+        };
+
+        function hideIdentityPicker() {
+          identityPicker.hidden = true;
+          identityOptions.replaceChildren();
+          entryControl.hidden = false;
+        }
+
+        function showIdentityPicker(claim, candidates) {
+          setSubmitState(false);
+          entryControl.hidden = true;
+          identityPicker.hidden = false;
+
+          identityOptions.replaceChildren(
+            ...candidates.map((candidate) => {
+              const option = document.createElement('button');
+              option.type = 'button';
+              option.className = 'identity-option';
+              option.textContent = candidate.name;
+              option.addEventListener('click', async () => {
+                // Re-show the name field if the claim aged out mid-pick
+                const body = new FormData();
+                body.append('claim', claim);
+                body.append('guestId', candidate.id);
+                const done = await submitLogin(body, () => {
+                  hideIdentityPicker();
+                  showError(identityExpired);
+                  activateInlineForm();
+                });
+                if (!done) setSubmitState(false);
+              }, { signal });
+              return option;
+            })
+          );
+
+          identityOptions.querySelector('.identity-option')?.focus();
+        }
+
+        identityBack.addEventListener('click', () => {
+          hideIdentityPicker();
+          showError('');
+          nameInput.value = '';
+          activateInlineForm();
+        }, { signal });
+
         trigger.addEventListener('click', () => {
           showError('');
           activateInlineForm();
@@ -622,37 +778,16 @@ const loginDelay = features.dev.loginDelay;
             return;
           }
 
-          showError('');
-          setSubmitState(true);
+          const formData = new FormData();
+          formData.append('name', name);
 
-          let shouldResetState = true;
+          const handled = await submitLogin(formData);
 
-          try {
-            const formData = new FormData();
-            formData.append('name', name);
-
-            const response = await fetch('/api/login', {
-              method: 'POST',
-              body: formData,
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              shouldResetState = false;
-              if (loginDelay) await new Promise((r) => setTimeout(r, 2000));
-              navigateWithTransition(data.redirectPath || '/nyc');
-              return;
-            }
-
-            showError(data.error || defaultError);
-          } catch (error) {
-            showError(defaultError);
-          } finally {
-            if (shouldResetState && !signal.aborted) {
-              setSubmitState(false);
-              activateInlineForm();
-            }
+          // On success the page is navigating (or the picker has taken over);
+          // only a rejected name returns the entry bar to its editable state.
+          if (!handled && !signal.aborted) {
+            setSubmitState(false);
+            activateInlineForm();
           }
         }, { signal });
       };

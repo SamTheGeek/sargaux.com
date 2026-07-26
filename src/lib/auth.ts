@@ -23,15 +23,68 @@ export type EventInvitation = 'nyc' | 'france';
 // same login works in both backend modes without touching real guest data.
 // 'Samuel Gross' is the one real name kept (dev login added on main); it
 // already appears publicly in site copy, but tests must not use it.
-const AUTHORIZED_GUESTS: ReadonlyArray<{ name: string; country: string | null }> = [
-  { name: 'Samuel Gross', country: 'USA' },
-  { name: 'Alex Rivera', country: 'USA' },
-  { name: 'Jordan Chen', country: 'USA' },
-  { name: 'Casey Morgan', country: 'USA' },
-  { name: 'Riley Dubois', country: 'FRANCE' },
-  { name: 'Samir Benoit', country: 'FRANCE' },
-  { name: 'Taylor Quinn', country: 'USA' },
+// `household` groups guests the way the Notion `Related Guests` relation does,
+// and `envelopeNames` stands in for the Notion `Envelope Names` property, so
+// envelope-name login works with the notionBackend flag off. Never add real
+// guest names or real envelope strings here.
+interface FallbackGuest {
+  name: string;
+  country: string | null;
+  firstName: string;
+  lastName: string;
+  /** Shared id for everyone on one envelope; unique when they live alone. */
+  household: string;
+  /** Envelope strings this household received, when not derivable from names. */
+  envelopeNames?: string[];
+}
+
+const AUTHORIZED_GUESTS: ReadonlyArray<FallbackGuest> = [
+  { name: 'Samuel Gross', country: 'USA', firstName: 'Samuel', lastName: 'Gross', household: 'gross' },
+  {
+    name: 'Alex Rivera',
+    country: 'USA',
+    firstName: 'Alex',
+    lastName: 'Rivera',
+    household: 'rivera-chen',
+    envelopeNames: ['Alex Rivera & Jordan Chen', 'The Rivera Family'],
+  },
+  {
+    name: 'Jordan Chen',
+    country: 'USA',
+    firstName: 'Jordan',
+    lastName: 'Chen',
+    household: 'rivera-chen',
+    envelopeNames: ['Alex Rivera & Jordan Chen', 'The Rivera Family'],
+  },
+  { name: 'Casey Morgan', country: 'USA', firstName: 'Casey', lastName: 'Morgan', household: 'morgan' },
+  { name: 'Riley Dubois', country: 'FRANCE', firstName: 'Riley', lastName: 'Dubois', household: 'dubois' },
+  { name: 'Samir Benoit', country: 'FRANCE', firstName: 'Samir', lastName: 'Benoit', household: 'benoit' },
+  { name: 'Taylor Quinn', country: 'USA', firstName: 'Taylor', lastName: 'Quinn', household: 'quinn' },
 ];
+
+/**
+ * The hardcoded list shaped as GuestRecords, so envelope matching runs through
+ * exactly the same code path in both backend modes. Ids are synthetic and stable
+ * (`fallback:<name>`), and never collide with Notion page IDs.
+ */
+export function getHardcodedGuestRecords(): GuestRecord[] {
+  const idFor = (guest: FallbackGuest) => `fallback:${normalize(guest.name).replace(/\s+/g, '-')}`;
+
+  return AUTHORIZED_GUESTS.map((guest) => ({
+    id: idFor(guest),
+    name: guest.name,
+    normalizedName: normalize(guest.name),
+    eventInvitations: ['nyc', 'france'] as EventInvitation[],
+    country: guest.country,
+    isPlusOne: false,
+    relatedGuestIds: AUTHORIZED_GUESTS.filter(
+      (other) => other.household === guest.household && other.name !== guest.name
+    ).map(idFor),
+    firstName: guest.firstName,
+    lastName: guest.lastName,
+    envelopeNames: guest.envelopeNames,
+  }));
+}
 
 // Pre-normalize authorized guests for comparison
 const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map((g) => normalize(g.name));
@@ -61,18 +114,6 @@ export function validateGuest(input: string): string | null {
   }
 
   return null;
-}
-
-/**
- * Look up the origin country for a hardcoded fallback guest (local dev without
- * Notion). Returns null for unknown names. Mirrors the Country a Notion record
- * would supply so the registry split works when logging in against the
- * hardcoded list.
- */
-export function getHardcodedGuestCountry(input: string): string | null {
-  const normalizedInput = normalize(input);
-  const index = NORMALIZED_GUESTS.indexOf(normalizedInput);
-  return index !== -1 ? AUTHORIZED_GUESTS[index].country : null;
 }
 
 /**
@@ -214,6 +255,84 @@ export function parseSessionToken(
   }
 
   return null;
+}
+
+// ── Identity claim tokens ───────────────────────────────────────────────────
+//
+// When a login name resolves to a household rather than one person, the server
+// hands back a short-lived claim listing that household's member IDs. The guest
+// picks who they are and posts the claim back, and only then is a session
+// minted. The claim is what authorizes the second step — and because the server
+// put the member IDs in it, a leaked claim can never be pointed at an arbitrary
+// guest, only at someone already on that envelope.
+//
+// Signed with SESSION_HMAC_SECRET; the `typ` field domain-separates claims from
+// session tokens, so no additional secret has to be provisioned.
+
+/** Claims are for finishing a login in progress, not for holding a session. */
+const CLAIM_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+interface ClaimPayload {
+  typ: 'claim';
+  memberIds: string[];
+  created: number;
+}
+
+/** Create a signed identity claim over a household's member IDs. */
+export function createClaimToken(memberIds: string[]): string {
+  const payload: ClaimPayload = {
+    typ: 'claim',
+    memberIds,
+    created: Date.now(),
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `${payloadB64}.${computeSessionHmac(payloadB64)}`;
+}
+
+/**
+ * Verify a claim token and return the member IDs it authorizes.
+ * Rejects unsigned, tampered, expired, and non-claim (e.g. session) tokens.
+ */
+export function parseClaimToken(token: string): { memberIds: string[] } | null {
+  try {
+    const dotIndex = token.indexOf('.');
+    if (dotIndex === -1) return null;
+
+    const payloadB64 = token.slice(0, dotIndex);
+    const providedHmac = token.slice(dotIndex + 1);
+    if (!payloadB64 || !providedHmac) return null;
+
+    let expectedHmac: string;
+    try {
+      expectedHmac = computeSessionHmac(payloadB64);
+    } catch {
+      return null; // Missing SESSION_HMAC_SECRET — fail closed
+    }
+
+    if (!timingSafeEqualString(providedHmac, expectedHmac)) return null;
+
+    const payload: ClaimPayload = JSON.parse(
+      Buffer.from(payloadB64, 'base64url').toString('utf-8')
+    );
+
+    // A validly-signed session token must never be redeemable as a claim
+    if (payload.typ !== 'claim') return null;
+
+    if (
+      typeof payload.created !== 'number' ||
+      !Number.isFinite(payload.created) ||
+      Date.now() - payload.created > CLAIM_MAX_AGE_MS
+    ) {
+      return null;
+    }
+
+    if (!Array.isArray(payload.memberIds) || payload.memberIds.length === 0) return null;
+    if (!payload.memberIds.every((id) => typeof id === 'string' && id.length > 0)) return null;
+
+    return { memberIds: payload.memberIds };
+  } catch {
+    return null;
+  }
 }
 
 /**

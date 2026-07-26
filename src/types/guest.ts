@@ -7,6 +7,11 @@ export interface GuestRecord {
   isPlusOne: boolean;
   relatedGuestIds: string[]; // Notion IDs of party members
   email?: string; // Guest email address (optional — may not be on file)
+  // Name parts and household envelope strings, used by envelope-name login
+  // (src/lib/envelope-name.ts). Undefined for mocks and for pre-v2 cache blobs.
+  firstName?: string; // 'First Name' text property
+  lastName?: string; // 'Last Name' text property
+  envelopeNames?: string[]; // 'Envelope Names' text property, split on newlines
   isTestGuest?: boolean; // Synthetic record — excluded from counts and outbound email
   // Per-event physical-mail status (Notion status props). Read so RSVP write-back
   // can advance them to 'Received' without an extra fetch. Undefined for mocks.

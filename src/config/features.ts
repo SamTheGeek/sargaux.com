@@ -28,6 +28,8 @@ type FeatureFlags = {
     rsvpRequireAllEmails: boolean;
     /** When true, authenticated guests may DELETE /api/rsvp (local/test only). */
     rsvpDeleteEnabled: boolean;
+    /** Accept envelope names and first-name combinations at login. */
+    envelopeLogin: boolean;
   };
   dev: {
     loginDelay: boolean; // Adds 2s artificial delay to login so the loading animation is visible
@@ -76,6 +78,7 @@ const features: FeatureFlags = {
     emailEnabled: flag(import.meta.env.FEATURE_GLOBAL_EMAIL_ENABLED, false),
     rsvpRequireAllEmails: flag(import.meta.env.FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS, false),
     rsvpDeleteEnabled: flag(import.meta.env.FEATURE_GLOBAL_RSVP_DELETE_ENABLED, false),
+    envelopeLogin: flag(import.meta.env.FEATURE_GLOBAL_ENVELOPE_LOGIN, false),
   },
   dev: {
     loginDelay: flag(import.meta.env.FEATURE_DEV_LOGIN_DELAY, false),
