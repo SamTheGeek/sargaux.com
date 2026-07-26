@@ -124,9 +124,14 @@ export function buildHouseholds(guests: GuestRecord[]): GuestRecord[][] {
   return [...households.values()];
 }
 
-/** Normalized first name of a guest, or '' when Notion has no First Name. */
-function firstNameToken(guest: GuestRecord): string {
-  return guest.firstName ? normalize(guest.firstName) : '';
+/**
+ * Normalized first-name tokens. Multi-token on purpose: hyphenated and
+ * two-word given names are common in the real guest list ("Anne-Laure",
+ * "Jean-Leon", "Mary Anne"), and normalize() turns hyphens into spaces, so a
+ * single-string comparison could never match the tokens a guest types.
+ */
+function firstNameTokens(guest: GuestRecord): string[] {
+  return guest.firstName ? normalize(guest.firstName).split(/\s+/).filter(Boolean) : [];
 }
 
 /** Normalized last-name tokens — a surname may itself be multi-word ("Van Dyke"). */
@@ -175,35 +180,46 @@ function matchesFirstNameCombination(
 
   const householdSurnames = new Set(members.flatMap(lastNameTokens));
 
-  // First name → members sharing it. Two people in one household with the same
-  // first name is vanishingly rare, but the map keeps the assignment honest.
-  const byFirstName = new Map<string, GuestRecord[]>();
-  for (const member of members) {
-    const token = firstNameToken(member);
-    if (!token) continue;
-    const existing = byFirstName.get(token);
-    if (existing) existing.push(member);
-    else byFirstName.set(token, [member]);
-  }
+  // Longest first names first, so a two-token "Mary Anne" is consumed whole
+  // rather than being shadowed by a "Mary" elsewhere in the household.
+  const candidates = members
+    .map((member) => ({ member, tokens: firstNameTokens(member) }))
+    .filter((candidate) => candidate.tokens.length > 0)
+    .sort((a, b) => b.tokens.length - a.tokens.length);
 
+  // Consume input tokens as a multiset: each member's full first name must be
+  // present, and no token may be spent twice.
+  let remaining = [...inputTokens];
   const claimed = new Set<string>();
 
-  for (const token of inputTokens) {
-    const candidates = byFirstName.get(token);
-    if (candidates) {
-      // Assign this token to a member who hasn't already been named
-      const available = candidates.find((member) => !claimed.has(member.id));
-      if (!available) return null; // e.g. "Samuel Samuel Gross"
-      claimed.add(available.id);
-      continue;
+  for (const { member, tokens } of candidates) {
+    const pool = [...remaining];
+    let complete = true;
+
+    for (const token of tokens) {
+      const index = pool.indexOf(token);
+      if (index === -1) {
+        complete = false;
+        break;
+      }
+      pool.splice(index, 1);
     }
 
-    // Not a first name — must then be a surname this household owns
-    if (!householdSurnames.has(token)) return null;
+    if (complete) {
+      remaining = pool;
+      claimed.add(member.id);
+    }
   }
 
-  if (claimed.size === 0) return null; // surname only, names nobody
-  return [...claimed];
+  if (claimed.size === 0) return null; // surname only, or nobody named
+
+  // Whatever is left must be surnames this household owns. A leftover first
+  // name means it was typed twice ("Samuel Samuel Gross") or belongs to
+  // someone this household doesn't contain.
+  if (!remaining.every((token) => householdSurnames.has(token))) return null;
+
+  // Household order, not typed order, so the picker is stable across phrasings
+  return members.filter((member) => claimed.has(member.id)).map((member) => member.id);
 }
 
 /**

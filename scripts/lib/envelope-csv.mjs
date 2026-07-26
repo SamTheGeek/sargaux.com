@@ -8,6 +8,99 @@
  * unedited CSV rows back to the household that produced them.
  */
 
+// ─── Spreadsheet reading ──────────────────────────────────────────────────────
+
+import { readFileSync } from 'fs';
+import { execFileSync } from 'child_process';
+
+/**
+ * Read an invitation spreadsheet into row objects keyed by header.
+ * Accepts the generator's .csv output and the .xlsx an editing pass produces.
+ */
+export function readTable(path) {
+  return /\.xlsx$/i.test(path)
+    ? parseXLSX(path)
+    : parseCSV(readFileSync(path, 'utf8'));
+}
+
+/**
+ * Minimal .xlsx reader for the first worksheet — no dependencies.
+ *
+ * An .xlsx is a zip of XML parts. We only need shared strings and the first
+ * sheet's cell values, all of which these files store as text, so unzipping
+ * two entries and pulling <v>/<is> out of each <c> is enough. Anything more
+ * exotic (formulas, dates, multiple sheets) is out of scope: export to CSV.
+ */
+function parseXLSX(path) {
+  const readEntry = (entry) => {
+    try {
+      return execFileSync('unzip', ['-p', path, entry], {
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const stripTags = (xml) => xml.replace(/<[^>]*>/g, '');
+  const decode = (text) =>
+    text
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+      .replace(/&amp;/g, '&');
+
+  // Shared strings: every <si> is one string, possibly split across <t> runs
+  const sharedXml = readEntry('xl/sharedStrings.xml') ?? '';
+  const shared = [...sharedXml.matchAll(/<si>([\s\S]*?)<\/si>/g)].map(m =>
+    decode([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(t => t[1]).join(''))
+  );
+
+  const sheetXml = readEntry('xl/worksheets/sheet1.xml');
+  if (sheetXml === null) {
+    throw new Error(`Could not read ${path} — is it a valid .xlsx? (needs \`unzip\`)`);
+  }
+
+  const columnIndex = (ref) => {
+    const letters = /^([A-Z]+)/.exec(ref)?.[1] ?? 'A';
+    return [...letters].reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+  };
+
+  const rows = [];
+  for (const rowMatch of sheetXml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
+    const cells = new Map();
+    for (const cell of rowMatch[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+      const attrs = cell[1];
+      const ref = /r="([A-Z]+\d+)"/.exec(attrs)?.[1];
+      if (!ref) continue;
+
+      const inline = /<is>([\s\S]*?)<\/is>/.exec(cell[2]);
+      const value = /<v>([\s\S]*?)<\/v>/.exec(cell[2]);
+
+      let text = '';
+      if (/t="s"/.test(attrs) && value) text = shared[Number(value[1])] ?? '';
+      else if (inline) text = decode(stripTags(inline[1]));
+      else if (value) text = decode(value[1]);
+
+      cells.set(columnIndex(ref), text);
+    }
+    if (cells.size === 0) continue;
+    const width = Math.max(...cells.keys()) + 1;
+    rows.push(Array.from({ length: width }, (_, i) => cells.get(i) ?? ''));
+  }
+
+  const nonEmpty = rows.filter(r => r.some(cell => cell.trim()));
+  if (nonEmpty.length === 0) return [];
+
+  const [headers, ...body] = nonEmpty;
+  return body.map(cells =>
+    Object.fromEntries(headers.map((h, i) => [h.trim(), (cells[i] ?? '').trim()]))
+  );
+}
+
 // ─── CSV parsing ──────────────────────────────────────────────────────────────
 
 /**

@@ -24,9 +24,13 @@
  * members), so values accumulate across input files and are stored one per
  * line.
  *
+ * Accepts the generator's .csv and the .xlsx an editing pass produces. Pass
+ * both events' files in one run so a household invited to each gets both of
+ * its envelope lines.
+ *
  * Usage:
- *   node scripts/import-envelope-names.mjs <csv> [<csv> ...]          # dry run
- *   node scripts/import-envelope-names.mjs <csv> [<csv> ...] --apply  # writes
+ *   node scripts/import-envelope-names.mjs <file> [<file> ...]          # dry run
+ *   node scripts/import-envelope-names.mjs <file> [<file> ...] --apply  # writes
  *
  * Requires: NOTION_API_KEY and NOTION_GUEST_LIST_DB in .env.local
  */
@@ -35,7 +39,7 @@ import { readFileSync } from 'fs';
 import { excludeTestGuestPages } from './lib/test-guests.mjs';
 import {
   getText,
-  parseCSV,
+  readTable,
   groupHouseholds,
   envelopeNameForPages,
   toMemberInfo,
@@ -156,7 +160,8 @@ const apply = args.includes('--apply');
 const csvPaths = args.filter(a => !a.startsWith('--'));
 
 if (csvPaths.length === 0) {
-  console.error('Usage: node scripts/import-envelope-names.mjs <csv> [<csv> ...] [--apply]');
+  console.error('Usage: node scripts/import-envelope-names.mjs <file> [<file> ...] [--apply]');
+  console.error('       Accepts .csv and .xlsx invitation exports.');
   process.exit(1);
 }
 
@@ -180,7 +185,7 @@ async function main() {
   let rowCount = 0;
 
   for (const csvPath of csvPaths) {
-    const rows = parseCSV(readFileSync(csvPath, 'utf8'));
+    const rows = readTable(csvPath);
     console.log(`\n  ${csvPath}: ${rows.length} rows`);
     rowCount += rows.length;
 
