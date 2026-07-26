@@ -29,11 +29,15 @@ export function isTestGuest(
     | { name: string; normalizedName?: string }
 ): boolean {
   if ('isTestGuest' in guest && guest.isTestGuest) return true;
-  const normalized =
-    'normalizedName' in guest && guest.normalizedName
-      ? guest.normalizedName
-      : normalize(guest.name);
-  return TEST_GUEST_NORMALIZED_NAMES.has(normalized);
+  // Early return rather than a ternary: only the second union member has
+  // `name`, and TypeScript can't narrow to it inside a conditional expression.
+  if ('normalizedName' in guest && guest.normalizedName) {
+    return TEST_GUEST_NORMALIZED_NAMES.has(guest.normalizedName);
+  }
+  if ('name' in guest) {
+    return TEST_GUEST_NORMALIZED_NAMES.has(normalize(guest.name));
+  }
+  return false;
 }
 
 export function excludeTestGuests<T extends Parameters<typeof isTestGuest>[0]>(guests: T[]): T[] {

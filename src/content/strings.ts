@@ -18,10 +18,13 @@
 export type Lang = 'en' | 'fr';
 
 /** Bilingual string pair */
-interface T {
+export interface LocalizedString {
   en: string;
   fr: string;
 }
+
+/** Internal shorthand — `LocalizedString` is the name to use outside this file. */
+type T = LocalizedString;
 
 /** Shorthand to create a bilingual string pair */
 function s(en: string, fr: string): T {

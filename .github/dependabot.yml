@@ -15,6 +15,17 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      # TypeScript 7.0 is the Go rewrite and ships no compiler API — its `main`
+      # entry is just a version string. @astrojs/check and the Netlify bundler's
+      # ts-api-utils both reach for compiler internals that no longer exist, so
+      # `astro build` fails outright. Microsoft lists Astro among the frameworks
+      # that must stay on 6.x until the replacement API lands in 7.1.
+      #
+      # Scoped to 7.0 deliberately: 7.1 is the release we're waiting for, so
+      # Dependabot should still propose it the moment it ships.
+      - dependency-name: "typescript"
+        versions: ["7.0.x"]
     groups:
       astro:
         patterns:

@@ -1,0 +1,74 @@
+name: Type Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip tests for draft PRs
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Filter docs/config changes
+        id: paths
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - '**/*.yml'
+              - '**/*.yaml'
+              - 'LICENSE'
+              - '.gitignore'
+              - 'playwright.config.ts'
+            non_docs:
+              - '**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!**/*.yaml'
+              - '!LICENSE'
+              - '!.gitignore'
+              - '!playwright.config.ts'
+
+      - name: Determine docs-only changes
+        id: filter
+        run: |
+          if [[ "${{ steps.paths.outputs.docs }}" == "true" && "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm ci
+
+      # `astro check` runs astro sync first, which needs the same env the build
+      # uses so generated types match what the app is compiled against.
+      # No Playwright browsers needed — this is the cheapest job in CI.
+      - name: Run type check
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm run typecheck
+        env:
+          FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
+          FEATURE_GLOBAL_NOTION_BACKEND: 'true'
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
+          NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
+          NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}

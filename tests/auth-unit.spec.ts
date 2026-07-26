@@ -9,6 +9,7 @@ import {
 } from '../src/lib/auth';
 import { normalize } from '../src/lib/normalize';
 import { hmacSha256Hex } from '../src/lib/hmac';
+import type { GuestRecord } from '../src/types';
 
 /**
  * Unit-style tests for auth functions. These run in the Playwright Node context
@@ -141,7 +142,7 @@ test.describe('Auth Module — Name Normalization', () => {
   });
 
   test('removes accents', async () => {
-    expect(normalize('Dorothée Ancel')).toBe('dorothee ancel');
+    expect(normalize('Amélie Boucher')).toBe('amelie boucher');
     expect(normalize('François Müller')).toBe('francois muller');
   });
 
@@ -156,7 +157,7 @@ test.describe('Auth Module — Name Normalization', () => {
   });
 
   test('handles combined normalization', async () => {
-    expect(normalize('  DOROTHÉE   ANCEL  ')).toBe('dorothee ancel');
+    expect(normalize('  AMÉLIE   BOUCHER  ')).toBe('amelie boucher');
   });
 
   test('removes apostrophes regardless of form', async () => {
@@ -179,15 +180,17 @@ test.describe('Auth Module — Name Normalization', () => {
 });
 
 test.describe('Auth Module — Guest Validation', () => {
-  const mockGuests = [
-    { id: 'notion-1', name: 'Alex Rivera', normalizedName: 'alex rivera', eventInvitations: ['nyc'] as const, isPlusOne: false, relatedGuestIds: [] },
-    { id: 'notion-2', name: 'Jordan Chen', normalizedName: 'jordan chen', eventInvitations: ['nyc'] as const, isPlusOne: false, relatedGuestIds: [] },
-    { id: 'notion-3', name: 'Dorothée Ancel', normalizedName: 'dorothee ancel', eventInvitations: ['france'] as const, isPlusOne: false, relatedGuestIds: [] },
+  // Invented names chosen for their *shape* — accents, hyphens, apostrophes —
+  // never real guests'. This repo is public.
+  const mockGuests: GuestRecord[] = [
+    { id: 'notion-1', name: 'Alex Rivera', normalizedName: 'alex rivera', eventInvitations: ['nyc'], isPlusOne: false, relatedGuestIds: [] },
+    { id: 'notion-2', name: 'Jordan Chen', normalizedName: 'jordan chen', eventInvitations: ['nyc'], isPlusOne: false, relatedGuestIds: [] },
+    { id: 'notion-3', name: 'Amélie Boucher', normalizedName: 'amelie boucher', eventInvitations: ['france'], isPlusOne: false, relatedGuestIds: [] },
     {
       id: 'notion-4',
       name: 'Jean-Pierre Delacroix',
       normalizedName: 'jean pierre delacroix',
-      eventInvitations: ['france'] as const,
+      eventInvitations: ['france'],
       isPlusOne: false,
       relatedGuestIds: [],
     },
@@ -195,38 +198,38 @@ test.describe('Auth Module — Guest Validation', () => {
       id: 'notion-5',
       name: "Rebecca O'Reilly",
       normalizedName: 'rebecca oreilly',
-      eventInvitations: ['nyc'] as const,
+      eventInvitations: ['nyc'],
       isPlusOne: false,
       relatedGuestIds: [],
     },
   ];
 
   test('finds guest by exact name', async () => {
-    const found = validateGuestFromRecords('Alex Rivera', [...mockGuests]);
+    const found = validateGuestFromRecords('Alex Rivera', mockGuests);
     expect(found).toBeDefined();
     expect(found!.id).toBe('notion-1');
   });
 
   test('finds guest by case-insensitive name', async () => {
-    const found = validateGuestFromRecords('alex rivera', [...mockGuests]);
+    const found = validateGuestFromRecords('alex rivera', mockGuests);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Alex Rivera');
   });
 
   test('finds guest with accent normalization', async () => {
-    const found = validateGuestFromRecords('Dorothee Ancel', [...mockGuests]);
+    const found = validateGuestFromRecords('Amelie Boucher', mockGuests);
     expect(found).toBeDefined();
-    expect(found!.name).toBe('Dorothée Ancel');
+    expect(found!.name).toBe('Amélie Boucher');
   });
 
   test('finds hyphenated-name guest when input omits the hyphen', async () => {
-    const found = validateGuestFromRecords('Jean Pierre Delacroix', [...mockGuests]);
+    const found = validateGuestFromRecords('Jean Pierre Delacroix', mockGuests);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Jean-Pierre Delacroix');
   });
 
   test('finds hyphenated-name guest when input includes the hyphen', async () => {
-    const found = validateGuestFromRecords('jean-pierre delacroix', [...mockGuests]);
+    const found = validateGuestFromRecords('jean-pierre delacroix', mockGuests);
     expect(found).toBeDefined();
     expect(found!.name).toBe('Jean-Pierre Delacroix');
   });
@@ -235,14 +238,14 @@ test.describe('Auth Module — Guest Validation', () => {
     // Straight apostrophe, iOS smart-punctuation curly apostrophe, and no
     // apostrophe at all must all resolve to the stored record.
     for (const typed of ["Rebecca O'Reilly", 'Rebecca O’Reilly', 'Rebecca OReilly']) {
-      const found = validateGuestFromRecords(typed, [...mockGuests]);
+      const found = validateGuestFromRecords(typed, mockGuests);
       expect(found, `input: ${typed}`).not.toBeNull();
       expect(found!.id).toBe('notion-5');
     }
   });
 
   test('returns null for unknown guest', async () => {
-    const found = validateGuestFromRecords('Unknown Person', [...mockGuests]);
+    const found = validateGuestFromRecords('Unknown Person', mockGuests);
     expect(found).toBeNull();
   });
 

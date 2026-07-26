@@ -1195,19 +1195,19 @@ const submittedAtFallback = submittedAtISO
     const notAttendingLabel = form.dataset.notAttendingLabel ?? 'Not attending';
     const isLocalDev = form.dataset.isLocalDev === 'true';
 
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const successMessage = document.getElementById('form-success');
     const errorMessage = document.getElementById('form-error');
     const defaultErrorMessage = errorMessage?.textContent || 'We could not submit your RSVP. Please try again.';
 
-    const showError = (message) => {
+    const showError = (message: string) => {
       if (!errorMessage) return;
       errorMessage.textContent = message;
       errorMessage.hidden = false;
     };
 
-    const updateGuestStatus = (row) => {
-      const checkbox = row.querySelector('.guest-attending');
+    const updateGuestStatus = (row: Element) => {
+      const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
       const status = row.querySelector('.guest-status');
       if (status && checkbox) {
         status.textContent = checkbox.checked ? attendingLabel : notAttendingLabel;
@@ -1216,12 +1216,12 @@ const submittedAtFallback = submittedAtISO
 
     // Toggle states remembered while every event is declined, so restoring is
     // possible when an event flips back to "Attending". Null outside that state.
-    let preDeclineToggles = null;
+    let preDeclineToggles: Map<HTMLInputElement, boolean> | null = null;
 
-    const guestRows = form.querySelectorAll('[data-guest-row]');
+    const guestRows = form.querySelectorAll<HTMLElement>('[data-guest-row]');
     guestRows.forEach((row) => {
       updateGuestStatus(row);
-      const checkbox = row.querySelector('.guest-attending');
+      const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
       checkbox?.addEventListener('change', () => {
         // A toggle the guest sets by hand wins over the automatic restore.
         preDeclineToggles?.delete(checkbox);
@@ -1231,7 +1231,7 @@ const submittedAtFallback = submittedAtISO
 
     // Submit button reads "Regretfully Decline" when every event is declined.
     const declineLabel = form.dataset.declineLabel ?? 'Regretfully Decline';
-    const eventSelects = Array.from(form.querySelectorAll('select.event-attending'));
+    const eventSelects = Array.from(form.querySelectorAll<HTMLSelectElement>('select.event-attending'));
     const submitLabel = submitButton?.querySelector('.btn-label');
     const defaultSubmitLabel = submitLabel?.textContent ?? '';
 
@@ -1249,33 +1249,40 @@ const submittedAtFallback = submittedAtISO
     const syncTogglesToDecline = () => {
       if (allEventsDeclined()) {
         if (preDeclineToggles) return;
-        preDeclineToggles = new Map();
+        // Held in a local so the non-null narrowing survives into the callback.
+        const toggles = new Map<HTMLInputElement, boolean>();
+        preDeclineToggles = toggles;
         guestRows.forEach((row) => {
-          const checkbox = row.querySelector('.guest-attending');
+          const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
           if (!checkbox) return;
-          preDeclineToggles.set(checkbox, checkbox.checked);
+          toggles.set(checkbox, checkbox.checked);
           checkbox.checked = false;
           updateGuestStatus(row);
         });
       } else if (preDeclineToggles) {
+        const toggles = preDeclineToggles;
         guestRows.forEach((row) => {
-          const checkbox = row.querySelector('.guest-attending');
-          if (!checkbox || !preDeclineToggles.has(checkbox)) return;
-          checkbox.checked = preDeclineToggles.get(checkbox);
+          const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
+          if (!checkbox) return;
+          // One lookup instead of has() + get(); absent means the guest was
+          // added or re-toggled since the decline, so leave them alone.
+          const wasChecked = toggles.get(checkbox);
+          if (wasChecked === undefined) return;
+          checkbox.checked = wasChecked;
           updateGuestStatus(row);
         });
         preDeclineToggles = null;
       }
     };
 
-    const setEventError = (select, hasError) => {
+    const setEventError = (select: HTMLSelectElement, hasError: boolean) => {
       select.classList.toggle('has-error', hasError);
       if (hasError) {
         select.setAttribute('aria-invalid', 'true');
       } else {
         select.removeAttribute('aria-invalid');
       }
-      const errorEl = select.closest('.event-row')?.querySelector('.event-row-error');
+      const errorEl = select.closest('.event-row')?.querySelector<HTMLElement>('.event-row-error');
       if (errorEl) errorEl.hidden = !hasError;
     };
 
@@ -1316,7 +1323,7 @@ const submittedAtFallback = submittedAtISO
         errorMessage.textContent = defaultErrorMessage;
       }
       form.querySelectorAll('.group-email-input').forEach((el) => el.classList.remove('has-error'));
-      form.querySelectorAll('.group-email-error').forEach((el) => { el.hidden = true; });
+      form.querySelectorAll<HTMLElement>('.group-email-error').forEach((el) => { el.hidden = true; });
       eventSelects.forEach((select) => setEventError(select, false));
 
       // Every event needs an explicit Attending / Not attending choice.
@@ -1328,11 +1335,11 @@ const submittedAtFallback = submittedAtISO
         return;
       }
 
-      const anyAttending = Array.from(form.querySelectorAll('.guest-attending')).some((checkbox) => checkbox.checked);
+      const anyAttending = Array.from(form.querySelectorAll<HTMLInputElement>('.guest-attending')).some((checkbox) => checkbox.checked);
 
-      const guestsAttending = Array.from(form.querySelectorAll('[data-guest-row]')).map((row) => {
-        const nameInput = row.querySelector('.guest-name');
-        const checkbox = row.querySelector('.guest-attending');
+      const guestsAttending = Array.from(form.querySelectorAll<HTMLElement>('[data-guest-row]')).map((row) => {
+        const nameInput = row.querySelector<HTMLInputElement>('.guest-name');
+        const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
         return {
           guestId: row.dataset.guestId || undefined,
           name: nameInput?.value?.trim() || 'Guest',
@@ -1345,18 +1352,18 @@ const submittedAtFallback = submittedAtISO
         .map((select) => select.dataset.eventId)
         .filter(Boolean);
 
-      const sendConfirmationCheckbox = form.querySelector('input[name="sendConfirmation"]');
-      const guestEmails = Array.from(form.querySelectorAll('[data-guest-email-id]')).map((input) => ({
+      const sendConfirmationCheckbox = form.querySelector<HTMLInputElement>('input[name="sendConfirmation"]');
+      const guestEmails = Array.from(form.querySelectorAll<HTMLInputElement>('[data-guest-email-id]')).map((input) => ({
         guestId: input.dataset.guestEmailId,
         name: input.dataset.guestEmailName || 'Guest',
         email: input.value?.trim() || undefined,
       }));
 
-      const markEmailError = (guestId, message = 'Required') => {
+      const markEmailError = (guestId: string | undefined, message = 'Required') => {
         const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
         if (!input) return;
         input.classList.add('has-error');
-        const errorEl = input.parentElement?.querySelector('.group-email-error');
+        const errorEl = input.parentElement?.querySelector<HTMLElement>('.group-email-error');
         if (errorEl) {
           errorEl.textContent = message;
           errorEl.hidden = false;
@@ -1387,8 +1394,8 @@ const submittedAtFallback = submittedAtISO
         guestsAttending,
         guestEmails,
         eventsAttending: anyAttending ? attendingEventIds : [],
-        dietary: form.querySelector('textarea[name="dietary"]')?.value?.trim() || undefined,
-        message: form.querySelector('textarea[name="message"]')?.value?.trim() || undefined,
+        dietary: form.querySelector<HTMLTextAreaElement>('textarea[name="dietary"]')?.value?.trim() || undefined,
+        message: form.querySelector<HTMLTextAreaElement>('textarea[name="message"]')?.value?.trim() || undefined,
         details: {},
         sendConfirmation: sendConfirmationCheckbox?.checked === true,
       };

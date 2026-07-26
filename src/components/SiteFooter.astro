@@ -1,12 +1,15 @@
 ---
 import LangSwitcher from './LangSwitcher.astro';
 import { strings } from '../content/strings';
+import type { Lang } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 
 interface Props {
   className?: string;
   guest?: string | null;
-  lang?: string;
+  // Lang, not string — createTranslator only accepts 'en' | 'fr', and every
+  // caller already passes `Astro.locals.lang ?? 'en'`, which is Lang.
+  lang?: Lang;
   showNav?: boolean;
   homeHref?: string | null;
 }
