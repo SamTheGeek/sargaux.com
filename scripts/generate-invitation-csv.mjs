@@ -46,6 +46,18 @@ import { encodeImb } from './lib/usps-imb.mjs';
 import { mailpieceKey, createSerialAssigner, formatSerial } from './lib/usps-serial-registry.mjs';
 import { USPS_MAILER_ID, USPS_SERVICE_TYPE, USPS_BARCODE_ID, USPS_SERIAL_DIGITS, MAIL_PIECES } from './lib/usps-mailer-config.mjs';
 import { excludeTestGuestPages } from './lib/test-guests.mjs';
+// Household grouping and envelope formatting are shared with
+// import-envelope-names.mjs so the import can reproduce this script's output
+// exactly and join hand-edited CSV rows back to the right household.
+import {
+  getText,
+  getSelect,
+  getCheckbox,
+  getEventInvitations,
+  makeUF,
+  formatEnvelopeName,
+  isPlaceholderPlusOne,
+} from './lib/envelope-csv.mjs';
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
@@ -98,25 +110,6 @@ async function queryAll(dbId, filter) {
     cursor = res.has_more ? res.next_cursor : null;
   } while (cursor);
   return pages;
-}
-
-// ─── Property extractors ──────────────────────────────────────────────────────
-
-function getText(props, key) {
-  // Collapse all rich_text blocks (handles multi-block values) and trim
-  return (props[key]?.rich_text || []).map(b => b.plain_text).join('').trim();
-}
-
-function getSelect(props, key) {
-  return props[key]?.select?.name?.trim() || '';
-}
-
-function getCheckbox(props, key) {
-  return props[key]?.checkbox === true;
-}
-
-function getEventInvitations(props) {
-  return (props['Event Invitations']?.multi_select || []).map(s => s.name);
 }
 
 // ─── Address parsing ──────────────────────────────────────────────────────────
@@ -261,58 +254,6 @@ function getAddress(props) {
   return null;
 }
 
-// ─── Union-Find ───────────────────────────────────────────────────────────────
-
-function makeUF(ids) {
-  const parent = Object.fromEntries(ids.map(id => [id, id]));
-  const rank = Object.fromEntries(ids.map(id => [id, 0]));
-  function find(x) {
-    if (parent[x] !== x) parent[x] = find(parent[x]);
-    return parent[x];
-  }
-  function union(x, y) {
-    const px = find(x), py = find(y);
-    if (px === py) return;
-    if (rank[px] < rank[py]) parent[px] = py;
-    else if (rank[px] > rank[py]) parent[py] = px;
-    else { parent[py] = px; rank[px]++; }
-  }
-  return { find, union };
-}
-
-// ─── Envelope formatting ──────────────────────────────────────────────────────
-
-/** Returns "[Title ]First" — never emits a leading space when title is empty. */
-function formatFirstName(firstName, title) {
-  return title ? `${title} ${firstName}` : firstName;
-}
-
-/**
- * Format the envelope addressee line for a group of named guests.
- *
- *  1. Solo:            [Title] First Last
- *  2. Same last name:  [Title] First1 & [Title] First2 Last  (alpha by first)
- *  3. Mixed last names: [Title] First1 Last1 & [Title] First2 Last2  (alpha by last)
- */
-function formatEnvelopeName(members) {
-  if (members.length === 1) {
-    const { firstName, lastName, title } = members[0];
-    return `${formatFirstName(firstName, title)} ${lastName}`.trim();
-  }
-
-  const lastNames = [...new Set(members.map(m => m.lastName))];
-
-  if (lastNames.length === 1) {
-    const sorted = [...members].sort((a, b) => a.firstName.localeCompare(b.firstName));
-    const firstParts = sorted.map(m => formatFirstName(m.firstName, m.title));
-    return `${firstParts.join(' & ')} ${lastNames[0]}`.trim();
-  } else {
-    const sorted = [...members].sort((a, b) => a.lastName.localeCompare(b.lastName));
-    const nameParts = sorted.map(m => `${formatFirstName(m.firstName, m.title)} ${m.lastName}`.trim());
-    return nameParts.join(' & ');
-  }
-}
-
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 
 function csvCell(value) {
@@ -336,13 +277,6 @@ const events = arg === 'both' ? VALID_EVENTS : [arg];
 if (!events.every(e => VALID_EVENTS.includes(e))) {
   console.error('Usage: node scripts/generate-invitation-csv.mjs [nyc|france|both]');
   process.exit(1);
-}
-
-/** Returns true if this +1 record is still an unnamed placeholder. */
-function isPlaceholderPlusOne(m) {
-  if (!m.isPlusOne) return false;
-  const hasPlaceholderName = /\+\s*1/.test(m.firstName) || /\+\s*1/.test(m.lastName);
-  return !m.firstName || !m.lastName || m.lastName === 'TBD' || hasPlaceholderName;
 }
 
 async function generateCSV(eventName) {

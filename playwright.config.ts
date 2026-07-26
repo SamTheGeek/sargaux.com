@@ -106,6 +106,8 @@ export default defineConfig({
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',
       FEATURE_GLOBAL_RSVP_DELETE_ENABLED:
         process.env.FEATURE_GLOBAL_RSVP_DELETE_ENABLED ?? 'true',
+      FEATURE_GLOBAL_ENVELOPE_LOGIN:
+        process.env.FEATURE_GLOBAL_ENVELOPE_LOGIN ?? 'true',
       FEATURE_NYC_RSVP_ENABLED: process.env.FEATURE_NYC_RSVP_ENABLED ?? 'true',
       FEATURE_FRANCE_RSVP_ENABLED:
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',

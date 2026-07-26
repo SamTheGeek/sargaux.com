@@ -11,6 +11,7 @@ import type { GuestRecord, EventRecord, RSVPSubmission, RSVPResponse, RSVPDetail
 import { normalize } from './normalize';
 import { parseTime } from './calendar';
 import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
+import { envelopeTokens, findMatchingHousehold } from './envelope-name';
 
 let notionClient: Client | null = null;
 
@@ -136,6 +137,17 @@ function parseGuestPage(page: any): GuestRecord | null {
   const franceSaveTheDateStatus: string | null =
     props['France Save the Date Sent']?.status?.name ?? null;
 
+  // Name parts and household envelope strings for envelope-name login.
+  // `Envelope Names` holds one addressee line per row — a household can have
+  // two (NYC and France include different members). Rich text may arrive split
+  // across blocks, so join before splitting on newlines.
+  const firstName: string | undefined = richText(props['First Name']) || undefined;
+  const lastName: string | undefined = richText(props['Last Name']) || undefined;
+  const envelopeNames = richText(props['Envelope Names'])
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   return {
     id: page.id,
     name: fullName,
@@ -148,7 +160,19 @@ function parseGuestPage(page: any): GuestRecord | null {
     isTestGuest: testGuest,
     nycInviteStatus,
     franceSaveTheDateStatus,
+    firstName,
+    lastName,
+    envelopeNames: envelopeNames.length > 0 ? envelopeNames : undefined,
   };
+}
+
+/** Collapse a Notion rich_text property into a plain string ('' when absent). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function richText(prop: any): string {
+  return (prop?.rich_text ?? [])
+    .map((block: { plain_text?: string }) => block.plain_text ?? '')
+    .join('')
+    .trim();
 }
 
 // Module-level cache — populated once per cold start
@@ -165,7 +189,10 @@ let guestCachePromise: Promise<GuestRecord[]> | null = null;
 // Netlify Blobs environment silently skip this layer.
 
 const GUEST_CACHE_STORE = 'guest-cache';
-const GUEST_CACHE_KEY = 'all-guests-v1';
+// v2 adds firstName/lastName/envelopeNames (envelope-name login). Bumping the
+// key retires v1 blobs written by older deploys — reusing it would leave
+// envelope matching silently dead until the 15-minute TTL expired.
+const GUEST_CACHE_KEY = 'all-guests-v2';
 const GUEST_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 interface GuestCacheBlob {
@@ -384,6 +411,138 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
     const allGuests = await fetchAllGuests();
     return allGuests.find(g => g.normalizedName === normalized) ?? null;
   }
+}
+
+/**
+ * Resolve an envelope name (or any combination of a household's first names)
+ * to the guests it identifies. See src/lib/envelope-name.ts for the rules.
+ *
+ * Mirrors the tiering of `findGuestByName`: warm caches first, then targeted
+ * queries, and only a full scan as a last resort. Matching needs household
+ * context, so every path assembles complete households before matching —
+ * a partial household would silently reject valid names.
+ *
+ * Returns the matched guests, or null when nothing (or more than one household)
+ * matches. Ambiguity fails closed rather than guessing which household to admit.
+ */
+export async function findHouseholdByEnvelopeName(name: string): Promise<GuestRecord[] | null> {
+  const tokens = envelopeTokens(name);
+  if (tokens.length === 0) return null;
+
+  const warnAmbiguous = (matches: string[][]) => {
+    console.warn(
+      `Envelope-name login is ambiguous for ${JSON.stringify(name)} — matched ${matches.length} households:`,
+      matches
+    );
+  };
+
+  const resolve = (guests: GuestRecord[]): GuestRecord[] | null => {
+    const memberIds = findMatchingHousehold(name, guests, warnAmbiguous);
+    if (!memberIds) return null;
+    const byId = new Map(guests.map((guest) => [guest.id, guest]));
+    return memberIds
+      .map((id) => byId.get(id))
+      .filter((guest): guest is GuestRecord => guest !== undefined);
+  };
+
+  // Fast path: the cached list already holds every household in full.
+  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  if (cached) {
+    const hit = resolve(cached);
+    if (hit) return hit;
+  }
+
+  // Cold path: find candidate guests with two targeted queries, then expand each
+  // hit to its full household via cached page retrieves. Keyed off the first
+  // stripped token — the leading word of a name, once titles and "The" are gone.
+  const apiKey = process.env.NOTION_API_KEY;
+  const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
+  if (!apiKey || !dataSourceId) {
+    throw new Error('Missing Notion credentials');
+  }
+
+  try {
+    const firstToken = tokens[0];
+    const candidates = await queryGuestCandidates(apiKey, dataSourceId, firstToken);
+
+    if (candidates.length > 0) {
+      // Pull in every related guest so each candidate's household is complete
+      const householdIds = new Set<string>();
+      for (const guest of candidates) {
+        householdIds.add(guest.id);
+        for (const relatedId of guest.relatedGuestIds) householdIds.add(relatedId);
+      }
+
+      const members = await Promise.all(
+        [...householdIds].map(async (id) => {
+          try {
+            return await getGuestById(id);
+          } catch (error) {
+            console.error(`Failed to fetch household member ${id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      const hit = resolve(members.filter((g): g is GuestRecord => g !== null));
+      if (hit) return hit;
+    }
+
+    // Nothing found via the targeted queries — the name may not lead with a
+    // token either index contains (e.g. a hand-edited envelope). Full scan.
+    return resolve(await fetchAllGuests());
+  } catch (err) {
+    console.error('findHouseholdByEnvelopeName targeted query failed, falling back:', err);
+    return resolve(await fetchAllGuests());
+  }
+}
+
+/**
+ * Two targeted Notion queries for guests whose name or envelope line contains
+ * `token`, run in parallel. Failures on either side are tolerated — one index
+ * hitting is enough to assemble the household.
+ */
+async function queryGuestCandidates(
+  apiKey: string,
+  dataSourceId: string,
+  token: string
+): Promise<GuestRecord[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const runQuery = async (filter: any): Promise<GuestRecord[]> => {
+    const response = await fetch(`https://api.notion.com/v1/databases/${dataSourceId}/query`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify({ page_size: 25, filter }),
+    });
+
+    if (!response.ok) throw new Error(`Notion query failed: ${response.status}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: { results: any[] } = await response.json();
+    return data.results
+      .map(parseGuestPage)
+      .filter((guest): guest is GuestRecord => guest !== null);
+  };
+
+  const [byName, byEnvelope] = await Promise.allSettled([
+    runQuery({ property: 'Name of Guest', title: { contains: token } }),
+    runQuery({ property: 'Envelope Names', rich_text: { contains: token } }),
+  ]);
+
+  if (byName.status === 'rejected' && byEnvelope.status === 'rejected') {
+    throw byName.reason;
+  }
+
+  const merged = new Map<string, GuestRecord>();
+  for (const result of [byName, byEnvelope]) {
+    if (result.status !== 'fulfilled') continue;
+    for (const guest of result.value) merged.set(guest.id, guest);
+  }
+  return [...merged.values()];
 }
 
 /**

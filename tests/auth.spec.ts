@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createSessionToken } from '../src/lib/auth';
 import { TEST_GUEST_NAME } from './fixtures';
 
@@ -333,5 +333,151 @@ test.describe('Authentication', () => {
     expect(payload.guest).toBe(TEST_GUEST_NAME);
     expect(payload.created).toBeGreaterThan(0);
     expect(typeof payload.guest).toBe('string');
+  });
+});
+
+/**
+ * Envelope-name login: a guest types the name printed on their invitation
+ * envelope, which addresses a household rather than one person, and picks who
+ * they are before a session is minted.
+ *
+ * Exercised against the synthetic party (Alex Rivera + Jordan Chen), which
+ * exists both in Notion and in the hardcoded fallback list, so these run in
+ * either backend mode.
+ */
+test.describe('Envelope-name login', () => {
+  const PARTNER_NAME = 'Jordan Chen';
+  const ENVELOPE_NAME = `${TEST_GUEST_NAME} & ${PARTNER_NAME}`;
+
+  /** POST /api/login from the page context and return status + parsed body. */
+  const postLogin = (page: Page, fields: Record<string, string>) =>
+    page.evaluate(async (entries) => {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(entries)) formData.append(key, value);
+      const res = await fetch('/api/login', { method: 'POST', body: formData });
+      return { status: res.status, body: await res.json() };
+    }, fields);
+
+  test.beforeEach(async ({ context, page }) => {
+    await context.clearCookies();
+    await page.goto('/');
+  });
+
+  test('an envelope name asks who you are instead of logging you in', async ({ page, context }) => {
+    const response = await postLogin(page, { name: ENVELOPE_NAME });
+
+    expect(response.status).toBe(200);
+    expect(response.body.needsIdentity).toBe(true);
+    expect(response.body.claim).toBeTruthy();
+
+    const names = response.body.candidates.map((c: { name: string }) => c.name).sort();
+    expect(names).toEqual([TEST_GUEST_NAME, PARTNER_NAME].sort());
+
+    // Critically: no session yet. The claim is the only thing carried forward.
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
+  });
+
+  test('reordered first names reach the same household', async ({ page }) => {
+    const response = await postLogin(page, { name: `${PARTNER_NAME} and ${TEST_GUEST_NAME}` });
+    expect(response.status).toBe(200);
+    expect(response.body.needsIdentity).toBe(true);
+  });
+
+  test('redeeming a claim signs in the guest who was picked', async ({ page, context }) => {
+    const first = await postLogin(page, { name: ENVELOPE_NAME });
+    const partner = first.body.candidates.find(
+      (c: { name: string }) => c.name === PARTNER_NAME
+    );
+
+    const second = await postLogin(page, { claim: first.body.claim, guestId: partner.id });
+    expect(second.status).toBe(200);
+    expect(second.body.guest).toBe(PARTNER_NAME);
+
+    const cookies = await context.cookies();
+    const authCookie = cookies.find((c) => c.name === 'sargaux_auth');
+    expect(authCookie).toBeDefined();
+
+    const [payloadB64] = authCookie!.value.split('.');
+    const payload = JSON.parse(Buffer.from(payloadB64!, 'base64url').toString('utf-8'));
+    expect(payload.guest).toBe(PARTNER_NAME);
+  });
+
+  test('a claim cannot be redeemed for someone outside its household', async ({
+    page,
+    context,
+  }) => {
+    const first = await postLogin(page, { name: ENVELOPE_NAME });
+
+    const response = await postLogin(page, {
+      claim: first.body.claim,
+      guestId: 'fallback:casey-morgan',
+    });
+
+    expect(response.status).toBe(401);
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
+  });
+
+  test('a tampered claim is rejected', async ({ page, context }) => {
+    const first = await postLogin(page, { name: ENVELOPE_NAME });
+    const [payloadB64] = first.body.claim.split('.');
+    const candidate = first.body.candidates[0];
+
+    const response = await postLogin(page, {
+      claim: `${payloadB64}.00000000000000000000000000000000`,
+      guestId: candidate.id,
+    });
+
+    expect(response.status).toBe(401);
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
+  });
+
+  test('an unknown name is still rejected with the usual message', async ({ page }) => {
+    const response = await postLogin(page, { name: 'Nobody Whatsoever' });
+    expect(response.status).toBe(401);
+    expect(response.body.error).toContain('must match exactly');
+    expect(response.body.needsIdentity).toBeUndefined();
+  });
+
+  test('a bare surname does not unlock a household', async ({ page }) => {
+    const response = await postLogin(page, { name: 'Rivera' });
+    expect(response.status).toBe(401);
+  });
+
+  test('picking a name in the inline picker completes the login', async ({ page }) => {
+    await page.click('#login-trigger');
+    await page.fill('#name', ENVELOPE_NAME);
+    await page.press('#name', 'Enter');
+
+    const picker = page.locator('#identity-picker');
+    await expect(picker).toBeVisible();
+    await expect(picker.locator('.identity-option')).toHaveCount(2);
+
+    await picker.getByRole('button', { name: PARTNER_NAME }).click();
+    await expect(page).toHaveURL('/nyc');
+  });
+
+  test('"none of these" restores the name field', async ({ page }) => {
+    await page.click('#login-trigger');
+    await page.fill('#name', ENVELOPE_NAME);
+    await page.press('#name', 'Enter');
+
+    await expect(page.locator('#identity-picker')).toBeVisible();
+    await page.click('#identity-back');
+
+    await expect(page.locator('#identity-picker')).toBeHidden();
+    await expect(page.locator('#name')).toBeVisible();
+    await expect(page.locator('#name')).toHaveValue('');
+  });
+
+  test('the picker stays out of the focus order until it is needed', async ({ page }) => {
+    // The collapsed picker must not be tabbable — same contract the hidden
+    // name input relies on.
+    const focusable = await page
+      .locator('#identity-picker button')
+      .evaluateAll((nodes) => nodes.filter((node) => (node as HTMLElement).offsetParent !== null).length);
+    expect(focusable).toBe(0);
   });
 });
