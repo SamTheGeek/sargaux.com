@@ -2,6 +2,8 @@
 
 A chronological index of every design/implementation plan that shaped the site. Most of this content was folded into the topic pages linked from [Home](Home) — this page exists so nothing from the original `docs/plans/` history feels lost. Each entry links to the page(s) that absorbed its content.
 
+For a version-by-version, PR-by-PR history (what actually shipped in each release), see the repo's [`CHANGELOG.md`](https://github.com/SamTheGeek/sargaux.com/blob/main/CHANGELOG.md) instead — this page covers design rationale and planning documents, the changelog covers shipped changes.
+
 | Date | Plan | Absorbed into |
 |---|---|---|
 | 2026-02-03 | Architecture Design — URL structure, Astro/Notion/Netlify stack decisions | [Architecture Overview](Architecture-Overview) |

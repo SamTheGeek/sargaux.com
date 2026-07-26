@@ -326,6 +326,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 - Patch bump for smaller PRs (bug fixes, single features, dependency updates)
 - Check version is updated before running `git commit`
 - **Exception**: Changes confined to `scripts/` (one-off tooling, data exports, guest-list utilities) do not change site behavior and never bump the version, no matter the size of the change.
+- **Also add an entry to `CHANGELOG.md`** (top of the file, newest first) in the same PR whenever you bump the version — one or two lines describing the change by shape, not by which guest reported or reproduced it (see Guest Privacy below).
 
 ## Project Structure
 
