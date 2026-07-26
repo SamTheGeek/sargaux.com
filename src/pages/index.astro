@@ -659,6 +659,77 @@ const identityExpired = t(strings.home.identity.expired);
           inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
         };
 
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const SWAP_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+        /*
+          Swap the name entry for the identity picker, or back.
+
+          `hidden` still flips in a single step, so the focus order never
+          disagrees with what is painted — the motion is only the frames either
+          side of that flip, never a visible-but-hidden limbo the accessibility
+          suite would catch. The form's height is morphed between the two panel
+          sizes so the copy below doesn't jump. Reduced motion gets the flip alone.
+        */
+        let swapAnimations = [];
+        const swapPanels = (outEl, inEl, afterSwap) => {
+          swapAnimations.forEach((animation) => animation.cancel());
+          swapAnimations = [];
+
+          const commit = () => {
+            outEl.hidden = true;
+            inEl.hidden = false;
+            afterSwap?.();
+          };
+
+          if (reduceMotion.matches || typeof outEl.animate !== 'function') {
+            commit();
+            return;
+          }
+
+          const startHeight = form.getBoundingClientRect().height;
+          // fill:'both' holds the faded-out frame until `hidden` lands, so the
+          // outgoing panel can't flash back at full opacity for one frame.
+          const fadeOut = outEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: 110,
+            easing: 'ease-out',
+            fill: 'both',
+          });
+          swapAnimations.push(fadeOut);
+
+          fadeOut.finished
+            .then(() => {
+              commit();
+              fadeOut.cancel(); // drop the fill, so outEl is clean when shown again
+
+              const endHeight = form.getBoundingClientRect().height;
+              if (Math.abs(endHeight - startHeight) > 1) {
+                form.style.overflow = 'hidden';
+                const release = () => {
+                  form.style.overflow = '';
+                };
+                const morph = form.animate(
+                  [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
+                  { duration: 260, easing: SWAP_EASE }
+                );
+                swapAnimations.push(morph);
+                morph.finished.then(release, release);
+              }
+
+              swapAnimations.push(
+                inEl.animate(
+                  [
+                    { opacity: 0, transform: 'translateY(6px)' },
+                    { opacity: 1, transform: 'none' },
+                  ],
+                  { duration: 240, easing: SWAP_EASE }
+                )
+              );
+            })
+            // Cancelled by a newer swap — that swap owns the state now.
+            .catch(() => {});
+        };
+
         const navigateWithTransition = (href) => {
           const redirectLink = document.createElement('a');
           redirectLink.href = href;
@@ -700,17 +771,19 @@ const identityExpired = t(strings.home.identity.expired);
           return false;
         };
 
-        function hideIdentityPicker() {
-          identityPicker.hidden = true;
-          identityOptions.replaceChildren();
-          entryControl.hidden = false;
+        function hideIdentityPicker(afterSwap) {
+          swapPanels(identityPicker, entryControl, () => {
+            // Cleared after the swap, not before, so the outgoing panel keeps
+            // its height while the morph measures it.
+            identityOptions.replaceChildren();
+            afterSwap?.();
+          });
         }
 
         function showIdentityPicker(claim, candidates) {
           setSubmitState(false);
-          entryControl.hidden = true;
-          identityPicker.hidden = false;
 
+          // Populated before the swap so the height morph measures the real panel
           identityOptions.replaceChildren(
             ...candidates.map((candidate) => {
               const option = document.createElement('button');
@@ -723,9 +796,9 @@ const identityExpired = t(strings.home.identity.expired);
                 body.append('claim', claim);
                 body.append('guestId', candidate.id);
                 const done = await submitLogin(body, () => {
-                  hideIdentityPicker();
                   showError(identityExpired);
-                  activateInlineForm();
+                  // Focus the name field only once the entry bar is back
+                  hideIdentityPicker(activateInlineForm);
                 });
                 if (!done) setSubmitState(false);
               }, { signal });
@@ -733,14 +806,15 @@ const identityExpired = t(strings.home.identity.expired);
             })
           );
 
-          identityOptions.querySelector('.identity-option')?.focus();
+          swapPanels(entryControl, identityPicker, () => {
+            identityOptions.querySelector('.identity-option')?.focus();
+          });
         }
 
         identityBack.addEventListener('click', () => {
-          hideIdentityPicker();
           showError('');
           nameInput.value = '';
-          activateInlineForm();
+          hideIdentityPicker(activateInlineForm);
         }, { signal });
 
         trigger.addEventListener('click', () => {
