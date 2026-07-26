@@ -102,6 +102,14 @@ export const strings = {
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
     },
+    // Shown when a name matches a whole envelope rather than one guest, so the
+    // RSVP can be attributed to the right person.
+    identity: {
+      prompt:      s('Which one are you?', 'Qui êtes-vous ?'),
+      groupLabel:  s('Choose your name', 'Choisissez votre nom'),
+      back:        s('None of these', 'Aucun de ceux-ci'),
+      expired:     s('That took too long. Please enter your name again.', 'Cela a pris trop de temps. Veuillez saisir votre nom à nouveau.'),
+    },
   },
 
   // ─────────────────────────────────────────

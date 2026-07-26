@@ -427,7 +427,11 @@ test.describe('RSVP API Endpoints', () => {
     expect(body.rsvp.status).toBe('Attending');
     expect(body.rsvp.dietary).toBe('Gluten-free');
     expect(body.rsvp.message).toBe('Can\'t wait!');
+    // eventsAttending is stored inside the Details JSON blob but hoisted onto
+    // the response by parseRSVPPage, which leaves `details` undefined when
+    // nothing else was submitted alongside it.
     expect(body.rsvp.eventsAttending ?? []).toEqual(nycEventIds);
+    expect(body.rsvp.details).toBeUndefined();
   });
 
   test('DELETE /api/rsvp - requires authentication', async ({ request }) => {

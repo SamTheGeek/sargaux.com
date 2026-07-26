@@ -63,6 +63,7 @@ interface ImportMetaEnv {
   readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
   readonly FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS?: string;
   readonly FEATURE_GLOBAL_RSVP_DELETE_ENABLED?: string;
+  readonly FEATURE_GLOBAL_ENVELOPE_LOGIN?: string;
 }
 
 interface ImportMeta {
