@@ -2,6 +2,8 @@
 
 Wedding website for Sam & Margaux
 
+📚 Full documentation — architecture, how the RSVP/calendar/Notion pieces fit together, brand system, and project history — lives in the [wiki](https://github.com/SamTheGeek/sargaux.com/wiki).
+
 ## Tech Stack
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/03408f0d-5152-46f6-bade-bd6a69486657/deploy-status)](https://app.netlify.com/projects/sargaux/deploys)
