@@ -170,6 +170,19 @@ test.describe('matchHousehold — first-name combinations', () => {
     expect(matchHousehold('Mr. Alex Rivera', riveras)).toEqual({ memberIds: ['a'] });
   });
 
+  test('tolerates a title on the second member of a mixed-surname household', () => {
+    // The Guest List `Title` select is carried by one member only, so a title
+    // has to drop out mid-string, not just at the front — "Deborah Mittelman &
+    // Dr. Richard Stone" is the real shape this covers.
+    expect(matchHousehold('Casey Morgan & Dr. Riley Dubois', morganDubois)).toEqual({
+      memberIds: ['c', 'd'],
+    });
+    expect(matchHousehold('Dr. Riley Dubois & Casey Morgan', morganDubois)).toEqual({
+      memberIds: ['c', 'd'],
+    });
+    expect(matchHousehold('Casey & Dr. Riley', morganDubois)).toEqual({ memberIds: ['c', 'd'] });
+  });
+
   test('rejects a bare surname — it names nobody', () => {
     expect(matchHousehold('Rivera', riveras)).toBeNull();
   });
