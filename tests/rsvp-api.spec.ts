@@ -259,7 +259,7 @@ test.describe('RSVP API Endpoints', () => {
     const getBody = await getRes.json();
     expect(getBody.rsvp?.status).toBe('Declined');
     expect(getBody.rsvp?.guestsAttending ?? '').toBe('');
-    expect(getBody.rsvp?.details?.eventsAttending ?? []).toEqual([]);
+    expect(getBody.rsvp?.eventsAttending ?? []).toEqual([]);
   });
 
   test('POST /api/rsvp - unchecking every guest clears the attended events', async ({
@@ -286,7 +286,7 @@ test.describe('RSVP API Endpoints', () => {
     expect(getRes.status()).toBe(200);
     const getBody = await getRes.json();
     expect(getBody.rsvp?.status).toBe('Declined');
-    expect(getBody.rsvp?.details?.eventsAttending ?? []).toEqual([]);
+    expect(getBody.rsvp?.eventsAttending ?? []).toEqual([]);
   });
 
   test('POST /api/rsvp - accepts guestId-threaded entries (name write-back path)', async ({
@@ -427,7 +427,7 @@ test.describe('RSVP API Endpoints', () => {
     expect(body.rsvp.status).toBe('Attending');
     expect(body.rsvp.dietary).toBe('Gluten-free');
     expect(body.rsvp.message).toBe('Can\'t wait!');
-    expect(body.rsvp.details?.eventsAttending ?? []).toEqual(nycEventIds);
+    expect(body.rsvp.eventsAttending ?? []).toEqual(nycEventIds);
   });
 
   test('DELETE /api/rsvp - requires authentication', async ({ request }) => {
