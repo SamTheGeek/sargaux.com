@@ -7,6 +7,7 @@
 3. **Best Practices** (`tests/best-practices.spec.ts`) — valid HTML, meta tags, responsive viewport, no JS errors, no broken links.
 4. **Performance** (`tests/performance.spec.ts`) — Core Web Vitals, TTI, DOM Content Loaded, page size, JS execution time.
 5. **Pages** (`tests/pages.spec.ts`) — back links present on all sub-pages, NYC hotel section content, RSVP preview-mode rendering, couple-page gallery card count.
+6. **Email Unit Tests** (`tests/email-unit.spec.ts`) — `withRecipient` attaches `to` and can't be overridden by a template; every template in `TEMPLATES` composes into a complete, sendable payload. Runs with `global.emailEnabled` off, which is exactly why it catches what `tests/admin.spec.ts` can't — see [Admin Endpoints](Admin-Endpoints) for the payload contract this covers.
 
 CI only runs these when a PR is marked **"Ready for review"** — draft PRs skip them to conserve resources. Markdown/YAML/`LICENSE`/`.gitignore`/`playwright.config.ts`-only PRs also skip CI, since they can't affect site behavior.
 
@@ -14,9 +15,21 @@ CI only runs these when a PR is marked **"Ready for review"** — draft PRs skip
 
 ```bash
 npm run build          # always verify build works
+npm run typecheck       # astro check — must be 0 errors, gated in CI, no browsers needed
 npm test                # or npm run test:quick for a faster accessibility-only pass
 npm run test:install    # if Playwright browsers aren't installed
 ```
+
+## Type checking
+
+`npm run typecheck` (`astro check`) is a separate, faster CI gate from the Playwright suites above — `.github/workflows/typecheck.yml` runs it on every non-draft PR with the same draft/docs-only skips. It must stay at 0 errors (and currently 0 warnings). Key things that trip people up:
+
+- `astro build` does **not** type-check — Vite/Rolldown strips types without checking them, so a passing build says nothing about type correctness. `npx tsc --noEmit` is also not a substitute, since it misses `.astro` files entirely.
+- `astro check` is the only thing that checks `.astro` files and their bundled `<script>` blocks (not `<script is:inline>`, which ships verbatim and errors at runtime instead of build time on any TS syntax).
+- The most common error class: `querySelector('.x')` returns `Element`, which has no `.value`/`.checked`/`.dataset` — use `querySelector<HTMLInputElement>('.x')` instead of a cast.
+- Type narrowing doesn't survive into a callback — a nullable variable checked before a `.forEach` is still nullable inside it; assign to a local `const` first.
+
+**TypeScript is pinned to 6.x** (see [Architecture Overview](Architecture-Overview)) specifically because `astro check` and the Netlify bundler both embed the TS compiler, and TS 7's Go rewrite ships no compiler API for them to use yet.
 
 Port **1213** is used everywhere (the engagement date, 12/13) and must never change.
 

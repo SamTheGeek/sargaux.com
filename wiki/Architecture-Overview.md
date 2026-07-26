@@ -7,7 +7,7 @@
 | Framework | Astro v7.x, SSR server mode (Vite 8 / Rolldown, Rust compiler) |
 | Adapter | `@astrojs/node` (standalone, local dev/tests); `@astrojs/netlify` (production) |
 | CDN caching | Astro route caching via the `@astrojs/netlify/cache` provider |
-| Language | TypeScript, strict mode |
+| Language | TypeScript **6.x**, strict mode |
 | CSS | Astro scoped styles |
 | Backend | Notion API v2025-09-03 via `@notionhq/client` v5.x |
 | Email | Resend (transactional) |
@@ -74,6 +74,11 @@ An early "dream feature" of `pushState()`-based seamless toggling between events
 - Don't add direct `astro:transitions/client` imports inside `is:inline` page scripts — let `ClientRouter` own transition interception.
 - The `WireframeLayout` `page` prop sets `data-page` on `<html>` statically, allowing per-page CSS scoping without inline scripts (used by `nyc/travel.astro` to position the shared disc).
 - `.site-header::before` extends a 25px panel above the header's top edge to cover springy-overscroll bleed — purely cosmetic.
+- A `.ts` file with no top-level `import`/`export` is a global script, not a module — `declare global { interface Window { … } }` inside one is invalid and every custom `window.*` access errors. Give it at least one import (a type-only import is enough) or `export {}`.
+
+## Why TypeScript is pinned to 6.x
+
+TS 7.0 is the native Go rewrite and ships no compiler API — its package's `main` entry is a version-string module, with everything else under `./unstable/*`. `@astrojs/check` and the Netlify bundler's dependency chain both embed the old compiler internals to do their jobs, so both `astro build` and `astro check` fail at config load on TS 7 rather than reporting real type errors. Microsoft has explicitly listed Astro (with Vue, Svelte, MDX, Angular) among the frameworks that must stay on 6.x until a replacement API ships in 7.1. `.github/dependabot.yml` ignores `typescript` `7.0.x` specifically (not `7.x`), so a 7.1 proposal still comes through once the API exists. See [Testing Guide](Testing-Guide) for the `astro check` gate this protects.
 
 ## CDN caching contract
 
