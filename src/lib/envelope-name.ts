@@ -126,9 +126,9 @@ export function buildHouseholds(guests: GuestRecord[]): GuestRecord[][] {
 
 /**
  * Normalized first-name tokens. Multi-token on purpose: hyphenated and
- * two-word given names are common in the real guest list ("Anne-Laure",
- * "Jean-Leon", "Mary Anne"), and normalize() turns hyphens into spaces, so a
- * single-string comparison could never match the tokens a guest types.
+ * two-word given names are common in the real guest list, and normalize()
+ * turns hyphens into spaces, so a single-string comparison could never match
+ * the tokens a guest types.
  */
 function firstNameTokens(guest: GuestRecord): string[] {
   return guest.firstName ? normalize(guest.firstName).split(/\s+/).filter(Boolean) : [];

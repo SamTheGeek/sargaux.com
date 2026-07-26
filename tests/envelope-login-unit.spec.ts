@@ -171,9 +171,9 @@ test.describe('matchHousehold — first-name combinations', () => {
   });
 
   test('tolerates a title on the second member of a mixed-surname household', () => {
-    // The Guest List `Title` select is carried by one member only, so a title
-    // has to drop out mid-string, not just at the front — "Deborah Mittelman &
-    // Dr. Richard Stone" is the real shape this covers.
+    // The Guest List `Title` select is carried by one member only, so on a
+    // two-surname household the title lands mid-string ("<first> <surname> &
+    // Dr. <first> <surname>") rather than at the front, as the case above.
     expect(matchHousehold('Casey Morgan & Dr. Riley Dubois', morganDubois)).toEqual({
       memberIds: ['c', 'd'],
     });
@@ -207,117 +207,118 @@ test.describe('matchHousehold — first-name combinations', () => {
 });
 
 /**
- * Name shapes taken from the real invitation CSVs (with synthetic names).
+ * Name *shapes* drawn from the real invitation CSVs, rendered with invented
+ * names — this repo is public, so no guest's real name belongs in a fixture.
  * These are the cases single-token first-name matching silently failed.
  */
 test.describe('matchHousehold — multi-token given names', () => {
   const hyphenated = [
     guest({
       id: 'h1',
-      name: 'Anne-Laure Kohler',
-      firstName: 'Anne-Laure',
-      lastName: 'Kohler',
+      name: 'Marie-Claire Vasseur',
+      firstName: 'Marie-Claire',
+      lastName: 'Vasseur',
       relatedGuestIds: ['h2'],
     }),
     guest({
       id: 'h2',
-      name: 'Olivier Kohler',
-      firstName: 'Olivier',
-      lastName: 'Kohler',
+      name: 'Thibault Vasseur',
+      firstName: 'Thibault',
+      lastName: 'Vasseur',
       relatedGuestIds: ['h1'],
     }),
   ];
 
   test('matches a hyphenated first name as printed', () => {
-    expect(matchHousehold('Anne-Laure & Olivier Kohler', hyphenated)).toEqual({
+    expect(matchHousehold('Marie-Claire & Thibault Vasseur', hyphenated)).toEqual({
       memberIds: ['h1', 'h2'],
     });
   });
 
   test('matches a hyphenated first name typed without the hyphen', () => {
     // normalize() turns hyphens into spaces, so both forms tokenize the same
-    expect(matchHousehold('Anne Laure Kohler', hyphenated)).toEqual({ memberIds: ['h1'] });
+    expect(matchHousehold('Marie Claire Vasseur', hyphenated)).toEqual({ memberIds: ['h1'] });
   });
 
   test('rejects half of a hyphenated first name', () => {
-    expect(matchHousehold('Laure Kohler', hyphenated)).toBeNull();
+    expect(matchHousehold('Claire Vasseur', hyphenated)).toBeNull();
   });
 
   const twoWord = [
     guest({
       id: 't1',
-      name: 'Mary Anne Bodnar',
-      firstName: 'Mary Anne',
-      lastName: 'Bodnar',
+      name: 'Sarah Jane Whitlock',
+      firstName: 'Sarah Jane',
+      lastName: 'Whitlock',
       relatedGuestIds: ['t2'],
     }),
     guest({
       id: 't2',
-      name: 'Tanner Floyd',
-      firstName: 'Tanner',
-      lastName: 'Floyd',
+      name: 'Preston Ackley',
+      firstName: 'Preston',
+      lastName: 'Ackley',
       relatedGuestIds: ['t1'],
     }),
   ];
 
   test('matches a two-word given name across a mixed-surname household', () => {
-    expect(matchHousehold('Mary Anne Bodnar & Tanner Floyd', twoWord)).toEqual({
+    expect(matchHousehold('Sarah Jane Whitlock & Preston Ackley', twoWord)).toEqual({
       memberIds: ['t1', 't2'],
     });
   });
 
   test('a longer given name is not shadowed by a shorter one', () => {
-    // "Mary Anne" must be consumed whole rather than leaving "anne" stranded
-    const withMary = [
+    // "Sarah Jane" must be consumed whole rather than leaving "jane" stranded
+    const withSarah = [
       ...twoWord,
-      guest({ id: 't3', name: 'Mary Floyd', firstName: 'Mary', lastName: 'Floyd', relatedGuestIds: ['t1'] }),
+      guest({ id: 't3', name: 'Sarah Ackley', firstName: 'Sarah', lastName: 'Ackley', relatedGuestIds: ['t1'] }),
     ];
-    expect(matchHousehold('Mary Anne Bodnar', withMary)).toEqual({ memberIds: ['t1'] });
+    expect(matchHousehold('Sarah Jane Whitlock', withSarah)).toEqual({ memberIds: ['t1'] });
   });
 
   test('a multi-word surname matches token by token', () => {
     const compound = [
       guest({
         id: 'c1',
-        name: 'Sarah Pintat Fuld',
-        firstName: 'Sarah',
-        lastName: 'Pintat Fuld',
+        name: 'Elena Duarte Pryce',
+        firstName: 'Elena',
+        lastName: 'Duarte Pryce',
         relatedGuestIds: [],
       }),
     ];
-    expect(matchHousehold('Sarah Pintat Fuld', compound)).toEqual({ memberIds: ['c1'] });
-    expect(matchHousehold('Sarah Fuld', compound)).toEqual({ memberIds: ['c1'] });
+    expect(matchHousehold('Elena Duarte Pryce', compound)).toEqual({ memberIds: ['c1'] });
+    expect(matchHousehold('Elena Pryce', compound)).toEqual({ memberIds: ['c1'] });
   });
 
   test('two members sharing a first name need the stored envelope string', () => {
-    // A named guest plus an unnamed +1 both reading "Deborah" appears in the
-    // real data; the first-name rule correctly refuses to guess.
+    // A named guest plus an unnamed +1 sharing a first name appears in the real
+    // data; the first-name rule correctly refuses to guess between them.
     const sharedFirst = [
       guest({
         id: 'd1',
-        name: 'Deborah Gross',
-        firstName: 'Deborah',
-        lastName: 'Gross',
+        name: 'Frances Holloway',
+        firstName: 'Frances',
+        lastName: 'Holloway',
         relatedGuestIds: ['d2'],
-        envelopeNames: ['Deborah +1 & Deborah Gross'],
+        envelopeNames: ['Frances +1 & Frances Holloway'],
       }),
       guest({
         id: 'd2',
-        name: 'Deborah Guest',
-        firstName: 'Deborah',
-        lastName: 'Gross',
+        name: 'Frances Guest',
+        firstName: 'Frances',
+        lastName: 'Holloway',
         isPlusOne: true,
         relatedGuestIds: ['d1'],
-        envelopeNames: ['Deborah +1 & Deborah Gross'],
+        envelopeNames: ['Frances +1 & Frances Holloway'],
       }),
     ];
 
-    // Both members are named "Deborah", so both are legitimately claimed
-    expect(matchHousehold('Deborah Deborah Gross', sharedFirst)).toEqual({
+    // Both members are named "Frances", so both are legitimately claimed
+    expect(matchHousehold('Frances Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
     });
     // And the printed envelope (whose "+1" is stripped) still resolves
-    expect(matchHousehold('Deborah +1 & Deborah Gross', sharedFirst)).toEqual({
+    expect(matchHousehold('Frances +1 & Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
     });
   });

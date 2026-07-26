@@ -373,6 +373,18 @@ All admin endpoints live under `/api/admin/*` and require an
 
 Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sunday 03:00 UTC; `ics-refresh-daily` runs at 03:00 UTC but only inside the pre-wedding windows (Sep 27–Oct 13 2026, May 14–May 31 2027). Neither can be invoked over HTTP in production — use the admin endpoint above for on-demand refreshes.
 
+## Guest Privacy — This Repo Is Public
+
+**CRITICAL: never write a real guest's name into anything that lands in the repo or on GitHub.** That includes source and test files, code comments, commit messages, PR titles and descriptions, PR review comments, issues, and `docs/`. The repository is public, so all of it is world-readable and indexed.
+
+This is easy to violate by accident, because real names are exactly what's in front of you while debugging: a guest reports a login problem, the invitation CSVs are open, and the household that reproduces the bug gets pasted into a fixture or a commit message. Guests never consented to appear in a public repo.
+
+- **Test fixtures use invented names.** Copy the *shape* that matters — hyphenated given name, two-word given name, multi-word surname, two members sharing a first name, mixed surnames within a household — never the real name that exhibited it.
+- **Commit messages and PR text describe shapes, not people.** "a two-surname household where one member carries a title", not the household.
+- **Guest data files stay untracked.** `scripts/output/` is gitignored and must remain so; it holds names, postal addresses, and USPS serials. `scripts/data/usps-imb-serials.json` is tracked but safe — its keys are SHA-256 hashes, never plaintext.
+- **The couple's own names are fine** (Sam Gross, Margaux Ancel) — it's their wedding site. The rule protects third-party guests.
+- Redacting after a push is only a partial fix: force-pushing a branch removes names from the tip, but orphaned commits stay reachable by SHA on GitHub, and PR description edits keep a visible edit history. Get it right before pushing.
+
 ## Secrets & API Keys
 
 **CRITICAL: Never commit API keys or secrets to the repository.**
