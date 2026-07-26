@@ -165,6 +165,17 @@ All test suites run simultaneously in CI. **Important**: CI tests only run when 
 
 **Always run `npm test` locally before pushing any code changes.** Do not rely on CI to catch failures — draft PRs skip tests entirely, and a PR marked "Ready for review" will fail publicly if tests haven't been verified locally first. If Playwright browsers aren't installed, run `npm run test:install` once.
 
+### Delegate test runs to a subagent (Claude Code)
+
+**Run the full suite in a subagent, not inline.** A complete `npm test` run prints ~270 progress lines; piping that into the main conversation burns context better spent on the actual work. Spawn an agent whose only job is to run the suite and report back a summary.
+
+- Use the `Agent` tool (`subagent_type: "general-purpose"`) with a prompt like: *"Run `npm test` in /Users/sam/Developer/sargaux.com. Report only: total passed/failed/skipped, and for each failure the test name, file:line, and assertion diff. Do not fix anything."*
+- Ask for a **summary, not a transcript** — the per-test progress lines are the bloat, and the agent's tool output stays out of the main context.
+- **Tell the agent not to fix failures.** Diagnosis and fixes belong in the main session, where the code context lives.
+- **Never run two suites concurrently.** Playwright binds port **1213** and rebuilds `dist/`; a second run collides on both. One agent at a time, and never start an inline run while an agent's run is in flight.
+- The agent must run in the **primary working directory**, not a worktree — `dist/` is rebuilt from the checked-out branch, so a stale or mismatched tree gives misleading results.
+- For a quick single-suite check (`npm run test:quick`, or one spec file), running inline is fine — the output is small.
+
 **Test infrastructure notes:**
 
 - Tests use `BASE_URL = 'http://localhost:1213'` constant (port 1213 is sacred!)
