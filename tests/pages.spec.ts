@@ -569,7 +569,8 @@ test.describe('Registry page', () => {
 
 // ── 8. Registry for French-side guests ────────────────────────────────────────
 // French-side guests (Country = FRANCE / UNITED KINGDOM) get the external
-// MilleMercis registry instead of the native Joy page. The middleware reads
+// MilleMercis registry instead of the native Joy page in every UI link, but a
+// direct visit to /registry is still served natively. The middleware reads
 // country from the session cookie when no Notion lookup is possible, so a
 // hand-built cookie exercises the branch without Notion data.
 
@@ -617,9 +618,11 @@ test.describe('Registry for French-side guests', () => {
     await expect(link).toHaveClass(/strip-link--external/);
   });
 
-  test('direct /registry visit 302-redirects to MilleMercis', async () => {
+  test('direct /registry visit serves the Joy page instead of redirecting', async () => {
+    // Every link in the UI already points a French-side guest at MilleMercis,
+    // so reaching /registry is deliberate — serve it rather than bounce them.
     const response = await context.request.get('/registry', { maxRedirects: 0 });
-    expect(response.status()).toBe(302);
-    expect(response.headers()['location']).toBe(MILLEMERCIS_URL);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['location']).toBeUndefined();
   });
 });

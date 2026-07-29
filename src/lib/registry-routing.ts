@@ -8,6 +8,10 @@
  *
  * MilleMercis has no read API (server-rendered HTML only), so the French
  * registry is always a link-out — never rendered natively like Joy.
+ *
+ * This governs *links*, not access: /registry itself is never redirected. A
+ * French-side guest who types or bookmarks the URL is asking for the Joy page
+ * on purpose (nothing in the UI points them there), so they get it.
  */
 
 export const FRENCH_REGISTRY_URL =
