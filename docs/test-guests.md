@@ -25,7 +25,7 @@ Synthetic guests must **never** be counted or emailed. `isTestGuest()` / `exclud
 - `POST /api/admin/send-stds` and `POST /api/admin/send-email`
 - `refreshAllICS()` reporting totals (calendars still refresh for test tokens)
 - `scripts/sync-contacts.ts` (Resend audience sync)
-- Invitation/reporting scripts: `count-*-invitations.mjs`, `generate-invitation-csv.mjs`, `find-missing-addresses.mjs`, `check-usps-imb-status.mjs`
+- Invitation/reporting scripts: `count-*-invitations.mjs`, `generate-invitation-csv.mjs`, `generate-rsvp-followup-*.mjs`, `find-missing-addresses.mjs`, `check-usps-imb-status.mjs`
 
 ## Rules
 
