@@ -19,20 +19,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # `predicate-quantifier: every` is load-bearing. The default, 'some', ORs
+      # the patterns together, so the old list's bare '**' matched every changed
+      # file and `non_docs` was true on every PR — the docs-only skip could
+      # never fire. With 'every' a file counts only if it matches all the
+      # negations, i.e. it really is a non-docs file, and the filter is true
+      # when at least one such file changed.
       - name: Filter docs/config changes
         id: paths
         uses: dorny/paths-filter@v4
         with:
+          predicate-quantifier: 'every'
           filters: |
-            docs:
-              - '**/*.md'
-              - '**/*.yml'
-              - '**/*.yaml'
-              - 'LICENSE'
-              - '.gitignore'
-              - 'playwright.config.ts'
             non_docs:
-              - '**'
               - '!**/*.md'
               - '!**/*.yml'
               - '!**/*.yaml'
@@ -43,7 +42,7 @@ jobs:
       - name: Determine docs-only changes
         id: filter
         run: |
-          if [[ "${{ steps.paths.outputs.docs }}" == "true" && "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
+          if [[ "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
