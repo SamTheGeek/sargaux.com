@@ -254,3 +254,88 @@ test.describe('Auth Module — Guest Validation', () => {
     expect(validateGuest('Unknown Person')).toBeNull();
   });
 });
+
+// The name printed on the invitation (`Name of Guest`) is not always the same
+// as the `Full Name` formula login has always matched. Matching only Full Name
+// meant one wrong or missing name part in Notion locked a guest out entirely —
+// including from the envelope-name rules, which check a typed surname against
+// the household's own.
+test.describe('Invitation-title login fallback', () => {
+  const nicknamed: GuestRecord = {
+    id: 'notion-10',
+    name: 'Frederica Okonkwo',
+    normalizedName: 'frederica okonkwo',
+    invitationTitle: 'Freddie Okonkwo',
+    eventInvitations: ['nyc'],
+    isPlusOne: false,
+    relatedGuestIds: [],
+  };
+  // Surname mistyped in `Last Name`, so `Full Name` is wrong but the printed
+  // title is right — the shape that produced the original bug report.
+  const badSurname: GuestRecord = {
+    id: 'notion-11',
+    name: 'Margot Delacroi',
+    normalizedName: 'margot delacroi',
+    invitationTitle: 'Margot Delacroix',
+    eventInvitations: ['france'],
+    isPlusOne: false,
+    relatedGuestIds: [],
+  };
+  const records = [nicknamed, badSurname];
+
+  test('accepts the name printed on the invitation', async () => {
+    expect(validateGuestFromRecords('Freddie Okonkwo', records)?.id).toBe('notion-10');
+    expect(validateGuestFromRecords('Margot Delacroix', records)?.id).toBe('notion-11');
+  });
+
+  test('still accepts the Full Name', async () => {
+    expect(validateGuestFromRecords('Frederica Okonkwo', records)?.id).toBe('notion-10');
+    expect(validateGuestFromRecords('Margot Delacroi', records)?.id).toBe('notion-11');
+  });
+
+  test('normalizes titles the same way as Full Names', async () => {
+    expect(validateGuestFromRecords('  freddie   okonkwo ', records)?.id).toBe('notion-10');
+  });
+
+  test('Full Name wins over another record title, across the whole list', async () => {
+    // Someone's Full Name is someone else's printed title: the Full Name owner
+    // must win, no matter which record comes first in the list.
+    const collision: GuestRecord[] = [
+      { ...nicknamed, invitationTitle: 'Robin Vasquez' },
+      {
+        id: 'notion-12',
+        name: 'Robin Vasquez',
+        normalizedName: 'robin vasquez',
+        invitationTitle: 'Robin Vasquez',
+        eventInvitations: ['nyc'],
+        isPlusOne: false,
+        relatedGuestIds: [],
+      },
+    ];
+    expect(validateGuestFromRecords('Robin Vasquez', collision)?.id).toBe('notion-12');
+  });
+
+  test('a title shared by two records fails closed', async () => {
+    const ambiguous: GuestRecord[] = [
+      { ...nicknamed, id: 'notion-13' },
+      { ...nicknamed, id: 'notion-14', name: 'Frederica Ozawa', normalizedName: 'frederica ozawa' },
+    ];
+    expect(validateGuestFromRecords('Freddie Okonkwo', ambiguous)).toBeNull();
+  });
+
+  test('records without a title are unaffected', async () => {
+    expect(validateGuestFromRecords('Alex Rivera', mockGuestsNoTitles)?.id).toBe('no-title-1');
+    expect(validateGuestFromRecords('Someone Else', mockGuestsNoTitles)).toBeNull();
+  });
+
+  const mockGuestsNoTitles: GuestRecord[] = [
+    {
+      id: 'no-title-1',
+      name: 'Alex Rivera',
+      normalizedName: 'alex rivera',
+      eventInvitations: ['nyc'],
+      isPlusOne: false,
+      relatedGuestIds: [],
+    },
+  ];
+});

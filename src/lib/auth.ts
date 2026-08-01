@@ -36,6 +36,12 @@ interface FallbackGuest {
   household: string;
   /** Envelope strings this household received, when not derivable from names. */
   envelopeNames?: string[];
+  /**
+   * The name printed on the invitation, when it differs from `name` (the
+   * Notion `Full Name` equivalent). Stands in for the `Name of Guest` title so
+   * the invitation-title login fallback is exercised with the flag off too.
+   */
+  invitationTitle?: string;
 }
 
 const AUTHORIZED_GUESTS: ReadonlyArray<FallbackGuest> = [
@@ -60,6 +66,17 @@ const AUTHORIZED_GUESTS: ReadonlyArray<FallbackGuest> = [
   { name: 'Riley Dubois', country: 'FRANCE', firstName: 'Riley', lastName: 'Dubois', household: 'dubois' },
   { name: 'Samir Benoit', country: 'FRANCE', firstName: 'Samir', lastName: 'Benoit', household: 'benoit' },
   { name: 'Taylor Quinn', country: 'USA', firstName: 'Taylor', lastName: 'Quinn', household: 'quinn' },
+  // Nickname on the invitation, legal name in Notion — the ~10% of the real
+  // guest list whose printed name never matched `Full Name` before the
+  // invitation-title fallback existed.
+  {
+    name: 'Frederica Okonkwo',
+    country: 'USA',
+    firstName: 'Frederica',
+    lastName: 'Okonkwo',
+    household: 'okonkwo',
+    invitationTitle: 'Freddie Okonkwo',
+  },
 ];
 
 /**
@@ -83,6 +100,7 @@ export function getHardcodedGuestRecords(): GuestRecord[] {
     firstName: guest.firstName,
     lastName: guest.lastName,
     envelopeNames: guest.envelopeNames,
+    invitationTitle: guest.invitationTitle ?? guest.name,
   }));
 }
 
@@ -92,13 +110,39 @@ const NORMALIZED_GUESTS = AUTHORIZED_GUESTS.map((g) => normalize(g.name));
 /**
  * Validate a guest name against a list of GuestRecords (Notion-backed).
  * Returns the matching GuestRecord if found, null otherwise.
+ *
+ * Two passes, in order:
+ *
+ *  1. `Full Name` (the formula `First Name + " " + Last Name`) — the canonical
+ *     identity, and the only thing login matched historically.
+ *  2. `Name of Guest` (the invitation title) — the name actually *printed* on
+ *     the envelope, and therefore the one a guest is most likely to type.
+ *
+ * The second pass exists because the two disagree for ~10% of the guest list:
+ * nickname/legal-name pairs, accent and spelling variants, and records where a
+ * name part was mistyped or left blank. Without it, one bad cell in Notion
+ * locks a guest out of the site with no recourse — the failure mode this was
+ * written for was a guest whose surname was wrong in `Last Name`, which broke
+ * both exact matching *and* the envelope-name rules (those check the typed
+ * surname against the household's, see src/lib/envelope-name.ts).
+ *
+ * Full Name is deliberately checked first and across the whole list, so this
+ * can never change the result for a guest who already logs in today. A title
+ * shared by two records fails closed rather than guessing between them.
  */
 export function validateGuestFromRecords(
   input: string,
   guests: GuestRecord[]
 ): GuestRecord | null {
   const normalizedInput = normalize(input);
-  return guests.find((g) => g.normalizedName === normalizedInput) || null;
+
+  const byFullName = guests.find((g) => g.normalizedName === normalizedInput);
+  if (byFullName) return byFullName;
+
+  const byTitle = guests.filter(
+    (g) => g.invitationTitle && normalize(g.invitationTitle) === normalizedInput
+  );
+  return byTitle.length === 1 ? byTitle[0] : null;
 }
 
 /**

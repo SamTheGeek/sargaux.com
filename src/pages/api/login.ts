@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import {
-  validateGuest,
+  validateGuestFromRecords,
   getHardcodedGuestRecords,
   createSessionToken,
   createClaimToken,
@@ -100,11 +100,10 @@ async function resolveByName(name: string): Promise<GuestRecord[]> {
 function resolveFromHardcodedList(name: string): GuestRecord[] {
   const records = getHardcodedGuestRecords();
 
-  const exact = validateGuest(name);
-  if (exact) {
-    const record = records.find((guest) => guest.name === exact);
-    if (record) return [record];
-  }
+  // Full Name then invitation title — the same matcher the Notion path uses,
+  // so both backend modes accept exactly the same set of typed names.
+  const exact = validateGuestFromRecords(name, records);
+  if (exact) return [exact];
 
   if (!features.global.envelopeLogin) return [];
 
