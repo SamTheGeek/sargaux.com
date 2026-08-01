@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
@@ -34,7 +34,6 @@
     "@netlify/edge-functions": "^3.0.8",
     "@netlify/functions": "^5.3.0",
     "@playwright/test": "^1.62.0",
-    "@types/sharp": "^0.32.0",
     "axe-core": "^4.12.1",
     "exceljs": "^4.4.0",
     "exifr": "^7.1.3",
