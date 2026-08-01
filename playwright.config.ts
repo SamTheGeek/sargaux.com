@@ -101,6 +101,9 @@ export default defineConfig({
       CALENDAR_HMAC_SECRET:
         process.env.CALENDAR_HMAC_SECRET ?? 'test-calendar-hmac-secret-for-playwright',
       FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true',
+      // The whole suite logs in as the synthetic 🤖 guests, which production
+      // and deploy previews refuse. Never add this to netlify.toml.
+      FEATURE_GLOBAL_TEST_GUEST_LOGIN: 'true',
       FEATURE_GLOBAL_I18N: process.env.FEATURE_GLOBAL_I18N ?? 'true',
       FEATURE_GLOBAL_NOTION_BACKEND:
         process.env.FEATURE_GLOBAL_NOTION_BACKEND ?? 'true',

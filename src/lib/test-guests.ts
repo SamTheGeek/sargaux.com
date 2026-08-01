@@ -6,7 +6,7 @@ import { normalize } from './normalize';
  * LOCAL_TESTING_USERNAME. Keep in sync with tests/fixtures.ts and
  * scripts/lib/test-guests.mjs.
  */
-export const TEST_GUEST_DISPLAY_NAMES = ['Alex Rivera', 'Jordan Chen'] as const;
+export const TEST_GUEST_DISPLAY_NAMES = ['Alex Rivera', 'Jordan Chen', 'Riley Dubois'] as const;
 
 export const TEST_GUEST_NORMALIZED_NAMES = new Set(
   TEST_GUEST_DISPLAY_NAMES.map((name) => normalize(name))

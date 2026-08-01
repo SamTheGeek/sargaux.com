@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createSessionToken } from '../src/lib/auth';
-import { TEST_GUEST_NAME } from './fixtures';
+import { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME } from './fixtures';
 
 // Name variants for normalization tests, derived from the synthetic test
 // guest so no real guest record is exercised by the suite.
@@ -219,16 +219,17 @@ test.describe('Authentication', () => {
   test('login defaults France-based guests to the French locale', async ({ page, context }) => {
     // Start from a clean cookie jar — clearing only sargaux_lang after a
     // homepage visit can leave a race with the footer/lang middleware.
-    // Use a Notion guest whose Country select is FRANCE (Dorothée Ancel is USA).
+    // TEST_GUEST_FRANCE_NAME is the synthetic Country=FRANCE guest; the default
+    // TEST_GUEST_NAME is Country=USA and would take the English branch.
     await context.clearCookies();
     await page.goto('/');
 
-    const response = await page.evaluate(async () => {
+    const response = await page.evaluate(async (guestName) => {
       const formData = new FormData();
-      formData.append('name', 'Jax Kwok');
+      formData.append('name', guestName);
       const res = await fetch('/api/login', { method: 'POST', body: formData });
       return { status: res.status, body: await res.json() };
-    });
+    }, TEST_GUEST_FRANCE_NAME);
     expect(response.status).toBe(200);
 
     const cookies = await context.cookies();
