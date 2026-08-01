@@ -1,7 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from './lib/auth';
 import { getPrimaryEventRoute } from './lib/event-routing';
-import { getRegistryDestination, FRENCH_REGISTRY_URL } from './lib/registry-routing';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
 import { normalize } from './lib/normalize';
@@ -177,11 +176,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.guestId = auth.notionId;
   }
 
-  // French-side guests use the external MilleMercis registry — never the
-  // native Joy page. Redirect direct visits (footer link, bookmarks) there.
-  if (pathname.startsWith('/registry') && getRegistryDestination(country) === 'millemercis') {
-    return withVary(context.redirect(FRENCH_REGISTRY_URL, 302));
-  }
+  // No registry redirect here on purpose. French-side guests are steered to
+  // MilleMercis by every link in the UI (getRegistryLink), so the only way one
+  // reaches /registry is by typing or bookmarking it — a deliberate request for
+  // the Joy page, which we serve rather than bounce.
 
   const invitedToNyc = eventInvitations.includes('nyc');
   const invitedToFrance = eventInvitations.includes('france');
