@@ -53,3 +53,70 @@ test.describe('i18n language switching', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });
+
+/**
+ * Pre-login language detection.
+ *
+ * Before a guest logs in there is no Notion `Country` and no `sargaux_lang`
+ * cookie, so the site used to serve everyone English — including the French
+ * half of the guest list, on the one page they must use to get in.
+ * `Accept-Language` is the only signal available at that point.
+ *
+ * The CDN half of this contract (`language=en|fr`) can't be exercised under the
+ * node adapter, so it is asserted as a header, same as `query=lang` above.
+ */
+test.describe('Pre-login language detection', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.clearCookies();
+  });
+
+  test('the CDN cache key includes the resolved language', async ({ page }) => {
+    const response = await page.goto('/');
+    const vary = response?.headers()['netlify-vary'];
+    // Without this, the first visitor to warm a cold page pins their language
+    // for every later visitor who shares the other cache-key components.
+    expect(vary).toContain('language=en|fr');
+  });
+
+  test('a French browser gets the login page in French', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'fr-FR' });
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await context.close();
+  });
+
+  test('an English browser still gets English', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'en-US' });
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await context.close();
+  });
+
+  test('detection does not set a cookie — only an explicit choice does', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'fr-FR' });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const langCookie = (await context.cookies()).find((c) => c.name === 'sargaux_lang');
+    expect(
+      langCookie,
+      'a detected language must stay a guess, so login can still prefer the Notion country'
+    ).toBeUndefined();
+    await context.close();
+  });
+
+  test('an explicit choice beats the browser locale', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'fr-FR' });
+    const page = await context.newPage();
+
+    await page.goto('/?lang=en');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    // And the stored choice keeps winning on later plain navigations.
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await context.close();
+  });
+});
