@@ -12,6 +12,7 @@ import { normalize } from './normalize';
 import { parseTime } from './calendar';
 import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 import { envelopeTokens, findMatchingHousehold } from './envelope-name';
+import { validateGuestFromRecords } from './auth';
 
 let notionClient: Client | null = null;
 
@@ -97,11 +98,13 @@ function parseGuestPage(page: any): GuestRecord | null {
 
   const props = page.properties ?? {};
 
+  // The invitation title, joined across blocks — Notion splits a title into
+  // several rich-text blocks whenever part of it is styled or was pasted, so
+  // reading only `[0]` can silently truncate a name.
+  const invitationTitle = titleText(props['Name of Guest']);
+
   // Full Name is a formula property
-  const fullName =
-    props['Full Name']?.formula?.string ||
-    props['Name of Guest']?.title?.[0]?.plain_text ||
-    '';
+  const fullName = props['Full Name']?.formula?.string || invitationTitle || '';
 
   if (!fullName) return null;
 
@@ -163,7 +166,17 @@ function parseGuestPage(page: any): GuestRecord | null {
     firstName,
     lastName,
     envelopeNames: envelopeNames.length > 0 ? envelopeNames : undefined,
+    invitationTitle: invitationTitle || undefined,
   };
+}
+
+/** Collapse a Notion title property into a plain string ('' when absent). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function titleText(prop: any): string {
+  return (prop?.title ?? [])
+    .map((block: { plain_text?: string }) => block.plain_text ?? '')
+    .join('')
+    .trim();
 }
 
 /** Collapse a Notion rich_text property into a plain string ('' when absent). */
@@ -189,10 +202,11 @@ let guestCachePromise: Promise<GuestRecord[]> | null = null;
 // Netlify Blobs environment silently skip this layer.
 
 const GUEST_CACHE_STORE = 'guest-cache';
-// v2 adds firstName/lastName/envelopeNames (envelope-name login). Bumping the
-// key retires v1 blobs written by older deploys — reusing it would leave
-// envelope matching silently dead until the 15-minute TTL expired.
-const GUEST_CACHE_KEY = 'all-guests-v2';
+// v2 adds firstName/lastName/envelopeNames (envelope-name login); v3 adds
+// invitationTitle (the invitation-title login fallback). Bumping the key
+// retires blobs written by older deploys — reusing it would leave the new
+// matching silently dead until the 15-minute TTL expired.
+const GUEST_CACHE_KEY = 'all-guests-v3';
 const GUEST_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 interface GuestCacheBlob {
@@ -353,17 +367,25 @@ export async function getGuestById(guestId: string): Promise<GuestRecord | null>
  * title-filter query — one API call instead of a full paginated DB scan —
  * so login is fast even after idle.
  *
+ * Tiers that hold the *complete* guest list (both caches, and the full scan)
+ * match via `validateGuestFromRecords`, which falls back to the invitation
+ * title. The targeted query deliberately does not: it returns at most 10 rows,
+ * and `validateGuestFromRecords` only accepts a title match when it is unique
+ * across the records it is given — a claim a 10-row window cannot support. So a
+ * title-only login on a cold cache falls through to the full scan, which can
+ * make that judgement globally. That costs one extra scan for the handful of
+ * guests whose printed name differs from their `Full Name`, and never fires for
+ * a guest whose two names agree.
+ *
  * Falls back to fetchAllGuests() if the targeted query fails.
  */
 export async function findGuestByName(name: string): Promise<GuestRecord | null> {
-  const normalized = normalize(name);
-
   // Fast path: in-memory cache, then blob-persisted cache. A miss falls
   // through to the live targeted query — the cache can be up to TTL stale,
   // and a freshly added guest must still be able to log in.
   const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
   if (cached) {
-    const hit = cached.find(g => g.normalizedName === normalized);
+    const hit = validateGuestFromRecords(name, cached);
     if (hit) return hit;
   }
 
@@ -398,18 +420,18 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
 
     const data: { results: any[] } = await response.json();
 
+    // Full Name only — see the note above on why titles wait for the full list.
+    const normalized = normalize(name);
     for (const page of data.results) {
       const guest = parseGuestPage(page);
       if (guest && guest.normalizedName === normalized) return guest;
     }
 
     // Not found in targeted query — could be a schema mismatch; fall back to full scan
-    const allGuests = await fetchAllGuests();
-    return allGuests.find(g => g.normalizedName === normalized) ?? null;
+    return validateGuestFromRecords(name, await fetchAllGuests());
   } catch (err) {
     console.error('findGuestByName targeted query failed, falling back to fetchAllGuests:', err);
-    const allGuests = await fetchAllGuests();
-    return allGuests.find(g => g.normalizedName === normalized) ?? null;
+    return validateGuestFromRecords(name, await fetchAllGuests());
   }
 }
 
