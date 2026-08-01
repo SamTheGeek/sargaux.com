@@ -4,6 +4,7 @@ import { getPrimaryEventRoute } from './lib/event-routing';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
 import { normalize } from './lib/normalize';
+import { detectLocaleFromAcceptLanguage } from './lib/locale-routing';
 import type { Lang } from './content/strings';
 
 // Routes that require authentication
@@ -69,7 +70,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // with the cached English variant (same cookies, since `sargaux_lang`
       // hasn't flipped yet) and is served from cache — the origin never runs, the
       // language cookie never gets set, and the switcher becomes a silent no-op.
-      response.headers.set('Netlify-Vary', 'query=lang,cookie=sargaux_auth|sargaux_lang');
+      //
+      // `language=en|fr` covers the pre-login Accept-Language guess below. It is
+      // Netlify's own directive for this: the CDN parses Accept-Language (quality
+      // values included) and keys on the resolved language, so there are exactly
+      // two variants — varying on the raw header instead would shatter the cache,
+      // and `header=` refuses Accept-Language for that reason. Without this, the
+      // first visitor to warm a cold page would pin their language for everyone.
+      response.headers.set(
+        'Netlify-Vary',
+        'query=lang,language=en|fr,cookie=sargaux_auth|sargaux_lang'
+      );
 
       // Security headers (audit P1-5). These must be set here, not in
       // netlify.toml: Netlify [[headers]] rules apply only to statically-served
@@ -97,7 +108,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
       });
     } else {
       const cookieLang = context.cookies.get('sargaux_lang')?.value;
-      context.locals.lang = (cookieLang === 'fr' ? 'fr' : 'en') as Lang;
+      if (cookieLang === 'fr' || cookieLang === 'en') {
+        context.locals.lang = cookieLang as Lang;
+      } else {
+        // Nothing chosen yet — guess from the browser. This is the only signal
+        // available before login, and it replaces an unconditional 'en' that
+        // showed the login page in English to French guests.
+        //
+        // Deliberately does NOT set the cookie: `sargaux_lang` means "this
+        // language was chosen", by `?lang=` or by login (which prefers the
+        // guest's Notion `Country` — a stronger signal than a browser locale).
+        // Writing a detected value here would let a guess outrank the record,
+        // and would put a Set-Cookie on responses the CDN caches.
+        context.locals.lang = detectLocaleFromAcceptLanguage(
+          context.request.headers.get('accept-language')
+        );
+      }
     }
   } else {
     context.locals.lang = 'en';
