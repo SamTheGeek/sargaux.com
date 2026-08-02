@@ -30,6 +30,11 @@ type FeatureFlags = {
     rsvpDeleteEnabled: boolean;
     /** Accept envelope names and first-name combinations at login. */
     envelopeLogin: boolean;
+    /**
+     * Allow the synthetic 🤖 test guests to log in. Off in production and on
+     * deploy previews; on for `npm run dev` and the Playwright server.
+     */
+    testGuestLogin: boolean;
   };
   dev: {
     loginDelay: boolean; // Adds 2s artificial delay to login so the loading animation is visible
@@ -79,6 +84,9 @@ const features: FeatureFlags = {
     rsvpRequireAllEmails: flag(import.meta.env.FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS, false),
     rsvpDeleteEnabled: flag(import.meta.env.FEATURE_GLOBAL_RSVP_DELETE_ENABLED, false),
     envelopeLogin: flag(import.meta.env.FEATURE_GLOBAL_ENVELOPE_LOGIN, false),
+    // Deliberately NOT listed in netlify.toml's deploy-preview environment:
+    // previews are shareable URLs, so the bots must be refused there too.
+    testGuestLogin: flag(import.meta.env.FEATURE_GLOBAL_TEST_GUEST_LOGIN, false) || import.meta.env.DEV,
   },
   dev: {
     loginDelay: flag(import.meta.env.FEATURE_DEV_LOGIN_DELAY, false),

@@ -339,3 +339,37 @@ test.describe('Invitation-title login fallback', () => {
     },
   ];
 });
+
+/**
+ * The synthetic 🤖 guests are real Notion Guest List rows whose names are
+ * published in this repo, so they must never be able to log in anywhere the
+ * public can reach. `global.testGuestLogin` gates that, and the one way to
+ * silently undo it is to add the flag to netlify.toml alongside the other
+ * preview flags — deploy previews are shareable URLs. Guard that directly.
+ */
+test.describe('Test-guest login gate', () => {
+  test('the test-guest flag is not enabled for deploy previews', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const netlifyToml = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
+    expect(netlifyToml).not.toContain('FEATURE_GLOBAL_TEST_GUEST_LOGIN');
+  });
+
+  test('every synthetic guest name is covered by isTestGuest', async () => {
+    const { TEST_GUEST_DISPLAY_NAMES, isTestGuest } = await import('../src/lib/test-guests');
+    const { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME } = await import('./fixtures');
+
+    for (const name of [TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME]) {
+      expect(TEST_GUEST_DISPLAY_NAMES).toContain(name);
+      expect(isTestGuest({ name })).toBe(true);
+    }
+    // Accent- and case-insensitive, matching the login normalizer.
+    expect(isTestGuest({ name: '  RILEY   DUBOIS ' })).toBe(true);
+    expect(isTestGuest({ name: 'Someone Else' })).toBe(false);
+  });
+
+  test('the scripts-side exclusion list matches the app-side one', async () => {
+    const { TEST_GUEST_NORMALIZED_NAMES: appNames } = await import('../src/lib/test-guests');
+    const { TEST_GUEST_NORMALIZED_NAMES: scriptNames } = await import('../scripts/lib/test-guests.mjs');
+    expect([...scriptNames].sort()).toEqual([...appNames].sort());
+  });
+});

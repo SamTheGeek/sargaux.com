@@ -3,7 +3,7 @@
  * Keep normalized names in sync with src/lib/test-guests.ts.
  */
 
-export const TEST_GUEST_NORMALIZED_NAMES = new Set(['alex rivera', 'jordan chen']);
+export const TEST_GUEST_NORMALIZED_NAMES = new Set(['alex rivera', 'jordan chen', 'riley dubois']);
 
 /** Match src/lib/normalize.ts for name comparison in scripts. */
 export function normalizeName(input) {

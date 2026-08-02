@@ -17,6 +17,7 @@ import type { GuestRecord } from '../../types';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
 import { getDefaultLocale } from '../../lib/locale-routing';
 import { checkRateLimit, clientIp, rateLimitResponse } from '../../lib/rate-limit';
+import { isTestGuest } from '../../lib/test-guests';
 
 /** Strict login rate limit — primary name-enumeration vector. */
 const LOGIN_LIMIT = 10;
@@ -54,6 +55,19 @@ function toResolvedGuest(record: GuestRecord): ResolvedGuest {
     eventInvitations: record.eventInvitations,
     country: record.country ?? null,
   };
+}
+
+/**
+ * Synthetic 🤖 guests are real rows in the Notion Guest List, and their names
+ * are published in this repo (tests/fixtures.ts, the fallback list in auth.ts).
+ * Without this gate anyone who reads the repo could type one into the live
+ * login and get a session. `global.testGuestLogin` is on for `npm run dev` and
+ * the Playwright server, and is deliberately absent from netlify.toml's
+ * deploy-preview environment, so production and previews both refuse them.
+ */
+function denyTestGuests<T extends { name: string }>(records: T[]): T[] {
+  if (features.global.testGuestLogin) return records;
+  return records.filter((record) => !isTestGuest(record));
 }
 
 /** Look up a guest by page ID, from Notion or the hardcoded fallback list. */
@@ -178,7 +192,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const guest = await resolveGuestById(guestId);
-    if (!guest) {
+    // Same 401 as an unknown id — a blocked bot must be indistinguishable from
+    // a name that does not exist, so this can't be used to confirm one.
+    if (!guest || denyTestGuests([guest]).length === 0) {
       return json({ error: 'Name not found, it must match exactly.' }, 401);
     }
 
@@ -195,7 +211,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ error: 'Please enter your name' }, 400);
   }
 
-  const matches = await resolveByName(name);
+  const matches = denyTestGuests(await resolveByName(name));
 
   if (matches.length === 0) {
     // Small constant delay to blunt timing/volume enumeration (best-effort)

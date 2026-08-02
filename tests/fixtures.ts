@@ -104,3 +104,10 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
 // those tests never touch the couple's or any real guest's records. Matches
 // the Notion "Full Name" formula (First Name + Last Name).
 export const TEST_GUEST_NAME = 'Alex Rivera';
+
+// Country=FRANCE counterpart to TEST_GUEST_NAME, for the locale-defaulting
+// tests. Also a 🤖-marked synthetic Notion record (created 2026-08-01), and an
+// invented FRANCE entry in the hardcoded fallback list in src/lib/auth.ts.
+// Never point these tests at a real guest: their Country is real data that can
+// change, and a real guest's name must never appear in this public repo.
+export const TEST_GUEST_FRANCE_NAME = 'Riley Dubois';
