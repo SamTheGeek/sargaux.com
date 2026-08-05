@@ -7,7 +7,6 @@ import SiteFooter from '../components/SiteFooter.astro';
 import { getPrimaryEventRoute } from '../lib/event-routing';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import exifr from 'exifr';
 import path from 'path';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
@@ -26,10 +25,6 @@ const singleEventLabel = eventInvitations.includes('nyc')
     : null;
 const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
 
-function formatExifDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
-}
-
 function formatDateLabel(date: string | null): string {
   if (!date) return 'Chez Sargaux';
   if (/^\d{4}$/.test(date)) return `c. ${date}`;
@@ -46,24 +41,20 @@ const allPhotoEntries = Object.entries(couplePhotosGlob).sort(([a], [b]) => {
   return numA - numB;
 });
 
-const exifDates = await Promise.all(
-  allPhotoEntries.map(async ([key]) => {
-    const basename = path.basename(key);
-    const fallbackKey = `/images/couple/${basename}`;
-    try {
-      const filePath = path.join(process.cwd(), 'src/assets/images/couple', basename);
-      const data = await exifr.parse(filePath, ['DateTimeOriginal']);
-      if (data?.DateTimeOriginal) {
-        return formatExifDate(data.DateTimeOriginal);
-      }
-    } catch {
-      // Fall through to the checked-in fallback when metadata is missing.
-    }
-    return couplePhotoDateFallbacks[fallbackKey] ?? null;
-  })
-);
+// Dates come from the curated map in `src/content/couplePhotoDates.ts`, which is
+// the single source of truth. This used to read EXIF `DateTimeOriginal` off disk
+// per request, but the originals' metadata was already reviewed and corrected by
+// hand into that map, and the source images don't ship inside the serverless
+// bundle — so the read always fell through to the fallback anyway.
+const photosWithDates = allPhotoEntries.map(([key, mod]) => ({
+  image: mod.default,
+  date: couplePhotoDateFallbacks[`/images/couple/${path.basename(key)}`] ?? null,
+}));
 
-const photosWithDates = allPhotoEntries.map(([, mod], i) => ({ image: mod.default, date: exifDates[i] }));
+// Every photo slot on this page — hero and all 8 gallery cards — is re-drawn on
+// each request, so a refresh shows a different set. That only holds while
+// `/couple` stays OUT of `routeRules` in astro.config.mjs: a CDN-cached render
+// freezes one draw per guest for the whole cache window. See the note there.
 
 // Pick a random portrait photo for the hero, then exclude it from the gallery pool.
 const portraitPhotos = photosWithDates.filter(p => p.image.height > p.image.width);
@@ -89,10 +80,20 @@ const storyRows = [
 
 const closingLine = t(strings.couple.story.closing);
 
-// 10 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row
+// 8 photos: 4 for row 1 (double × 2 sides), 2 for row 2, 2 for closing row.
 // Exclude the hero photo from the gallery pool so it doesn't appear twice.
+const GALLERY_SLOT_COUNT = 8;
 const galleryPool = photosWithDates.filter(p => p !== heroPhotoData);
-const shuffled = [...galleryPool].sort(() => Math.random() - 0.5).slice(0, 10);
+
+// Fisher–Yates. `sort(() => Math.random() - 0.5)` looks equivalent but isn't:
+// it's a comparator that violates transitivity, so the result is biased toward
+// the input order and some photos surface far more often than others.
+const shuffled = [...galleryPool];
+for (let i = shuffled.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+}
+shuffled.length = Math.min(shuffled.length, GALLERY_SLOT_COUNT);
 
 function makeCard(photo: (typeof photosWithDates)[0]) {
   return {

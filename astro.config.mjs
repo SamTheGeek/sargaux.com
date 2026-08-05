@@ -29,7 +29,13 @@ export default defineConfig({
   // routeRules are inert, and auth middleware runs on every request.
   ...(useNodeAdapter ? {} : { cache: { provider: cacheNetlify() } }),
   routeRules: {
-    '/couple': contentPageCache,
+    // NOTE: `/couple` is deliberately absent. It re-draws every photo slot on
+    // each request (see src/pages/couple.astro), and a CDN-cached render freezes
+    // one draw per guest for the whole window — refreshing showed the identical
+    // gallery for up to an hour. Adding it here silently kills that randomness,
+    // and only in production: under the node adapter used by dev and Playwright
+    // no cache provider is configured, so routeRules are inert and the page
+    // looks correct locally. `tests/couple-randomization.spec.ts` guards this.
     '/registry': contentPageCache,
     '/nyc': contentPageCache,
     '/nyc/details': contentPageCache,
