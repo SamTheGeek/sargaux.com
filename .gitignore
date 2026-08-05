@@ -156,6 +156,13 @@ sargaux.com.code-workspace
 # Local Netlify folder
 .netlify
 
+# Deno lockfile — a local byproduct of `netlify dev`, never a build input.
+# Netlify's edge bundler runs Deno with `--no-config` (or from a temp dir with
+# its own generated deno.json), so a repo-root deno.lock is never read. Ours
+# was committed once and then rotted for months against package.json, since no
+# Dependabot ecosystem covers it. Don't commit it back.
+deno.lock
+
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json
 
