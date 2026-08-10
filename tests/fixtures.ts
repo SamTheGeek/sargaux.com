@@ -105,6 +105,19 @@ export function mockRSVPSubmission(event: 'nyc' | 'france'): RSVPSubmission {
 // the Notion "Full Name" formula (First Name + Last Name).
 export const TEST_GUEST_NAME = 'Alex Rivera';
 
+// The other half of TEST_GUEST_NAME's party. Named here because the RSVP
+// name-write-back test renames this record and restores it: restoring to a
+// constant (rather than to whatever was read at the start) means a run that
+// dies mid-test self-heals on the next one.
+export const TEST_GUEST_PARTNER_NAME = 'Jordan Chen';
+
+// `Also Known As` values on the two synthetic records above, exercising both
+// halves of that property against real Notion: a single-token line is a given
+// name only, a multi-token line also contributes its last token as a surname
+// to the whole household. Set on the Notion rows; nothing derives them.
+export const TEST_GUEST_AKA_GIVEN_NAME = 'Lex'; // on Alex Rivera
+export const TEST_GUEST_AKA_SURNAME = 'Delacroix'; // via "Jordan Delacroix"
+
 // Country=FRANCE counterpart to TEST_GUEST_NAME, for the locale-defaulting
 // tests. Also a 🤖-marked synthetic Notion record (created 2026-08-01), and an
 // invented FRANCE entry in the hardcoded fallback list in src/lib/auth.ts.

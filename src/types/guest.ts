@@ -12,6 +12,12 @@ export interface GuestRecord {
   firstName?: string; // 'First Name' text property
   lastName?: string; // 'Last Name' text property
   envelopeNames?: string[]; // 'Envelope Names' text property, split on newlines
+  // 'Also Known As' text property, one alternate name per line. Hand-edited:
+  // the names a guest actually answers to when they differ from the record —
+  // a maiden or married surname, a nickname no rule could derive. Each line is
+  // read as "given name(s) + surname"; a single token is a given name only.
+  // See akaParts() in src/lib/envelope-name.ts.
+  aka?: string[];
   // 'Name of Guest' title — the name actually printed on the invitation, which
   // is what a guest types at login. It is NOT the same as `name`: that is the
   // `Full Name` formula (First Name + Last Name), and the two disagree for

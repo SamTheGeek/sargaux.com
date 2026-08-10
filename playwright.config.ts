@@ -41,6 +41,13 @@ function resolvePreinstalledChromium(): string | undefined {
 
 const preinstalledChromium = resolvePreinstalledChromium();
 
+/**
+ * Suites that mutate a shared synthetic Guest List record (currently just the
+ * RSVP name write-back, which renames a guest and restores them). Split into
+ * their own project so they run after everything else — see `projects` below.
+ */
+const MUTATING_SPEC = /\.mutating\.spec\.ts$/;
+
 // Ensure session signing works for hand-built cookies in unit/e2e helpers
 if (!process.env.SESSION_HMAC_SECRET) {
   process.env.SESSION_HMAC_SECRET = 'test-session-hmac-secret-for-playwright';
@@ -71,6 +78,24 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // The mutating suite is excluded here and runs as its own project below
+      testIgnore: MUTATING_SPEC,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(preinstalledChromium
+          ? { launchOptions: { executablePath: preinstalledChromium } }
+          : {}),
+      },
+    },
+    {
+      // Renames a synthetic guest and restores them. `dependencies` makes this
+      // run only once every other test has finished: several suites assert on
+      // that guest's name, files run in parallel, and a rename window of even a
+      // few seconds would flake them. Nothing may be added here that other
+      // suites don't already tolerate running last.
+      name: 'mutating',
+      testMatch: MUTATING_SPEC,
+      dependencies: ['chromium'],
       use: {
         ...devices['Desktop Chrome'],
         ...(preinstalledChromium

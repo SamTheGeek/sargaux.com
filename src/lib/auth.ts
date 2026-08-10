@@ -36,6 +36,8 @@ interface FallbackGuest {
   household: string;
   /** Envelope strings this household received, when not derivable from names. */
   envelopeNames?: string[];
+  /** Stands in for the Notion `Also Known As` property (alternate names). */
+  aka?: string[];
   /**
    * The name printed on the invitation, when it differs from `name` (the
    * Notion `Full Name` equivalent). Stands in for the `Name of Guest` title so
@@ -77,6 +79,43 @@ const AUTHORIZED_GUESTS: ReadonlyArray<FallbackGuest> = [
     household: 'okonkwo',
     invitationTitle: 'Freddie Okonkwo',
   },
+  // Alternate-name shapes, so the `Also Known As` and derived rules are
+  // exercised with the notionBackend flag off. Invented names throughout —
+  // these mirror real guest *shapes*, never a real guest.
+  {
+    // Multi-word surname: "LeMarchand" must work as well as "Le Marchand"
+    name: 'Noor Le Marchand',
+    country: 'FRANCE',
+    firstName: 'Noor',
+    lastName: 'Le Marchand',
+    household: 'le-marchand',
+  },
+  {
+    // Married and maiden surnames, one `Also Known As` line covering both
+    name: 'Odette Vaillant',
+    country: 'FRANCE',
+    firstName: 'Odette',
+    lastName: 'Vaillant',
+    household: 'vaillant',
+    aka: ['Odette Brossard'],
+  },
+  {
+    // Hyphenated given name shortened to its initials — derived, no aka needed
+    name: 'Anne-Sixtine Delcourt',
+    country: 'FRANCE',
+    firstName: 'Anne-Sixtine',
+    lastName: 'Delcourt',
+    household: 'delcourt',
+  },
+  {
+    // A nickname no rule could derive, so it has to be written down
+    name: 'Perpetua Nwachukwu',
+    country: 'USA',
+    firstName: 'Perpetua',
+    lastName: 'Nwachukwu',
+    household: 'nwachukwu',
+    aka: ['Pet'],
+  },
 ];
 
 /**
@@ -100,6 +139,7 @@ export function getHardcodedGuestRecords(): GuestRecord[] {
     firstName: guest.firstName,
     lastName: guest.lastName,
     envelopeNames: guest.envelopeNames,
+    aka: guest.aka,
     invitationTitle: guest.invitationTitle ?? guest.name,
   }));
 }

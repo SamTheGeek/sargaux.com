@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createSessionToken } from '../src/lib/auth';
-import { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME } from './fixtures';
+import { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME, TEST_GUEST_PARTNER_NAME } from './fixtures';
 
 // Name variants for normalization tests, derived from the synthetic test
 // guest so no real guest record is exercised by the suite.
@@ -347,7 +347,7 @@ test.describe('Authentication', () => {
  * either backend mode.
  */
 test.describe('Envelope-name login', () => {
-  const PARTNER_NAME = 'Jordan Chen';
+  const PARTNER_NAME = TEST_GUEST_PARTNER_NAME;
   const ENVELOPE_NAME = `${TEST_GUEST_NAME} & ${PARTNER_NAME}`;
 
   /** POST /api/login from the page context and return status + parsed body. */
