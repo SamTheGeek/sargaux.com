@@ -331,6 +331,50 @@ test.describe('matchHousehold — multi-token given names', () => {
     expect(matchHousehold('Frances +1 & Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
     });
+
+    // Naming them once must offer both rather than silently picking whichever
+    // record sorts first — the typed name does not say which Frances it means.
+    expect(matchHousehold('Frances Holloway', sharedFirst)).toEqual({
+      memberIds: ['d1', 'd2'],
+    });
+    expect(matchHousehold('Frances', sharedFirst)).toEqual({ memberIds: ['d1', 'd2'] });
+  });
+
+  test('an unnamed +1 is offered alongside the host they are recorded under', () => {
+    // The real shape: a plus-one's `First Name` is their host's given name plus
+    // a suffix, so both members answer to that one token.
+    const withPlusOne = [
+      guest({
+        id: 'q1',
+        name: 'Rosalind Ferreira',
+        firstName: 'Rosalind',
+        lastName: 'Ferreira',
+        relatedGuestIds: ['q2'],
+        envelopeNames: ['Rosalind Ferreira +1'],
+      }),
+      guest({
+        id: 'q2',
+        name: 'Rosalind +1',
+        firstName: 'Rosalind +1',
+        lastName: '',
+        isPlusOne: true,
+        relatedGuestIds: ['q1'],
+        envelopeNames: ['Rosalind Ferreira +1'],
+      }),
+    ];
+
+    // The printed envelope names the household, so both are offered
+    expect(matchHousehold('Rosalind Ferreira +1', withPlusOne)).toEqual({
+      memberIds: ['q1', 'q2'],
+    });
+    // ...and so does the host's name on its own, for the same reason
+    expect(matchHousehold('Rosalind Ferreira', withPlusOne)).toEqual({
+      memberIds: ['q1', 'q2'],
+    });
+    // Order of the household must not decide who gets logged in
+    expect(matchHousehold('Rosalind Ferreira', [withPlusOne[1], withPlusOne[0]])).toEqual({
+      memberIds: ['q2', 'q1'],
+    });
   });
 });
 

@@ -451,6 +451,24 @@ function matchesFirstNameCombination(
 
   if (claimed.size === 0) return null; // surname only, or nobody named
 
+  // A member whose given name is indistinguishable from a claimed member's must
+  // be offered alongside them: the typed name genuinely does not say which one
+  // it means, and consuming the token for whichever record happened to sort
+  // first would sign the guest in as the wrong person without ever asking.
+  //
+  // This is the norm, not an edge case — an unnamed plus-one is recorded under
+  // their host's given name ("<host> +1"), so every such household has two
+  // members answering to it. Returning both sends it to the identity picker.
+  const givenNameKey = (member: GuestRecord) => firstNameTokens(member).join(' ');
+  const claimedKeys = new Set(
+    members.filter((member) => claimed.has(member.id)).map(givenNameKey)
+  );
+  for (const member of members) {
+    if (claimed.has(member.id)) continue;
+    const key = givenNameKey(member);
+    if (key && claimedKeys.has(key)) claimed.add(member.id);
+  }
+
   // Whatever is left must be surnames this household owns. A leftover given
   // name means it was typed twice ("Samuel Samuel Gross") or belongs to
   // someone this household doesn't contain.
