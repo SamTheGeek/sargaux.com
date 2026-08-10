@@ -1,5 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { TEST_GUEST_NAME, mockCompanionGuest } from './fixtures';
+import { TEST_GUEST_NAME, TEST_GUEST_PARTNER_NAME } from './fixtures';
 
 const weddingSiteEnabled = process.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED === 'true';
 
@@ -154,7 +154,7 @@ test.describe('RSVP preview mode — NYC', () => {
       inputs.map((el) => (el as HTMLInputElement).value)
     );
     expect(values).toContain(TEST_GUEST_NAME);
-    expect(values).toContain(mockCompanionGuest.name);
+    expect(values).toContain(TEST_GUEST_PARTNER_NAME);
   });
 
   test('NYC RSVP renders an attendance dropdown per event with a blank default option', async () => {

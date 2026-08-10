@@ -13,6 +13,7 @@ import { parseTime } from './calendar';
 import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 import { envelopeTokens, findMatchingHousehold } from './envelope-name';
 import { validateGuestFromRecords } from './auth';
+import { guestNameEdit } from './guest-name';
 
 let notionClient: Client | null = null;
 
@@ -1027,15 +1028,6 @@ export async function submitRSVP(
     return Array.from(ids);
   };
 
-  // Split a typed full name into First/Last (drives the Full Name login
-  // formula). Last token is the surname; everything before it is the first name.
-  const splitName = (full: string): { first: string; last: string } | null => {
-    const parts = full.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return null;
-    if (parts.length === 1) return { first: parts[0], last: '' };
-    return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
-  };
-
   const nowIso = new Date().toISOString();
 
   // One merged Guest List write per party member: RSVP status, per-event invite
@@ -1071,15 +1063,13 @@ export async function submitRSVP(
 
       // Persist a name edit only when the form threaded this member's guestId
       // and the typed name differs. Writes First/Last (drives Full Name) and the
-      // Name of Guest title so login and display stay consistent.
-      const typedName = submittedById.get(member.id)?.name?.trim();
-      if (typedName && typedName !== member.name) {
-        const split = splitName(typedName);
-        if (split) {
-          props['First Name'] = { rich_text: [{ text: { content: split.first } }] };
-          props['Last Name'] = { rich_text: [{ text: { content: split.last } }] };
-          props['Name of Guest'] = { title: [{ text: { content: typedName } }] };
-        }
+      // Name of Guest title so login and display stay consistent. This is how an
+      // unnamed plus-one gets a real name — see src/lib/guest-name.ts.
+      const nameEdit = guestNameEdit(member.name, submittedById.get(member.id)?.name);
+      if (nameEdit) {
+        props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
+        props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
+        props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

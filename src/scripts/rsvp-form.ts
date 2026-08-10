@@ -193,9 +193,14 @@ export function initRsvpForm(): void {
     const guestsAttending = Array.from(form.querySelectorAll<HTMLElement>('[data-guest-row]')).map((row) => {
       const nameInput = row.querySelector<HTMLInputElement>('.guest-name');
       const checkbox = row.querySelector<HTMLInputElement>('.guest-attending');
+      // An emptied name field falls back to the server-rendered value
+      // (`defaultValue`), not a placeholder: the API requires a non-empty name,
+      // and sending one would persist as a real rename — clearing the box would
+      // silently overwrite that guest's Guest List row with "Guest".
+      const typedName = nameInput?.value?.trim();
       return {
         guestId: row.dataset.guestId || undefined,
-        name: nameInput?.value?.trim() || 'Guest',
+        name: typedName || nameInput?.defaultValue?.trim() || 'Guest',
         attending: checkbox?.checked === true,
       };
     });
