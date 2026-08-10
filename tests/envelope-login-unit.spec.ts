@@ -654,6 +654,64 @@ test.describe('findMatchingHousehold', () => {
     expect(findMatchingHousehold('Nobody Here', all)).toBeNull();
   });
 
+  /**
+   * Households are deliberately split when the people on one envelope should
+   * RSVP separately. The printed line then names everyone but belongs to no
+   * single household, so it must reach the picker rather than fail closed.
+   */
+  test('unions across households when one envelope spans a deliberate split', () => {
+    const shared = 'Jerome & Juliette & Marie-Sophie Vasseur';
+    // Jérôme and Marie-Sophie RSVP together; Juliette RSVPs on her own
+    const pair = [
+      guest({
+        id: 'sp1',
+        name: 'Jerome Vasseur',
+        firstName: 'Jerome',
+        lastName: 'Vasseur',
+        relatedGuestIds: ['sp2'],
+        envelopeNames: [shared],
+      }),
+      guest({
+        id: 'sp2',
+        name: 'Marie-Sophie Vasseur',
+        firstName: 'Marie-Sophie',
+        lastName: 'Vasseur',
+        relatedGuestIds: ['sp1'],
+        envelopeNames: [shared],
+      }),
+    ];
+    const alone = guest({
+      id: 'sp3',
+      name: 'Juliette Vasseur',
+      firstName: 'Juliette',
+      lastName: 'Vasseur',
+      envelopeNames: [shared],
+    });
+    const split = [...pair, alone];
+
+    const seen: string[][][] = [];
+    expect(findMatchingHousehold(shared, split, (m) => seen.push(m))).toEqual([
+      'sp1',
+      'sp2',
+      'sp3',
+    ]);
+    // A legitimate span is not an anomaly — nothing to investigate
+    expect(seen).toHaveLength(0);
+  });
+
+  test('an individual name still resolves to just their own group', () => {
+    // ...so the picked identity decides which side of the split they RSVP on
+    const pair = [
+      guest({ id: 'sp1', name: 'Jerome Vasseur', firstName: 'Jerome', lastName: 'Vasseur', relatedGuestIds: ['sp2'] }),
+      guest({ id: 'sp2', name: 'Marie-Sophie Vasseur', firstName: 'Marie-Sophie', lastName: 'Vasseur', relatedGuestIds: ['sp1'] }),
+    ];
+    const alone = guest({ id: 'sp3', name: 'Juliette Vasseur', firstName: 'Juliette', lastName: 'Vasseur' });
+    const split = [...pair, alone];
+
+    expect(findMatchingHousehold('Juliette Vasseur', split)).toEqual(['sp3']);
+    expect(findMatchingHousehold('Jerome Vasseur', split)).toEqual(['sp1']);
+  });
+
   test('fails closed and reports when two households match', () => {
     // A second, unrelated Rivera household with the same first name
     const otherAlex = guest({

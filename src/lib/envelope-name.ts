@@ -490,11 +490,23 @@ export function matchHousehold(
 /**
  * Run `matchHousehold` across every household in a guest list.
  *
- * Returns the single matching household's member IDs, or null when nothing
- * matches *or* when more than one household matches. Ambiguity fails closed: it
- * should not happen with real data, and guessing would risk signing someone into
- * a stranger's RSVP. An ambiguous hit is surfaced to the caller via `onAmbiguous`
- * so it can be logged and investigated.
+ * Returns the member IDs the name identifies, or null when nothing matches.
+ *
+ * More than one household can legitimately match: an envelope is addressed to
+ * the people who were invited together, but those people are deliberately split
+ * into separate `Related Guests` groups when they should RSVP separately. The
+ * printed line then names everyone while belonging to no single household, so
+ * the matched households are unioned and the caller shows the identity picker
+ * over all of them. Whichever person the guest picks decides which group — and
+ * therefore which RSVP — they land on.
+ *
+ * That union is only safe while the candidates are **distinguishable to the
+ * guest**, since the picker asks them to recognise their own name. If two
+ * matched people share a display name, the guest cannot tell which is them and
+ * could pick a stranger's record, so that case still fails closed and is
+ * surfaced via `onAmbiguous` for investigation. (Two members of the *same*
+ * household sharing a name is fine and unchanged: they are on one envelope at
+ * one address, which is how an unnamed +1 is recorded.)
  */
 export function findMatchingHousehold(
   input: string,
@@ -508,7 +520,23 @@ export function findMatchingHousehold(
     if (match) matches.push(match.memberIds);
   }
 
+  if (matches.length === 0) return null;
   if (matches.length === 1) return matches[0];
-  if (matches.length > 1) onAmbiguous?.(matches);
-  return null;
+
+  const byId = new Map(guests.map((guest) => [guest.id, guest]));
+  const unioned = matches.flat();
+
+  // One display name may only stand for one person across the picker
+  const seenNames = new Set<string>();
+  for (const id of unioned) {
+    const name = byId.get(id)?.normalizedName;
+    if (!name) continue;
+    if (seenNames.has(name)) {
+      onAmbiguous?.(matches);
+      return null;
+    }
+    seenNames.add(name);
+  }
+
+  return unioned;
 }
