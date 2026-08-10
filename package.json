@@ -24,7 +24,7 @@
     "@astrojs/netlify": "^8.2.0",
     "@astrojs/node": "^11.1.0",
     "@netlify/blobs": "^10.7.12",
-    "@notionhq/client": "^5.23.2",
+    "@notionhq/client": "^5.24.0",
     "astro": "^7.2.0",
     "resend": "^6.18.0"
   },
