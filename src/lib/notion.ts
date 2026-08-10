@@ -150,6 +150,13 @@ function parseGuestPage(page: any): GuestRecord | null {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
+  // `Also Known As` — alternate names the guest answers to, one per line.
+  // Parsed identically; absent on records that need no alias, and on the whole
+  // database until the property exists, in which case this is simply empty.
+  const aka = richText(props['Also Known As'])
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   return {
     id: page.id,
@@ -166,6 +173,7 @@ function parseGuestPage(page: any): GuestRecord | null {
     firstName,
     lastName,
     envelopeNames: envelopeNames.length > 0 ? envelopeNames : undefined,
+    aka: aka.length > 0 ? aka : undefined,
     invitationTitle: invitationTitle || undefined,
   };
 }
@@ -203,10 +211,11 @@ let guestCachePromise: Promise<GuestRecord[]> | null = null;
 
 const GUEST_CACHE_STORE = 'guest-cache';
 // v2 adds firstName/lastName/envelopeNames (envelope-name login); v3 adds
-// invitationTitle (the invitation-title login fallback). Bumping the key
-// retires blobs written by older deploys — reusing it would leave the new
-// matching silently dead until the 15-minute TTL expired.
-const GUEST_CACHE_KEY = 'all-guests-v3';
+// invitationTitle (the invitation-title login fallback); v4 adds aka (the
+// `Also Known As` alternate-name property). Bumping the key retires blobs
+// written by older deploys — reusing it would leave the new matching silently
+// dead until the 15-minute TTL expired.
+const GUEST_CACHE_KEY = 'all-guests-v4';
 const GUEST_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 interface GuestCacheBlob {
@@ -520,9 +529,11 @@ export async function findHouseholdByEnvelopeName(name: string): Promise<GuestRe
 }
 
 /**
- * Two targeted Notion queries for guests whose name or envelope line contains
- * `token`, run in parallel. Failures on either side are tolerated — one index
- * hitting is enough to assemble the household.
+ * Three targeted Notion queries for guests whose name, envelope line, or
+ * `Also Known As` entry contains `token`, run in parallel. Failures on any one
+ * side are tolerated — a single index hitting is enough to assemble the
+ * household, and the `Also Known As` filter also 400s on a database where that
+ * property has not been created yet.
  */
 async function queryGuestCandidates(
   apiKey: string,
@@ -550,18 +561,25 @@ async function queryGuestCandidates(
       .filter((guest): guest is GuestRecord => guest !== null);
   };
 
-  const [byName, byEnvelope] = await Promise.allSettled([
+  const results = await Promise.allSettled([
     runQuery({ property: 'Name of Guest', title: { contains: token } }),
     runQuery({ property: 'Envelope Names', rich_text: { contains: token } }),
+    runQuery({ property: 'Also Known As', rich_text: { contains: token } }),
   ]);
 
-  if (byName.status === 'rejected' && byEnvelope.status === 'rejected') {
-    throw byName.reason;
+  const fulfilled = results.filter(
+    (result): result is PromiseFulfilledResult<GuestRecord[]> => result.status === 'fulfilled'
+  );
+
+  if (fulfilled.length === 0) {
+    const rejected = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    );
+    throw rejected?.reason ?? new Error('All guest candidate queries failed');
   }
 
   const merged = new Map<string, GuestRecord>();
-  for (const result of [byName, byEnvelope]) {
-    if (result.status !== 'fulfilled') continue;
+  for (const result of fulfilled) {
     for (const guest of result.value) merged.set(guest.id, guest);
   }
   return [...merged.values()];

@@ -13,12 +13,27 @@
  *
  * Two independent rules produce a match; see `matchHousehold`.
  *
+ * The rules also absorb the ways a guest's everyday name differs from the one
+ * Notion holds, since this is the layer that runs once exact matching misses:
+ *
+ *  - a **space-free multi-word surname** ("LeGuezec" for "Le Guezec"), derived,
+ *    no data entry;
+ *  - **`Also Known As`** — hand-edited alternate given names and surnames on
+ *    the Notion record (a maiden name, "PJ", "Soso"), which is the escape hatch
+ *    for anything not derivable, and needs no deploy;
+ *  - **initials** of a hyphenated given name, and **common diminutives** from
+ *    src/lib/nicknames.ts.
+ *
+ * The last three narrow themselves back off whenever they would make two
+ * members of one household ambiguous — see `nameForms`.
+ *
  * Everything here is pure: no Notion, no I/O, no config. The Notion-side
  * candidate retrieval lives in src/lib/notion.ts (`findHouseholdByEnvelopeName`).
  */
 
 import type { GuestRecord } from '../types';
 import { normalize } from './normalize';
+import { nameVariants, deriveInitials } from './nicknames';
 
 /**
  * Honorifics dropped from both sides of a comparison.
@@ -125,18 +140,231 @@ export function buildHouseholds(guests: GuestRecord[]): GuestRecord[][] {
 }
 
 /**
- * Normalized first-name tokens. Multi-token on purpose: hyphenated and
- * two-word given names are common in the real guest list, and normalize()
- * turns hyphens into spaces, so a single-string comparison could never match
- * the tokens a guest types.
+ * First-name tokens. Multi-token on purpose: hyphenated and two-word given
+ * names are common in the real guest list, and normalize() turns hyphens into
+ * spaces, so a single-string comparison could never match the tokens a guest
+ * types.
+ *
+ * Tokenized with `envelopeTokens`, the same function the *typed* name goes
+ * through, so the two sides can never disagree about what a token is. That
+ * matters for the unnamed plus-ones recorded with a literal `First Name` of
+ * "<name> +1": the typed side always has its " +1" stripped, so a stored side
+ * that kept it could never be claimed, and the whole household fell back to
+ * needing its envelope line verbatim.
  */
 function firstNameTokens(guest: GuestRecord): string[] {
-  return guest.firstName ? normalize(guest.firstName).split(/\s+/).filter(Boolean) : [];
+  return guest.firstName ? envelopeTokens(guest.firstName) : [];
 }
 
 /** Normalized last-name tokens — a surname may itself be multi-word ("Van Dyke"). */
 function lastNameTokens(guest: GuestRecord): string[] {
   return guest.lastName ? normalize(guest.lastName).split(/\s+/).filter(Boolean) : [];
+}
+
+/**
+ * Split a guest's `Also Known As` lines into the alternate names they add.
+ *
+ * Each line is read the way a name is read everywhere else in this repo (see
+ * the `submitRSVP` name write-back): **the last whitespace-delimited token is a
+ * surname, the tokens before it are a given name**. A single-token line is a
+ * given name only, since a bare surname must never unlock a household.
+ *
+ *   "PJ"              → given name "pj"
+ *   "Soso"            → given name "soso"
+ *   "Camille Garnier" → given name "camille", surname "garnier"
+ *
+ * Surnames join the *household's* pool rather than the individual's, matching
+ * how `matchesFirstNameCombination` already treats a partner's surname — which
+ * is what makes "Camille Garnier", "Camille Muller" and "Camille Garnier
+ * Muller" all resolve from the single line above.
+ */
+function akaParts(guest: GuestRecord): { givenNames: string[][]; surnames: string[] } {
+  const givenNames: string[][] = [];
+  const surnames: string[] = [];
+
+  for (const line of guest.aka ?? []) {
+    const tokens = envelopeTokens(line);
+    if (tokens.length === 0) continue;
+    if (tokens.length === 1) {
+      givenNames.push(tokens);
+      continue;
+    }
+    surnames.push(tokens[tokens.length - 1]);
+    givenNames.push(tokens.slice(0, -1));
+  }
+
+  return { givenNames, surnames };
+}
+
+/**
+ * Every surname token this household answers to.
+ *
+ * Beyond the literal tokens of each member's `Last Name`, this adds:
+ *
+ *  - the **space-free** form of a multi-word surname ("Le Guezec" → "leguezec"),
+ *    so a guest who types their surname closed up is not locked out. The
+ *    opposite direction — stored closed up, typed spaced — is handled by the
+ *    greedy join in `remainingAreSurnames`, so both spellings work whichever
+ *    way round Notion happens to hold them;
+ *  - surnames contributed by `Also Known As` (a maiden or married name).
+ */
+function householdSurnames(members: GuestRecord[]): Set<string> {
+  const surnames = new Set<string>();
+
+  for (const member of members) {
+    const tokens = lastNameTokens(member);
+    for (const token of tokens) surnames.add(token);
+    if (tokens.length > 1) surnames.add(tokens.join(''));
+    for (const surname of akaParts(member).surnames) surnames.add(surname);
+  }
+
+  return surnames;
+}
+
+/**
+ * Are all leftover tokens surnames of this household?
+ *
+ * Walks left to right, and where a token isn't a surname on its own, tries
+ * joining it with the tokens that follow — so a household stored as
+ * "LeGuezec" still accepts someone typing "Le Guezec".
+ */
+function remainingAreSurnames(remaining: string[], surnames: Set<string>): boolean {
+  let index = 0;
+
+  while (index < remaining.length) {
+    if (surnames.has(remaining[index])) {
+      index += 1;
+      continue;
+    }
+
+    let joined = remaining[index];
+    let matchedAt = -1;
+    for (let next = index + 1; next < remaining.length; next += 1) {
+      joined += remaining[next];
+      if (surnames.has(joined)) {
+        matchedAt = next;
+        break;
+      }
+    }
+
+    if (matchedAt === -1) return false;
+    index = matchedAt + 1;
+  }
+
+  return true;
+}
+
+/**
+ * One way a member can be addressed, as an ordered list of token positions.
+ * Each position holds every token accepted there, so "Mike" and "Michael" can
+ * both satisfy the same slot without the caller knowing which was stored.
+ */
+interface NameForm {
+  member: GuestRecord;
+  /** The stored tokens, used only for longest-first ordering. */
+  tokens: string[];
+  accepted: ReadonlySet<string>[];
+}
+
+/**
+ * Build the name forms a household answers to.
+ *
+ * `variants` turns on the common-diminutive table, `extras` turns on the forms
+ * that don't come from `First Name` — `Also Known As` given names and derived
+ * initials. Both are switched off tier by tier by `nameForms` when they would
+ * make two members of one household ambiguous.
+ */
+function buildNameForms(
+  members: GuestRecord[],
+  { variants, extras }: { variants: boolean; extras: boolean }
+): NameForm[] {
+  const accept = (tokens: string[]): ReadonlySet<string>[] =>
+    tokens.map((token) => (variants ? nameVariants(token) : new Set([token])));
+
+  const forms: NameForm[] = [];
+
+  for (const member of members) {
+    const given = firstNameTokens(member);
+    if (given.length > 0) forms.push({ member, tokens: given, accepted: accept(given) });
+
+    if (!extras) continue;
+
+    const initials = deriveInitials(given);
+    if (initials) {
+      forms.push({ member, tokens: [initials], accepted: [new Set([initials])] });
+    }
+
+    for (const alias of akaParts(member).givenNames) {
+      forms.push({ member, tokens: alias, accepted: accept(alias) });
+    }
+  }
+
+  // Longest first, so a two-token "Mary Anne" is consumed whole rather than
+  // being shadowed by a "Mary" elsewhere in the household.
+  return forms.sort((a, b) => b.tokens.length - a.tokens.length);
+}
+
+/**
+ * Would these forms let one typed token name two different people?
+ *
+ * Members who genuinely share a first name are exempt: a named guest and an
+ * unnamed +1 recorded under the same first name both being claimed is correct,
+ * and is how the household already behaves. What this catches is ambiguity
+ * *introduced* by widening — an Alex and an Alexander under one roof, where
+ * "Alex" would otherwise claim whichever record happened to sort first.
+ */
+function formsAreAmbiguous(forms: NameForm[], members: GuestRecord[]): boolean {
+  const literalFirst = new Map(
+    members.map((member) => [member.id, firstNameTokens(member).join(' ')])
+  );
+
+  const accepts = new Map<string, Set<string>>();
+  for (const form of forms) {
+    const existing = accepts.get(form.member.id) ?? new Set<string>();
+    for (const position of form.accepted) for (const token of position) existing.add(token);
+    accepts.set(form.member.id, existing);
+  }
+
+  const entries = [...accepts.entries()];
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = i + 1; j < entries.length; j += 1) {
+      const [idA, acceptsA] = entries[i];
+      const [idB, acceptsB] = entries[j];
+      if (literalFirst.get(idA) === literalFirst.get(idB)) continue;
+      for (const token of acceptsA) if (acceptsB.has(token)) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * The widest set of name forms that stays unambiguous for this household.
+ *
+ * Tiers narrow rather than disable: a household containing both an Alex and an
+ * Alexander loses the diminutive table but keeps its `Also Known As` entries,
+ * and only a household whose *stored* alternate names collide falls all the way
+ * back to plain `First Name` matching — the behaviour before any of this
+ * existed. Narrowing is always safe, because every tier is a subset of the one
+ * above it.
+ */
+function nameForms(members: GuestRecord[]): NameForm[] {
+  const tiers = [
+    { variants: true, extras: true },
+    { variants: false, extras: true },
+    { variants: false, extras: false },
+  ];
+
+  for (const tier of tiers) {
+    const forms = buildNameForms(members, tier);
+    if (!formsAreAmbiguous(forms, members)) return forms;
+  }
+
+  // Even plain `First Name` matching can be ambiguous — a household holding
+  // both a "Jean" and a "Jean-Pierre" always was. Returning it anyway keeps
+  // that household behaving exactly as it did before, rather than inventing a
+  // new failure for it.
+  return buildNameForms(members, { variants: false, extras: false });
 }
 
 /**
@@ -146,23 +374,32 @@ function lastNameTokens(guest: GuestRecord): string[] {
  * printed "Samuel & Margaux Gross" also accepts "Margaux Samuel Gross". A stored
  * envelope names the household, not a person, so callers disambiguate across the
  * whole household.
+ *
+ * A second comparison joins the tokens in *input order* with no separator, so a
+ * multi-word surname typed closed up ("The LeGuezec Family") still matches the
+ * printed line. That one is order-sensitive by necessity — removing the spaces
+ * is only meaningful while the words are still adjacent — but an envelope
+ * copied off the invitation is normally typed in the order it was printed.
  */
 function matchesStoredEnvelope(inputTokens: string[], members: GuestRecord[]): boolean {
   const inputKey = [...inputTokens].sort().join(' ');
   if (!inputKey) return false;
+  const inputSpaceless = inputTokens.join('');
 
   for (const member of members) {
     for (const envelope of member.envelopeNames ?? []) {
-      const storedKey = [...envelopeTokens(envelope)].sort().join(' ');
-      if (storedKey && storedKey === inputKey) return true;
+      const storedTokens = envelopeTokens(envelope);
+      if (storedTokens.length === 0) continue;
+      if ([...storedTokens].sort().join(' ') === inputKey) return true;
+      if (storedTokens.join('') === inputSpaceless) return true;
     }
   }
   return false;
 }
 
 /**
- * Rule (b): every input token is a first name or a surname somewhere in this
- * household, at least one is a first name, and no two input tokens claim the
+ * Rule (b): every input token is a given name or a surname somewhere in this
+ * household, at least one is a given name, and no two input tokens claim the
  * same member.
  *
  * Accepts "Samuel Gross", "Samuel & Margaux Gross", "Margaux and Samuel Gross",
@@ -170,7 +407,11 @@ function matchesStoredEnvelope(inputTokens: string[], members: GuestRecord[]): b
  * surname). Rejects "Gross" alone — a bare surname names nobody — and anything
  * containing a token this household doesn't own.
  *
- * Returns the IDs of the members whose first names appeared, or null.
+ * A "given name" here is whatever `nameForms` accepts for that member: their
+ * `First Name`, plus — where it stays unambiguous within the household — their
+ * `Also Known As` entries, their initials, and common diminutives.
+ *
+ * Returns the IDs of the members whose given names appeared, or null.
  */
 function matchesFirstNameCombination(
   inputTokens: string[],
@@ -178,26 +419,23 @@ function matchesFirstNameCombination(
 ): string[] | null {
   if (inputTokens.length === 0) return null;
 
-  const householdSurnames = new Set(members.flatMap(lastNameTokens));
+  const surnames = householdSurnames(members);
+  const forms = nameForms(members);
 
-  // Longest first names first, so a two-token "Mary Anne" is consumed whole
-  // rather than being shadowed by a "Mary" elsewhere in the household.
-  const candidates = members
-    .map((member) => ({ member, tokens: firstNameTokens(member) }))
-    .filter((candidate) => candidate.tokens.length > 0)
-    .sort((a, b) => b.tokens.length - a.tokens.length);
-
-  // Consume input tokens as a multiset: each member's full first name must be
-  // present, and no token may be spent twice.
+  // Consume input tokens as a multiset: every position of a member's name must
+  // be present, and no token may be spent twice.
   let remaining = [...inputTokens];
   const claimed = new Set<string>();
 
-  for (const { member, tokens } of candidates) {
+  for (const form of forms) {
+    // A member already named by an earlier form must not consume more tokens
+    if (claimed.has(form.member.id)) continue;
+
     const pool = [...remaining];
     let complete = true;
 
-    for (const token of tokens) {
-      const index = pool.indexOf(token);
+    for (const position of form.accepted) {
+      const index = pool.findIndex((token) => position.has(token));
       if (index === -1) {
         complete = false;
         break;
@@ -207,16 +445,16 @@ function matchesFirstNameCombination(
 
     if (complete) {
       remaining = pool;
-      claimed.add(member.id);
+      claimed.add(form.member.id);
     }
   }
 
   if (claimed.size === 0) return null; // surname only, or nobody named
 
-  // Whatever is left must be surnames this household owns. A leftover first
+  // Whatever is left must be surnames this household owns. A leftover given
   // name means it was typed twice ("Samuel Samuel Gross") or belongs to
   // someone this household doesn't contain.
-  if (!remaining.every((token) => householdSurnames.has(token))) return null;
+  if (!remainingAreSurnames(remaining, surnames)) return null;
 
   // Household order, not typed order, so the picker is stable across phrasings
   return members.filter((member) => claimed.has(member.id)).map((member) => member.id);

@@ -317,6 +317,16 @@ test.describe('matchHousehold — multi-token given names', () => {
     expect(matchHousehold('Frances Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
     });
+    // The +1's record carries the suffix in `First Name` itself, which must be
+    // stripped on the stored side too — otherwise that member is unclaimable
+    // and the household needs its envelope line verbatim.
+    const suffixInRecord = [
+      sharedFirst[0],
+      { ...sharedFirst[1], firstName: 'Frances +1' },
+    ];
+    expect(matchHousehold('Frances Frances Holloway', suffixInRecord)).toEqual({
+      memberIds: ['d1', 'd2'],
+    });
     // And the printed envelope (whose "+1" is stripped) still resolves
     expect(matchHousehold('Frances +1 & Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
@@ -369,6 +379,266 @@ test.describe('matchHousehold — stored envelope strings', () => {
 
   test('first-name rules still win where both could apply', () => {
     expect(matchHousehold('Robin Smith', smiths)).toEqual({ memberIds: ['s1'] });
+  });
+});
+
+/**
+ * Alternate names: the ways a guest's everyday name differs from the Notion
+ * record. Shapes are drawn from the real guest list; the names are invented.
+ */
+test.describe('matchHousehold — multi-word surnames typed closed up', () => {
+  const spaced = [
+    guest({
+      id: 'g1',
+      name: 'Noor Le Marchand',
+      firstName: 'Noor',
+      lastName: 'Le Marchand',
+      relatedGuestIds: ['g2'],
+      envelopeNames: ['The Le Marchand Family'],
+    }),
+    guest({
+      id: 'g2',
+      name: 'Tomas Le Marchand',
+      firstName: 'Tomas',
+      lastName: 'Le Marchand',
+      relatedGuestIds: ['g1'],
+      envelopeNames: ['The Le Marchand Family'],
+    }),
+  ];
+
+  test('accepts the surname closed up', () => {
+    expect(matchHousehold('Noor LeMarchand', spaced)).toEqual({ memberIds: ['g1'] });
+    expect(matchHousehold('Noor & Tomas LeMarchand', spaced)).toEqual({ memberIds: ['g1', 'g2'] });
+  });
+
+  test('still accepts the surname as stored', () => {
+    expect(matchHousehold('Noor Le Marchand', spaced)).toEqual({ memberIds: ['g1'] });
+    expect(matchHousehold('Noor Marchand', spaced)).toEqual({ memberIds: ['g1'] });
+  });
+
+  test('accepts a stored envelope typed closed up', () => {
+    expect(matchHousehold('The LeMarchand Family', spaced)).toEqual({ memberIds: ['g1', 'g2'] });
+  });
+
+  test('works the other way round when Notion holds the closed-up spelling', () => {
+    const closed = [
+      guest({ id: 'k1', name: 'Noor LeMarchand', firstName: 'Noor', lastName: 'LeMarchand' }),
+    ];
+    expect(matchHousehold('Noor Le Marchand', closed)).toEqual({ memberIds: ['k1'] });
+    expect(matchHousehold('Noor LeMarchand', closed)).toEqual({ memberIds: ['k1'] });
+  });
+
+  test('the closed-up surname alone still names nobody', () => {
+    expect(matchHousehold('LeMarchand', spaced)).toBeNull();
+  });
+});
+
+test.describe('matchHousehold — Also Known As', () => {
+  // A maiden name kept alongside a married one: one line covers every phrasing
+  const maidenName = [
+    guest({
+      id: 'm1',
+      name: 'Odette Vaillant',
+      firstName: 'Odette',
+      lastName: 'Vaillant',
+      relatedGuestIds: ['m2'],
+      aka: ['Odette Brossard'],
+    }),
+    guest({
+      id: 'm2',
+      name: 'Hugo Vaillant',
+      firstName: 'Hugo',
+      lastName: 'Vaillant',
+      relatedGuestIds: ['m1'],
+    }),
+  ];
+
+  test('accepts either surname, and both together', () => {
+    expect(matchHousehold('Odette Vaillant', maidenName)).toEqual({ memberIds: ['m1'] });
+    expect(matchHousehold('Odette Brossard', maidenName)).toEqual({ memberIds: ['m1'] });
+    expect(matchHousehold('Odette Brossard Vaillant', maidenName)).toEqual({ memberIds: ['m1'] });
+  });
+
+  test('the alternate surname joins the household pool', () => {
+    // Same rule that lets a partner's surname stand in for one's own
+    expect(matchHousehold('Hugo Brossard', maidenName)).toEqual({ memberIds: ['m2'] });
+  });
+
+  test('the alternate surname alone names nobody', () => {
+    expect(matchHousehold('Brossard', maidenName)).toBeNull();
+  });
+
+  // A nickname no rule could derive
+  const nickname = [
+    guest({
+      id: 'n1',
+      name: 'Perpetua Nwachukwu',
+      firstName: 'Perpetua',
+      lastName: 'Nwachukwu',
+      relatedGuestIds: ['n2'],
+      aka: ['Pet'],
+    }),
+    guest({
+      id: 'n2',
+      name: 'Bode Nwachukwu',
+      firstName: 'Bode',
+      lastName: 'Nwachukwu',
+      relatedGuestIds: ['n1'],
+    }),
+  ];
+
+  test('accepts a single-token nickname on its own and with a surname', () => {
+    expect(matchHousehold('Pet', nickname)).toEqual({ memberIds: ['n1'] });
+    expect(matchHousehold('Pet Nwachukwu', nickname)).toEqual({ memberIds: ['n1'] });
+  });
+
+  test('composes with the rest of the household', () => {
+    expect(matchHousehold('Pet & Bode Nwachukwu', nickname)).toEqual({ memberIds: ['n1', 'n2'] });
+  });
+
+  test('the record name keeps working', () => {
+    expect(matchHousehold('Perpetua Nwachukwu', nickname)).toEqual({ memberIds: ['n1'] });
+  });
+
+  test('does not admit a name nobody answers to', () => {
+    expect(matchHousehold('Pat Nwachukwu', nickname)).toBeNull();
+  });
+});
+
+test.describe('matchHousehold — derived initials', () => {
+  const hyphenated = [
+    guest({
+      id: 'i1',
+      name: 'Anne-Sixtine Delcourt',
+      firstName: 'Anne-Sixtine',
+      lastName: 'Delcourt',
+      relatedGuestIds: ['i2'],
+    }),
+    guest({
+      id: 'i2',
+      name: 'Bastien Delcourt',
+      firstName: 'Bastien',
+      lastName: 'Delcourt',
+      relatedGuestIds: ['i1'],
+    }),
+  ];
+
+  test('accepts the initials of a hyphenated given name', () => {
+    expect(matchHousehold('AS Delcourt', hyphenated)).toEqual({ memberIds: ['i1'] });
+    expect(matchHousehold('A.S. Delcourt', hyphenated)).toEqual({ memberIds: ['i1'] });
+  });
+
+  test('composes with the rest of the household', () => {
+    expect(matchHousehold('AS & Bastien Delcourt', hyphenated)).toEqual({
+      memberIds: ['i1', 'i2'],
+    });
+  });
+
+  test('does not derive initials from a single-token given name', () => {
+    // "B Delcourt" must not resolve to Bastien
+    expect(matchHousehold('B Delcourt', hyphenated)).toBeNull();
+  });
+
+  test('the full hyphenated name keeps working', () => {
+    expect(matchHousehold('Anne-Sixtine Delcourt', hyphenated)).toEqual({ memberIds: ['i1'] });
+    expect(matchHousehold('Anne Sixtine Delcourt', hyphenated)).toEqual({ memberIds: ['i1'] });
+  });
+});
+
+test.describe('matchHousehold — common diminutives', () => {
+  const michaels = [
+    guest({
+      id: 'v1',
+      name: 'Michael Ashworth',
+      firstName: 'Michael',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['v2'],
+    }),
+    guest({
+      id: 'v2',
+      name: 'Katherine Ashworth',
+      firstName: 'Katherine',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['v1'],
+    }),
+  ];
+
+  test('accepts a diminutive of the stored name', () => {
+    expect(matchHousehold('Mike Ashworth', michaels)).toEqual({ memberIds: ['v1'] });
+    expect(matchHousehold('Kate Ashworth', michaels)).toEqual({ memberIds: ['v2'] });
+    expect(matchHousehold('Mike & Kate Ashworth', michaels)).toEqual({ memberIds: ['v1', 'v2'] });
+  });
+
+  test('works when Notion holds the short form and the guest types the long one', () => {
+    const stored = [guest({ id: 'w1', name: 'Mike Ashworth', firstName: 'Mike', lastName: 'Ashworth' })];
+    expect(matchHousehold('Michael Ashworth', stored)).toEqual({ memberIds: ['w1'] });
+  });
+
+  test('a shared diminutive does not leak between roots', () => {
+    // Ted is short for both Edward and Theodore, but Edward must never accept
+    // "Theo" — the variants are read from the stored name, not unioned.
+    const edward = [guest({ id: 'e1', name: 'Edward Ashworth', firstName: 'Edward', lastName: 'Ashworth' })];
+    expect(matchHousehold('Ted Ashworth', edward)).toEqual({ memberIds: ['e1'] });
+    expect(matchHousehold('Theo Ashworth', edward)).toBeNull();
+
+    const theodore = [
+      guest({ id: 'e2', name: 'Theodore Ashworth', firstName: 'Theodore', lastName: 'Ashworth' }),
+    ];
+    expect(matchHousehold('Ted Ashworth', theodore)).toEqual({ memberIds: ['e2'] });
+    expect(matchHousehold('Eddie Ashworth', theodore)).toBeNull();
+  });
+
+  test('an unrelated name is still rejected', () => {
+    expect(matchHousehold('Marcus Ashworth', michaels)).toBeNull();
+  });
+});
+
+test.describe('matchHousehold — ambiguity narrows the rules back off', () => {
+  // An Alex and an Alexander under one roof: "Alex" must not silently pick one
+  const both = [
+    guest({
+      id: 'p1',
+      name: 'Alex Ashworth',
+      firstName: 'Alex',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['p2'],
+    }),
+    guest({
+      id: 'p2',
+      name: 'Alexander Ashworth',
+      firstName: 'Alexander',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['p1'],
+    }),
+  ];
+
+  test('each member is reachable only by their stored name', () => {
+    expect(matchHousehold('Alex Ashworth', both)).toEqual({ memberIds: ['p1'] });
+    expect(matchHousehold('Alexander Ashworth', both)).toEqual({ memberIds: ['p2'] });
+  });
+
+  test('both are named when both are typed', () => {
+    expect(matchHousehold('Alex & Alexander Ashworth', both)).toEqual({ memberIds: ['p1', 'p2'] });
+  });
+
+  test('losing diminutives does not cost the household its stored aliases', () => {
+    const withAlias = [
+      { ...both[0], aka: ['Lexie'] },
+      both[1],
+    ];
+    expect(matchHousehold('Lexie Ashworth', withAlias)).toEqual({ memberIds: ['p1'] });
+    // ...while the diminutive that caused the collision stays literal
+    expect(matchHousehold('Alex Ashworth', withAlias)).toEqual({ memberIds: ['p1'] });
+  });
+
+  test('a colliding alias narrows all the way back to stored first names', () => {
+    // Someone typed the wrong person's name into Also Known As
+    const collides = [
+      { ...both[0], aka: ['Alexander'] },
+      both[1],
+    ];
+    expect(matchHousehold('Alexander Ashworth', collides)).toEqual({ memberIds: ['p2'] });
+    expect(matchHousehold('Alex Ashworth', collides)).toEqual({ memberIds: ['p1'] });
   });
 });
 
