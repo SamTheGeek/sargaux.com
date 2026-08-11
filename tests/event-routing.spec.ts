@@ -14,5 +14,9 @@ test.describe('Primary Event Routing', () => {
     expect(getPrimaryEventRoute(['nyc'], new Date('2026-11-01T12:00:00-04:00'))).toBe('/nyc');
     expect(getPrimaryEventRoute(['france'], new Date('2026-03-01T12:00:00-05:00'))).toBe('/france');
   });
+
+  test('refuses to invent a primary route for a descoped (empty) invitation list', () => {
+    expect(() => getPrimaryEventRoute([])).toThrow(/at least one event invitation/);
+  });
 });
 

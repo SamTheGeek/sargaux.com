@@ -154,6 +154,22 @@ function completeLogin(
   guest: ResolvedGuest,
   cookies: Parameters<APIRoute>[0]['cookies']
 ): Response {
+  // Descoped guests (Event Invitations intentionally cleared in Notion) must
+  // not receive a session — minting one would either invent invitations or
+  // 302-loop them between event routes.
+  if (guest.eventInvitations.length === 0) {
+    console.warn(
+      `Login refused for ${guest.notionId ?? guest.name}: no event invitations (descoped)`
+    );
+    return json(
+      {
+        error: 'You are no longer on the guest list for these events.',
+        code: 'no_invitation',
+      },
+      403
+    );
+  }
+
   let token: string;
   try {
     token = createSessionToken(guest.name, guest.notionId, guest.eventInvitations, guest.country);

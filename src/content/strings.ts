@@ -113,6 +113,11 @@ export const strings = {
       errorNotFound:    s('Name not found, it must match exactly.', 'Nom introuvable — saisissez-le exactement comme sur votre invitation.'),
       errorRateLimit:   s('Too many attempts. Please try again in a few minutes.', 'Trop de tentatives. Veuillez réessayer dans quelques minutes.'),
       errorUnavailable: s('Login is temporarily unavailable. Please try again in a few minutes.', 'La connexion est temporairement indisponible. Veuillez réessayer dans quelques minutes.'),
+      // Guest still in Notion but Event Invitations cleared — provisional French
+      errorNoInvitation: s(
+        'You are no longer on the guest list for these events.',
+        'Vous ne figurez plus sur la liste d’invités pour ces événements.',
+      ),
     },
     // Shown when a name matches a whole envelope rather than one guest, so the
     // RSVP can be attributed to the right person.

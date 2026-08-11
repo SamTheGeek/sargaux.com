@@ -198,23 +198,26 @@ function parseGuestPage(page: any): GuestRecord | null {
     props['Related Guests']?.relation || []
   ).map((r: { id: string }) => r.id);
 
-  // Event Invitations multi-select (Phase 2 addition)
-  // Falls back to deriving from Country if property doesn't exist yet
+  // Event Invitations multi-select (Phase 2 addition).
+  //
+  // Distinguish "property absent / never configured" from "explicitly empty":
+  // an intentionally descoped guest is left in the DB with Event Invitations
+  // cleared, and must stay invited-to-nowhere — not re-derived from Country
+  // (which would reopen NYC/France). Only fall back to Country when the
+  // property isn't on the page at all (legacy rows / pre-Phase-2).
   let eventInvitations: ('nyc' | 'france')[];
   const eventInvProp = props['Event Invitations'];
-  if (eventInvProp?.multi_select?.length > 0) {
+  if (eventInvProp && Array.isArray(eventInvProp.multi_select)) {
     eventInvitations = eventInvProp.multi_select
       .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
       .filter((e: string) => e === 'nyc' || e === 'france');
-    if (eventInvitations.length === 0) {
+    if (eventInvProp.multi_select.length > 0 && eventInvitations.length === 0) {
       // Selections exist but none survived the filter — a renamed multi-select
-      // option ("New York", a trailing space). An empty list would 302-loop
-      // the guest (middleware redirects /france → primary route → /france),
-      // so fall back exactly like the no-selection branch.
+      // option ("New York", a trailing space). Fail closed (empty) rather than
+      // inventing an invitation; warn so the option names get fixed in Notion.
       console.warn(
-        `Guest ${page.id} has Event Invitations selected but none parse to nyc/france — check the multi-select option names. Deriving from Country instead.`
+        `Guest ${page.id} has Event Invitations selected but none parse to nyc/france — check the multi-select option names. Treating as invited to neither.`
       );
-      eventInvitations = deriveEventInvitations(country);
     }
   } else {
     eventInvitations = deriveEventInvitations(country);

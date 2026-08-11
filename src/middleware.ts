@@ -186,19 +186,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
           return withVary(context.redirect('/'));
         }
-        // Guard the empty list (parseGuestPage defends against it too): with
-        // no invitations, every event route redirects to the primary route —
-        // which is itself an event route — and the browser loops on 302s
-        // until "too many redirects", with no self-repair. Treat as invited
-        // to both, the same default parseSessionToken uses for old cookies.
-        if (record.eventInvitations.length > 0) {
-          eventInvitations = record.eventInvitations;
-        } else {
+        // Empty invitations are intentional descope (guest left in Notion with
+        // Event Invitations cleared). Do NOT invent both — that would reopen
+        // the event sites. Clear the session and send them to the login page
+        // instead of 302-looping between event routes (primary with an empty
+        // list falls through to /france, which then redirects to primary…).
+        if (record.eventInvitations.length === 0) {
           console.warn(
-            `Guest ${auth.notionId} resolved with no event invitations — treating as invited to both to avoid a redirect loop`
+            `Guest ${auth.notionId} has no event invitations — clearing session (descoped)`
           );
-          eventInvitations = ['nyc', 'france'];
+          context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
+          return withVary(context.redirect('/'));
         }
+        eventInvitations = record.eventInvitations;
         country = record.country ?? null;
       }
     } catch (error) {
@@ -212,6 +212,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.country = country;
   if (auth.notionId) {
     context.locals.guestId = auth.notionId;
+  }
+
+  // Cookie-only / Notion-unavailable path: an empty invitation list still
+  // must not enter the event-route redirect loop below.
+  if (eventInvitations.length === 0) {
+    console.warn('Session has no event invitations — clearing session');
+    context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
+    return withVary(context.redirect('/'));
   }
 
   // No registry redirect here on purpose. French-side guests are steered to

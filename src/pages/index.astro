@@ -2,7 +2,7 @@
 import WireframeLayout from '../layouts/WireframeLayout.astro';
 import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
-import { getAuthenticatedGuest } from '../lib/auth';
+import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from '../lib/auth';
 import { isSiteEnabled, features } from '../config/features';
 import { getPrimaryEventRoute } from '../lib/event-routing';
 import { strings } from '../content/strings';
@@ -13,8 +13,15 @@ import SiteFooter from '../components/SiteFooter.astro';
 if (isSiteEnabled()) {
   const authGuest = getAuthenticatedGuest(Astro.cookies);
   if (authGuest) {
-    const redirectPath = getPrimaryEventRoute(authGuest.eventInvitations);
-    return Astro.redirect(redirectPath);
+    // Empty invitations = descoped; don't send them into the event-route
+    // loop (getPrimaryEventRoute falls through to /france on an empty list).
+    // Clear the cookie so the login page stays put.
+    if (authGuest.eventInvitations.length === 0) {
+      Astro.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
+    } else {
+      const redirectPath = getPrimaryEventRoute(authGuest.eventInvitations);
+      return Astro.redirect(redirectPath);
+    }
   }
 }
 
@@ -31,6 +38,7 @@ const defaultError = t(strings.home.modal.errorDefault);
 const notFoundError = t(strings.home.modal.errorNotFound);
 const rateLimitError = t(strings.home.modal.errorRateLimit);
 const unavailableError = t(strings.home.modal.errorUnavailable);
+const noInvitationError = t(strings.home.modal.errorNoInvitation);
 const checkingLabel = t(strings.home.modal.checkingBtn);
 const submitLabel = t(strings.home.modal.submitBtn);
 const loginDelay = features.dev.loginDelay;
@@ -62,6 +70,7 @@ const identityExpired = t(strings.home.identity.expired);
               data-not-found-error={notFoundError}
               data-rate-limit-error={rateLimitError}
               data-unavailable-error={unavailableError}
+              data-no-invitation-error={noInvitationError}
               data-checking-label={checkingLabel}
               data-submit-label={submitLabel}
               data-login-delay={loginDelay ? 'true' : 'false'}
@@ -609,6 +618,7 @@ const identityExpired = t(strings.home.identity.expired);
         const notFoundError = form.dataset.notFoundError || 'Name not found, it must match exactly.';
         const rateLimitError = form.dataset.rateLimitError || 'Too many attempts. Please try again in a few minutes.';
         const unavailableError = form.dataset.unavailableError || 'Login is temporarily unavailable. Please try again in a few minutes.';
+        const noInvitationError = form.dataset.noInvitationError || 'You are no longer on the guest list for these events.';
         const checkingLabel = form.dataset.checkingLabel || 'Checking';
         const submitLabel = form.dataset.submitLabel || 'Submit';
         const loginDelay = form.dataset.loginDelay === 'true';
@@ -782,6 +792,8 @@ const identityExpired = t(strings.home.identity.expired);
               onExpired();
             } else if (response.status === 401) {
               showError(notFoundError);
+            } else if (response.status === 403) {
+              showError(noInvitationError);
             } else if (response.status === 429) {
               showError(rateLimitError);
             } else if (response.status === 503) {
