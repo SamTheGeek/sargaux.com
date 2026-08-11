@@ -118,6 +118,14 @@ export const TEST_GUEST_PARTNER_NAME = 'Jordan Chen';
 export const TEST_GUEST_AKA_GIVEN_NAME = 'Lex'; // on Alex Rivera
 export const TEST_GUEST_AKA_SURNAME = 'Delacroix'; // via "Jordan Delacroix"
 
+// The full `Also Known As` contents of those two records, as the mutating suite
+// must force them back to. A rename now appends the former name to this
+// property (preserveFormerName in src/lib/guest-name.ts), so renaming a bot and
+// back leaves two extra alias lines behind — it needs the same restore-to-a-
+// constant treatment the names get, or every run grows the list.
+export const TEST_GUEST_AKA = 'Lex';
+export const TEST_GUEST_PARTNER_AKA = 'Jordan Delacroix';
+
 // Country=FRANCE counterpart to TEST_GUEST_NAME, for the locale-defaulting
 // tests. Also a 🤖-marked synthetic Notion record (created 2026-08-01), and an
 // invented FRANCE entry in the hardcoded fallback list in src/lib/auth.ts.

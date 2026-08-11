@@ -13,7 +13,9 @@ import { parseTime } from './calendar';
 import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 import { envelopeTokens, findMatchingHousehold } from './envelope-name';
 import { validateGuestFromRecords } from './auth';
-import { guestNameEdit } from './guest-name';
+import { guestNameEdit, preserveFormerName } from './guest-name';
+import { strandedGuestIds, planDetachedResponse } from './rsvp-split';
+import { memberAttendedResponse } from './rsvp-attendance';
 
 let notionClient: Client | null = null;
 
@@ -766,11 +768,14 @@ export async function getAttendingEvents(guestId: string): Promise<EventRecord[]
 
   const attendingIds = new Set<string>();
   for (const rsvp of rsvps) {
-    if (!rsvp || rsvp.status === 'Declined') continue;
+    if (!rsvp) continue;
     // Responses are party-level — only count this response for THIS guest if
-    // they are among its attendees (a declining member of an attending party
-    // keeps an empty calendar).
-    if (guest && !rsvpIncludesGuest(rsvp, guest.normalizedName)) continue;
+    // they attended (a declining member of an attending party keeps an empty
+    // calendar). Resolved by recorded attendance, then Status, then names: a
+    // guest who corrects their surname on one event's form must not have the
+    // other event's calendar silently emptied because the stored response
+    // still lists their old name.
+    if (guest && !memberAttendedResponse(rsvp, guest)) continue;
     for (const eventId of rsvp.eventsAttending ?? []) {
       attendingIds.add(eventId);
     }
@@ -779,14 +784,10 @@ export async function getAttendingEvents(guestId: string): Promise<EventRecord[]
   return catalogs.flat().filter((event) => attendingIds.has(event.id));
 }
 
-/** True if the guest's normalized name appears in a response's attendee list. */
-export function rsvpIncludesGuest(rsvp: RSVPResponse, normalizedName: string): boolean {
-  return rsvp.guestsAttending
-    .split(',')
-    .map((name) => normalize(name))
-    .filter(Boolean)
-    .includes(normalizedName);
-}
+// `rsvpIncludesGuest` lived here: name-only attendance matching, called from
+// four places that each needed the same answer. It is deliberately gone —
+// memberAttendedResponse in src/lib/rsvp-attendance.ts is the single decision,
+// and leaving a name-only shortcut beside it is how these bugs happened.
 
 /**
  * Fetch a guest and their related party members (Related Guests).
@@ -801,31 +802,107 @@ export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
     throw new Error(`Guest not found: ${guestId}`);
   }
 
-  // Fetch related guests in parallel; skip any that fail to resolve
-  const related = await Promise.all(
-    primaryGuest.relatedGuestIds.map(async (relatedId) => {
-      try {
-        return await getGuestById(relatedId);
-      } catch (error) {
-        console.error(`Failed to fetch related guest ${relatedId}:`, error);
-        return null;
-      }
-    })
-  );
+  // The household is the *transitive* closure over `Related Guests`, matching
+  // the union-find households that envelope login already uses
+  // (src/lib/envelope-name.ts). One hop is not enough: `Related Guests` is
+  // hand-edited and real households are routinely wired as a star — children
+  // linked to their parents but not to each other — so a single hop returns a
+  // different party depending on which member logs in. That asymmetry meant a
+  // sibling could not RSVP for a sibling, and made a response's relation depend
+  // on who happened to submit, which in turn made the split detection in
+  // submitRSVP fragment one household across several rows.
+  //
+  // A household that should RSVP *separately* is separated by removing the
+  // `Related Guests` link entirely — that, not an incomplete link, is the RSVP
+  // boundary.
+  const members = new Map<string, GuestRecord>([[primaryGuest.id, primaryGuest]]);
+  let frontier = [primaryGuest];
 
-  const party: GuestRecord[] = [
-    primaryGuest,
-    ...related.filter((g): g is GuestRecord => g !== null),
-  ];
+  while (frontier.length > 0) {
+    const nextIds = Array.from(
+      new Set(frontier.flatMap((member) => member.relatedGuestIds))
+    ).filter((id) => !members.has(id));
+
+    const fetched = await Promise.all(
+      nextIds.map(async (relatedId) => {
+        try {
+          return await getGuestById(relatedId);
+        } catch (error) {
+          console.error(`Failed to fetch related guest ${relatedId}:`, error);
+          return null;
+        }
+      })
+    );
+
+    frontier = fetched.filter((g): g is GuestRecord => g !== null);
+    for (const member of frontier) members.set(member.id, member);
+  }
 
   // Sort: primary first, then non-+1s, then +1s
-  return party.sort((a, b) => {
+  return Array.from(members.values()).sort((a, b) => {
     if (a.id === guestId) return -1;
     if (b.id === guestId) return 1;
     if (a.isPlusOne && !b.isPlusOne) return 1;
     if (!a.isPlusOne && b.isPlusOne) return -1;
     return 0;
   });
+}
+
+/**
+ * Hand a shared response back to the members who are still on it, after the
+ * submitting party has split off from them.
+ *
+ * The relation is narrowed to the stranded members and the attendee list is
+ * rebuilt from those members alone, so the row keeps saying exactly what they
+ * answered and nothing about the party that just left. The title follows the
+ * relation so the row is still recognisable in Notion.
+ *
+ * Attendee names and status are only rewritten when every stranded member
+ * resolved: a partial read would silently drop someone from a response that is
+ * no longer ours to edit. Narrowing the relation is safe either way, and is what
+ * stops the next lookup from finding this row again.
+ */
+async function detachFromSharedResponse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  notion: any,
+  existing: RSVPResponse,
+  strandedIds: string[],
+  eventLabel: 'NYC' | 'France'
+): Promise<void> {
+  const members = (
+    await Promise.all(
+      strandedIds.map(async (id) => {
+        try {
+          return await getGuestById(id);
+        } catch (error) {
+          console.error(`Failed to fetch stranded guest ${id}:`, error);
+          return null;
+        }
+      })
+    )
+  ).filter((member): member is GuestRecord => member !== null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const properties: Record<string, any> = {
+    Guest: { relation: strandedIds.map((id) => ({ id })) },
+  };
+
+  const plan =
+    members.length === strandedIds.length
+      ? planDetachedResponse(members, existing)
+      : null;
+
+  if (plan) {
+    properties['Guests Attending'] = {
+      rich_text: [{ text: { content: plan.guestsAttending } }],
+    };
+    properties.Status = { select: { name: plan.status } };
+    properties.Response = {
+      title: [{ text: { content: `${members[0].name} — ${eventLabel}` } }],
+    };
+  }
+
+  await notion.pages.update({ page_id: existing.id, properties });
 }
 
 /**
@@ -850,6 +927,7 @@ export async function submitRSVP(
   // are party-level: one row per party + event, related to every member so
   // any member's pre-fill lookup and calendar generation can find it.
   const party = await getGuestParty(guestId);
+  const partyIds = party.map((member) => member.id);
   const guest = party.find((member) => member.id === guestId) ?? null;
   const guestName = guest?.name || 'Unknown Guest';
 
@@ -892,10 +970,21 @@ export async function submitRSVP(
     .map(g => g.name)
     .join(', ');
 
-  // Details JSON blob
-  const details: RSVPDetails & { eventsAttending?: string[] } = {
+  // Details JSON blob. `attendance` records each member's answer against their
+  // page ID, so every later reader — the ICS calendar, the Guest List
+  // write-back, the split planner — resolves attendance exactly instead of
+  // matching the names in `Guests Attending`, which drift (see
+  // src/lib/rsvp-attendance.ts). Names remain the human-readable record.
+  const details: RSVPDetails & {
+    eventsAttending?: string[];
+    attendance?: { guestId: string; attending: boolean }[];
+  } = {
     ...submission.details,
     eventsAttending: submission.eventsAttending,
+    attendance: party.map((member) => ({
+      guestId: member.id,
+      attending: memberAttendsSubmitted(member),
+    })),
   };
 
   // Event label must match the Notion select options: 'NYC' or 'France'
@@ -904,10 +993,18 @@ export async function submitRSVP(
   // Check if an existing RSVP exists for this party + event — matched against
   // any party member, so a partner updating the RSVP lands on the same row
   // instead of forking a second response.
-  const existingRSVP = await getLatestRSVPForParty(
-    party.map((member) => member.id),
-    submission.event
-  );
+  const existingRSVP = await getLatestRSVPForParty(partyIds, submission.event);
+
+  // If that row also covers people who are no longer in this party, the
+  // household was split after it responded. Leave the row to them and take a
+  // fresh one, rather than overwriting their answer with this one.
+  const stranded = existingRSVP
+    ? strandedGuestIds(existingRSVP.guestIds, partyIds)
+    : [];
+  if (existingRSVP && stranded.length > 0) {
+    await detachFromSharedResponse(notion, existingRSVP, stranded, eventLabel);
+  }
+  const rowToUpdate = stranded.length === 0 ? existingRSVP : null;
 
   const properties = {
     Response: {
@@ -944,14 +1041,14 @@ export async function submitRSVP(
   };
 
   let responseId: string;
-  if (existingRSVP) {
+  if (rowToUpdate) {
     // Update existing page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await notion.pages.update({
-      page_id: existingRSVP.id,
+      page_id: rowToUpdate.id,
       properties,
     });
-    responseId = existingRSVP.id;
+    responseId = rowToUpdate.id;
   } else {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -966,7 +1063,6 @@ export async function submitRSVP(
   // Per member: gather their personal attendance from this submission plus the
   // party's latest response for any other event they're invited to, then
   // resolve: all attending → Attending, none → Declined, mixed → Partial.
-  const partyIds = party.map((member) => member.id);
   const otherEvents = Array.from(
     new Set(party.flatMap((member) => member.eventInvitations))
   ).filter((e) => e !== submission.event);
@@ -976,15 +1072,19 @@ export async function submitRSVP(
     )
   );
 
-  // Attendee name set from a stored response, for events OTHER than the one just
-  // submitted — those resolve by name against the stored row, whose names match
-  // the in-memory party's pre-write names.
-  const otherAttendingNames = (event: 'nyc' | 'france'): Set<string> | null => {
+  // A member's attendance at an event OTHER than the one just submitted, from
+  // its stored response. Resolved by recorded attendance, then Status, then
+  // names — never names alone: once an earlier submission has renamed a member,
+  // their current name no longer matches the older event's stored row, and
+  // reading that as "not attending" downgrades their Guest List status and
+  // strips their Events Attending relation.
+  const attendedOtherEvent = (
+    member: GuestRecord,
+    event: 'nyc' | 'france'
+  ): boolean | null => {
     const rsvp = otherRSVPs.get(event);
     if (!rsvp) return null; // no response yet for this event — don't count it
-    return new Set(
-      rsvp.guestsAttending.split(',').map((name) => normalize(name)).filter(Boolean)
-    );
+    return memberAttendedResponse(rsvp, member);
   };
 
   // Resolve a member's RSVP status across every event they're invited to.
@@ -996,9 +1096,9 @@ export async function submitRSVP(
       if (event === submission.event) {
         attendance.push(memberAttendsSubmitted(member));
       } else {
-        const names = otherAttendingNames(event);
-        if (names === null) continue;
-        attendance.push(names.has(member.normalizedName));
+        const attended = attendedOtherEvent(member, event);
+        if (attended === null) continue;
+        attendance.push(attended);
       }
     }
     if (attendance.length === 0) return null;
@@ -1020,8 +1120,7 @@ export async function submitRSVP(
         }
       } else {
         const rsvp = otherRSVPs.get(event);
-        if (!rsvp || rsvp.status === 'Declined') continue;
-        if (!rsvpIncludesGuest(rsvp, member.normalizedName)) continue;
+        if (!rsvp || !memberAttendedResponse(rsvp, member)) continue;
         for (const id of rsvp.eventsAttending ?? []) ids.add(id);
       }
     }
@@ -1070,6 +1169,15 @@ export async function submitRSVP(
         props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
         props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
         props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
+
+        // A rename overwrites the only copy of the name their invitation was
+        // addressed with. Keep it in `Also Known As` so they can still log in
+        // as it — but not for an unnamed plus-one, whose "<host> +1" is a slot
+        // rather than a name.
+        const formerName = preserveFormerName(member.name, member.aka);
+        if (formerName) {
+          props['Also Known As'] = { rich_text: [{ text: { content: formerName } }] };
+        }
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1207,6 +1315,7 @@ export function parseRSVPPage(
 
   let details: RSVPDetails | undefined;
   let eventsAttending: string[] | undefined;
+  let attendanceById: Record<string, boolean> | undefined;
 
   try {
     const parsed = JSON.parse(detailsJson);
@@ -1216,7 +1325,26 @@ export function parseRSVPPage(
           (item: unknown) => typeof item === 'string'
         );
       }
+      // Per-member attendance, keyed by page ID — the authoritative answer to
+      // "did this member attend" (src/lib/rsvp-attendance.ts). Absent on rows
+      // written before it existed.
+      if (Array.isArray(parsed.attendance)) {
+        const entries = (parsed.attendance as unknown[]).filter(
+          (item): item is { guestId: string; attending: boolean } =>
+            !!item &&
+            typeof item === 'object' &&
+            typeof (item as { guestId?: unknown }).guestId === 'string' &&
+            typeof (item as { attending?: unknown }).attending === 'boolean'
+        );
+        if (entries.length > 0) {
+          attendanceById = Object.fromEntries(
+            entries.map((entry) => [entry.guestId, entry.attending])
+          );
+        }
+      }
+      // Both are transport for this module, not guest-visible detail fields.
       delete parsed.eventsAttending;
+      delete parsed.attendance;
       const remainingKeys = Object.keys(parsed);
       if (hasDetailsText && remainingKeys.length > 0) {
         details = parsed as RSVPDetails;
@@ -1229,6 +1357,12 @@ export function parseRSVPPage(
   return {
     id: page.id,
     guestId,
+    // The whole relation, not just the id this was looked up by: submitRSVP
+    // needs it to tell a response covering exactly this party from one left
+    // over by a household that has since been split (see rsvp-split.ts).
+    guestIds: (props['Guest']?.relation ?? []).map(
+      (relation: { id: string }) => relation.id
+    ),
     event,
     submittedAt,
     status: status as 'Attending' | 'Declined' | 'Partial',
@@ -1237,6 +1371,7 @@ export function parseRSVPPage(
     message,
     details,
     eventsAttending,
+    attendanceById,
   };
 }
 
@@ -1358,8 +1493,9 @@ export async function backfillGuestListFromRSVPs(
     // non-declined responses where they're named, filtered to live catalog IDs.
     const attendingIds = new Set<string>();
     for (const rsvp of responses) {
-      if (rsvp.status === 'Declined') continue;
-      if (!rsvpIncludesGuest(rsvp, guest.normalizedName)) continue;
+      // Recorded attendance, then Status, then names — a guest renamed since
+      // they replied must not have this job quietly empty their calendar.
+      if (!memberAttendedResponse(rsvp, guest)) continue;
       for (const id of rsvp.eventsAttending ?? []) {
         if (validEventIds.has(id)) attendingIds.add(id);
       }

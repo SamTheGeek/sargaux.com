@@ -47,8 +47,56 @@ export function guestNameEdit(
 
   const collapse = (value: string) => value.trim().replace(/\s+/g, ' ');
   const title = collapse(typedName);
-  if (!title || title === collapse(storedName)) return null;
+  const stored = collapse(storedName);
+  if (!title || title === stored) return null;
+
+  // Case-only differences are usually a real correction — a badly-cased row
+  // being fixed to "Mary Anne Whitlock" — and those must persist so the guest
+  // can log in as what they just typed. The one exception is the opposite
+  // direction: an all-lowercase name replacing a properly-cased one is a phone
+  // keyboard, not an edit, and would permanently lowercase the row that
+  // envelopes, place cards and the follow-up export read from.
+  //
+  // Accents are deliberately NOT folded here — `sensitivity: 'accent'` ignores
+  // case while keeping accents significant, so "Jerome" → "Jérôme" is not
+  // case-only and always persists.
+  const caseOnly = title.localeCompare(stored, undefined, { sensitivity: 'accent' }) === 0;
+  if (caseOnly && title === title.toLowerCase() && stored !== stored.toLowerCase()) {
+    return null;
+  }
 
   const split = splitGuestName(title);
   return split ? { ...split, title } : null;
+}
+
+/**
+ * The `Also Known As` text a renamed guest should carry, or null to leave it be.
+ *
+ * A rename overwrites the only copy of a guest's name. That is exactly right for
+ * an unnamed plus-one — "<host> +1" is a slot, not a name — but not for someone
+ * who simply typed what they go by: shortening "Matthew" to "Matt" on the RSVP
+ * form would otherwise discard the formal name their invitation was addressed
+ * with, and stop them logging in as it.
+ *
+ * Keeping the previous name here preserves both. `Also Known As` is read by
+ * envelope login (src/lib/envelope-name.ts), so the old name keeps working, and
+ * the formal name stays on the record for envelopes and place cards.
+ */
+export function preserveFormerName(
+  storedName: string,
+  existingAka: string[] | undefined
+): string | null {
+  const previous = storedName.trim().replace(/\s+/g, ' ');
+  if (!previous) return null;
+
+  // An unnamed plus-one placeholder is not a name worth keeping.
+  if (/\+\s*1$/.test(previous)) return null;
+
+  const lines = (existingAka ?? []).map((line) => line.trim()).filter(Boolean);
+  const already = lines.some(
+    (line) => line.localeCompare(previous, undefined, { sensitivity: 'accent' }) === 0
+  );
+  if (already) return null;
+
+  return [...lines, previous].join('\n');
 }

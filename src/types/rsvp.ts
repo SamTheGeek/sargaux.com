@@ -38,7 +38,8 @@ export interface RSVPDetails {
  */
 export interface RSVPResponse {
   id: string; // Notion page ID
-  guestId: string; // Guest List relation ID
+  guestId: string; // Guest List relation ID the response was looked up by
+  guestIds: string[]; // Every Guest List row the response relates to
   event: 'nyc' | 'france';
   submittedAt: string; // ISO datetime
   status: 'Attending' | 'Declined' | 'Partial';
@@ -47,4 +48,11 @@ export interface RSVPResponse {
   message?: string;
   details?: RSVPDetails;
   eventsAttending?: string[]; // Event IDs parsed from Details JSON
+  /**
+   * Per-member attendance by Guest List page ID, parsed from Details JSON.
+   * The authoritative answer to "did this member attend" — see
+   * src/lib/rsvp-attendance.ts. Absent on rows written before it existed,
+   * which fall back to Status and then to the attendee names.
+   */
+  attendanceById?: Record<string, boolean>;
 }

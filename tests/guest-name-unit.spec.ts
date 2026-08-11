@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { splitGuestName, guestNameEdit } from '../src/lib/guest-name';
+import { splitGuestName, guestNameEdit, preserveFormerName } from '../src/lib/guest-name';
 
 /**
  * The RSVP name write-back. `tests/rsvp-api.spec.ts` exercises the guestId
@@ -106,5 +106,41 @@ test.describe('guestNameEdit — leaving a name alone', () => {
       last: 'Whitlock',
       title: 'Mary Anne Whitlock',
     });
+  });
+
+  test('an all-lowercase retype does not overwrite a properly-cased name', () => {
+    // A phone keyboard, not an edit — the row feeds envelopes and place cards.
+    expect(guestNameEdit('Mary Anne Whitlock', 'mary anne whitlock')).toBeNull();
+    // Still an edit when more than case differs.
+    expect(guestNameEdit('Mary Anne Whitlock', 'mary anne vasseur')).toEqual({
+      first: 'mary anne',
+      last: 'vasseur',
+      title: 'mary anne vasseur',
+    });
+  });
+});
+
+test.describe('preserveFormerName', () => {
+  test('keeps the previous name so the guest can still log in as it', () => {
+    expect(preserveFormerName('Matthew Gavin', undefined)).toBe('Matthew Gavin');
+  });
+
+  test('appends to existing alternates rather than replacing them', () => {
+    expect(preserveFormerName('Camille Muller', ['Soso'])).toBe('Soso\nCamille Muller');
+  });
+
+  test('does not preserve an unnamed plus-one placeholder', () => {
+    // "<host> +1" is a slot, not a name.
+    expect(preserveFormerName('Philippa +1', undefined)).toBeNull();
+    expect(preserveFormerName('Philippa + 1', undefined)).toBeNull();
+  });
+
+  test('does not duplicate a name already listed', () => {
+    expect(preserveFormerName('Camille Muller', ['Camille Muller'])).toBeNull();
+    expect(preserveFormerName('Camille Muller', ['camille muller'])).toBeNull();
+  });
+
+  test('ignores a blank stored name', () => {
+    expect(preserveFormerName('   ', ['Soso'])).toBeNull();
   });
 });
