@@ -311,11 +311,7 @@ export function buildRows(guestPages, responsePages, eventKey) {
       return {
         guest: getGuestFullName(page) || '(no name)',
         rsvp: resolveGuestRSVP(page, response, false),
-        notionStatus: props['RSVP']?.status?.name || '',
         inviteStatus: props[inviteStatusProp]?.status?.name || '',
-        email: props['Guest Email']?.email || '',
-        meal: getSelect(props, 'Meal Preference'),
-        groups: getGroups(props).join(', '),
         lastRSVP: props['Last RSVP']?.date?.start?.slice(0, 10) || '',
       };
     });
@@ -327,11 +323,7 @@ export function buildRows(guestPages, responsePages, eventKey) {
       memberRows.push({
         guest: '+1 (name not yet known)',
         rsvp: 'Not yet',
-        notionStatus: '',
         inviteStatus: '',
-        email: '',
-        meal: '',
-        groups: '',
         lastRSVP: '',
       });
     }
@@ -375,17 +367,21 @@ export function buildRows(guestPages, responsePages, eventKey) {
 
 // ─── Workbook ─────────────────────────────────────────────────────────────────
 
+/**
+ * The sheet is a call list, so it carries only what helps decide whether to
+ * ring someone and what to say. Four columns were deliberately dropped:
+ * `Email` and `Meal` (sparse — 40% and 1% filled), `Notion RSVP` (a stored
+ * status that restates the derived `RSVP` column and can drift from it, so
+ * two status columns invited trusting the wrong one), and `Group` (the
+ * workbooks are already split by it, so it mostly restated the filename).
+ */
 const COLUMNS = [
   { header: 'Household', key: 'household', width: 34 },
   { header: 'Household Status', key: 'householdStatus', width: 22 },
   { header: 'Guest', key: 'guest', width: 26 },
   { header: 'RSVP', key: 'rsvp', width: 11 },
-  { header: 'Email', key: 'email', width: 30 },
-  { header: 'Meal', key: 'meal', width: 12 },
-  { header: 'Notion RSVP', key: 'notionStatus', width: 18 },
   { header: 'INVITE_STATUS', key: 'inviteStatus', width: 18 },
   { header: 'Last RSVP', key: 'lastRSVP', width: 12 },
-  { header: 'Group', key: 'groups', width: 24 },
   { header: 'Dietary Needs', key: 'dietary', width: 26 },
   { header: 'Message', key: 'message', width: 40 },
 ];
@@ -438,12 +434,8 @@ export async function writeWorkbook({ eventKey, bucket, households, outPath }) {
         householdStatus: household.status,
         guest: member.guest,
         rsvp: member.rsvp,
-        email: member.email,
-        meal: member.meal,
-        notionStatus: member.notionStatus,
         inviteStatus: member.inviteStatus,
         lastRSVP: member.lastRSVP,
-        groups: member.groups,
         // Dietary and message are party-level — show them once per household.
         dietary: i === 0 ? household.dietary : '',
         message: i === 0 ? household.message : '',
