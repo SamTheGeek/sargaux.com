@@ -19,7 +19,12 @@
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { TEST_GUEST_NAME, TEST_GUEST_PARTNER_NAME } from './fixtures';
+import {
+  TEST_GUEST_NAME,
+  TEST_GUEST_PARTNER_NAME,
+  TEST_GUEST_AKA,
+  TEST_GUEST_PARTNER_AKA,
+} from './fixtures';
 
 /** The temporary name the partner is renamed to and back from. */
 const RENAMED_TO = 'Wren Calloway';
@@ -69,7 +74,48 @@ test.describe('RSVP name write-back', () => {
     expect(response.status()).toBe(200);
   }
 
-  /** Force the party back to the names in fixtures.ts, whatever it holds now. */
+  /** Read one guest's `Also Known As` lines straight from Notion. */
+  async function readAka(guestId: string): Promise<string> {
+    const res = await fetch(`https://api.notion.com/v1/pages/${guestId}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+        'Notion-Version': '2022-06-28',
+      },
+    });
+    const page = await res.json();
+    return ((page.properties?.['Also Known As']?.rich_text ?? []) as { plain_text?: string }[])
+      .map((block) => block.plain_text ?? '')
+      .join('');
+  }
+
+  /**
+   * Write `Also Known As` directly, bypassing the app.
+   *
+   * The only place the suite touches Notion outside the API, and it exists
+   * because a rename *appends* the former name to this property
+   * (preserveFormerName), so renaming the bot and back leaves two alias lines
+   * behind. Nothing in the app can clear them, and left alone they accumulate
+   * on every run and hand the bot login aliases it should not have.
+   */
+  async function writeAka(guestId: string, value: string): Promise<void> {
+    await fetch(`https://api.notion.com/v1/pages/${guestId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        properties: { 'Also Known As': { rich_text: [{ text: { content: value } }] } },
+      }),
+    });
+  }
+
+  /**
+   * Force the party back to the names AND alternate names in fixtures.ts,
+   * whatever it holds now. Names first: restoring a name is itself a rename, so
+   * it appends to `Also Known As` and must be undone afterwards, not before.
+   */
   async function restoreCanonicalNames(): Promise<void> {
     const rows = await readRows();
     if (rows.length < 2) return;
@@ -77,6 +123,8 @@ test.describe('RSVP name write-back', () => {
       { guestId: rows[0].guestId, name: TEST_GUEST_NAME },
       { guestId: rows[1].guestId, name: TEST_GUEST_PARTNER_NAME },
     ]);
+    await writeAka(rows[0].guestId, TEST_GUEST_AKA);
+    await writeAka(rows[1].guestId, TEST_GUEST_PARTNER_AKA);
   }
 
   test.beforeAll(async ({ playwright }) => {
@@ -132,12 +180,30 @@ test.describe('RSVP name write-back', () => {
     await fresh.dispose();
   });
 
+  test('the former name is kept as an alternate, so the old name still logs in', async ({
+    playwright,
+  }) => {
+    // A guest who shortens their name on the form must not lose the name their
+    // invitation was addressed with — nor the ability to log in as it.
+    const rows = await readRows();
+    const renamed = rows.find((r) => r.name === RENAMED_TO)!;
+    expect(await readAka(renamed.guestId)).toContain(TEST_GUEST_PARTNER_NAME);
+
+    const fresh = await playwright.request.newContext({ baseURL: 'http://127.0.0.1:1213' });
+    const login = await fresh.post('/api/login', { form: { name: TEST_GUEST_PARTNER_NAME } });
+    expect(login.status()).toBe(200);
+    await fresh.dispose();
+  });
+
   test('restoring puts the original name back', async () => {
     await restoreCanonicalNames();
 
     const rows = await readRows();
     expect(rows.map((r) => r.name)).toContain(TEST_GUEST_PARTNER_NAME);
     expect(rows.map((r) => r.name)).not.toContain(RENAMED_TO);
+    // And the alias list is back to the fixture value rather than carrying
+    // every name this suite has ever written.
+    expect(await readAka(rows[1].guestId)).toBe(TEST_GUEST_PARTNER_AKA);
   });
 
   test('an emptied name field does not overwrite the stored name', async ({ page }) => {

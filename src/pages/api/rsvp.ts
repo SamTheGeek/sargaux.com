@@ -204,6 +204,28 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     }
   }
 
+  // A stored response's `Status` is derived from this submission, while its
+  // `Guest` relation is the whole party — readers can only trust Status to
+  // describe the relation if the submission covers every member. The form
+  // always submits every [data-guest-row], so a gap means a hand-rolled
+  // payload; reject it rather than store a row whose Status speaks for fewer
+  // people than it relates to. Only enforced for id-threaded submissions,
+  // since a legacy client without ids cannot be checked this way.
+  const threadsGuestIds = body.guestsAttending.some(
+    (entry: { guestId?: unknown }) => typeof entry.guestId === 'string'
+  );
+  if (threadsGuestIds) {
+    const covered = new Set(
+      body.guestsAttending
+        .map((entry: { guestId?: string }) => entry.guestId)
+        .filter((id: string | undefined): id is string => typeof id === 'string')
+    );
+    const uncovered = party.find((member) => !covered.has(member.id));
+    if (uncovered) {
+      return jsonError(400, 'guestsAttending must include every member of the party');
+    }
+  }
+
   // eventsAttending must be ⊆ events the guest is invited to
   let invitedEventIds: Set<string>;
   try {

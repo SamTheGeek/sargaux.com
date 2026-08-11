@@ -20,15 +20,20 @@
  * its own. Both sides converge on separate rows as each one responds.
  */
 
-import { normalize } from './normalize';
+import { memberAttendedResponse } from './rsvp-attendance';
+import type { RSVPStatus, StoredAttendance } from './rsvp-attendance';
 
-export type RSVPStatus = 'Attending' | 'Declined' | 'Partial';
+export type { RSVPStatus };
 
 /**
  * The members of an existing response who are not in the submitting party —
  * i.e. everyone the response should be left to once this party detaches.
  * Empty when the response covers exactly this party, which is the normal case
  * and means the row can be updated in place as before.
+ *
+ * `getGuestParty` returns the household's full transitive closure, so a member
+ * outside the party is genuinely outside the household — not merely someone the
+ * submitter happens to lack a direct `Related Guests` link to.
  */
 export function strandedGuestIds(
   existingGuestIds: readonly string[],
@@ -42,57 +47,27 @@ export function strandedGuestIds(
  * Rebuild the attendee list and status a shared response should carry once the
  * submitting party is removed from it.
  *
- * `Status` decides the unanimous cases, and names are not consulted for them.
- * submitRSVP derives Status from the whole party, so 'Attending' means every
- * member on the relation came and 'Declined' means none did — which settles
- * every stranded member without reading a single name.
+ * Each stranded member's attendance is resolved by `memberAttendedResponse`,
+ * which reads the response's recorded per-member attendance first, then Status
+ * against the relation, and only then names. Getting that order wrong here is
+ * worse than anywhere else: the verdict is written straight back to Notion, on
+ * a row belonging to the household that did *not* just submit, so nobody is
+ * present to notice a whole household being downgraded to Declined.
  *
- * That ordering is the correctness argument, not a shortcut. A stored Guest
- * List name can legitimately differ from the name a guest submitted under — a
- * maiden or married surname, an `Also Known As` form, a plus-one who was never
- * named (see src/lib/envelope-name.ts). Resolving by name alone would read that
- * drift as "this member wasn't attending", and unlike the read-only follow-up
- * export, the verdict here is *written back to Notion*: a whole household's
- * Attending row downgraded to Partial or Declined, with the drifted member
- * dropped from the attendee list. The row being rewritten belongs to the
- * household that did **not** just submit, so nobody is present to notice.
- * `resolveGuestRSVP` in scripts/lib/rsvp-followup.mjs leans on Status first for
- * exactly the same reason.
- *
- * Only 'Partial' needs the attendee list, because only there do members differ
- * from one another. Drift can still mis-assign an individual in that branch,
- * which nothing stored on the response can currently resolve. Rebuilding from
- * the stranded members also drops any duplicate or unrecognised name the old row
- * had accumulated.
+ * Rebuilding from the stranded members also drops any duplicate or unrecognised
+ * name the old row had accumulated.
  *
  * Returns null when there is nobody left to strand, which the caller treats as
  * "nothing to rewrite".
  */
 export function planDetachedResponse(
-  stranded: readonly { name: string; normalizedName: string }[],
-  previous: { status: RSVPStatus; guestsAttending: string }
+  stranded: readonly { id: string; name: string; normalizedName: string }[],
+  previous: StoredAttendance
 ): { guestsAttending: string; status: RSVPStatus } | null {
   if (stranded.length === 0) return null;
 
-  if (previous.status === 'Attending') {
-    return {
-      guestsAttending: stranded.map((member) => member.name).join(', '),
-      status: 'Attending',
-    };
-  }
-  if (previous.status === 'Declined') {
-    return { guestsAttending: '', status: 'Declined' };
-  }
-
-  const wasAttending = new Set(
-    previous.guestsAttending
-      .split(',')
-      .map((name) => normalize(name))
-      .filter(Boolean)
-  );
-
   const stillAttending = stranded.filter((member) =>
-    wasAttending.has(member.normalizedName)
+    memberAttendedResponse(previous, member)
   );
 
   return {

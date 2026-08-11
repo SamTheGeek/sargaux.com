@@ -48,4 +48,11 @@ export interface RSVPResponse {
   message?: string;
   details?: RSVPDetails;
   eventsAttending?: string[]; // Event IDs parsed from Details JSON
+  /**
+   * Per-member attendance by Guest List page ID, parsed from Details JSON.
+   * The authoritative answer to "did this member attend" — see
+   * src/lib/rsvp-attendance.ts. Absent on rows written before it existed,
+   * which fall back to Status and then to the attendee names.
+   */
+  attendanceById?: Record<string, boolean>;
 }

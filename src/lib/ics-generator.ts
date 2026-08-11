@@ -1,4 +1,5 @@
-import { getAttendingEvents, getGuestById, fetchAllGuests, fetchAllLatestRSVPs, getEventCatalog, rsvpIncludesGuest } from './notion';
+import { getAttendingEvents, getGuestById, fetchAllGuests, fetchAllLatestRSVPs, getEventCatalog } from './notion';
+import { memberAttendedResponse } from './rsvp-attendance';
 import { buildICS } from './calendar';
 import { setICS } from './ics-store';
 import { getDefaultLocale } from './locale-routing';
@@ -62,8 +63,10 @@ export async function refreshAllICS(): Promise<{ total: number; succeeded: numbe
     try {
       const attendingIds = new Set(
         (latestRSVPs.get(guest.id) ?? [])
-          .filter((rsvp) => rsvp.status !== 'Declined')
-          .filter((rsvp) => rsvpIncludesGuest(rsvp, guest.normalizedName))
+          // Recorded attendance, then Status, then names — see
+          // src/lib/rsvp-attendance.ts. Name-only matching emptied the calendar
+          // of any guest whose stored name had drifted from their response.
+          .filter((rsvp) => memberAttendedResponse(rsvp, guest))
           .flatMap((rsvp) => rsvp.eventsAttending ?? [])
       );
 

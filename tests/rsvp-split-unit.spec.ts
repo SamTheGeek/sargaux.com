@@ -15,8 +15,8 @@ import { normalize } from '../src/lib/normalize';
  * different subset of the weekend.
  */
 
-function member(name: string) {
-  return { name, normalizedName: normalize(name) };
+function member(name: string, id = `guest-${normalize(name).replace(/\s+/g, '-')}`) {
+  return { id, name, normalizedName: normalize(name) };
 }
 
 const PARENT_A = 'guest-parent-a';
@@ -51,12 +51,31 @@ test.describe('strandedGuestIds', () => {
 });
 
 test.describe('planDetachedResponse', () => {
+  const margot = member('Margot Vantrelle');
+  const olivier = member('Olivier Vantrelle');
+  const noe = member('Noé Vantrelle');
+  const salome = member('Salomé Vantrelle');
   const allFour = 'Margot Vantrelle, Olivier Vantrelle, Noé Vantrelle, Salomé Vantrelle';
+
+  /** A stored response relating exactly the given members. */
+  function stored(
+    status: 'Attending' | 'Declined' | 'Partial',
+    guestsAttending: string,
+    members: { id: string }[],
+    attendanceById?: Record<string, boolean>
+  ) {
+    return {
+      status,
+      guestsAttending,
+      guestIds: members.map((m) => m.id),
+      attendanceById,
+    };
+  }
 
   test('keeps only the stranded members on the response', () => {
     const plan = planDetachedResponse(
-      [member('Margot Vantrelle'), member('Olivier Vantrelle')],
-      { status: 'Attending', guestsAttending: allFour }
+      [margot, olivier],
+      stored('Attending', allFour, [margot, olivier])
     );
 
     expect(plan).toEqual({
@@ -69,26 +88,41 @@ test.describe('planDetachedResponse', () => {
     // A self-referencing Related Guests row used to render a duplicate form row,
     // which reached the response as the same name twice and a double headcount.
     const plan = planDetachedResponse(
-      [member('Margot Vantrelle'), member('Olivier Vantrelle')],
-      {
-        status: 'Attending',
-        guestsAttending:
-          'Margot Vantrelle, Margot Vantrelle, Olivier Vantrelle, Noé Vantrelle',
-      }
+      [margot, olivier],
+      stored(
+        'Attending',
+        'Margot Vantrelle, Margot Vantrelle, Olivier Vantrelle, Noé Vantrelle',
+        [margot, olivier]
+      )
     );
 
     expect(plan?.guestsAttending).toBe('Margot Vantrelle, Olivier Vantrelle');
     expect(plan?.status).toBe('Attending');
   });
 
-  test('an Attending row survives a stranded member whose stored name has drifted', () => {
-    // The whole point of reading Status first. This member's Guest List surname
-    // no longer matches the name they submitted under — resolving by name alone
-    // would downgrade an all-attending household to Partial and drop them from
-    // the list, and would then persist that to Notion behind their back.
+  test('recorded per-member attendance beats both Status and the name list', () => {
+    // The structural fix: submitRSVP records each member's answer against their
+    // page ID, so nothing downstream has to infer it from a name.
     const plan = planDetachedResponse(
-      [member('Margot Combrelle'), member('Olivier Vantrelle')],
-      { status: 'Attending', guestsAttending: allFour }
+      [margot, olivier],
+      stored('Attending', allFour, [margot, olivier], {
+        [margot.id]: true,
+        [olivier.id]: false,
+      })
+    );
+
+    expect(plan).toEqual({ guestsAttending: 'Margot Vantrelle', status: 'Partial' });
+  });
+
+  test('an Attending row survives a stranded member whose stored name has drifted', () => {
+    // Why Status is read before names. This member's Guest List surname no
+    // longer matches the name they submitted under — resolving by name alone
+    // would downgrade an all-attending household to Partial, drop them from the
+    // list, and persist that to Notion behind their back.
+    const renamed = member('Margot Combrelle', margot.id);
+    const plan = planDetachedResponse(
+      [renamed, olivier],
+      stored('Attending', allFour, [renamed, olivier])
     );
 
     expect(plan).toEqual({
@@ -98,27 +132,21 @@ test.describe('planDetachedResponse', () => {
   });
 
   test('a Declined row stays Declined without consulting names', () => {
-    const plan = planDetachedResponse(
-      [member('Noé Vantrelle'), member('Salomé Vantrelle')],
-      { status: 'Declined', guestsAttending: '' }
-    );
+    const plan = planDetachedResponse([noe, salome], stored('Declined', '', [noe, salome]));
 
     expect(plan).toEqual({ guestsAttending: '', status: 'Declined' });
   });
 
   test('a Declined row ignores a stale name left in the attendee list', () => {
-    const plan = planDetachedResponse([member('Noé Vantrelle')], {
-      status: 'Declined',
-      guestsAttending: 'Noé Vantrelle',
-    });
+    const plan = planDetachedResponse([noe], stored('Declined', 'Noé Vantrelle', [noe]));
 
     expect(plan).toEqual({ guestsAttending: '', status: 'Declined' });
   });
 
   test('splits a Partial row by name, the only case where members differ', () => {
     const plan = planDetachedResponse(
-      [member('Margot Vantrelle'), member('Noé Vantrelle')],
-      { status: 'Partial', guestsAttending: 'Margot Vantrelle, Olivier Vantrelle' }
+      [margot, noe],
+      stored('Partial', 'Margot Vantrelle, Olivier Vantrelle', [margot, noe])
     );
 
     expect(plan).toEqual({ guestsAttending: 'Margot Vantrelle', status: 'Partial' });
@@ -127,8 +155,8 @@ test.describe('planDetachedResponse', () => {
   test('a Partial row becomes Attending when every stranded member was named', () => {
     // The partial-ness belonged to the party that just left.
     const plan = planDetachedResponse(
-      [member('Margot Vantrelle')],
-      { status: 'Partial', guestsAttending: 'Margot Vantrelle' }
+      [margot],
+      stored('Partial', 'Margot Vantrelle', [margot])
     );
 
     expect(plan).toEqual({ guestsAttending: 'Margot Vantrelle', status: 'Attending' });
@@ -136,18 +164,18 @@ test.describe('planDetachedResponse', () => {
 
   test('a Partial row becomes Declined when no stranded member was named', () => {
     const plan = planDetachedResponse(
-      [member('Salomé Vantrelle')],
-      { status: 'Partial', guestsAttending: 'Margot Vantrelle' }
+      [salome],
+      stored('Partial', 'Margot Vantrelle', [salome])
     );
 
     expect(plan).toEqual({ guestsAttending: '', status: 'Declined' });
   });
 
   test('matches names through accents and casing', () => {
-    const plan = planDetachedResponse([member('Noé Vantrelle')], {
-      status: 'Partial',
-      guestsAttending: 'noe vantrelle, Margot Vantrelle',
-    });
+    const plan = planDetachedResponse(
+      [noe],
+      stored('Partial', 'noe vantrelle, Margot Vantrelle', [noe])
+    );
 
     expect(plan?.status).toBe('Attending');
   });
@@ -155,17 +183,15 @@ test.describe('planDetachedResponse', () => {
   test('ignores an attendee name matching nobody left on the response', () => {
     // The departing party may have submitted a name that never matched a record
     // — it must not keep the stranded members' row looking fuller than it is.
-    const plan = planDetachedResponse([member('Margot Vantrelle')], {
-      status: 'Partial',
-      guestsAttending: 'Margot Vantrelle, Guest +1 TBC',
-    });
+    const plan = planDetachedResponse(
+      [margot],
+      stored('Partial', 'Margot Vantrelle, Guest +1 TBC', [margot])
+    );
 
     expect(plan).toEqual({ guestsAttending: 'Margot Vantrelle', status: 'Attending' });
   });
 
   test('returns null when there is nobody to strand', () => {
-    expect(
-      planDetachedResponse([], { status: 'Attending', guestsAttending: allFour })
-    ).toBeNull();
+    expect(planDetachedResponse([], stored('Attending', allFour, []))).toBeNull();
   });
 });
