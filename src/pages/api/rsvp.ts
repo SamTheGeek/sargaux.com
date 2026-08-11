@@ -24,7 +24,7 @@ import {
   getGuestById,
 } from '../../lib/notion';
 import { isEnabled, features } from '../../config/features';
-import { sendToGuests } from '../../lib/email';
+import { sendToGuests, withRecipient } from '../../lib/email';
 import { rsvpConfirmation, type EventInfo } from '../../lib/email-templates';
 import { generateToken } from '../../lib/calendar';
 import { generateAndStoreICSForGuest } from '../../lib/ics-generator';
@@ -148,6 +148,13 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
       }
     } catch {
       return jsonError(400, 'details payload too large');
+    }
+    // Free-text detail fields (France allergens) get the same cap as dietary/
+    // message — bounded inputs, friendly 400 instead of a failure downstream.
+    for (const [key, value] of Object.entries(body.details)) {
+      if (typeof value === 'string' && value.length > TEXT_FIELD_MAX_CHARS) {
+        return jsonError(400, `${key} payload too large`);
+      }
     }
   }
 
@@ -391,10 +398,10 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
         .reduce((map, guest) => {
           const key = guest.email!.toLowerCase();
           if (!map.has(key)) {
-            map.set(key, { email: guest.email!, name: guest.name });
+            map.set(key, { id: guest.id, email: guest.email!, name: guest.name });
           }
           return map;
-        }, new Map<string, { email: string; name: string }>())
+        }, new Map<string, { id: string; email: string; name: string }>())
         .values()
     );
 
@@ -424,16 +431,19 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
           }
         }
 
-        let calendarUrl: string | undefined;
-        try {
-          const token = generateToken(guestId);
-          calendarUrl = `https://sargaux.com/api/calendar/${token}.ics`;
-        } catch {
-          // CALENDAR_HMAC_SECRET not set — omit calendar link gracefully
-        }
-
         const updateUrl = `https://sargaux.com/${body.event}/rsvp`;
         await sendToGuests(recipients, (recipient) => {
+          // Calendar links are per-guest capability URLs whose ICS holds only
+          // that guest's attending events — each recipient must get their own,
+          // never the submitter's (a Partial RSVP would show a partner the
+          // wrong schedule, permanently, in their subscribed calendar).
+          let calendarUrl: string | undefined;
+          try {
+            calendarUrl = `https://sargaux.com/api/calendar/${generateToken(recipient.id)}.ics`;
+          } catch {
+            // CALENDAR_HMAC_SECRET not set — omit calendar link gracefully
+          }
+
           const template = rsvpConfirmation({
             guestName: recipient.name,
             event: body.event,
@@ -446,7 +456,7 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
             calendarUrl,
           });
 
-          return { to: recipient.email, ...template };
+          return withRecipient(recipient, template);
         });
       } catch (err) {
         console.error('Failed to send RSVP confirmation email:', err);

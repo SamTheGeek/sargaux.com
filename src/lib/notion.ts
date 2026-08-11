@@ -906,6 +906,23 @@ async function detachFromSharedResponse(
 }
 
 /**
+ * Notion rejects any single rich_text item whose content exceeds 2,000
+ * characters. Values that can legitimately grow past that (the Details JSON
+ * blob, whose `attendance` array scales with party size and which carries the
+ * France allergens free text) must be split across multiple items — the API
+ * accepts up to 100 per property, and `getRichTextPlainText` re-joins them.
+ */
+const RICH_TEXT_ITEM_MAX_CHARS = 2_000;
+
+export function toRichTextItems(content: string): { text: { content: string } }[] {
+  const items: { text: { content: string } }[] = [];
+  for (let i = 0; i < content.length; i += RICH_TEXT_ITEM_MAX_CHARS) {
+    items.push({ text: { content: content.slice(i, i + RICH_TEXT_ITEM_MAX_CHARS) } });
+  }
+  return items.length > 0 ? items : [{ text: { content: '' } }];
+}
+
+/**
  * Submit or update an RSVP in the RSVP Responses database.
  * If an existing response exists for this guest + event, it will be updated.
  * Returns the Notion page ID of the created/updated response.
@@ -1036,7 +1053,10 @@ export async function submitRSVP(
         : [],
     },
     Details: {
-      rich_text: [{ text: { content: JSON.stringify(details) } }],
+      // Chunked: the JSON grows with party size and free-text detail fields
+      // (France allergens), and a single item over 2,000 chars makes Notion
+      // reject the whole write — which surfaced to guests as a 500 on submit.
+      rich_text: toRichTextItems(JSON.stringify(details)),
     },
   };
 
@@ -1133,7 +1153,12 @@ export async function submitRSVP(
   // status → Received (advance-forward only), Last RSVP, Events Attending
   // relation, party dietary text, and — when the form threaded a guestId — a
   // persisted name edit.
-  await Promise.all(
+  //
+  // Non-fatal: the response row above is already saved, so a failure here must
+  // not bubble up as a failed RSVP — the guest would retry a submission that
+  // already succeeded. The write-back is derived state that the next
+  // submission (or the admin backfill script) reconverges.
+  const writeBack = Promise.all(
     party.map((member) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const props: Record<string, any> = {};
@@ -1185,9 +1210,19 @@ export async function submitRSVP(
     })
   );
 
+  try {
+    await writeBack;
+  } catch (error) {
+    console.error(
+      `Guest List write-back failed after RSVP response ${responseId} was saved (non-fatal):`,
+      error
+    );
+  }
+
   // Guest List rows changed (status, name, attending events) — drop the cache so
   // reads (middleware, RSVP pre-fill, the API's post-submit name re-sign) see the
-  // new values instead of a stale 15-min entry.
+  // new values instead of a stale 15-min entry. Cleared even when the write-back
+  // failed: a partial batch may have landed some members' updates.
   clearGuestCache();
 
   return responseId;
@@ -1288,8 +1323,15 @@ export async function getLatestRSVP(
 }
 
 function getRichTextPlainText(prop: any): string | undefined {
-  if (!prop || !Array.isArray(prop.rich_text)) return undefined;
-  return prop.rich_text[0]?.plain_text;
+  if (!prop || !Array.isArray(prop.rich_text) || prop.rich_text.length === 0) {
+    return undefined;
+  }
+  // Concatenate every item, not just the first: long values are split across
+  // multiple rich_text items — both by Notion itself when a cell is hand-edited
+  // and by our own writes (`toRichTextItems` chunks anything over 2,000 chars).
+  return prop.rich_text
+    .map((item: { plain_text?: string }) => item?.plain_text ?? '')
+    .join('');
 }
 
 export function parseRSVPPage(
