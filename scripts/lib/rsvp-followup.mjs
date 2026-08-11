@@ -81,6 +81,20 @@ export function loadEnv() {
   return env;
 }
 
+// ─── Dates ────────────────────────────────────────────────────────────────────
+
+/**
+ * Today's date as YYYY-MM-DD in the machine's own time zone.
+ *
+ * Deliberately not `toISOString()`, which is UTC: a run after ~7pm Eastern
+ * would stamp tomorrow's date, so an evening run and the next morning's run
+ * land on the same filename and silently overwrite each other. 'en-CA' is the
+ * locale that formats as YYYY-MM-DD.
+ */
+export function localDateStamp() {
+  return new Date().toLocaleDateString('en-CA');
+}
+
 // ─── Notion ───────────────────────────────────────────────────────────────────
 
 /**
@@ -247,6 +261,12 @@ export function buildRows(guestPages, responsePages, eventKey) {
 
   const rowsByBucket = Object.fromEntries(BUCKETS.map(b => [b.key, []]));
 
+  // Every name each guest could be matched by, keyed by page ID, so the drift
+  // check below can resolve a response's whole Guest relation — which may reach
+  // outside the household currently being written.
+  const namesById = new Map(guestPages.map(p => [p.id, guestNameCandidates(p)]));
+  const warnedResponses = new Set();
+
   for (const members of households) {
     const eventMembers = members.filter(isEvent);
     const named = eventMembers.filter(p => !isPlaceholderPlusOne(toMemberInfo(p)));
@@ -259,14 +279,26 @@ export function buildRows(guestPages, responsePages, eventKey) {
 
     const response = latestResponseForHousehold(responses, members.map(p => p.id));
 
-    // Flag attendee names that match nobody in the household. Status-first
-    // resolution means these no longer corrupt the RSVP column, but they do
-    // mean the Guest List and the submitted name have diverged — worth a look
-    // before ringing anyone.
-    if (response) {
-      const householdNames = new Set(members.flatMap(guestNameCandidates));
-      const drifted = [...response.attendingNames].filter(name => !householdNames.has(name));
+    // Flag attendee names that match nobody the response actually covers.
+    // Status-first resolution means these no longer corrupt the RSVP column,
+    // but they do mean the Guest List and the submitted name have diverged —
+    // worth a look before ringing anyone.
+    //
+    // The check spans the response's whole Guest relation, not just this
+    // household: one envelope may deliberately span several households (people
+    // invited together but split so they RSVP separately — see CLAUDE.md), and
+    // scoping it to the household being written reports every *sibling*
+    // household's members as drift, once per household, on every run.
+    //
+    // A response is warned about at most once for the same reason.
+    if (response && !warnedResponses.has(response.id)) {
+      const covered = new Set([
+        ...members.flatMap(guestNameCandidates),
+        ...response.guestIds.flatMap(id => namesById.get(id) ?? []),
+      ]);
+      const drifted = [...response.attendingNames].filter(name => !covered.has(name));
       if (drifted.length > 0) {
+        warnedResponses.add(response.id);
         warnings.push(
           `  ⚠️  Name drift in ${householdName}: response lists ${drifted.length} ` +
           `attendee name(s) matching no Guest List record (response ${response.id})`
@@ -461,7 +493,7 @@ export async function writeWorkbook({ eventKey, bucket, households, outPath }) {
     ['Declined', count('Declined')],
     ['Households with no response', households.filter(h => h.status === 'No response').length],
     ['Households fully responded', households.filter(h => h.outstanding === 0).length],
-    ['Generated', new Date().toISOString().slice(0, 10)],
+    ['Generated', localDateStamp()],
   ]) {
     const row = summary.addRow({ metric, count: value });
     row.getCell('metric').font = { bold: true };
@@ -509,7 +541,7 @@ export async function generateFollowUpExport(eventKey) {
     console.log('');
   }
 
-  const runDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const runDate = localDateStamp().replace(/-/g, '');
   const outPaths = [];
 
   for (const bucket of BUCKETS) {
