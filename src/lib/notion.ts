@@ -35,6 +35,24 @@ function getClient(): Client {
   return notionClient;
 }
 
+/** True when a Notion page object is already archived / in trash. */
+function isArchivedPage(page: { archived?: boolean; in_trash?: boolean } | null | undefined): boolean {
+  return page?.archived === true || page?.in_trash === true;
+}
+
+/**
+ * Notion rejects `pages.update` on an archived page with this message.
+ * Happens when a concurrent delete (test cleanup, another CI run against the
+ * shared 🤖 party) archives the row between our lookup and our write.
+ */
+function isArchivedEditError(err: unknown): boolean {
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message?: unknown }).message ?? '')
+      : String(err);
+  return /archived/i.test(message) || /in[_ ]trash/i.test(message);
+}
+
 /**
  * Query a Notion database using the stable REST API (v2022-06-28).
  *
@@ -951,7 +969,13 @@ async function detachFromSharedResponse(
     };
   }
 
-  await notion.pages.update({ page_id: existing.id, properties });
+  try {
+    await notion.pages.update({ page_id: existing.id, properties });
+  } catch (err) {
+    // Concurrent delete already archived this row — the caller creates a
+    // fresh response for the submitting party either way.
+    if (!isArchivedEditError(err)) throw err;
+  }
 }
 
 /**
@@ -1112,23 +1136,33 @@ export async function submitRSVP(
     },
   };
 
-  let responseId: string;
+  let responseId: string | undefined;
   if (rowToUpdate) {
-    // Update existing page
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await notion.pages.update({
-      page_id: rowToUpdate.id,
-      properties,
-    });
-    responseId = rowToUpdate.id;
-  } else {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await notion.pages.update({
+        page_id: rowToUpdate.id,
+        properties,
+      });
+      responseId = rowToUpdate.id;
+    } catch (err) {
+      // Lookup raced a concurrent archive (test DELETE, parallel CI against
+      // the shared 🤖 party). Fall through and create a new row rather than
+      // surfacing a 500 for a submission that can still succeed.
+      if (!isArchivedEditError(err)) throw err;
+      console.warn(
+        `submitRSVP: existing response ${rowToUpdate.id} was archived between lookup and update — creating a new row`
+      );
+    }
+  }
+  if (!responseId) {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: any = await notion.pages.create({
       parent: { type: 'database_id', database_id: dataSourceId },
       properties,
     });
-    responseId = response.id;
+    responseId = response.id as string;
   }
 
   // Sync RSVP status back to every party member's Guest List record.
@@ -1333,9 +1367,12 @@ export async function getLatestRSVPForParty(
 
   const eventLabel = event === 'nyc' ? 'NYC' : 'France';
 
+  // page_size > 1 so we can skip archived rows: Notion's query index can
+  // briefly still surface a page that DELETE just archived, and updating it
+  // fails with "Can't edit block that is archived".
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response: any = await queryDatabase(dataSourceId, {
-    page_size: 1,
+    page_size: 10,
     filter: {
       and: [
         {
@@ -1358,7 +1395,9 @@ export async function getLatestRSVPForParty(
     ],
   });
 
-  const page = response.results?.[0];
+  const page = (response.results ?? []).find(
+    (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
+  );
   return parseRSVPPage(page, partyIds[0], event);
 }
 
@@ -1385,7 +1424,7 @@ export async function getLatestRSVP(
   // Query for latest response matching guest + event (server-side filter + sort)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response: any = await queryDatabase(dataSourceId, {
-    page_size: 1,
+    page_size: 10,
     filter: {
       and: [
         {
@@ -1406,7 +1445,9 @@ export async function getLatestRSVP(
     ],
   });
 
-  const page = response.results?.[0];
+  const page = (response.results ?? []).find(
+    (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
+  );
   return parseRSVPPage(page, guestId, event);
 }
 
@@ -1539,6 +1580,7 @@ export async function fetchAllLatestRSVPs(): Promise<Map<string, RSVPResponse[]>
 
     for (const page of response.results ?? []) {
       if (page.object !== 'page') continue;
+      if (isArchivedPage(page)) continue;
       const props = page.properties ?? {};
 
       // Responses are party-level: index under every related guest so each
