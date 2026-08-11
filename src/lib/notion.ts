@@ -1154,64 +1154,83 @@ export async function submitRSVP(
   // relation, party dietary text, and — when the form threaded a guestId — a
   // persisted name edit.
   //
-  // Non-fatal: the response row above is already saved, so a failure here must
-  // not bubble up as a failed RSVP — the guest would retry a submission that
-  // already succeeded. The write-back is derived state that the next
-  // submission (or the admin backfill script) reconverges.
-  const writeBack = Promise.all(
-    party.map((member) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const props: Record<string, any> = {};
+  // Derived-state writes (RSVP status, dietary, etc.) are non-fatal: the
+  // response row above is already saved, and the next submission (or the
+  // admin backfill) reconverges. Name edits are different — First/Last and
+  // Name of Guest only land here, and the form/login read those Guest List
+  // fields. Swallowing a rename failure would show success while the typed
+  // name (+1 especially) reverts on reload, so those updates stay fatal.
+  const nameWrites: Promise<unknown>[] = [];
+  const derivedWrites: Promise<unknown>[] = [];
 
-      const rsvpStatus = memberRsvpStatus(member);
-      if (rsvpStatus) props.RSVP = { status: { name: rsvpStatus } };
+  for (const member of party) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props: Record<string, any> = {};
 
-      if (member.eventInvitations.includes(submission.event)) {
-        if (submission.event === 'nyc' && member.nycInviteStatus !== 'Received') {
-          props['NYC Invite Sent'] = { status: { name: 'Received' } };
-        } else if (
-          submission.event === 'france' &&
-          member.franceSaveTheDateStatus !== 'Received'
-        ) {
-          props['France Save the Date Sent'] = { status: { name: 'Received' } };
-        }
+    const rsvpStatus = memberRsvpStatus(member);
+    if (rsvpStatus) props.RSVP = { status: { name: rsvpStatus } };
+
+    if (member.eventInvitations.includes(submission.event)) {
+      if (submission.event === 'nyc' && member.nycInviteStatus !== 'Received') {
+        props['NYC Invite Sent'] = { status: { name: 'Received' } };
+      } else if (
+        submission.event === 'france' &&
+        member.franceSaveTheDateStatus !== 'Received'
+      ) {
+        props['France Save the Date Sent'] = { status: { name: 'Received' } };
       }
+    }
 
-      props['Last RSVP'] = { date: { start: nowIso } };
-      props['Events Attending'] = {
-        relation: eventsAttendingForMember(member).map((id) => ({ id })),
-      };
-      props['Dietary Needs'] = {
-        rich_text: submission.dietary ? [{ text: { content: submission.dietary } }] : [],
-      };
+    props['Last RSVP'] = { date: { start: nowIso } };
+    props['Events Attending'] = {
+      relation: eventsAttendingForMember(member).map((id) => ({ id })),
+    };
+    props['Dietary Needs'] = {
+      rich_text: submission.dietary ? [{ text: { content: submission.dietary } }] : [],
+    };
 
-      // Persist a name edit only when the form threaded this member's guestId
-      // and the typed name differs. Writes First/Last (drives Full Name) and the
-      // Name of Guest title so login and display stay consistent. This is how an
-      // unnamed plus-one gets a real name — see src/lib/guest-name.ts.
-      const nameEdit = guestNameEdit(member.name, submittedById.get(member.id)?.name);
-      if (nameEdit) {
-        props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
-        props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
-        props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
+    // Persist a name edit only when the form threaded this member's guestId
+    // and the typed name differs. Writes First/Last (drives Full Name) and the
+    // Name of Guest title so login and display stay consistent. This is how an
+    // unnamed plus-one gets a real name — see src/lib/guest-name.ts.
+    const nameEdit = guestNameEdit(member.name, submittedById.get(member.id)?.name);
+    if (nameEdit) {
+      props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
+      props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
+      props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
 
-        // A rename overwrites the only copy of the name their invitation was
-        // addressed with. Keep it in `Also Known As` so they can still log in
-        // as it — but not for an unnamed plus-one, whose "<host> +1" is a slot
-        // rather than a name.
-        const formerName = preserveFormerName(member.name, member.aka);
-        if (formerName) {
-          props['Also Known As'] = { rich_text: [{ text: { content: formerName } }] };
-        }
+      // A rename overwrites the only copy of the name their invitation was
+      // addressed with. Keep it in `Also Known As` so they can still log in
+      // as it — but not for an unnamed plus-one, whose "<host> +1" is a slot
+      // rather than a name.
+      const formerName = preserveFormerName(member.name, member.aka);
+      if (formerName) {
+        props['Also Known As'] = { rich_text: [{ text: { content: formerName } }] };
       }
+    }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return notion.pages.update({ page_id: member.id, properties: props as any });
-    })
-  );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const update = notion.pages.update({ page_id: member.id, properties: props as any });
+    if (nameEdit) nameWrites.push(update);
+    else derivedWrites.push(update);
+  }
 
   try {
-    await writeBack;
+    // Fatal when the guest typed a new name — surface the failure so they retry
+    // rather than seeing a success that reverts on reload.
+    await Promise.all(nameWrites);
+  } catch (error) {
+    // A partial batch may have renamed some members already.
+    clearGuestCache();
+    console.error(
+      `Guest List name write-back failed after RSVP response ${responseId} was saved:`,
+      error
+    );
+    throw error;
+  }
+
+  try {
+    await Promise.all(derivedWrites);
   } catch (error) {
     console.error(
       `Guest List write-back failed after RSVP response ${responseId} was saved (non-fatal):`,
@@ -1221,8 +1240,8 @@ export async function submitRSVP(
 
   // Guest List rows changed (status, name, attending events) — drop the cache so
   // reads (middleware, RSVP pre-fill, the API's post-submit name re-sign) see the
-  // new values instead of a stale 15-min entry. Cleared even when the write-back
-  // failed: a partial batch may have landed some members' updates.
+  // new values instead of a stale 15-min entry. Cleared even when the derived
+  // write-back failed: a partial batch may have landed some members' updates.
   clearGuestCache();
 
   return responseId;
