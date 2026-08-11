@@ -38,7 +38,8 @@ export interface RSVPDetails {
  */
 export interface RSVPResponse {
   id: string; // Notion page ID
-  guestId: string; // Guest List relation ID
+  guestId: string; // Guest List relation ID the response was looked up by
+  guestIds: string[]; // Every Guest List row the response relates to
   event: 'nyc' | 'france';
   submittedAt: string; // ISO datetime
   status: 'Attending' | 'Declined' | 'Partial';

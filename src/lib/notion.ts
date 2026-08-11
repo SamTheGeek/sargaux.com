@@ -14,6 +14,7 @@ import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 import { envelopeTokens, findMatchingHousehold } from './envelope-name';
 import { validateGuestFromRecords } from './auth';
 import { guestNameEdit } from './guest-name';
+import { strandedGuestIds, planDetachedResponse } from './rsvp-split';
 
 let notionClient: Client | null = null;
 
@@ -801,9 +802,19 @@ export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
     throw new Error(`Guest not found: ${guestId}`);
   }
 
+  // A member must appear once. `Related Guests` is hand-edited, and a row that
+  // lists itself — or lists the same person twice — otherwise renders a
+  // duplicate row on the RSVP form, which the guest fills in twice and which
+  // lands in `Guests Attending` as a repeated name and a double headcount.
+  // Notion silently dedupes the relation on write, so the response's Guest
+  // relation looks right while the attendee list does not.
+  const relatedIds = Array.from(new Set(primaryGuest.relatedGuestIds)).filter(
+    (relatedId) => relatedId !== guestId
+  );
+
   // Fetch related guests in parallel; skip any that fail to resolve
   const related = await Promise.all(
-    primaryGuest.relatedGuestIds.map(async (relatedId) => {
+    relatedIds.map(async (relatedId) => {
       try {
         return await getGuestById(relatedId);
       } catch (error) {
@@ -829,6 +840,63 @@ export async function getGuestParty(guestId: string): Promise<GuestRecord[]> {
 }
 
 /**
+ * Hand a shared response back to the members who are still on it, after the
+ * submitting party has split off from them.
+ *
+ * The relation is narrowed to the stranded members and the attendee list is
+ * rebuilt from those members alone, so the row keeps saying exactly what they
+ * answered and nothing about the party that just left. The title follows the
+ * relation so the row is still recognisable in Notion.
+ *
+ * Attendee names and status are only rewritten when every stranded member
+ * resolved: a partial read would silently drop someone from a response that is
+ * no longer ours to edit. Narrowing the relation is safe either way, and is what
+ * stops the next lookup from finding this row again.
+ */
+async function detachFromSharedResponse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  notion: any,
+  existing: RSVPResponse,
+  strandedIds: string[],
+  eventLabel: 'NYC' | 'France'
+): Promise<void> {
+  const members = (
+    await Promise.all(
+      strandedIds.map(async (id) => {
+        try {
+          return await getGuestById(id);
+        } catch (error) {
+          console.error(`Failed to fetch stranded guest ${id}:`, error);
+          return null;
+        }
+      })
+    )
+  ).filter((member): member is GuestRecord => member !== null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const properties: Record<string, any> = {
+    Guest: { relation: strandedIds.map((id) => ({ id })) },
+  };
+
+  const plan =
+    members.length === strandedIds.length
+      ? planDetachedResponse(members, existing.guestsAttending)
+      : null;
+
+  if (plan) {
+    properties['Guests Attending'] = {
+      rich_text: [{ text: { content: plan.guestsAttending } }],
+    };
+    properties.Status = { select: { name: plan.status } };
+    properties.Response = {
+      title: [{ text: { content: `${members[0].name} — ${eventLabel}` } }],
+    };
+  }
+
+  await notion.pages.update({ page_id: existing.id, properties });
+}
+
+/**
  * Submit or update an RSVP in the RSVP Responses database.
  * If an existing response exists for this guest + event, it will be updated.
  * Returns the Notion page ID of the created/updated response.
@@ -850,6 +918,7 @@ export async function submitRSVP(
   // are party-level: one row per party + event, related to every member so
   // any member's pre-fill lookup and calendar generation can find it.
   const party = await getGuestParty(guestId);
+  const partyIds = party.map((member) => member.id);
   const guest = party.find((member) => member.id === guestId) ?? null;
   const guestName = guest?.name || 'Unknown Guest';
 
@@ -904,10 +973,18 @@ export async function submitRSVP(
   // Check if an existing RSVP exists for this party + event — matched against
   // any party member, so a partner updating the RSVP lands on the same row
   // instead of forking a second response.
-  const existingRSVP = await getLatestRSVPForParty(
-    party.map((member) => member.id),
-    submission.event
-  );
+  const existingRSVP = await getLatestRSVPForParty(partyIds, submission.event);
+
+  // If that row also covers people who are no longer in this party, the
+  // household was split after it responded. Leave the row to them and take a
+  // fresh one, rather than overwriting their answer with this one.
+  const stranded = existingRSVP
+    ? strandedGuestIds(existingRSVP.guestIds, partyIds)
+    : [];
+  if (existingRSVP && stranded.length > 0) {
+    await detachFromSharedResponse(notion, existingRSVP, stranded, eventLabel);
+  }
+  const rowToUpdate = stranded.length === 0 ? existingRSVP : null;
 
   const properties = {
     Response: {
@@ -944,14 +1021,14 @@ export async function submitRSVP(
   };
 
   let responseId: string;
-  if (existingRSVP) {
+  if (rowToUpdate) {
     // Update existing page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await notion.pages.update({
-      page_id: existingRSVP.id,
+      page_id: rowToUpdate.id,
       properties,
     });
-    responseId = existingRSVP.id;
+    responseId = rowToUpdate.id;
   } else {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -966,7 +1043,6 @@ export async function submitRSVP(
   // Per member: gather their personal attendance from this submission plus the
   // party's latest response for any other event they're invited to, then
   // resolve: all attending → Attending, none → Declined, mixed → Partial.
-  const partyIds = party.map((member) => member.id);
   const otherEvents = Array.from(
     new Set(party.flatMap((member) => member.eventInvitations))
   ).filter((e) => e !== submission.event);
@@ -1229,6 +1305,12 @@ export function parseRSVPPage(
   return {
     id: page.id,
     guestId,
+    // The whole relation, not just the id this was looked up by: submitRSVP
+    // needs it to tell a response covering exactly this party from one left
+    // over by a household that has since been split (see rsvp-split.ts).
+    guestIds: (props['Guest']?.relation ?? []).map(
+      (relation: { id: string }) => relation.id
+    ),
     event,
     submittedAt,
     status: status as 'Attending' | 'Declined' | 'Partial',
