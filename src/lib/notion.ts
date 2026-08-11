@@ -433,82 +433,29 @@ export async function getGuestByIdUncached(guestId: string): Promise<GuestRecord
  * Find the guests a typed name exactly identifies, for login validation.
  *
  * Uses the in-memory cache when warm (fast path), then the blob-persisted
- * cache (one fast read). On a fully cold start, does a targeted Notion
- * title-filter query — one API call instead of a full paginated DB scan —
- * so login is fast even after idle.
+ * cache (one fast read). On a fully cold start, scans the full guest list.
  *
  * Returns *every* exact match rather than the first: two guests sharing a
  * `Full Name` go to the identity picker instead of the second silently
  * receiving the first's session (see matchGuestsFromRecords).
  *
- * Tiers that hold the *complete* guest list (both caches, and the full scan)
- * match via `matchGuestsFromRecords`, which falls back to the invitation
- * title. The targeted query deliberately does not: it returns at most 10 rows,
- * and title matching needs the whole list to enumerate every holder of that
- * title — a claim a 10-row window cannot support. So a title-only login on a
- * cold cache falls through to the full scan, which can make that judgement
- * globally. That costs one extra scan for the handful of guests whose printed
- * name differs from their `Full Name`, and never fires for a guest whose two
- * names agree.
- *
- * Falls back to fetchAllGuests() if the targeted query fails.
+ * A bounded `Name of Guest` title query cannot prove that set is complete:
+ * `page_size` windows hide duplicates behind common first names, and a twin
+ * whose invitation title omits the typed first word never appears in the
+ * filter at all. Login therefore only returns hits from tiers that hold the
+ * whole list (both caches, or `fetchAllGuests`).
  */
 export async function findGuestsByName(name: string): Promise<GuestRecord[]> {
   // Fast path: in-memory cache, then blob-persisted cache. A miss falls
-  // through to the live targeted query — the cache can be up to TTL stale,
-  // and a freshly added guest must still be able to log in.
+  // through to a full scan — the cache can be up to TTL stale, and a freshly
+  // added guest must still be able to log in.
   const cached = await hydrateGuestCacheFromBlob();
   if (cached) {
     const hits = matchGuestsFromRecords(name, cached);
     if (hits.length > 0) return hits;
   }
 
-  // Cold path: targeted title-filter query (avoids full DB scan)
-  const apiKey = process.env.NOTION_API_KEY;
-  const dataSourceId = process.env.NOTION_GUEST_LIST_DB;
-
-  if (!apiKey || !dataSourceId) {
-    throw new Error('Missing Notion credentials');
-  }
-
-  try {
-    // Filter by the first word of the name (Name of Guest is a filterable title property)
-    const firstWord = name.trim().split(/\s+/)[0];
-    const response = await fetch(`https://api.notion.com/v1/databases/${dataSourceId}/query`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
-        page_size: 10,
-        filter: {
-          property: 'Name of Guest',
-          title: { contains: firstWord },
-        },
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Notion query failed: ${response.status}`);
-
-    const data: { results: any[] } = await response.json();
-
-    // Full Name only — see the note above on why titles wait for the full list.
-    const normalized = normalize(name);
-    const hits: GuestRecord[] = [];
-    for (const page of data.results) {
-      const guest = parseGuestPage(page);
-      if (guest && guest.normalizedName === normalized) hits.push(guest);
-    }
-    if (hits.length > 0) return hits;
-
-    // Not found in targeted query — could be a schema mismatch; fall back to full scan
-    return matchGuestsFromRecords(name, await fetchAllGuests());
-  } catch (err) {
-    console.error('findGuestsByName targeted query failed, falling back to fetchAllGuests:', err);
-    return matchGuestsFromRecords(name, await fetchAllGuests());
-  }
+  return matchGuestsFromRecords(name, await fetchAllGuests());
 }
 
 /**

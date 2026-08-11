@@ -267,16 +267,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   // Several records answer to this exact name. The identity picker can only
   // help when the guest can tell the candidates apart — with identical
   // display names it would ask them to recognise their own name among
-  // duplicates. Keep the historical first-match in that case (same-household
-  // duplicates resolve to the same party anyway), but say so in the logs:
-  // cross-household duplicates need a Notion data fix (middle name, or an
-  // `Also Known As` line) to become distinguishable.
+  // duplicates. Fail closed rather than minting `matches[0]`'s session for
+  // whoever typed the shared name (that is the cross-household failure this
+  // path exists to prevent). Disambiguate in Notion (middle name, or an
+  // `Also Known As` line) so each record can reach their own account.
   const displayNames = new Set(matches.map((guest) => guest.name));
   if (displayNames.size < matches.length) {
     console.warn(
-      `Login name matches ${matches.length} records with indistinguishable display names — signing in the first. Disambiguate the Notion records so each can reach their own account.`
+      `Login name matches ${matches.length} records with indistinguishable display names — refusing sign-in. Disambiguate the Notion records so each can reach their own account.`,
+      matches.map((guest) => guest.id)
     );
-    return completeLogin(toResolvedGuest(matches[0]), cookies);
+    await new Promise((r) => setTimeout(r, 200));
+    return json({ error: 'Name not found, it must match exactly.' }, 401);
   }
 
   // The name identifies an envelope, not a person. Ask who they are before
