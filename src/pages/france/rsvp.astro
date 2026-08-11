@@ -154,6 +154,9 @@ const eventNoLabel = t(strings.global.eventNotAttendingOption);
 const declineLabel = t(strings.global.regretfullyDecline);
 const eventSelectionRequired = t(strings.global.eventSelectionRequired);
 const accommodationSelectionRequired = t(strings.france.rsvp.form.accommodation.required);
+const emailRequiredShort = t(strings.global.emailRequiredShort);
+const emailInvalid = t(strings.global.emailInvalid);
+const sessionExpired = t(strings.global.sessionExpired);
 // A stored response records a yes/no per event; without one every dropdown
 // starts blank and the guest must choose for each event.
 const hasEventSelections = existingRSVP?.eventsAttending !== undefined;
@@ -208,6 +211,9 @@ const submittedAtFallback = submittedAtISO
             data-attending-label={attendingLabel}
             data-not-attending-label={notAttendingLabel}
             data-decline-label={declineLabel}
+            data-email-required-short={emailRequiredShort}
+            data-email-invalid={emailInvalid}
+            data-session-expired={sessionExpired}
             data-is-local-dev={import.meta.env.DEV}
           >
           <section class="form-section">

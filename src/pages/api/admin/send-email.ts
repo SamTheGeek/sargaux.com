@@ -60,14 +60,22 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
-  const guestIds = body.guestIds as string[];
+  // Dedupe so a repeated ID in the payload can't double-mail a guest
+  const guestIds = [...new Set(body.guestIds as string[])];
 
   // Fetch guest records
   const allGuests = excludeTestGuests(await fetchAllGuests());
-  const requested = guestIds.map((id) => allGuests.find((g) => g.id === id)).filter(Boolean) as typeof allGuests;
+  const byId = new Map(allGuests.map((g) => [g.id, g]));
+  const unknownIds = guestIds.filter((id) => !byId.has(id));
+  const requested = guestIds.flatMap((id) => byId.get(id) ?? []);
   const withEmail = requested.filter((g) => g.email);
   const noEmail = requested.length - withEmail.length;
 
+  if (unknownIds.length > 0) {
+    console.warn(
+      `send-email: ${unknownIds.length} guestId(s) not found (or excluded as test guests): ${unknownIds.join(', ')}`
+    );
+  }
   if (noEmail > 0) {
     console.warn(`send-email: ${noEmail} guest(s) have no email on file and will be skipped`);
   }
@@ -81,6 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
         sent: 0,
         failed: 0,
         noEmail,
+        unknownIds,
         skipped: true,
         reason: 'emailEnabled feature flag is off',
       }),
@@ -95,12 +104,14 @@ export const POST: APIRoute = async ({ request }) => {
   ) => EmailTemplate;
   const templateData = body.templateData ?? {};
 
-  const { sent, failed } = await sendToGuests(guestList, (guest) =>
-    withRecipient(guest, templateFn({ guestName: guest.name, ...templateData }))
+  const { sent, failed } = await sendToGuests(
+    guestList,
+    (guest) => withRecipient(guest, templateFn({ guestName: guest.name, ...templateData })),
+    { delayMs: 600 } // Resend allows 2 req/s
   );
 
   return new Response(
-    JSON.stringify({ sent, failed, noEmail }),
+    JSON.stringify({ sent, failed, noEmail, unknownIds }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 };

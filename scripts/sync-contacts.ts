@@ -261,7 +261,9 @@ async function listContacts(audienceId: string): Promise<ResendContact[]> {
   return (data?.data ?? []) as ResendContact[];
 }
 
-async function upsertContact(
+// Deliberately no `unsubscribed` field on either write: a guest who opted out
+// must stay opted out across syncs. Resend defaults new contacts to subscribed.
+async function createContact(
   audienceId: string,
   guest: { email: string; firstName: string; lastName?: string }
 ): Promise<void> {
@@ -271,10 +273,28 @@ async function upsertContact(
       email: guest.email,
       firstName: guest.firstName,
       lastName: guest.lastName,
-      unsubscribed: false,
     });
     if (response.error) {
-      throw new Error(`Failed to upsert ${guest.email}: ${(response.error as any).message}`);
+      throw new Error(`Failed to create ${guest.email}: ${(response.error as any).message}`);
+    }
+    return response;
+  });
+}
+
+async function updateContactName(
+  audienceId: string,
+  contactId: string,
+  guest: { email: string; firstName: string; lastName?: string }
+): Promise<void> {
+  await withResendRetry(async () => {
+    const response = await resend.contacts.update({
+      audienceId,
+      id: contactId,
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+    });
+    if (response.error) {
+      throw new Error(`Failed to update ${guest.email}: ${(response.error as any).message}`);
     }
     return response;
   });
@@ -316,12 +336,26 @@ async function syncAudience(
   let removed = 0;
   let failed = 0;
 
-  // Upsert all Notion guests with email
+  // Create missing contacts; refresh names on existing ones. Existing
+  // contacts are never re-created, so their unsubscribe state is untouched.
   for (const guest of withEmail) {
     try {
       const { firstName, lastName } = parseName(guest.name);
-      await upsertContact(audienceId, { email: guest.email!, firstName, lastName });
-      upserted++;
+      const existingContact = existingByEmail.get(guest.email!.toLowerCase());
+      if (!existingContact) {
+        await createContact(audienceId, { email: guest.email!, firstName, lastName });
+        upserted++;
+      } else if (
+        existingContact.first_name !== firstName ||
+        (existingContact.last_name ?? undefined) !== lastName
+      ) {
+        await updateContactName(audienceId, existingContact.id, {
+          email: guest.email!,
+          firstName,
+          lastName,
+        });
+        upserted++;
+      }
     } catch (err) {
       console.error(`  ✗ Failed to upsert ${guest.email}:`, err);
       failed++;

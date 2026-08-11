@@ -25,6 +25,9 @@ export function initRsvpForm(): void {
   const requireAllEmails = form.dataset.requireAllEmails === 'true';
   const attendingLabel = form.dataset.attendingLabel ?? 'Attending';
   const notAttendingLabel = form.dataset.notAttendingLabel ?? 'Not attending';
+  const emailRequiredShort = form.dataset.emailRequiredShort ?? 'Required';
+  const emailInvalid = form.dataset.emailInvalid ?? 'Invalid email';
+  const sessionExpired = form.dataset.sessionExpired ?? 'Your session has expired — please log in again.';
   const isLocalDev = form.dataset.isLocalDev === 'true';
 
   const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
@@ -223,7 +226,7 @@ export function initRsvpForm(): void {
       email: input.value?.trim() || undefined,
     }));
 
-    const markEmailError = (guestId: string | undefined, message = 'Required') => {
+    const markEmailError = (guestId: string | undefined, message = emailRequiredShort) => {
       const input = form.querySelector(`[data-guest-email-id="${guestId}"]`);
       if (!input) return;
       input.classList.add('has-error');
@@ -278,8 +281,14 @@ export function initRsvpForm(): void {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        if (data?.fieldGuestId) markEmailError(data.fieldGuestId, 'Invalid email');
-        throw new Error(data?.error || defaultErrorMessage);
+        if (data?.fieldGuestId) {
+          markEmailError(data.fieldGuestId, emailInvalid);
+          scrollToFirstError();
+        }
+        // The API's error strings are English-only, so surface a translated
+        // message instead: the one server rejection a guest can plausibly hit
+        // is an expired session (401); everything else the form pre-validates.
+        throw new Error(response.status === 401 ? sessionExpired : defaultErrorMessage);
       }
 
       window.location.href = `/${weddingEvent}/rsvp/confirmed`;

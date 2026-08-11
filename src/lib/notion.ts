@@ -614,6 +614,23 @@ export async function updateGuestEmail(guestId: string, email: string | null): P
   await clearGuestCache();
 }
 
+/**
+ * Advance a guest's invite-status property to "Sent" after a successful
+ * save-the-date send. The caller is responsible for skipping guests already
+ * at "Sent"/"Received", so this never downgrades a "Received" row — and for
+ * clearing the guest cache once the bulk run finishes (per-send invalidation
+ * would refetch the whole list N times).
+ */
+export async function markInviteSent(guestId: string, event: 'nyc' | 'france'): Promise<void> {
+  const notion = getClient();
+  const prop = event === 'nyc' ? 'NYC Invite Sent' : 'France Save the Date Sent';
+  await notion.pages.update({
+    page_id: guestId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    properties: { [prop]: { status: { name: 'Sent' } } } as any,
+  });
+}
+
 // Event catalog cache — same TTL as the guest cache. An immortal entry meant
 // event edits in Notion never surfaced on a warm instance: the admin
 // refresh-calendars endpoint (whose whole purpose is "run after editing

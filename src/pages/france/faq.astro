@@ -4,10 +4,12 @@ import { strings } from '../../content/strings';
 import type { LocalizedString } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
+import { getRegistryLink } from '../../lib/registry-routing';
 
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const faq = strings.france.faq;
+const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
 
 // Only some entries carry a CTA. Without an explicit element type the array
 // infers a union and the CTA fields widen to `{}`.
@@ -93,7 +95,12 @@ const items: FaqItem[] = [
             {t(faq.items.registry.a).split('\n\n').filter(Boolean).map((para) => (
               <p>{para}</p>
             ))}
-            <a class="faq-cta" href={faq.items.registry.ctaHref}>{t(faq.items.registry.ctaLabel)}</a>
+            <a
+              class="faq-cta"
+              href={registryHref}
+              target={registryIsExternal ? '_blank' : undefined}
+              rel={registryIsExternal ? 'noopener noreferrer' : undefined}
+            >{t(faq.items.registry.ctaLabel)}</a>
           </div>
         </details>
 

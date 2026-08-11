@@ -63,6 +63,18 @@ export function withRecipient(
   return { ...template, to: guest.email };
 }
 
+export interface SendToGuestsOptions<G> {
+  /** Pause between consecutive sends (Resend allows 2 req/s). */
+  delayMs?: number;
+  /**
+   * Runs after each successful send — e.g. to record "sent" in Notion so an
+   * interrupted bulk run resumes instead of double-mailing. A callback failure
+   * does not mark the email as failed (it went out); it's logged and counted
+   * separately so the caller can surface it.
+   */
+  onSent?: (guest: G) => Promise<void> | void;
+}
+
 /**
  * Send one email per guest, isolating failures so one bad address
  * doesn't stop the rest (fire-and-forget bulk).
@@ -72,18 +84,34 @@ export function withRecipient(
  */
 export async function sendToGuests<G extends { email: string; name: string }>(
   guests: G[],
-  buildPayload: (guest: G) => EmailPayload
-): Promise<{ sent: number; failed: number }> {
+  buildPayload: (guest: G) => EmailPayload,
+  options: SendToGuestsOptions<G> = {}
+): Promise<{ sent: number; failed: number; onSentFailed: number }> {
   let sent = 0;
   let failed = 0;
+  let onSentFailed = 0;
+  let first = true;
   for (const guest of guests) {
+    if (!first && options.delayMs) {
+      await new Promise((resolve) => setTimeout(resolve, options.delayMs));
+    }
+    first = false;
     try {
       await sendEmail(buildPayload(guest));
       sent++;
     } catch (err) {
       console.error(`Failed to send email to ${guest.email}:`, err);
       failed++;
+      continue;
+    }
+    if (options.onSent) {
+      try {
+        await options.onSent(guest);
+      } catch (err) {
+        console.error(`Post-send callback failed for ${guest.email}:`, err);
+        onSentFailed++;
+      }
     }
   }
-  return { sent, failed };
+  return { sent, failed, onSentFailed };
 }
