@@ -54,6 +54,67 @@ function isArchivedEditError(err: unknown): boolean {
 }
 
 /**
+ * Last RSVP write per party+event on this process. Notion's query index can lag
+ * the write by a second or two — long enough for the Playwright suite's
+ * POST-then-GET (and a follow-up POST that should update) to miss the row and
+ * either return null or fork a duplicate. Serving the just-written response
+ * for a few seconds closes that window without slowing the steady-state
+ * "no RSVP yet" path. Cross-instance lag is a separate concern (and the CI
+ * concurrency group on security-tests.yml keeps parallel PR runs from
+ * racing the shared 🤖 party).
+ */
+const RECENT_RSVP_TTL_MS = 5_000;
+const recentRsvpByPartyEvent = new Map<string, { rsvp: RSVPResponse; at: number }>();
+
+function partyEventKey(partyIds: string[], event: 'nyc' | 'france'): string {
+  return `${[...partyIds].sort().join(',')}|${event}`;
+}
+
+function rememberRecentRsvp(rsvp: RSVPResponse): void {
+  const ids = rsvp.guestIds?.length ? rsvp.guestIds : [rsvp.guestId];
+  recentRsvpByPartyEvent.set(partyEventKey(ids, rsvp.event), {
+    rsvp,
+    at: Date.now(),
+  });
+}
+
+function forgetRecentRsvp(guestId: string, event: 'nyc' | 'france'): void {
+  for (const [key, entry] of recentRsvpByPartyEvent) {
+    if (!key.endsWith(`|${event}`)) continue;
+    if (entry.rsvp.guestId === guestId || entry.rsvp.guestIds?.includes(guestId)) {
+      recentRsvpByPartyEvent.delete(key);
+    }
+  }
+}
+
+function recentRsvpFor(
+  partyIds: string[],
+  event: 'nyc' | 'france'
+): RSVPResponse | null {
+  const exact = recentRsvpByPartyEvent.get(partyEventKey(partyIds, event));
+  if (exact) {
+    if (Date.now() - exact.at > RECENT_RSVP_TTL_MS) {
+      recentRsvpByPartyEvent.delete(partyEventKey(partyIds, event));
+    } else {
+      return exact.rsvp;
+    }
+  }
+  // getLatestRSVP looks up by a single member id; the remembered key is the
+  // whole party. Match any recent write that covers this member.
+  const idSet = new Set(partyIds);
+  for (const [key, entry] of recentRsvpByPartyEvent) {
+    if (!key.endsWith(`|${event}`)) continue;
+    if (Date.now() - entry.at > RECENT_RSVP_TTL_MS) {
+      recentRsvpByPartyEvent.delete(key);
+      continue;
+    }
+    const covers = entry.rsvp.guestIds?.some((id) => idSet.has(id)) || idSet.has(entry.rsvp.guestId);
+    if (covers) return entry.rsvp;
+  }
+  return null;
+}
+
+/**
  * Query a Notion database using the stable REST API (v2022-06-28).
  *
  * NOTE: The SDK v5 `dataSources.query` (v2025-09-03) only works for databases
@@ -1332,7 +1393,7 @@ export async function submitRSVP(
   await clearGuestCache();
 
   // The response as written — the same shape parseRSVPPage would read back.
-  return {
+  const written: RSVPResponse = {
     id: responseId,
     guestId,
     guestIds: partyIds,
@@ -1348,6 +1409,8 @@ export async function submitRSVP(
       (details.attendance ?? []).map((entry) => [entry.guestId, entry.attending])
     ),
   };
+  rememberRecentRsvp(written);
+  return written;
 }
 
 /**
@@ -1398,7 +1461,11 @@ export async function getLatestRSVPForParty(
   const page = (response.results ?? []).find(
     (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
   );
-  return parseRSVPPage(page, partyIds[0], event);
+  const parsed = parseRSVPPage(page, partyIds[0], event);
+  if (parsed) return parsed;
+  // Query index can lag a just-completed write on this process — prefer the
+  // remembered row over reporting "no RSVP" for a few seconds.
+  return recentRsvpFor(partyIds, event);
 }
 
 /**
@@ -1448,7 +1515,9 @@ export async function getLatestRSVP(
   const page = (response.results ?? []).find(
     (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
   );
-  return parseRSVPPage(page, guestId, event);
+  const parsed = parseRSVPPage(page, guestId, event);
+  if (parsed) return parsed;
+  return recentRsvpFor([guestId], event);
 }
 
 function getRichTextPlainText(prop: any): string | undefined {
@@ -1742,6 +1811,10 @@ export async function deleteRSVP(
     page_id: existingRSVP.id,
     archived: true,
   });
+
+  // Drop the process-local write cache so the next GET doesn't resurrect
+  // the just-deleted response via the query-lag fallback.
+  forgetRecentRsvp(guestId, event);
 
   return true;
 }
