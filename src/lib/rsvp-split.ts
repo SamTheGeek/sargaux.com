@@ -42,23 +42,50 @@ export function strandedGuestIds(
  * Rebuild the attendee list and status a shared response should carry once the
  * submitting party is removed from it.
  *
- * Attendance is re-derived from the stranded members themselves rather than by
- * subtracting names from the old string: responses only ever list attendees, so
- * a member still named in the old list was attending and one absent from it was
- * not. Rebuilding this way also drops any duplicate or unrecognised name the old
- * row had accumulated.
+ * `Status` decides the unanimous cases, and names are not consulted for them.
+ * submitRSVP derives Status from the whole party, so 'Attending' means every
+ * member on the relation came and 'Declined' means none did — which settles
+ * every stranded member without reading a single name.
+ *
+ * That ordering is the correctness argument, not a shortcut. A stored Guest
+ * List name can legitimately differ from the name a guest submitted under — a
+ * maiden or married surname, an `Also Known As` form, a plus-one who was never
+ * named (see src/lib/envelope-name.ts). Resolving by name alone would read that
+ * drift as "this member wasn't attending", and unlike the read-only follow-up
+ * export, the verdict here is *written back to Notion*: a whole household's
+ * Attending row downgraded to Partial or Declined, with the drifted member
+ * dropped from the attendee list. The row being rewritten belongs to the
+ * household that did **not** just submit, so nobody is present to notice.
+ * `resolveGuestRSVP` in scripts/lib/rsvp-followup.mjs leans on Status first for
+ * exactly the same reason.
+ *
+ * Only 'Partial' needs the attendee list, because only there do members differ
+ * from one another. Drift can still mis-assign an individual in that branch,
+ * which nothing stored on the response can currently resolve. Rebuilding from
+ * the stranded members also drops any duplicate or unrecognised name the old row
+ * had accumulated.
  *
  * Returns null when there is nobody left to strand, which the caller treats as
  * "nothing to rewrite".
  */
 export function planDetachedResponse(
   stranded: readonly { name: string; normalizedName: string }[],
-  previousGuestsAttending: string
+  previous: { status: RSVPStatus; guestsAttending: string }
 ): { guestsAttending: string; status: RSVPStatus } | null {
   if (stranded.length === 0) return null;
 
+  if (previous.status === 'Attending') {
+    return {
+      guestsAttending: stranded.map((member) => member.name).join(', '),
+      status: 'Attending',
+    };
+  }
+  if (previous.status === 'Declined') {
+    return { guestsAttending: '', status: 'Declined' };
+  }
+
   const wasAttending = new Set(
-    previousGuestsAttending
+    previous.guestsAttending
       .split(',')
       .map((name) => normalize(name))
       .filter(Boolean)

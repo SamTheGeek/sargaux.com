@@ -880,7 +880,7 @@ async function detachFromSharedResponse(
 
   const plan =
     members.length === strandedIds.length
-      ? planDetachedResponse(members, existing.guestsAttending)
+      ? planDetachedResponse(members, existing)
       : null;
 
   if (plan) {
