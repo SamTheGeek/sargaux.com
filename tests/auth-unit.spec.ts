@@ -4,6 +4,7 @@ import {
   parseSessionToken,
   validateGuest,
   validateGuestFromRecords,
+  matchGuestsFromRecords,
   SESSION_MAX_AGE_SECONDS,
   SessionSecretMissingError,
 } from '../src/lib/auth';
@@ -158,6 +159,16 @@ test.describe('Auth Module — Name Normalization', () => {
 
   test('handles combined normalization', async () => {
     expect(normalize('  AMÉLIE   BOUCHER  ')).toBe('amelie boucher');
+  });
+
+  test('folds ligature and stroke letters to their ASCII spellings', async () => {
+    // These have no NFD decomposition, so the accent strip alone leaves them
+    // unmatched against the ASCII form a guest actually types (and vice versa).
+    expect(normalize('Cœur')).toBe('coeur');
+    expect(normalize('COEUR')).toBe(normalize('CŒUR'));
+    expect(normalize('Groß')).toBe('gross');
+    expect(normalize('Søren Kjær')).toBe('soren kjaer');
+    expect(normalize('Łukasz Đorđević')).toBe('lukasz dordevic');
   });
 
   test('removes apostrophes regardless of form', async () => {
@@ -321,6 +332,41 @@ test.describe('Invitation-title login fallback', () => {
       { ...nicknamed, id: 'notion-14', name: 'Frederica Ozawa', normalizedName: 'frederica ozawa' },
     ];
     expect(validateGuestFromRecords('Freddie Okonkwo', ambiguous)).toBeNull();
+  });
+
+  test('matchGuestsFromRecords returns every holder of a duplicated Full Name', async () => {
+    // Two people (different households) sharing a Full Name: the login route
+    // must see both so it can disambiguate, instead of the first silently
+    // receiving the session either of them asked for.
+    const duplicates: GuestRecord[] = [
+      { ...nicknamed, id: 'dup-1', name: 'Louis Garnier', normalizedName: 'louis garnier', invitationTitle: undefined },
+      { ...nicknamed, id: 'dup-2', name: 'Louis Garnier', normalizedName: 'louis garnier', invitationTitle: undefined },
+    ];
+    const matches = matchGuestsFromRecords('Louis Garnier', duplicates);
+    expect(matches.map((g) => g.id).sort()).toEqual(['dup-1', 'dup-2']);
+  });
+
+  test('matchGuestsFromRecords returns every holder of a shared title', async () => {
+    // Where the single-result matcher fails closed, the plural matcher hands
+    // both candidates to the identity picker — their distinct Full Names make
+    // them distinguishable to the guest.
+    const ambiguous: GuestRecord[] = [
+      { ...nicknamed, id: 'notion-13' },
+      { ...nicknamed, id: 'notion-14', name: 'Frederica Ozawa', normalizedName: 'frederica ozawa' },
+    ];
+    const matches = matchGuestsFromRecords('Freddie Okonkwo', ambiguous);
+    expect(matches.map((g) => g.id).sort()).toEqual(['notion-13', 'notion-14']);
+  });
+
+  test('matchGuestsFromRecords never mixes Full Name and title matches', async () => {
+    // A Full Name match settles the question — another record whose *title*
+    // happens to equal the typed name must not widen it into a picker.
+    const collision: GuestRecord[] = [
+      { ...nicknamed, id: 'own-name', name: 'Robin Vasquez', normalizedName: 'robin vasquez', invitationTitle: undefined },
+      { ...badSurname, id: 'title-only', invitationTitle: 'Robin Vasquez' },
+    ];
+    const matches = matchGuestsFromRecords('Robin Vasquez', collision);
+    expect(matches.map((g) => g.id)).toEqual(['own-name']);
   });
 
   test('records without a title are unaffected', async () => {

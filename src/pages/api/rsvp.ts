@@ -22,6 +22,7 @@ import {
   getGuestEvents,
   getGuestParty,
   getGuestById,
+  getGuestByIdUncached,
 } from '../../lib/notion';
 import { isEnabled, features } from '../../config/features';
 import { sendToGuests, withRecipient } from '../../lib/email';
@@ -356,10 +357,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
 
   // If the authenticated guest renamed themselves, the session cookie's display
   // name no longer matches the live Notion record — re-sign it so subsequent
-  // requests (bindSessionToNotion) don't fail closed with a 401. submitRSVP
-  // cleared the guest cache, so this read reflects the new name.
+  // requests (bindSessionToNotion) don't fail closed with a 401. Read uncached:
+  // a cache-layer read here can race the blob delete submitRSVP just issued and
+  // serve the pre-rename record, silently skipping the re-sign — after which
+  // the middleware's session binding logs the guest out mid-session.
   try {
-    const refreshed = await getGuestById(guestId);
+    const refreshed = await getGuestByIdUncached(guestId);
     if (refreshed && normalize(refreshed.name) !== normalize(auth.guest)) {
       cookies.set(
         AUTH_COOKIE_NAME,

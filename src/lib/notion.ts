@@ -12,7 +12,7 @@ import { normalize } from './normalize';
 import { parseTime } from './calendar';
 import { isTestGuest, isTestGuestFromNotionProps } from './test-guests';
 import { envelopeTokens, findMatchingHousehold } from './envelope-name';
-import { validateGuestFromRecords } from './auth';
+import { matchGuestsFromRecords } from './auth';
 import { guestNameEdit, preserveFormerName } from './guest-name';
 import { strandedGuestIds, planDetachedResponse } from './rsvp-split';
 import { memberAttendedResponse } from './rsvp-attendance';
@@ -127,6 +127,16 @@ function parseGuestPage(page: any): GuestRecord | null {
     eventInvitations = eventInvProp.multi_select
       .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
       .filter((e: string) => e === 'nyc' || e === 'france');
+    if (eventInvitations.length === 0) {
+      // Selections exist but none survived the filter — a renamed multi-select
+      // option ("New York", a trailing space). An empty list would 302-loop
+      // the guest (middleware redirects /france → primary route → /france),
+      // so fall back exactly like the no-selection branch.
+      console.warn(
+        `Guest ${page.id} has Event Invitations selected but none parse to nyc/france — check the multi-select option names. Deriving from Country instead.`
+      );
+      eventInvitations = deriveEventInvitations(country);
+    }
   } else {
     eventInvitations = deriveEventInvitations(country);
   }
@@ -199,8 +209,11 @@ function richText(prop: any): string {
     .trim();
 }
 
-// Module-level cache — populated once per cold start
+// Module-level cache — populated once per cold start, expires after the TTL.
 let guestCache: GuestRecord[] | null = null;
+// When the cached list was fetched from Notion (inherited from the blob when
+// hydrated from it, so a list is never fresher in memory than at its source).
+let guestCacheFetchedAt = 0;
 // In-flight deduplication — prevents thundering herd on first request
 let guestCachePromise: Promise<GuestRecord[]> | null = null;
 
@@ -226,13 +239,13 @@ interface GuestCacheBlob {
   guests: GuestRecord[];
 }
 
-async function readGuestCacheBlob(): Promise<GuestRecord[] | null> {
+async function readGuestCacheBlob(): Promise<GuestCacheBlob | null> {
   try {
     const raw = await getStore(GUEST_CACHE_STORE).get(GUEST_CACHE_KEY, { type: 'json' });
     const blob = raw as GuestCacheBlob | null;
     if (!blob || !Array.isArray(blob.guests)) return null;
     if (Date.now() - blob.fetchedAt > GUEST_CACHE_TTL_MS) return null;
-    return blob.guests;
+    return blob;
   } catch {
     return null; // Blobs unavailable (local dev/tests) or read failure
   }
@@ -256,31 +269,57 @@ async function deleteGuestCacheBlob(): Promise<void> {
 }
 
 /**
+ * The in-memory guest list, only while still within the TTL. A stale entry is
+ * dropped so the read falls through to the blob (gated by its own fetchedAt)
+ * and then to Notion. Without this check the memory layer was immortal on a
+ * warm instance: a Notion edit — including the documented "fix a login by
+ * editing `Also Known As`, no deploy" flow — and `/api/warm` refreshes on
+ * other instances never surfaced until the process recycled.
+ */
+function freshGuestCache(): GuestRecord[] | null {
+  if (guestCache && Date.now() - guestCacheFetchedAt <= GUEST_CACHE_TTL_MS) {
+    return guestCache;
+  }
+  guestCache = null;
+  return null;
+}
+
+/**
  * Hydrate the in-memory guest cache from the blob layer if possible.
  * Returns the cache (or null without touching Notion).
  */
 async function hydrateGuestCacheFromBlob(): Promise<GuestRecord[] | null> {
-  if (guestCache) return guestCache;
-  const guests = await readGuestCacheBlob();
-  if (guests) {
-    guestCache = guests;
+  const fresh = freshGuestCache();
+  if (fresh) return fresh;
+  const blob = await readGuestCacheBlob();
+  if (blob) {
+    guestCache = blob.guests;
+    guestCacheFetchedAt = blob.fetchedAt;
   }
   return guestCache;
 }
 
 /**
  * Fetch all guests from the Notion Guest List database.
- * Results are cached in memory for the lifetime of the server process.
+ * Results are cached in memory for GUEST_CACHE_TTL_MS.
  * Uses promise deduplication to prevent concurrent Notion fetches.
  */
 export async function fetchAllGuests(): Promise<GuestRecord[]> {
-  if (guestCache) return guestCache;
+  const fresh = freshGuestCache();
+  if (fresh) return fresh;
   if (guestCachePromise) return guestCachePromise;
-  guestCachePromise = _fetchAllGuests().catch((err) => {
-    // Clear promise on error so next call retries
-    guestCachePromise = null;
-    throw err;
-  });
+  guestCachePromise = _fetchAllGuests()
+    .then((guests) => {
+      // Dedupe only while in flight — a resolved promise held forever would
+      // outlive the TTL and keep serving the same stale list.
+      guestCachePromise = null;
+      return guests;
+    })
+    .catch((err) => {
+      // Clear promise on error so next call retries
+      guestCachePromise = null;
+      throw err;
+    });
   return guestCachePromise;
 }
 
@@ -316,6 +355,7 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
   } while (cursor);
 
   guestCache = guests;
+  guestCacheFetchedAt = Date.now();
   await writeGuestCacheBlob(guests);
   return guests;
 }
@@ -323,12 +363,18 @@ async function _fetchAllGuests(): Promise<GuestRecord[]> {
 /**
  * Clear the guest cache (useful for testing or manual refresh).
  * Also drops the blob-persisted copy so the next fetch is fresh.
+ *
+ * Returns the blob deletion so callers that immediately re-read (submitRSVP,
+ * whose post-rename cookie re-sign depends on seeing the new name) can await
+ * it — an unawaited delete races the next hydrate, which can resurrect the
+ * pre-write blob. Fire-and-forget callers may ignore the promise.
  */
-export function clearGuestCache(): void {
+export function clearGuestCache(): Promise<void> {
   guestCache = null;
+  guestCacheFetchedAt = 0;
   guestCachePromise = null;
   guestPagePromises.clear();
-  void deleteGuestCacheBlob();
+  return deleteGuestCacheBlob();
 }
 
 // Short-TTL cache for direct guest page retrieves. Deduplicates concurrent
@@ -361,7 +407,7 @@ function retrieveGuestPage(guestId: string): Promise<any> {
  * guest-list scan: in-memory cache → blob cache → direct page retrieve.
  */
 export async function getGuestById(guestId: string): Promise<GuestRecord | null> {
-  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  const cached = await hydrateGuestCacheFromBlob();
   if (cached) {
     const hit = cached.find(g => g.id === guestId);
     if (hit) return hit;
@@ -372,33 +418,49 @@ export async function getGuestById(guestId: string): Promise<GuestRecord | null>
 }
 
 /**
- * Find a single guest by name for login validation.
+ * Fetch a guest straight from Notion, bypassing every cache layer. For reads
+ * that must observe a write the same request just made — the post-rename
+ * session re-sign in POST /api/rsvp — where even a just-cleared cache can
+ * race the blob delete and serve the pre-write record.
+ */
+export async function getGuestByIdUncached(guestId: string): Promise<GuestRecord | null> {
+  const notion = getClient();
+  const page = await notion.pages.retrieve({ page_id: guestId });
+  return parseGuestPage(page);
+}
+
+/**
+ * Find the guests a typed name exactly identifies, for login validation.
  *
  * Uses the in-memory cache when warm (fast path), then the blob-persisted
  * cache (one fast read). On a fully cold start, does a targeted Notion
  * title-filter query — one API call instead of a full paginated DB scan —
  * so login is fast even after idle.
  *
+ * Returns *every* exact match rather than the first: two guests sharing a
+ * `Full Name` go to the identity picker instead of the second silently
+ * receiving the first's session (see matchGuestsFromRecords).
+ *
  * Tiers that hold the *complete* guest list (both caches, and the full scan)
- * match via `validateGuestFromRecords`, which falls back to the invitation
+ * match via `matchGuestsFromRecords`, which falls back to the invitation
  * title. The targeted query deliberately does not: it returns at most 10 rows,
- * and `validateGuestFromRecords` only accepts a title match when it is unique
- * across the records it is given — a claim a 10-row window cannot support. So a
- * title-only login on a cold cache falls through to the full scan, which can
- * make that judgement globally. That costs one extra scan for the handful of
- * guests whose printed name differs from their `Full Name`, and never fires for
- * a guest whose two names agree.
+ * and title matching needs the whole list to enumerate every holder of that
+ * title — a claim a 10-row window cannot support. So a title-only login on a
+ * cold cache falls through to the full scan, which can make that judgement
+ * globally. That costs one extra scan for the handful of guests whose printed
+ * name differs from their `Full Name`, and never fires for a guest whose two
+ * names agree.
  *
  * Falls back to fetchAllGuests() if the targeted query fails.
  */
-export async function findGuestByName(name: string): Promise<GuestRecord | null> {
+export async function findGuestsByName(name: string): Promise<GuestRecord[]> {
   // Fast path: in-memory cache, then blob-persisted cache. A miss falls
   // through to the live targeted query — the cache can be up to TTL stale,
   // and a freshly added guest must still be able to log in.
-  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  const cached = await hydrateGuestCacheFromBlob();
   if (cached) {
-    const hit = validateGuestFromRecords(name, cached);
-    if (hit) return hit;
+    const hits = matchGuestsFromRecords(name, cached);
+    if (hits.length > 0) return hits;
   }
 
   // Cold path: targeted title-filter query (avoids full DB scan)
@@ -434,16 +496,18 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
 
     // Full Name only — see the note above on why titles wait for the full list.
     const normalized = normalize(name);
+    const hits: GuestRecord[] = [];
     for (const page of data.results) {
       const guest = parseGuestPage(page);
-      if (guest && guest.normalizedName === normalized) return guest;
+      if (guest && guest.normalizedName === normalized) hits.push(guest);
     }
+    if (hits.length > 0) return hits;
 
     // Not found in targeted query — could be a schema mismatch; fall back to full scan
-    return validateGuestFromRecords(name, await fetchAllGuests());
+    return matchGuestsFromRecords(name, await fetchAllGuests());
   } catch (err) {
-    console.error('findGuestByName targeted query failed, falling back to fetchAllGuests:', err);
-    return validateGuestFromRecords(name, await fetchAllGuests());
+    console.error('findGuestsByName targeted query failed, falling back to fetchAllGuests:', err);
+    return matchGuestsFromRecords(name, await fetchAllGuests());
   }
 }
 
@@ -451,7 +515,7 @@ export async function findGuestByName(name: string): Promise<GuestRecord | null>
  * Resolve an envelope name (or any combination of a household's first names)
  * to the guests it identifies. See src/lib/envelope-name.ts for the rules.
  *
- * Mirrors the tiering of `findGuestByName`: warm caches first, then targeted
+ * Mirrors the tiering of `findGuestsByName`: warm caches first, then targeted
  * queries, and only a full scan as a last resort. Matching needs household
  * context, so every path assembles complete households before matching —
  * a partial household would silently reject valid names.
@@ -480,7 +544,7 @@ export async function findHouseholdByEnvelopeName(name: string): Promise<GuestRe
   };
 
   // Fast path: the cached list already holds every household in full.
-  const cached = guestCache ?? (await hydrateGuestCacheFromBlob());
+  const cached = await hydrateGuestCacheFromBlob();
   if (cached) {
     const hit = resolve(cached);
     if (hit) return hit;
@@ -600,19 +664,26 @@ export async function updateGuestEmail(guestId: string, email: string | null): P
     properties: { 'Guest Email': { email } } as any,
   });
   // Invalidate cache so the next fetchAllGuests() reflects the new email
-  clearGuestCache();
+  await clearGuestCache();
 }
 
-// Event catalog cache — populated once per cold start
-let eventCatalogCache: Map<'nyc' | 'france', EventRecord[]> = new Map();
+// Event catalog cache — same TTL as the guest cache. An immortal entry meant
+// event edits in Notion never surfaced on a warm instance: the admin
+// refresh-calendars endpoint (whose whole purpose is "run after editing
+// events") would rebuild every guest's ICS from the pre-edit catalog and then
+// purge the CDN to serve it.
+const EVENT_CATALOG_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const eventCatalogCache: Map<'nyc' | 'france', { at: number; events: EventRecord[] }> =
+  new Map();
 
 /**
  * Fetch all events from the Event Catalog for a specific wedding.
- * Results are cached in memory for the lifetime of the server process.
+ * Results are cached in memory for EVENT_CATALOG_TTL_MS.
  */
 export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventRecord[]> {
-  if (eventCatalogCache.has(wedding)) {
-    return eventCatalogCache.get(wedding)!;
+  const cached = eventCatalogCache.get(wedding);
+  if (cached && Date.now() - cached.at <= EVENT_CATALOG_TTL_MS) {
+    return cached.events;
   }
 
   const notion = getClient();
@@ -723,7 +794,7 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
     return minutesA - minutesB;
   });
 
-  eventCatalogCache.set(wedding, events);
+  eventCatalogCache.set(wedding, { at: Date.now(), events });
   return events;
 }
 
@@ -1221,7 +1292,7 @@ export async function submitRSVP(
     await Promise.all(nameWrites);
   } catch (error) {
     // A partial batch may have renamed some members already.
-    clearGuestCache();
+    await clearGuestCache();
     console.error(
       `Guest List name write-back failed after RSVP response ${responseId} was saved:`,
       error
@@ -1242,7 +1313,8 @@ export async function submitRSVP(
   // reads (middleware, RSVP pre-fill, the API's post-submit name re-sign) see the
   // new values instead of a stale 15-min entry. Cleared even when the derived
   // write-back failed: a partial batch may have landed some members' updates.
-  clearGuestCache();
+  // Awaited so the blob delete lands before the endpoint's follow-up reads.
+  await clearGuestCache();
 
   return responseId;
 }
@@ -1606,7 +1678,7 @@ export async function backfillGuestListFromRSVPs(
     }
   }
 
-  if (!dryRun) clearGuestCache();
+  if (!dryRun) await clearGuestCache();
   return report;
 }
 

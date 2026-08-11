@@ -3,6 +3,7 @@ import {
   checkRateLimit,
   clientIp,
   rateLimitResponse,
+  refundRateLimitHit,
   resetRateLimitsForTests,
 } from '../src/lib/rate-limit';
 
@@ -102,6 +103,24 @@ test.describe('Rate Limiter — checkRateLimit', () => {
 
     resetRateLimitsForTests();
     expect(checkRateLimit('reset-me', 1, 60_000).ok).toBe(true);
+  });
+
+  test('refundRateLimitHit returns the newest slot to the bucket', () => {
+    // A login answered with a 503 (backend outage) refunds its hit, so the
+    // guest's retry after the outage doesn't cost double.
+    for (let i = 0; i < 3; i++) {
+      expect(checkRateLimit('refund', 3, 60_000).ok).toBe(true);
+    }
+    expect(checkRateLimit('refund', 3, 60_000).ok).toBe(false);
+
+    refundRateLimitHit('refund');
+    expect(checkRateLimit('refund', 3, 60_000).ok).toBe(true);
+    expect(checkRateLimit('refund', 3, 60_000).ok).toBe(false);
+  });
+
+  test('refundRateLimitHit on an unknown key is a no-op', () => {
+    refundRateLimitHit('never-seen');
+    expect(checkRateLimit('never-seen', 1, 60_000).ok).toBe(true);
   });
 
   test('RATE_LIMIT_DISABLED kill switch bypasses the limiter', () => {

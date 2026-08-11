@@ -76,6 +76,19 @@ export function clientIp(request: Request): string {
   );
 }
 
+/**
+ * Remove the most recent hit recorded for `key`.
+ *
+ * For requests that failed for reasons the client didn't cause — a backend
+ * outage answered with a 503 — so that retrying once the outage clears
+ * doesn't also cost the guest their attempt budget. Without this, a guest
+ * retrying their own correct name during a Notion outage burns through the
+ * login bucket and stacks a 429 lockout on top of the outage.
+ */
+export function refundRateLimitHit(key: string): void {
+  buckets.get(key)?.timestamps.pop();
+}
+
 /** Build a JSON 429 response with Retry-After. */
 export function rateLimitResponse(retryAfterSec = 60): Response {
   return new Response(JSON.stringify({ error: 'Too many requests. Please try again later.' }), {
