@@ -2,18 +2,21 @@
  * GET /api/calendar/[token].ics
  *
  * Serves pre-generated personalized calendar subscriptions from Netlify Blobs.
- * This endpoint is read-only — it never writes blobs and never calls Notion.
  *
  * Returns 200 with ICS content if the blob exists.
- * Returns 503 if the blob is missing (RSVP not yet processed or blob write
- * failed transiently) — calendar apps retry on 503; the scheduled job is the
- * backstop that fixes missing blobs within days.
+ * On a blob miss, generates and stores the calendar on demand — the token has
+ * already been HMAC-verified, so the guest is identified, and 503-ing left a
+ * guest whose blob write failed (or predated the feature) with a permanently
+ * erroring subscription until the next scheduled refresh.
+ * Returns 503 only when generation itself fails (calendar apps retry; the
+ * scheduled job is the backstop).
  * Returns 404 for invalid tokens (not 401, to avoid leaking information).
  */
 
 import type { APIRoute } from 'astro';
 import { verifyToken } from '../../../lib/calendar';
 import { getICS } from '../../../lib/ics-store';
+import { generateAndStoreICSForGuest } from '../../../lib/ics-generator';
 
 const ICS_HEADERS = {
   'Content-Type': 'text/calendar; charset=utf-8',
@@ -53,10 +56,20 @@ export const GET: APIRoute = async ({ params, cache }) => {
       }
       return new Response(stored, { status: 200, headers: ICS_HEADERS });
     }
-    // Blob not yet generated — 503 so calendar app retries; scheduled job is backstop
+
+    // Blob missing — mint it now from Notion. Skipped in mock-store test mode,
+    // where a miss must stay deterministic (and Notion isn't part of the test).
+    if (process.env.CALENDAR_TEST_MODE !== 'true') {
+      const generated = await generateAndStoreICSForGuest(guestId);
+      if (cache.enabled) {
+        cache.set({ maxAge: 3600, swr: 86400, tags: ['calendar'] });
+      }
+      return new Response(generated, { status: 200, headers: ICS_HEADERS });
+    }
+
     return new Response('Service Unavailable', { status: 503 });
   } catch (err: unknown) {
-    console.error('Calendar: blob store error for guest', guestId, err);
+    console.error('Calendar: blob store or generation error for guest', guestId, err);
     return new Response('Service Unavailable', { status: 503 });
   }
 };

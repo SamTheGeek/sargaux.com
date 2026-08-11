@@ -36,16 +36,19 @@ export default defineConfig({
     // and only in production: under the node adapter used by dev and Playwright
     // no cache provider is configured, so routeRules are inert and the page
     // looks correct locally. `tests/couple-randomization.spec.ts` guards this.
+    // NOTE: `/nyc/details` and `/france/schedule` are deliberately absent.
+    // They embed the guest's personal calendar-subscription token (a
+    // capability URL) and set `Cache-Control: private, no-store` themselves —
+    // but a routeRules entry overrides page headers, so listing them here
+    // re-enables CDN caching of exactly the response the page opted out of.
     '/registry': contentPageCache,
     '/nyc': contentPageCache,
-    '/nyc/details': contentPageCache,
     '/nyc/travel': contentPageCache,
     '/nyc/faq': contentPageCache,
     '/nyc/lookbook': contentPageCache,
     '/france': contentPageCache,
     '/france/details': contentPageCache,
     '/france/travel': contentPageCache,
-    '/france/schedule': contentPageCache,
     '/france/lookbook': contentPageCache,
     // RSVP pages and confirmation pages are intentionally NOT cached: they
     // pre-fill live Notion RSVP state. /nyc/rsvp and /france/rsvp also set

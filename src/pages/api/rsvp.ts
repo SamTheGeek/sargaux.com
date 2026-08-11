@@ -341,7 +341,7 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     });
   }
 
-  let responseId: string;
+  let submitted: Awaited<ReturnType<typeof submitRSVP>>;
   try {
     await Promise.all(
       partyContacts
@@ -349,11 +349,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
         .map((guest) => updateGuestEmail(guest.id, guest.email ?? null))
     );
 
-    responseId = await submitRSVP(guestId, body);
+    submitted = await submitRSVP(guestId, body);
   } catch (error) {
     console.error('RSVP submission error:', error);
     return jsonError(500, 'Failed to submit RSVP');
   }
+  const responseId = submitted.id;
 
   // If the authenticated guest renamed themselves, the session cookie's display
   // name no longer matches the live Notion record — re-sign it so subsequent
@@ -381,7 +382,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
   }
 
   try {
-    await Promise.all(party.map((member) => generateAndStoreICSForGuest(member.id)));
+    // Regenerate from the response just written, not a fresh Notion query —
+    // the query index can lag the write, which would rebuild every party
+    // member's calendar from the answer the guest just replaced.
+    await Promise.all(
+      party.map((member) => generateAndStoreICSForGuest(member.id, submitted))
+    );
 
     if (cache.enabled) {
       await Promise.all(
