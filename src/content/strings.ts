@@ -66,6 +66,10 @@ export const strings = {
     regretfullyDecline:      s('Regretfully Decline', 'Décline avec regret'),
     // French provided by Sam (2026-07-18) — provisional, may be revised
     eventSelectionRequired:  s("Please let us know if you'll be joining us for this event.", 'Merci de choisir votre réponse'),
+    // French provided by Sam (2026-08-11)
+    emailRequiredShort: s('Required', 'Champ obligatoire'),
+    emailInvalid:       s('Invalid email', 'Adresse e-mail invalide'),
+    sessionExpired:     s('Your session has expired — please log in again.', 'Votre session a expiré — veuillez vous reconnecter'),
     // French provided by Sam (2026-07-04) — do not machine-translate
     savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {
@@ -104,6 +108,18 @@ export const strings = {
       submitAriaLabel: s('Submit name', 'Envoyer le nom'),
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
+      // Mapped client-side from the login API's status codes (401/429/503),
+      // since the server responds in English only. French provided by Sam (2026-08-11).
+      errorNotFound:    s(
+        'Please enter the first and last name of one member of your party.',
+        'Veuillez saisir le prénom et le nom de l’un des membres de votre groupe.',
+      ),
+      errorNotFoundHint: s(
+        "If you're responding for you and a guest (or your family), you'll be able to RSVP for your entire group.",
+        'Si vous répondez pour vous et votre invité(e) (ou pour votre famille), vous pourrez confirmer la présence de l’ensemble de votre groupe.',
+      ),
+      errorRateLimit:   s('Too many attempts. Please try again in a few minutes.', 'Trop de tentatives. Veuillez réessayer dans quelques minutes.'),
+      errorUnavailable: s('Login is temporarily unavailable. Please try again in a few minutes.', 'La connexion est temporairement indisponible. Veuillez réessayer dans quelques minutes.'),
     },
     // Shown when a name matches a whole envelope rather than one guest, so the
     // RSVP can be attributed to the right person.
@@ -1196,7 +1212,8 @@ export const strings = {
             "We're so grateful to celebrate with you. Your presence is the greatest gift.\n\nShould you feel inclined to give a gift, we've included a few ideas on our registry.",
             'Votre présence est le plus beau des cadeaux, et nous sommes très heureux de partager ce week-end avec vous. Si vous souhaitez nous faire plaisir, vous trouverez quelques idées sur notre liste de mariage.',
           ),
-          ctaHref:  '/registry',
+          // href deliberately absent — the destination is per-guest
+          // (getRegistryLink), so the page computes it, never a constant.
           ctaLabel: s('Go to the Registry page →', 'Voir la liste de mariage →'),
         },
       },

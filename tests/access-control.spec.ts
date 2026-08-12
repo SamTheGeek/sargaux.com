@@ -49,6 +49,33 @@ test.describe('Event Access Control', () => {
     await expect(page).toHaveURL('/france');
   });
 
+  test('guest with no invitations is logged out instead of looping on event routes', async ({
+    page,
+    context,
+  }) => {
+    // Intentional descope: still in Notion, Event Invitations cleared. A
+    // leftover session must not invent invitations or 302 between /france
+    // and the primary route.
+    await setSessionCookie(context, []);
+
+    await page.goto('/nyc');
+    await expect(page).toHaveURL('/');
+
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
+  });
+
+  test('homepage clears a no-invitation session instead of redirecting into events', async ({
+    page,
+    context,
+  }) => {
+    await setSessionCookie(context, []);
+    await page.goto('/');
+    await expect(page).toHaveURL('/');
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
+  });
+
   test('homepage redirects dual-invited guests to NYC before October 15, 2026', async ({ page, context }) => {
     await setSessionCookie(context, ['nyc', 'france']);
     await page.goto('/');

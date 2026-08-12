@@ -283,7 +283,10 @@ export function createSessionToken(
   if (notionId) {
     payload.notionId = notionId;
   }
-  if (eventInvitations && eventInvitations.length > 0) {
+  // Always persist the array when the caller provided one — including `[]`
+  // for a descoped guest — so parseSessionToken can tell "explicitly empty"
+  // apart from a legacy cookie that omitted the field.
+  if (eventInvitations !== undefined) {
     payload.eventInvitations = eventInvitations;
   }
   if (country) {
@@ -347,13 +350,17 @@ export function parseSessionToken(
     }
 
     if (payload.guest && typeof payload.guest === 'string') {
-      const eventInvitations = (payload.eventInvitations || []).filter(
-        (event): event is EventInvitation => event === 'nyc' || event === 'france'
-      );
+      // Legacy cookies omitted `eventInvitations` entirely — default to both.
+      // An explicit `[]` means intentional descope and must stay empty.
+      const eventInvitations = Array.isArray(payload.eventInvitations)
+        ? payload.eventInvitations.filter(
+            (event): event is EventInvitation => event === 'nyc' || event === 'france'
+          )
+        : (['nyc', 'france'] as EventInvitation[]);
       return {
         guest: payload.guest,
         notionId: payload.notionId,
-        eventInvitations: eventInvitations.length > 0 ? eventInvitations : ['nyc', 'france'],
+        eventInvitations,
         country: typeof payload.country === 'string' ? payload.country : null,
       };
     }

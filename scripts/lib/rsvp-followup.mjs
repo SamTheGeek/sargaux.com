@@ -140,11 +140,31 @@ export async function queryAll(apiKey, dbId, filter) {
 function parseResponse(page) {
   const props = page.properties;
   const guestsAttending = getText(props, 'Guests Attending');
+
+  // Per-member { guestId, attending } recorded by submitRSVP in the Details
+  // JSON — the same first-priority source memberAttendedResponse uses on the
+  // site. Exact by page ID, so it survives renames and covers unnamed +1s.
+  // Older or hand-edited rows may hold no JSON; that's fine, the map stays
+  // empty and resolution falls through to Status.
+  const attendanceById = new Map();
+  try {
+    const parsed = JSON.parse(getText(props, 'Details') || '{}');
+    const entries = Array.isArray(parsed?.attendance) ? parsed.attendance : [];
+    for (const entry of entries) {
+      if (typeof entry?.guestId === 'string' && typeof entry?.attending === 'boolean') {
+        attendanceById.set(entry.guestId, entry.attending);
+      }
+    }
+  } catch {
+    // Not JSON — legacy free-text details
+  }
+
   return {
     id: page.id,
     guestIds: (props['Guest']?.relation || []).map(r => r.id),
     submittedAt: props['Submitted At']?.date?.start || '',
     status: getSelect(props, 'Status'),
+    attendanceById,
     attendingNames: new Set(
       guestsAttending.split(',').map(n => normalizeName(n)).filter(Boolean)
     ),
@@ -170,30 +190,37 @@ function latestResponseForHousehold(responses, memberIds) {
 }
 
 /**
- * Resolve one guest's RSVP for the event.
+ * Resolve one guest's RSVP for the event — the same source order
+ * memberAttendedResponse uses on the site:
  *
- * The response's `Status` is the authority wherever it can be: submitRSVP
- * derives it from the whole party, so 'Attending' means every member on the
- * relation came and 'Declined' means none did. Only 'Partial' needs the
- * attendee-name list to tell members apart.
- *
- * Leaning on Status first matters because names drift — a guest can submit
- * under a surname that differs from their Guest List record, and pure name
- * matching would then report an attending guest as declined.
+ * 1. The Details JSON's per-member `attendance` entry, when the response
+ *    recorded one for this page ID. Exact: survives renames, and covers
+ *    placeholder +1s (the form submits every row, named or not).
+ * 2. The response's `Status` against the Guest relation: submitRSVP derives
+ *    it from the whole party, so 'Attending'/'Declined' settle any member on
+ *    the relation — including placeholders, which is what keeps a household
+ *    that declined outright from sorting as "outstanding" forever just
+ *    because its +1 has no name.
+ * 3. The attendee-name list, only for 'Partial' rows old enough to lack the
+ *    attendance JSON. Names drift (a guest can submit under a surname that
+ *    differs from their record), so this is last resort — and a placeholder
+ *    can never be matched by name, so it stays 'Not yet' here.
  *
  * A guest outside the response's Guest relation isn't covered by it at all
  * (union-find households can be wider than the party that submitted), so they
- * stay 'Not yet' rather than inheriting someone else's decline. Placeholder
- * +1s can never be named, so they stay 'Not yet' too.
+ * stay 'Not yet' rather than inheriting someone else's decline.
  */
 function resolveGuestRSVP(page, response, isPlaceholder) {
   if (!response) return 'Not yet';
-  if (isPlaceholder) return 'Not yet';
+
+  const recorded = response.attendanceById.get(page.id);
+  if (recorded !== undefined) return recorded ? 'Attending' : 'Declined';
 
   const inParty = response.guestIds.includes(page.id);
   if (inParty && response.status === 'Attending') return 'Attending';
   if (inParty && response.status === 'Declined') return 'Declined';
 
+  if (isPlaceholder) return 'Not yet';
   if (guestNameCandidates(page).some(name => response.attendingNames.has(name))) return 'Attending';
   return inParty ? 'Declined' : 'Not yet';
 }
@@ -318,11 +345,14 @@ export function buildRows(guestPages, responsePages, eventKey) {
 
     // One row per unnamed +1 so the household's outstanding headcount is
     // visible — the envelope name already carries a "+1" suffix, but a caller
-    // needs a line to write the name on.
-    for (const _placeholder of placeholders) {
+    // needs a line to write the name on. The RSVP is resolved like anyone
+    // else's (attendance JSON, then party Status), so a fully-declined
+    // household's +1 shows 'Declined' instead of pinning the household to the
+    // top of the call list as outstanding.
+    for (const placeholder of placeholders) {
       memberRows.push({
         guest: '+1 (name not yet known)',
-        rsvp: 'Not yet',
+        rsvp: resolveGuestRSVP(placeholder, response, true),
         inviteStatus: '',
         lastRSVP: '',
       });

@@ -35,6 +35,85 @@ function getClient(): Client {
   return notionClient;
 }
 
+/** True when a Notion page object is already archived / in trash. */
+function isArchivedPage(page: { archived?: boolean; in_trash?: boolean } | null | undefined): boolean {
+  return page?.archived === true || page?.in_trash === true;
+}
+
+/**
+ * Notion rejects `pages.update` on an archived page with this message.
+ * Happens when a concurrent delete (test cleanup, another CI run against the
+ * shared 🤖 party) archives the row between our lookup and our write.
+ */
+function isArchivedEditError(err: unknown): boolean {
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message?: unknown }).message ?? '')
+      : String(err);
+  return /archived/i.test(message) || /in[_ ]trash/i.test(message);
+}
+
+/**
+ * Last RSVP write per party+event on this process. Notion's query index can lag
+ * the write by a second or two — long enough for the Playwright suite's
+ * POST-then-GET (and a follow-up POST that should update) to miss the row and
+ * either return null or fork a duplicate. Serving the just-written response
+ * for a few seconds closes that window without slowing the steady-state
+ * "no RSVP yet" path. Cross-instance lag is a separate concern (and the CI
+ * concurrency group on security-tests.yml keeps parallel PR runs from
+ * racing the shared 🤖 party).
+ */
+const RECENT_RSVP_TTL_MS = 5_000;
+const recentRsvpByPartyEvent = new Map<string, { rsvp: RSVPResponse; at: number }>();
+
+function partyEventKey(partyIds: string[], event: 'nyc' | 'france'): string {
+  return `${[...partyIds].sort().join(',')}|${event}`;
+}
+
+function rememberRecentRsvp(rsvp: RSVPResponse): void {
+  const ids = rsvp.guestIds?.length ? rsvp.guestIds : [rsvp.guestId];
+  recentRsvpByPartyEvent.set(partyEventKey(ids, rsvp.event), {
+    rsvp,
+    at: Date.now(),
+  });
+}
+
+function forgetRecentRsvp(guestId: string, event: 'nyc' | 'france'): void {
+  for (const [key, entry] of recentRsvpByPartyEvent) {
+    if (!key.endsWith(`|${event}`)) continue;
+    if (entry.rsvp.guestId === guestId || entry.rsvp.guestIds?.includes(guestId)) {
+      recentRsvpByPartyEvent.delete(key);
+    }
+  }
+}
+
+function recentRsvpFor(
+  partyIds: string[],
+  event: 'nyc' | 'france'
+): RSVPResponse | null {
+  const exact = recentRsvpByPartyEvent.get(partyEventKey(partyIds, event));
+  if (exact) {
+    if (Date.now() - exact.at > RECENT_RSVP_TTL_MS) {
+      recentRsvpByPartyEvent.delete(partyEventKey(partyIds, event));
+    } else {
+      return exact.rsvp;
+    }
+  }
+  // getLatestRSVP looks up by a single member id; the remembered key is the
+  // whole party. Match any recent write that covers this member.
+  const idSet = new Set(partyIds);
+  for (const [key, entry] of recentRsvpByPartyEvent) {
+    if (!key.endsWith(`|${event}`)) continue;
+    if (Date.now() - entry.at > RECENT_RSVP_TTL_MS) {
+      recentRsvpByPartyEvent.delete(key);
+      continue;
+    }
+    const covers = entry.rsvp.guestIds?.some((id) => idSet.has(id)) || idSet.has(entry.rsvp.guestId);
+    if (covers) return entry.rsvp;
+  }
+  return null;
+}
+
 /**
  * Query a Notion database using the stable REST API (v2022-06-28).
  *
@@ -119,23 +198,26 @@ function parseGuestPage(page: any): GuestRecord | null {
     props['Related Guests']?.relation || []
   ).map((r: { id: string }) => r.id);
 
-  // Event Invitations multi-select (Phase 2 addition)
-  // Falls back to deriving from Country if property doesn't exist yet
+  // Event Invitations multi-select (Phase 2 addition).
+  //
+  // Distinguish "property absent / never configured" from "explicitly empty":
+  // an intentionally descoped guest is left in the DB with Event Invitations
+  // cleared, and must stay invited-to-nowhere — not re-derived from Country
+  // (which would reopen NYC/France). Only fall back to Country when the
+  // property isn't on the page at all (legacy rows / pre-Phase-2).
   let eventInvitations: ('nyc' | 'france')[];
   const eventInvProp = props['Event Invitations'];
-  if (eventInvProp?.multi_select?.length > 0) {
+  if (eventInvProp && Array.isArray(eventInvProp.multi_select)) {
     eventInvitations = eventInvProp.multi_select
       .map((opt: { name: string }) => opt.name.toLowerCase() as 'nyc' | 'france')
       .filter((e: string) => e === 'nyc' || e === 'france');
-    if (eventInvitations.length === 0) {
+    if (eventInvProp.multi_select.length > 0 && eventInvitations.length === 0) {
       // Selections exist but none survived the filter — a renamed multi-select
-      // option ("New York", a trailing space). An empty list would 302-loop
-      // the guest (middleware redirects /france → primary route → /france),
-      // so fall back exactly like the no-selection branch.
+      // option ("New York", a trailing space). Fail closed (empty) rather than
+      // inventing an invitation; warn so the option names get fixed in Notion.
       console.warn(
-        `Guest ${page.id} has Event Invitations selected but none parse to nyc/france — check the multi-select option names. Deriving from Country instead.`
+        `Guest ${page.id} has Event Invitations selected but none parse to nyc/france — check the multi-select option names. Treating as invited to neither.`
       );
-      eventInvitations = deriveEventInvitations(country);
     }
   } else {
     eventInvitations = deriveEventInvitations(country);
@@ -614,6 +696,24 @@ export async function updateGuestEmail(guestId: string, email: string | null): P
   await clearGuestCache();
 }
 
+/**
+ * Advance a guest's invite-status property to "Sent" after a successful
+ * save-the-date send. The caller is responsible for skipping guests already
+ * at "Sent"/"Received", so this never downgrades a "Received" row — and for
+ * clearing the guest cache *before* that skip (so a retry does not read a
+ * pre-send snapshot) as well as after the bulk run finishes. Per-send
+ * invalidation would refetch the whole list N times.
+ */
+export async function markInviteSent(guestId: string, event: 'nyc' | 'france'): Promise<void> {
+  const notion = getClient();
+  const prop = event === 'nyc' ? 'NYC Invite Sent' : 'France Save the Date Sent';
+  await notion.pages.update({
+    page_id: guestId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    properties: { [prop]: { status: { name: 'Sent' } } } as any,
+  });
+}
+
 // Event catalog cache — same TTL as the guest cache. An immortal entry meant
 // event edits in Notion never surfaced on a warm instance: the admin
 // refresh-calendars endpoint (whose whole purpose is "run after editing
@@ -934,7 +1034,13 @@ async function detachFromSharedResponse(
     };
   }
 
-  await notion.pages.update({ page_id: existing.id, properties });
+  try {
+    await notion.pages.update({ page_id: existing.id, properties });
+  } catch (err) {
+    // Concurrent delete already archived this row — the caller creates a
+    // fresh response for the submitting party either way.
+    if (!isArchivedEditError(err)) throw err;
+  }
 }
 
 /**
@@ -1095,23 +1201,33 @@ export async function submitRSVP(
     },
   };
 
-  let responseId: string;
+  let responseId: string | undefined;
   if (rowToUpdate) {
-    // Update existing page
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await notion.pages.update({
-      page_id: rowToUpdate.id,
-      properties,
-    });
-    responseId = rowToUpdate.id;
-  } else {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await notion.pages.update({
+        page_id: rowToUpdate.id,
+        properties,
+      });
+      responseId = rowToUpdate.id;
+    } catch (err) {
+      // Lookup raced a concurrent archive (test DELETE, parallel CI against
+      // the shared 🤖 party). Fall through and create a new row rather than
+      // surfacing a 500 for a submission that can still succeed.
+      if (!isArchivedEditError(err)) throw err;
+      console.warn(
+        `submitRSVP: existing response ${rowToUpdate.id} was archived between lookup and update — creating a new row`
+      );
+    }
+  }
+  if (!responseId) {
     // Create new page
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: any = await notion.pages.create({
       parent: { type: 'database_id', database_id: dataSourceId },
       properties,
     });
-    responseId = response.id;
+    responseId = response.id as string;
   }
 
   // Sync RSVP status back to every party member's Guest List record.
@@ -1281,7 +1397,7 @@ export async function submitRSVP(
   await clearGuestCache();
 
   // The response as written — the same shape parseRSVPPage would read back.
-  return {
+  const written: RSVPResponse = {
     id: responseId,
     guestId,
     guestIds: partyIds,
@@ -1297,6 +1413,8 @@ export async function submitRSVP(
       (details.attendance ?? []).map((entry) => [entry.guestId, entry.attending])
     ),
   };
+  rememberRecentRsvp(written);
+  return written;
 }
 
 /**
@@ -1316,9 +1434,12 @@ export async function getLatestRSVPForParty(
 
   const eventLabel = event === 'nyc' ? 'NYC' : 'France';
 
+  // page_size > 1 so we can skip archived rows: Notion's query index can
+  // briefly still surface a page that DELETE just archived, and updating it
+  // fails with "Can't edit block that is archived".
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response: any = await queryDatabase(dataSourceId, {
-    page_size: 1,
+    page_size: 10,
     filter: {
       and: [
         {
@@ -1341,8 +1462,14 @@ export async function getLatestRSVPForParty(
     ],
   });
 
-  const page = response.results?.[0];
-  return parseRSVPPage(page, partyIds[0], event);
+  const page = (response.results ?? []).find(
+    (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
+  );
+  const parsed = parseRSVPPage(page, partyIds[0], event);
+  if (parsed) return parsed;
+  // Query index can lag a just-completed write on this process — prefer the
+  // remembered row over reporting "no RSVP" for a few seconds.
+  return recentRsvpFor(partyIds, event);
 }
 
 /**
@@ -1368,7 +1495,7 @@ export async function getLatestRSVP(
   // Query for latest response matching guest + event (server-side filter + sort)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response: any = await queryDatabase(dataSourceId, {
-    page_size: 1,
+    page_size: 10,
     filter: {
       and: [
         {
@@ -1389,8 +1516,12 @@ export async function getLatestRSVP(
     ],
   });
 
-  const page = response.results?.[0];
-  return parseRSVPPage(page, guestId, event);
+  const page = (response.results ?? []).find(
+    (candidate: { archived?: boolean; in_trash?: boolean }) => !isArchivedPage(candidate)
+  );
+  const parsed = parseRSVPPage(page, guestId, event);
+  if (parsed) return parsed;
+  return recentRsvpFor([guestId], event);
 }
 
 function getRichTextPlainText(prop: any): string | undefined {
@@ -1522,6 +1653,7 @@ export async function fetchAllLatestRSVPs(): Promise<Map<string, RSVPResponse[]>
 
     for (const page of response.results ?? []) {
       if (page.object !== 'page') continue;
+      if (isArchivedPage(page)) continue;
       const props = page.properties ?? {};
 
       // Responses are party-level: index under every related guest so each
@@ -1683,6 +1815,10 @@ export async function deleteRSVP(
     page_id: existingRSVP.id,
     archived: true,
   });
+
+  // Drop the process-local write cache so the next GET doesn't resurrect
+  // the just-deleted response via the query-lag fallback.
+  forgetRecentRsvp(guestId, event);
 
   return true;
 }

@@ -9,7 +9,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { fetchAllGuests } from '../../../lib/notion';
+import { fetchAllGuests, markInviteSent, clearGuestCache } from '../../../lib/notion';
 import { excludeTestGuests } from '../../../lib/test-guests';
 import { sendToGuests, withRecipient } from '../../../lib/email';
 import { saveTheDateNYC, saveTheDateFrance } from '../../../lib/email-templates';
@@ -44,7 +44,11 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  // Fetch guests
+  // Drop the 15-min guest cache *before* we decide who is still pending.
+  // markInviteSent writes during a prior run (or a timeout that died before
+  // the trailing clear) live only in Notion; a cached list would still show
+  // those guests as pending and this filter would re-mail them.
+  await clearGuestCache();
   const allGuests = excludeTestGuests(await fetchAllGuests());
   const invited = allGuests.filter((g) => g.eventInvitations.includes(event));
   const withEmail = invited.filter((g) => g.email);
@@ -56,7 +60,17 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const guestList = withEmail.map((g) => ({ email: g.email!, name: g.name }));
+  // Skip guests whose invite status already advanced — this is what makes a
+  // re-run after a timeout resume where it left off instead of double-mailing.
+  const inviteStatus = (g: (typeof withEmail)[number]) =>
+    event === 'nyc' ? g.nycInviteStatus : g.franceSaveTheDateStatus;
+  const pending = withEmail.filter((g) => {
+    const status = inviteStatus(g);
+    return status !== 'Sent' && status !== 'Received';
+  });
+  const alreadySent = withEmail.length - pending.length;
+
+  const guestList = pending.map((g) => ({ id: g.id, email: g.email!, name: g.name }));
 
   // Send (skipped if emailEnabled is off)
   if (!isEnabled('global.emailEnabled')) {
@@ -65,6 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
         sent: 0,
         failed: 0,
         noEmail,
+        alreadySent,
         skipped: true,
         reason: 'emailEnabled feature flag is off',
       }),
@@ -76,10 +91,26 @@ export const POST: APIRoute = async ({ request }) => {
   const buildPayload = (g: { email: string; name: string }) =>
     withRecipient(g, template({ guestName: g.name }));
 
-  const { sent, failed } = await sendToGuests(guestList, buildPayload);
+  const { sent, failed, onSentFailed } = await sendToGuests(guestList, buildPayload, {
+    // Resend allows 2 req/s; each send is also followed by a Notion write
+    delayMs: 600,
+    // Record progress per guest so an interrupted run is resumable
+    onSent: (g) => markInviteSent(g.id, event),
+  });
+
+  if (onSentFailed > 0) {
+    console.warn(
+      `send-stds: ${onSentFailed} status write(s) failed — those guests were emailed but ` +
+        `still look pending, so a re-run would mail them again. Fix their ` +
+        `"${event === 'nyc' ? 'NYC Invite Sent' : 'France Save the Date Sent'}" status in Notion first.`
+    );
+  }
+
+  // One cache clear for the whole run so reads reflect the new statuses
+  if (sent > 0) await clearGuestCache();
 
   return new Response(
-    JSON.stringify({ sent, failed, noEmail }),
+    JSON.stringify({ sent, failed, noEmail, alreadySent, statusWriteFailed: onSentFailed }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 };

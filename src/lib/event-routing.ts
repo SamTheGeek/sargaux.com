@@ -19,6 +19,12 @@ export function getPrimaryEventRoute(
   const invitedToNyc = eventInvitations.includes('nyc');
   const invitedToFrance = eventInvitations.includes('france');
 
+  if (!invitedToNyc && !invitedToFrance) {
+    // Callers must fail closed before this (login refuses, middleware clears
+    // the session). Falling through to /france used to 302-loop descoped guests.
+    throw new Error('getPrimaryEventRoute requires at least one event invitation');
+  }
+
   if (invitedToNyc && invitedToFrance) {
     return getDateInRoutingTimeZone(now) < DEFAULT_EVENT_SWITCH_DATE ? '/nyc' : '/france';
   }

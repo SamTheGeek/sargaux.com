@@ -7,6 +7,14 @@ on:
   push:
     branches: [main]
 
+# The suite mutates the shared 🤖 Notion party (create/update/archive RSVP
+# Responses). Parallel runs across stacked PRs race those rows and flake as
+# "Can't edit block that is archived" or GET-after-POST misses. Queue rather
+# than cancel so every PR still gets a full run.
+concurrency:
+  group: notion-security-tests
+  cancel-in-progress: false
+
 jobs:
   security:
     name: Security, Auth & Access Control

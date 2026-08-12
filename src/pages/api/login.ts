@@ -35,15 +35,19 @@ class LoginBackendUnavailableError extends Error {}
 const BACKEND_UNAVAILABLE_MESSAGE =
   'Login is temporarily unavailable. Please try again in a few minutes.';
 
-/** Strict login rate limit — primary name-enumeration vector. */
-const LOGIN_LIMIT = 10;
+/**
+ * Login rate limit — primary name-enumeration vector, but keyed per IP.
+ * Households on hotel Wi-Fi / CGNAT share one bucket, and envelope login
+ * can take a few tries, so this is a burst brake rather than a tight cap.
+ */
+const LOGIN_LIMIT = 40;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Redeeming an identity claim gets its own bucket. It is not an enumeration
  * vector — the claim already names the only IDs it can be redeemed for — and
- * charging it to the login bucket would make every two-step login cost two of
- * the ten attempts.
+ * charging it to the login bucket would make every two-step login cost two
+ * attempts.
  */
 const CLAIM_LIMIT = 20;
 const CLAIM_WINDOW_MS = 15 * 60 * 1000;
@@ -149,11 +153,28 @@ function resolveFromHardcodedList(name: string): GuestRecord[] {
   return records.filter((guest) => memberIds.includes(guest.id));
 }
 
+/** Same 401 as an unknown name — do not differentiate (enumeration). */
+async function notFoundResponse(): Promise<Response> {
+  await new Promise((r) => setTimeout(r, 200));
+  return json({ error: 'Name not found, it must match exactly.' }, 401);
+}
+
 /** Mint the session cookie and build the success response. */
-function completeLogin(
+async function completeLogin(
   guest: ResolvedGuest,
   cookies: Parameters<APIRoute>[0]['cookies']
-): Response {
+): Promise<Response> {
+  // Descoped guests (Event Invitations intentionally cleared in Notion) must
+  // not receive a session — minting one would either invent invitations or
+  // 302-loop them between event routes. Same 401 as an unknown name so the
+  // response cannot confirm that the record still exists.
+  if (guest.eventInvitations.length === 0) {
+    console.warn(
+      `Login refused for ${guest.notionId ?? guest.name}: no event invitations (descoped)`
+    );
+    return notFoundResponse();
+  }
+
   let token: string;
   try {
     token = createSessionToken(guest.name, guest.notionId, guest.eventInvitations, guest.country);
@@ -224,7 +245,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Same 401 as an unknown id — a blocked bot must be indistinguishable from
     // a name that does not exist, so this can't be used to confirm one.
     if (!guest || denyTestGuests([guest]).length === 0) {
-      return json({ error: 'Name not found, it must match exactly.' }, 401);
+      return notFoundResponse();
     }
 
     return completeLogin(guest, cookies);
@@ -253,10 +274,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     throw err;
   }
 
+  // Drop descoped records before counting hits so they never reach the
+  // identity picker (which would confirm the name exists) and a lone
+  // descoped match looks like an unknown name.
+  matches = matches.filter((guest) => guest.eventInvitations.length > 0);
+
   if (matches.length === 0) {
-    // Small constant delay to blunt timing/volume enumeration (best-effort)
-    await new Promise((r) => setTimeout(r, 200));
-    return json({ error: 'Name not found, it must match exactly.' }, 401);
+    return notFoundResponse();
   }
 
   // One person named — log them straight in, same as a full-name login.
@@ -277,8 +301,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       `Login name matches ${matches.length} records with indistinguishable display names — refusing sign-in. Disambiguate the Notion records so each can reach their own account.`,
       matches.map((guest) => guest.id)
     );
-    await new Promise((r) => setTimeout(r, 200));
-    return json({ error: 'Name not found, it must match exactly.' }, 401);
+    return notFoundResponse();
   }
 
   // The name identifies an envelope, not a person. Ask who they are before

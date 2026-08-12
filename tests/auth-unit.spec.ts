@@ -47,6 +47,18 @@ test.describe('Auth Module — Session Tokens', () => {
     expect(parsed!.notionId).toBe(notionId);
   });
 
+  test('omitted eventInvitations defaults to both (legacy cookies)', async () => {
+    const token = createSessionToken('Alex Rivera');
+    const parsed = parseSessionToken(token);
+    expect(parsed!.eventInvitations).toEqual(['nyc', 'france']);
+  });
+
+  test('explicit empty eventInvitations stays empty (descoped guest)', async () => {
+    const token = createSessionToken('Alex Rivera', 'notion-descoped', []);
+    const parsed = parseSessionToken(token);
+    expect(parsed!.eventInvitations).toEqual([]);
+  });
+
   test('unsigned legacy tokens are rejected', async () => {
     const payload = { guest: 'Alex Rivera', created: 1700000000000 };
     const unsigned = Buffer.from(JSON.stringify(payload)).toString('base64url');

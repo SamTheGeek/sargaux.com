@@ -58,7 +58,12 @@ test.describe('Authentication', () => {
     await page.press('#name', 'Enter');
 
     const errorMessage = page.locator('#error-message');
-    await expect(errorMessage).toContainText('Name not found, it must match exactly.');
+    await expect(errorMessage).toContainText(
+      'Please enter the first and last name of one member of your party.'
+    );
+    await expect(errorMessage).toContainText(
+      "If you're responding for you and a guest (or your family), you'll be able to RSVP for your entire group."
+    );
     await expect(page).toHaveURL('/');
   });
 
