@@ -66,10 +66,10 @@ export const strings = {
     regretfullyDecline:      s('Regretfully Decline', 'Décline avec regret'),
     // French provided by Sam (2026-07-18) — provisional, may be revised
     eventSelectionRequired:  s("Please let us know if you'll be joining us for this event.", 'Merci de choisir votre réponse'),
-    // Inline field errors on the RSVP confirmation-email inputs — provisional French, may be revised
-    emailRequiredShort: s('Required', 'Requis'),
+    // French provided by Sam (2026-08-11)
+    emailRequiredShort: s('Required', 'Champ obligatoire'),
     emailInvalid:       s('Invalid email', 'Adresse e-mail invalide'),
-    sessionExpired:     s('Your session has expired — please log in again.', 'Votre session a expiré — veuillez vous reconnecter.'),
+    sessionExpired:     s('Your session has expired — please log in again.', 'Votre session a expiré — veuillez vous reconnecter'),
     // French provided by Sam (2026-07-04) — do not machine-translate
     savingBtn:    s('Saving', 'Enregistrement'),
     toggle: {
@@ -109,8 +109,11 @@ export const strings = {
       errorEmpty:   s('Please enter your name', 'Veuillez entrer votre nom'),
       errorDefault: s('Something went wrong. Please try again.', 'Une erreur est survenue. Veuillez réessayer.'),
       // Mapped client-side from the login API's status codes (401/429/503),
-      // since the server responds in English only — provisional French, may be revised
-      errorNotFound:    s('Name not found, it must match exactly.', 'Nom introuvable — saisissez-le exactement comme sur votre invitation.'),
+      // since the server responds in English only. French provided by Sam (2026-08-11).
+      errorNotFound:    s(
+        'Name not found, it must match exactly.',
+        'Nom introuvable. Veuillez saisir votre prénom et nom. Ex : Camille Martin (et non « La famille Martin » ou « Mr & Mme Martin »)',
+      ),
       errorRateLimit:   s('Too many attempts. Please try again in a few minutes.', 'Trop de tentatives. Veuillez réessayer dans quelques minutes.'),
       errorUnavailable: s('Login is temporarily unavailable. Please try again in a few minutes.', 'La connexion est temporairement indisponible. Veuillez réessayer dans quelques minutes.'),
     },
