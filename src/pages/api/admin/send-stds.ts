@@ -44,7 +44,11 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  // Fetch guests
+  // Drop the 15-min guest cache *before* we decide who is still pending.
+  // markInviteSent writes during a prior run (or a timeout that died before
+  // the trailing clear) live only in Notion; a cached list would still show
+  // those guests as pending and this filter would re-mail them.
+  await clearGuestCache();
   const allGuests = excludeTestGuests(await fetchAllGuests());
   const invited = allGuests.filter((g) => g.eventInvitations.includes(event));
   const withEmail = invited.filter((g) => g.email);

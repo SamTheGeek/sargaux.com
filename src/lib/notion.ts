@@ -700,8 +700,9 @@ export async function updateGuestEmail(guestId: string, email: string | null): P
  * Advance a guest's invite-status property to "Sent" after a successful
  * save-the-date send. The caller is responsible for skipping guests already
  * at "Sent"/"Received", so this never downgrades a "Received" row — and for
- * clearing the guest cache once the bulk run finishes (per-send invalidation
- * would refetch the whole list N times).
+ * clearing the guest cache *before* that skip (so a retry does not read a
+ * pre-send snapshot) as well as after the bulk run finishes. Per-send
+ * invalidation would refetch the whole list N times.
  */
 export async function markInviteSent(guestId: string, event: 'nyc' | 'france'): Promise<void> {
   const notion = getClient();
