@@ -111,8 +111,12 @@ export const strings = {
       // Mapped client-side from the login API's status codes (401/429/503),
       // since the server responds in English only. French provided by Sam (2026-08-11).
       errorNotFound:    s(
-        'Name not found, it must match exactly.',
-        'Nom introuvable. Veuillez saisir votre prénom et nom. Ex : Camille Martin (et non « La famille Martin » ou « Mr & Mme Martin »)',
+        'Please enter the first and last name of one member of your party.',
+        'Veuillez saisir le prénom et le nom de l’un des membres de votre groupe.',
+      ),
+      errorNotFoundHint: s(
+        "If you're responding for you and a guest (or your family), you'll be able to RSVP for your entire group.",
+        'Si vous répondez pour vous et votre invité(e) (ou pour votre famille), vous pourrez confirmer la présence de l’ensemble de votre groupe.',
       ),
       errorRateLimit:   s('Too many attempts. Please try again in a few minutes.', 'Trop de tentatives. Veuillez réessayer dans quelques minutes.'),
       errorUnavailable: s('Login is temporarily unavailable. Please try again in a few minutes.', 'La connexion est temporairement indisponible. Veuillez réessayer dans quelques minutes.'),

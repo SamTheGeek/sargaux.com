@@ -36,6 +36,7 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
 const emptyError = t(strings.home.modal.errorEmpty);
 const defaultError = t(strings.home.modal.errorDefault);
 const notFoundError = t(strings.home.modal.errorNotFound);
+const notFoundHint = t(strings.home.modal.errorNotFoundHint);
 const rateLimitError = t(strings.home.modal.errorRateLimit);
 const unavailableError = t(strings.home.modal.errorUnavailable);
 const checkingLabel = t(strings.home.modal.checkingBtn);
@@ -67,6 +68,7 @@ const identityExpired = t(strings.home.identity.expired);
               data-empty-error={emptyError}
               data-default-error={defaultError}
               data-not-found-error={notFoundError}
+              data-not-found-hint={notFoundHint}
               data-rate-limit-error={rateLimitError}
               data-unavailable-error={unavailableError}
               data-checking-label={checkingLabel}
@@ -491,10 +493,34 @@ const identityExpired = t(strings.home.identity.expired);
       }
 
       .error-message {
-        color: var(--color-error);
-        font-size: 0.875rem;
+        display: grid;
+        gap: 6px;
+        justify-items: center;
+        justify-self: center;
+        width: min(100%, 388px);
         min-height: 1.25rem;
         order: 2;
+        text-align: center;
+      }
+
+      .error-message:empty {
+        display: none;
+      }
+
+      .error-primary {
+        margin: 0;
+        max-width: 34em;
+        color: var(--color-error);
+        font-size: 16px;
+        line-height: 1.4;
+      }
+
+      .error-hint {
+        margin: 0;
+        max-width: 34em;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-caption);
+        line-height: 1.45;
       }
 
       .landing-footer {
@@ -613,7 +639,8 @@ const identityExpired = t(strings.home.identity.expired);
 
         const emptyError = form.dataset.emptyError || 'Please enter your name';
         const defaultError = form.dataset.defaultError || 'Something went wrong. Please try again.';
-        const notFoundError = form.dataset.notFoundError || 'Name not found, it must match exactly.';
+        const notFoundError = form.dataset.notFoundError || 'Please enter the first and last name of one member of your party.';
+        const notFoundHint = form.dataset.notFoundHint || "If you're responding for you and a guest (or your family), you'll be able to RSVP for your entire group.";
         const rateLimitError = form.dataset.rateLimitError || 'Too many attempts. Please try again in a few minutes.';
         const unavailableError = form.dataset.unavailableError || 'Login is temporarily unavailable. Please try again in a few minutes.';
         const checkingLabel = form.dataset.checkingLabel || 'Checking';
@@ -661,8 +688,19 @@ const identityExpired = t(strings.home.identity.expired);
           entryControl.classList.remove('is-active');
         };
 
-        const showError = (message) => {
-          errorMessage.textContent = message;
+        const showError = (message, hint) => {
+          errorMessage.replaceChildren();
+          if (!message) return;
+          const primary = document.createElement('p');
+          primary.className = 'error-primary';
+          primary.textContent = message;
+          errorMessage.append(primary);
+          if (hint) {
+            const secondary = document.createElement('p');
+            secondary.className = 'error-hint';
+            secondary.textContent = hint;
+            errorMessage.append(secondary);
+          }
         };
 
         const setSubmitState = (submitting) => {
@@ -788,7 +826,7 @@ const identityExpired = t(strings.home.identity.expired);
               // onExpired shows its own (translated) message — don't overwrite it
               onExpired();
             } else if (response.status === 401) {
-              showError(notFoundError);
+              showError(notFoundError, notFoundHint);
             } else if (response.status === 429) {
               showError(rateLimitError);
             } else if (response.status === 503) {
