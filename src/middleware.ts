@@ -186,7 +186,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
           return withVary(context.redirect('/'));
         }
-        eventInvitations = record.eventInvitations;
+        // Guard the empty list (parseGuestPage defends against it too): with
+        // no invitations, every event route redirects to the primary route —
+        // which is itself an event route — and the browser loops on 302s
+        // until "too many redirects", with no self-repair. Treat as invited
+        // to both, the same default parseSessionToken uses for old cookies.
+        if (record.eventInvitations.length > 0) {
+          eventInvitations = record.eventInvitations;
+        } else {
+          console.warn(
+            `Guest ${auth.notionId} resolved with no event invitations — treating as invited to both to avoid a redirect loop`
+          );
+          eventInvitations = ['nyc', 'france'];
+        }
         country = record.country ?? null;
       }
     } catch (error) {

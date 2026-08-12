@@ -11,7 +11,7 @@
 
 import type { APIRoute } from 'astro';
 import { refreshAllICS } from '../../../lib/ics-generator';
-import { fetchAllGuests } from '../../../lib/notion';
+import { clearEventCache, fetchAllGuests } from '../../../lib/notion';
 import { generateToken } from '../../../lib/calendar';
 import { requireAdminAuth } from '../../../lib/admin-auth';
 import { checkRateLimit, clientIp, rateLimitResponse } from '../../../lib/rate-limit';
@@ -25,6 +25,12 @@ export const POST: APIRoute = async ({ request, cache }) => {
   if (unauthorized) return unauthorized;
 
   try {
+    // The documented use of this endpoint is "run after editing events in
+    // Notion" — drop the in-process event catalog first, or a warm instance
+    // rebuilds every guest's ICS from the pre-edit events and then purges the
+    // CDN to serve exactly the stale data the call was meant to replace.
+    clearEventCache();
+
     const result = await refreshAllICS();
 
     // Purge the CDN-cached calendar files (same pattern as POST /api/rsvp) —

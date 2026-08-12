@@ -174,15 +174,38 @@ export function validateGuestFromRecords(
   input: string,
   guests: GuestRecord[]
 ): GuestRecord | null {
+  const matches = matchGuestsFromRecords(input, guests);
+  if (matches.length === 0) return null;
+  // A Full Name match keeps the historical first-match behavior; a title
+  // match must be unique across the given records (fail closed on a shared
+  // title rather than guess between two people).
+  if (matches[0].normalizedName === normalize(input)) return matches[0];
+  return matches.length === 1 ? matches[0] : null;
+}
+
+/**
+ * Every guest a typed name identifies exactly — all `Full Name` matches, or
+ * (only when Full Name misses entirely) all invitation-title matches.
+ *
+ * Where `validateGuestFromRecords` picks a single record, this returns the
+ * full set so the login route can put duplicates in front of the guest via
+ * the identity picker instead of silently signing in whichever record
+ * happened to come first — which gave the second of two guests sharing a
+ * name the *other person's* session, party, and RSVP form, with no way to
+ * reach their own.
+ */
+export function matchGuestsFromRecords(
+  input: string,
+  guests: GuestRecord[]
+): GuestRecord[] {
   const normalizedInput = normalize(input);
 
-  const byFullName = guests.find((g) => g.normalizedName === normalizedInput);
-  if (byFullName) return byFullName;
+  const byFullName = guests.filter((g) => g.normalizedName === normalizedInput);
+  if (byFullName.length > 0) return byFullName;
 
-  const byTitle = guests.filter(
+  return guests.filter(
     (g) => g.invitationTitle && normalize(g.invitationTitle) === normalizedInput
   );
-  return byTitle.length === 1 ? byTitle[0] : null;
 }
 
 /**

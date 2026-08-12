@@ -13,10 +13,23 @@
  * (equivalent to spaces) so that hyphenated names match regardless of whether
  * the guest types the hyphen (e.g. "Jean-Pierre" and "Jean Pierre" both
  * normalize to "jean pierre").
+ *
+ * Ligature and stroke letters (œ, æ, ø, ł, ß, đ) have no NFD decomposition,
+ * so the accent strip leaves them untouched — a record holding "Cœur" or
+ * "Groß" would never match the conventional ASCII form the guest actually
+ * types ("Coeur", "Gross"), and vice versa. Fold them explicitly.
  */
 export function normalize(input: string): string {
   return input
     .toLowerCase()
+    // Non-decomposable letters, folded to their conventional ASCII spellings.
+    // After toLowerCase, so only the lowercase forms need mapping.
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'o')
+    .replace(/ł/g, 'l')
+    .replace(/ß/g, 'ss')
+    .replace(/đ/g, 'd')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     // Apostrophe-like: straight ', curly (U+2018/U+2019), modifier letter

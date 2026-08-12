@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import {
-  validateGuestFromRecords,
+  matchGuestsFromRecords,
   getHardcodedGuestRecords,
   createSessionToken,
   createClaimToken,
@@ -10,14 +10,30 @@ import {
   SessionSecretMissingError,
 } from '../../lib/auth';
 import { features } from '../../config/features';
-import { findGuestByName, findHouseholdByEnvelopeName, getGuestById } from '../../lib/notion';
+import { findGuestsByName, findHouseholdByEnvelopeName, getGuestById } from '../../lib/notion';
 import { findMatchingHousehold } from '../../lib/envelope-name';
 import type { EventInvitation } from '../../lib/auth';
 import type { GuestRecord } from '../../types';
 import { getPrimaryEventRoute } from '../../lib/event-routing';
 import { getDefaultLocale } from '../../lib/locale-routing';
-import { checkRateLimit, clientIp, rateLimitResponse } from '../../lib/rate-limit';
+import {
+  checkRateLimit,
+  clientIp,
+  rateLimitResponse,
+  refundRateLimitHit,
+} from '../../lib/rate-limit';
 import { isTestGuest } from '../../lib/test-guests';
+
+/**
+ * The guest backend (Notion) could not answer. Distinct from "no such name":
+ * this must surface as a 503, never the 401 typo message — a guest retrying
+ * their own correct name during an outage would otherwise burn through the
+ * rate-limit bucket chasing a spelling error that doesn't exist.
+ */
+class LoginBackendUnavailableError extends Error {}
+
+const BACKEND_UNAVAILABLE_MESSAGE =
+  'Login is temporarily unavailable. Please try again in a few minutes.';
 
 /** Strict login rate limit — primary name-enumeration vector. */
 const LOGIN_LIMIT = 10;
@@ -91,18 +107,20 @@ async function resolveGuestById(guestId: string): Promise<ResolvedGuest | null> 
 async function resolveByName(name: string): Promise<GuestRecord[]> {
   if (features.global.notionBackend) {
     try {
-      const exact = await findGuestByName(name);
-      if (exact) return [exact];
+      const exact = await findGuestsByName(name);
+      if (exact.length > 0) return exact;
 
       if (!features.global.envelopeLogin) return [];
 
       const household = await findHouseholdByEnvelopeName(name);
       if (household) return household;
     } catch (err) {
-      // Notion unreachable or unconfigured — fall through to the hardcoded
-      // list, which runs the same exact-then-envelope sequence below.
-      console.error('Notion fetch failed, falling back to hardcoded list:', err);
-      return resolveFromHardcodedList(name);
+      // Notion unreachable. The hardcoded list is NOT a fallback here — it
+      // holds only synthetic guests, so falling through to it answered every
+      // real guest with the 401 "Name not found, it must match exactly."
+      // typo message during an outage. Surface the outage instead.
+      console.error('Notion fetch failed during login:', err);
+      throw new LoginBackendUnavailableError();
     }
     return [];
   }
@@ -116,8 +134,8 @@ function resolveFromHardcodedList(name: string): GuestRecord[] {
 
   // Full Name then invitation title — the same matcher the Notion path uses,
   // so both backend modes accept exactly the same set of typed names.
-  const exact = validateGuestFromRecords(name, records);
-  if (exact) return [exact];
+  const exact = matchGuestsFromRecords(name, records);
+  if (exact.length > 0) return exact;
 
   if (!features.global.envelopeLogin) return [];
 
@@ -191,7 +209,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ error: 'That took too long. Please enter your name again.', claimExpired: true }, 401);
     }
 
-    const guest = await resolveGuestById(guestId);
+    let guest: ResolvedGuest | null;
+    try {
+      guest = await resolveGuestById(guestId);
+    } catch (err) {
+      // Step 1 degrades gracefully on a Notion blip; redemption must too —
+      // a guest mid-picker during an outage should see "temporarily
+      // unavailable", not an unexplained failure, and the attempt shouldn't
+      // count against them.
+      console.error('Notion fetch failed during claim redemption:', err);
+      refundRateLimitHit(`claim:${ip}`);
+      return json({ error: BACKEND_UNAVAILABLE_MESSAGE }, 503);
+    }
     // Same 401 as an unknown id — a blocked bot must be indistinguishable from
     // a name that does not exist, so this can't be used to confirm one.
     if (!guest || denyTestGuests([guest]).length === 0) {
@@ -211,7 +240,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ error: 'Please enter your name' }, 400);
   }
 
-  const matches = denyTestGuests(await resolveByName(name));
+  let matches: GuestRecord[];
+  try {
+    matches = denyTestGuests(await resolveByName(name));
+  } catch (err) {
+    if (err instanceof LoginBackendUnavailableError) {
+      // Not the guest's fault — refund the attempt so retrying after the
+      // outage doesn't stack a 429 lockout on top of it.
+      refundRateLimitHit(`login:${ip}`);
+      return json({ error: BACKEND_UNAVAILABLE_MESSAGE }, 503);
+    }
+    throw err;
+  }
 
   if (matches.length === 0) {
     // Small constant delay to blunt timing/volume enumeration (best-effort)
@@ -222,6 +262,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   // One person named — log them straight in, same as a full-name login.
   if (matches.length === 1) {
     return completeLogin(toResolvedGuest(matches[0]), cookies);
+  }
+
+  // Several records answer to this exact name. The identity picker can only
+  // help when the guest can tell the candidates apart — with identical
+  // display names it would ask them to recognise their own name among
+  // duplicates. Fail closed rather than minting `matches[0]`'s session for
+  // whoever typed the shared name (that is the cross-household failure this
+  // path exists to prevent). Disambiguate in Notion (middle name, or an
+  // `Also Known As` line) so each record can reach their own account.
+  const displayNames = new Set(matches.map((guest) => guest.name));
+  if (displayNames.size < matches.length) {
+    console.warn(
+      `Login name matches ${matches.length} records with indistinguishable display names — refusing sign-in. Disambiguate the Notion records so each can reach their own account.`,
+      matches.map((guest) => guest.id)
+    );
+    await new Promise((r) => setTimeout(r, 200));
+    return json({ error: 'Name not found, it must match exactly.' }, 401);
   }
 
   // The name identifies an envelope, not a person. Ask who they are before

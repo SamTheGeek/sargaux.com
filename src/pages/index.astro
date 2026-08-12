@@ -75,6 +75,7 @@ const identityExpired = t(strings.home.identity.expired);
                     placeholder={t(strings.home.modal.namePlaceholder)}
                     autocomplete="off"
                     autocapitalize="words"
+                    autocorrect="off"
                     spellcheck="false"
                     required
                   />
@@ -655,6 +656,11 @@ const identityExpired = t(strings.home.identity.expired);
           nameInput.disabled = submitting;
           inlineSubmit.disabled = submitting;
           submitBtn.disabled = submitting;
+          // Identity-picker options are created dynamically — disable them
+          // too so a second tap during redemption has no target.
+          identityOptions.querySelectorAll('button').forEach((option) => {
+            option.disabled = submitting;
+          });
           submitBtn.textContent = submitting ? checkingLabel : submitLabel;
           inlineSubmit.setAttribute('aria-label', submitting ? checkingLabel : 'Submit name');
         };
@@ -791,6 +797,9 @@ const identityExpired = t(strings.home.identity.expired);
               option.className = 'identity-option';
               option.textContent = candidate.name;
               option.addEventListener('click', async () => {
+                // Same re-entrancy guard as the name step — a double-tap here
+                // fired two concurrent claim redemptions and two navigations.
+                if (isSubmitting) return;
                 // Re-show the name field if the claim aged out mid-pick
                 const body = new FormData();
                 body.append('claim', claim);
