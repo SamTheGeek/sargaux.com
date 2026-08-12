@@ -7,6 +7,7 @@ import { createTranslator } from '../../lib/i18n';
 import { localizeEvent } from '../../lib/event-i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
+import { memberAttendedResponse } from '../../lib/rsvp-attendance';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
@@ -139,12 +140,6 @@ if (isPreview) {
   }
 }
 
-const attendingNames = new Set(
-  (existingRSVP?.guestsAttending ?? '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
-);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const existingDetails = existingRSVP?.details ?? {};
 const lang = Astro.locals.lang ?? 'en';
@@ -223,8 +218,13 @@ const submittedAtFallback = submittedAtISO
               // With a stored response, the toggle mirrors it exactly — a
               // declined RSVP (empty attendee list) re-opens with everyone
               // off, not the first-visit default of checked non-plus-ones.
+              // Resolved by recorded per-member attendance, then Status, then
+              // names — never names alone: a renamed member (maiden surname,
+              // Also Known As form, a named +1) no longer matches the stored
+              // attendee list, and pre-filling them as "not attending" lets
+              // an unrelated update silently persist a decline for them.
               const isAttending = existingRSVP
-                ? attendingNames.has(partyGuest.name)
+                ? memberAttendedResponse(existingRSVP, partyGuest)
                 : !partyGuest.isPlusOne;
 
               return (
@@ -329,6 +329,7 @@ const submittedAtFallback = submittedAtISO
               class="text-input"
               placeholder={t(strings.france.rsvp.form.dietary.placeholder)}
               rows="3"
+              maxlength="2000"
             >{existingDetails.allergens ?? existingRSVP?.dietary ?? ''}</textarea>
           </section>
 
@@ -356,6 +357,7 @@ const submittedAtFallback = submittedAtISO
             <textarea
               name="message"
               class="text-input"
+              maxlength="2000"
               placeholder={t(strings.france.rsvp.form.message.placeholder)}
               rows="4"
             >{existingRSVP?.message ?? ''}</textarea>

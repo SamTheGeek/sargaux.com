@@ -99,6 +99,25 @@ test.describe('memberAttendedResponse — Status against the relation', () => {
       )
     ).toBe(false);
   });
+
+  test('form pre-fill: a renamed member with recorded attendance stays checked', () => {
+    // The RSVP form pre-fills each toggle through this function. A member
+    // renamed since a Partial response must re-open as attending when the
+    // recorded map says so — name matching alone would show them unchecked,
+    // and an unrelated update (dietary edit, partner change) would then
+    // silently persist a decline for them.
+    const renamed = member('Camille Garnier', camille.id);
+    expect(
+      memberAttendedResponse(
+        response({
+          status: 'Partial',
+          guestsAttending: 'Camille Muller',
+          attendanceById: { [camille.id]: true, [theo.id]: false },
+        }),
+        renamed
+      )
+    ).toBe(true);
+  });
 });
 
 test.describe('memberAttendedResponse — members off the relation', () => {

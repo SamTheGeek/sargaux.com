@@ -66,10 +66,13 @@ export function withRecipient(
 /**
  * Send one email per guest, isolating failures so one bad address
  * doesn't stop the rest (fire-and-forget bulk).
+ *
+ * Generic over the recipient shape so callers can thread extra per-recipient
+ * data (e.g. a Notion guest id for per-guest calendar links) into the builder.
  */
-export async function sendToGuests(
-  guests: { email: string; name: string }[],
-  buildPayload: (guest: { email: string; name: string }) => EmailPayload
+export async function sendToGuests<G extends { email: string; name: string }>(
+  guests: G[],
+  buildPayload: (guest: G) => EmailPayload
 ): Promise<{ sent: number; failed: number }> {
   let sent = 0;
   let failed = 0;

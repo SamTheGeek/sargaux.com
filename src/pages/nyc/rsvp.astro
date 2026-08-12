@@ -10,6 +10,7 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import LoadingDots from '../../components/LoadingDots.astro';
 import { formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import { localizeEvent } from '../../lib/event-i18n';
+import { memberAttendedResponse } from '../../lib/rsvp-attendance';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
@@ -107,12 +108,6 @@ if (isPreview) {
   }
 }
 
-const attendingNames = new Set(
-  (existingRSVP?.guestsAttending ?? '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
-);
 const selectedEventIds = new Set(existingRSVP?.eventsAttending ?? []);
 const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
@@ -223,7 +218,14 @@ const submittedAtFallback = submittedAtISO
                 // With a stored response, the toggle mirrors it exactly — a
                 // declined RSVP (empty attendee list) re-opens with everyone
                 // off, not the first-visit default of checked non-plus-ones.
-                const isAttending = existingRSVP ? attendingNames.has(partyGuest.name) : !partyGuest.isPlusOne;
+                // Resolved by recorded per-member attendance, then Status, then
+                // names — never names alone: a renamed member (maiden surname,
+                // Also Known As form, a named +1) no longer matches the stored
+                // attendee list, and pre-filling them as "not attending" lets
+                // an unrelated update silently persist a decline for them.
+                const isAttending = existingRSVP
+                  ? memberAttendedResponse(existingRSVP, partyGuest)
+                  : !partyGuest.isPlusOne;
                 return (
                   <div class:list={['guest-row', partyGuest.isPlusOne && 'plus-one']} data-guest-row data-guest-id={partyGuest.id}>
                     <label class="guest-toggle">
@@ -330,6 +332,7 @@ const submittedAtFallback = submittedAtISO
               class="text-input"
               placeholder={t(strings.nyc.rsvp.form.dietary.placeholder)}
               rows="3"
+              maxlength="2000"
             >{existingRSVP?.dietary ?? ''}</textarea>
           </div>
 
@@ -341,6 +344,7 @@ const submittedAtFallback = submittedAtISO
               class="text-input"
               placeholder={t(strings.nyc.rsvp.form.message.placeholder)}
               rows="4"
+              maxlength="2000"
             >{existingRSVP?.message ?? ''}</textarea>
           </div>
 

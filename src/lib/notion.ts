@@ -906,6 +906,23 @@ async function detachFromSharedResponse(
 }
 
 /**
+ * Notion rejects any single rich_text item whose content exceeds 2,000
+ * characters. Values that can legitimately grow past that (the Details JSON
+ * blob, whose `attendance` array scales with party size and which carries the
+ * France allergens free text) must be split across multiple items — the API
+ * accepts up to 100 per property, and `getRichTextPlainText` re-joins them.
+ */
+const RICH_TEXT_ITEM_MAX_CHARS = 2_000;
+
+export function toRichTextItems(content: string): { text: { content: string } }[] {
+  const items: { text: { content: string } }[] = [];
+  for (let i = 0; i < content.length; i += RICH_TEXT_ITEM_MAX_CHARS) {
+    items.push({ text: { content: content.slice(i, i + RICH_TEXT_ITEM_MAX_CHARS) } });
+  }
+  return items.length > 0 ? items : [{ text: { content: '' } }];
+}
+
+/**
  * Submit or update an RSVP in the RSVP Responses database.
  * If an existing response exists for this guest + event, it will be updated.
  * Returns the Notion page ID of the created/updated response.
@@ -1036,7 +1053,10 @@ export async function submitRSVP(
         : [],
     },
     Details: {
-      rich_text: [{ text: { content: JSON.stringify(details) } }],
+      // Chunked: the JSON grows with party size and free-text detail fields
+      // (France allergens), and a single item over 2,000 chars makes Notion
+      // reject the whole write — which surfaced to guests as a 500 on submit.
+      rich_text: toRichTextItems(JSON.stringify(details)),
     },
   };
 
@@ -1133,61 +1153,95 @@ export async function submitRSVP(
   // status → Received (advance-forward only), Last RSVP, Events Attending
   // relation, party dietary text, and — when the form threaded a guestId — a
   // persisted name edit.
-  await Promise.all(
-    party.map((member) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const props: Record<string, any> = {};
+  //
+  // Derived-state writes (RSVP status, dietary, etc.) are non-fatal: the
+  // response row above is already saved, and the next submission (or the
+  // admin backfill) reconverges. Name edits are different — First/Last and
+  // Name of Guest only land here, and the form/login read those Guest List
+  // fields. Swallowing a rename failure would show success while the typed
+  // name (+1 especially) reverts on reload, so those updates stay fatal.
+  const nameWrites: Promise<unknown>[] = [];
+  const derivedWrites: Promise<unknown>[] = [];
 
-      const rsvpStatus = memberRsvpStatus(member);
-      if (rsvpStatus) props.RSVP = { status: { name: rsvpStatus } };
+  for (const member of party) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props: Record<string, any> = {};
 
-      if (member.eventInvitations.includes(submission.event)) {
-        if (submission.event === 'nyc' && member.nycInviteStatus !== 'Received') {
-          props['NYC Invite Sent'] = { status: { name: 'Received' } };
-        } else if (
-          submission.event === 'france' &&
-          member.franceSaveTheDateStatus !== 'Received'
-        ) {
-          props['France Save the Date Sent'] = { status: { name: 'Received' } };
-        }
+    const rsvpStatus = memberRsvpStatus(member);
+    if (rsvpStatus) props.RSVP = { status: { name: rsvpStatus } };
+
+    if (member.eventInvitations.includes(submission.event)) {
+      if (submission.event === 'nyc' && member.nycInviteStatus !== 'Received') {
+        props['NYC Invite Sent'] = { status: { name: 'Received' } };
+      } else if (
+        submission.event === 'france' &&
+        member.franceSaveTheDateStatus !== 'Received'
+      ) {
+        props['France Save the Date Sent'] = { status: { name: 'Received' } };
       }
+    }
 
-      props['Last RSVP'] = { date: { start: nowIso } };
-      props['Events Attending'] = {
-        relation: eventsAttendingForMember(member).map((id) => ({ id })),
-      };
-      props['Dietary Needs'] = {
-        rich_text: submission.dietary ? [{ text: { content: submission.dietary } }] : [],
-      };
+    props['Last RSVP'] = { date: { start: nowIso } };
+    props['Events Attending'] = {
+      relation: eventsAttendingForMember(member).map((id) => ({ id })),
+    };
+    props['Dietary Needs'] = {
+      rich_text: submission.dietary ? [{ text: { content: submission.dietary } }] : [],
+    };
 
-      // Persist a name edit only when the form threaded this member's guestId
-      // and the typed name differs. Writes First/Last (drives Full Name) and the
-      // Name of Guest title so login and display stay consistent. This is how an
-      // unnamed plus-one gets a real name — see src/lib/guest-name.ts.
-      const nameEdit = guestNameEdit(member.name, submittedById.get(member.id)?.name);
-      if (nameEdit) {
-        props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
-        props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
-        props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
+    // Persist a name edit only when the form threaded this member's guestId
+    // and the typed name differs. Writes First/Last (drives Full Name) and the
+    // Name of Guest title so login and display stay consistent. This is how an
+    // unnamed plus-one gets a real name — see src/lib/guest-name.ts.
+    const nameEdit = guestNameEdit(member.name, submittedById.get(member.id)?.name);
+    if (nameEdit) {
+      props['First Name'] = { rich_text: [{ text: { content: nameEdit.first } }] };
+      props['Last Name'] = { rich_text: [{ text: { content: nameEdit.last } }] };
+      props['Name of Guest'] = { title: [{ text: { content: nameEdit.title } }] };
 
-        // A rename overwrites the only copy of the name their invitation was
-        // addressed with. Keep it in `Also Known As` so they can still log in
-        // as it — but not for an unnamed plus-one, whose "<host> +1" is a slot
-        // rather than a name.
-        const formerName = preserveFormerName(member.name, member.aka);
-        if (formerName) {
-          props['Also Known As'] = { rich_text: [{ text: { content: formerName } }] };
-        }
+      // A rename overwrites the only copy of the name their invitation was
+      // addressed with. Keep it in `Also Known As` so they can still log in
+      // as it — but not for an unnamed plus-one, whose "<host> +1" is a slot
+      // rather than a name.
+      const formerName = preserveFormerName(member.name, member.aka);
+      if (formerName) {
+        props['Also Known As'] = { rich_text: [{ text: { content: formerName } }] };
       }
+    }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return notion.pages.update({ page_id: member.id, properties: props as any });
-    })
-  );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const update = notion.pages.update({ page_id: member.id, properties: props as any });
+    if (nameEdit) nameWrites.push(update);
+    else derivedWrites.push(update);
+  }
+
+  try {
+    // Fatal when the guest typed a new name — surface the failure so they retry
+    // rather than seeing a success that reverts on reload.
+    await Promise.all(nameWrites);
+  } catch (error) {
+    // A partial batch may have renamed some members already.
+    clearGuestCache();
+    console.error(
+      `Guest List name write-back failed after RSVP response ${responseId} was saved:`,
+      error
+    );
+    throw error;
+  }
+
+  try {
+    await Promise.all(derivedWrites);
+  } catch (error) {
+    console.error(
+      `Guest List write-back failed after RSVP response ${responseId} was saved (non-fatal):`,
+      error
+    );
+  }
 
   // Guest List rows changed (status, name, attending events) — drop the cache so
   // reads (middleware, RSVP pre-fill, the API's post-submit name re-sign) see the
-  // new values instead of a stale 15-min entry.
+  // new values instead of a stale 15-min entry. Cleared even when the derived
+  // write-back failed: a partial batch may have landed some members' updates.
   clearGuestCache();
 
   return responseId;
@@ -1288,8 +1342,15 @@ export async function getLatestRSVP(
 }
 
 function getRichTextPlainText(prop: any): string | undefined {
-  if (!prop || !Array.isArray(prop.rich_text)) return undefined;
-  return prop.rich_text[0]?.plain_text;
+  if (!prop || !Array.isArray(prop.rich_text) || prop.rich_text.length === 0) {
+    return undefined;
+  }
+  // Concatenate every item, not just the first: long values are split across
+  // multiple rich_text items — both by Notion itself when a cell is hand-edited
+  // and by our own writes (`toRichTextItems` chunks anything over 2,000 chars).
+  return prop.rich_text
+    .map((item: { plain_text?: string }) => item?.plain_text ?? '')
+    .join('');
 }
 
 export function parseRSVPPage(
