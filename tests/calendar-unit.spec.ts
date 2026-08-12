@@ -94,6 +94,70 @@ test.describe('buildICS', () => {
     const ics = buildICS([NYC_EVENT]);
     expect(ics).toContain('UID:event-nyc-1@sargaux.com');
   });
+
+  test('an event ending inside the 23:00 hour keeps its real end time', () => {
+    // The old clamp rounded ANY end in hour 23 up to 23:59 — a 21:30 + 2h
+    // dinner showed as ending at 23:59 instead of 23:30.
+    const lateDinner: EventWithDate = { ...NYC_EVENT, startTime: '9:30 PM', duration: '2h' };
+    const ics = buildICS([lateDinner]);
+    expect(ics).toContain('DTEND;TZID=America/New_York:20261011T233000');
+  });
+
+  test('a midnight-crossing event is clamped to 23:59', () => {
+    const allNighter: EventWithDate = { ...NYC_EVENT, startTime: '11:00 PM', duration: '3h' };
+    const ics = buildICS([allNighter]);
+    expect(ics).toContain('DTEND;TZID=America/New_York:20261011T235900');
+  });
+
+  test('emits a VTIMEZONE for each TZID actually referenced', () => {
+    const nycOnly = buildICS([NYC_EVENT]);
+    expect(nycOnly).toContain('TZID:America/New_York');
+    expect(nycOnly).toContain('BEGIN:VTIMEZONE');
+    expect(nycOnly).not.toContain('TZID:Europe/Paris');
+
+    const both = buildICS([NYC_EVENT, { ...FRANCE_EVENT, startTime: '14:00' }]);
+    expect((both.match(/BEGIN:VTIMEZONE/g) ?? []).length).toBe(2);
+
+    // All-day events carry no TZID, so no VTIMEZONE either
+    const allDay = buildICS([FRANCE_EVENT]);
+    expect(allDay).not.toContain('BEGIN:VTIMEZONE');
+  });
+
+  test('an unparseable Start Time falls back to all-day instead of vanishing', () => {
+    const badTime: EventWithDate = { ...NYC_EVENT, startTime: 'around sunset' };
+    const ics = buildICS([badTime]);
+    expect(ics).toContain('DTSTART;VALUE=DATE:20261011');
+    expect(ics).toContain('BEGIN:VEVENT');
+  });
+
+  test('folds long lines by UTF-8 octets without splitting characters', () => {
+    const accented: EventWithDate = {
+      ...FRANCE_EVENT,
+      startTime: '14:00',
+      // é is 2 octets in UTF-8 — long enough to force several folds, and
+      // positioned so a code-unit-based fold would split one in half.
+      location: 'Château de Sully — Salle des Fêtes, Allée des Érables numéro '.repeat(4),
+    };
+    const ics = buildICS([accented]);
+    const utf8 = new TextEncoder();
+    for (const line of ics.split('\r\n')) {
+      expect(utf8.encode(line).length, `line too long: ${line}`).toBeLessThanOrEqual(75);
+    }
+    // Unfolding restores the original text — nothing was dropped or split
+    const unfolded = ics.replace(/\r\n /g, '');
+    expect(unfolded).toContain('Salle des Fêtes');
+  });
+
+  test('carriage returns in text fields never reach the output raw', () => {
+    const windowsPaste: EventWithDate = {
+      ...NYC_EVENT,
+      description: 'Line one\r\nLine two\rLine three',
+    };
+    const ics = buildICS([windowsPaste]);
+    // \r may only appear as part of the \r\n line terminator
+    expect(ics.replace(/\r\n/g, '')).not.toContain('\r');
+    expect(ics).toContain('DESCRIPTION:Line one\\nLine two\\nLine three');
+  });
 });
 
 test.describe('buildICS — French localization', () => {
@@ -168,6 +232,22 @@ test.describe('parseTime', () => {
 
   test('parses 24-hour format', () => {
     expect(parseTime('14:00')).toEqual({ hour: 14, minute: 0 });
+  });
+
+  test('parses minute-less 12-hour times', () => {
+    expect(parseTime('6 PM')).toEqual({ hour: 18, minute: 0 });
+    expect(parseTime('12 AM')).toEqual({ hour: 0, minute: 0 });
+  });
+
+  test('tolerates surrounding whitespace', () => {
+    expect(parseTime(' 6:00 PM ')).toEqual({ hour: 18, minute: 0 });
+  });
+
+  test('rejects out-of-range values instead of emitting nonsense times', () => {
+    expect(parseTime('25:00')).toBeUndefined();
+    expect(parseTime('14:75')).toBeUndefined();
+    expect(parseTime('0:30 PM')).toBeUndefined();
+    expect(parseTime('13:00 PM')).toBeUndefined();
   });
 
   test('returns undefined for unparseable input', () => {

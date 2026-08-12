@@ -4,25 +4,35 @@ import { buildICS } from './calendar';
 import { setICS } from './ics-store';
 import { getDefaultLocale } from './locale-routing';
 import { excludeTestGuests, isTestGuest } from './test-guests';
-import type { EventRecord } from '../types';
+import type { EventRecord, RSVPResponse } from '../types';
 
 /**
- * Generate and store an ICS file for a single guest.
+ * Generate and store an ICS file for a single guest. Returns the ICS content
+ * so on-demand callers (the subscription endpoint's blob-miss fallback) can
+ * serve it without a second blob read.
+ *
  * The calendar contains only the events the guest has RSVP'd to attend
  * (latest non-declined response per wedding) — never the full invitation.
  * Guests who have not RSVP'd get a valid empty calendar.
  * The calendar language follows the guest's locale (Country → locale rule,
  * same as the login default) since subscription feeds are polled without a
  * session.
- * Used by the RSVP trigger.
+ * Used by the RSVP trigger, which passes the response it just wrote as
+ * `justSubmitted` — Notion's query index can lag a fresh write, so
+ * re-querying immediately after submit can regenerate the calendar from the
+ * *previous* answer.
  */
-export async function generateAndStoreICSForGuest(guestId: string): Promise<void> {
+export async function generateAndStoreICSForGuest(
+  guestId: string,
+  justSubmitted?: RSVPResponse
+): Promise<string> {
   const [events, guest] = await Promise.all([
-    getAttendingEvents(guestId),
+    getAttendingEvents(guestId, justSubmitted),
     getGuestById(guestId),
   ]);
   const ics = buildICS(events, getDefaultLocale(guest?.country));
   await setICS(guestId, ics);
+  return ics;
 }
 
 /**

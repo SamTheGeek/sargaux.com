@@ -770,8 +770,16 @@ export async function getGuestEvents(guestId: string): Promise<EventRecord[]> {
  * `eventsAttending` across their latest non-declined response per wedding.
  * Guests who have not RSVP'd (or declined everything) get an empty list.
  * This is the source of truth for the personalized calendar ICS.
+ *
+ * `justSubmitted` overrides the stored lookup for its event: right after a
+ * submission, Notion's query index may not include the row just written, so
+ * `getLatestRSVP` can return the previous answer and the regenerated
+ * calendar would carry the schedule the guest just changed away from.
  */
-export async function getAttendingEvents(guestId: string): Promise<EventRecord[]> {
+export async function getAttendingEvents(
+  guestId: string,
+  justSubmitted?: RSVPResponse
+): Promise<EventRecord[]> {
   const guest = await getGuestById(guestId);
   const weddings = guest?.eventInvitations ?? [];
 
@@ -781,7 +789,13 @@ export async function getAttendingEvents(guestId: string): Promise<EventRecord[]
 
   const [catalogs, rsvps] = await Promise.all([
     Promise.all(weddings.map((wedding) => getEventCatalog(wedding))),
-    Promise.all(weddings.map((wedding) => getLatestRSVP(guestId, wedding))),
+    Promise.all(
+      weddings.map((wedding) =>
+        justSubmitted && justSubmitted.event === wedding
+          ? Promise.resolve(justSubmitted)
+          : getLatestRSVP(guestId, wedding)
+      )
+    ),
   ]);
 
   const attendingIds = new Set<string>();
@@ -943,12 +957,15 @@ export function toRichTextItems(content: string): { text: { content: string } }[
 /**
  * Submit or update an RSVP in the RSVP Responses database.
  * If an existing response exists for this guest + event, it will be updated.
- * Returns the Notion page ID of the created/updated response.
+ *
+ * Returns the response as written, so the caller can regenerate calendars
+ * from it directly — re-querying Notion immediately after the write races
+ * its query-index lag and can return the previous response.
  */
 export async function submitRSVP(
   guestId: string,
   submission: RSVPSubmission
-): Promise<string> {
+): Promise<RSVPResponse> {
   const notion = getClient();
   const dataSourceId = process.env.NOTION_RSVP_RESPONSES_DB;
 
@@ -1263,7 +1280,23 @@ export async function submitRSVP(
   // Awaited so the blob delete lands before the endpoint's follow-up reads.
   await clearGuestCache();
 
-  return responseId;
+  // The response as written — the same shape parseRSVPPage would read back.
+  return {
+    id: responseId,
+    guestId,
+    guestIds: partyIds,
+    event: submission.event,
+    submittedAt: properties['Submitted At'].date.start,
+    status,
+    guestsAttending,
+    dietary: submission.dietary,
+    message: submission.message,
+    details: submission.details,
+    eventsAttending: submission.eventsAttending,
+    attendanceById: Object.fromEntries(
+      (details.attendance ?? []).map((entry) => [entry.guestId, entry.attending])
+    ),
+  };
 }
 
 /**
