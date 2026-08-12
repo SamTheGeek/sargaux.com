@@ -35,15 +35,19 @@ class LoginBackendUnavailableError extends Error {}
 const BACKEND_UNAVAILABLE_MESSAGE =
   'Login is temporarily unavailable. Please try again in a few minutes.';
 
-/** Strict login rate limit — primary name-enumeration vector. */
-const LOGIN_LIMIT = 10;
+/**
+ * Login rate limit — primary name-enumeration vector, but keyed per IP.
+ * Households on hotel Wi-Fi / CGNAT share one bucket, and envelope login
+ * can take a few tries, so this is a burst brake rather than a tight cap.
+ */
+const LOGIN_LIMIT = 40;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Redeeming an identity claim gets its own bucket. It is not an enumeration
  * vector — the claim already names the only IDs it can be redeemed for — and
- * charging it to the login bucket would make every two-step login cost two of
- * the ten attempts.
+ * charging it to the login bucket would make every two-step login cost two
+ * attempts.
  */
 const CLAIM_LIMIT = 20;
 const CLAIM_WINDOW_MS = 15 * 60 * 1000;
