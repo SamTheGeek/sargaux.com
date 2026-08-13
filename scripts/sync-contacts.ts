@@ -16,7 +16,8 @@
  *       1. Upsert all Notion guests (with email) into the appropriate audience(s)
  *       2. Remove any contacts whose emails are no longer in the Notion list
  *   - Guests invited to both events appear in BOTH audiences
- *   - Guests without an email are counted and logged, not errored
+ *   - Guests without a usable email are counted and logged, not errored — an
+ *     address Notion stored as a `mailto:` link is normalized first
  */
 
 import { Resend } from 'resend';
@@ -71,6 +72,28 @@ interface ResendContact {
 
 // ─── Notion helpers ───────────────────────────────────────────────────────────
 
+/**
+ * A Notion email property holds whatever was typed into it, so an address pasted
+ * as a link is stored as `mailto:someone@example.com`. Resend rejects that with a
+ * 422, and because a rejected upsert counts as a failed operation, one such row
+ * exits the whole sync non-zero — every scheduled run stayed red for a single
+ * guest while the other ~95 synced fine.
+ *
+ * Strip what a paste leaves behind, and treat anything still unusable as "no
+ * email on file", which this script already tolerates and reports.
+ */
+const EMAIL_RE = /^[^\s@,;:<>]+@[^\s@,;:<>]+\.[A-Za-z]{2,}$/;
+
+function normalizeEmail(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw
+    .trim()
+    .replace(/^mailto:/i, '')
+    .replace(/^<|>$/g, '')
+    .trim();
+  return EMAIL_RE.test(cleaned) ? cleaned : undefined;
+}
+
 async function fetchNotionGuests(): Promise<NotionGuest[]> {
   const guests: NotionGuest[] = [];
   let cursor: string | undefined;
@@ -121,7 +144,12 @@ async function fetchNotionGuests(): Promise<NotionGuest[]> {
         '';
       if (!fullName) continue;
 
-      const email: string | undefined = props['Guest Email']?.email ?? undefined;
+      const rawEmail: string | undefined = props['Guest Email']?.email ?? undefined;
+      const email = normalizeEmail(rawEmail);
+      if (rawEmail && !email) {
+        // Page ID, never the address — this repo is public, so are its Actions logs.
+        console.warn(`  ⚠️  Unusable email on Guest List page ${page.id} — treating as no email`);
+      }
       const normalizedName = normalize(fullName);
       if (isTestGuestFromNotionProps(props) || isTestGuest({ normalizedName })) continue;
 
