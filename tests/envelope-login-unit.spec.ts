@@ -162,8 +162,9 @@ test.describe('matchHousehold — first-name combinations', () => {
     });
   });
 
-  test('matches first names alone', () => {
-    expect(matchHousehold('Alex Jordan', riveras)).toEqual({ memberIds: ['a', 'b'] });
+  test('rejects first names with no surname — a login is not a first name', () => {
+    expect(matchHousehold('Alex Jordan', riveras)).toBeNull();
+    expect(matchHousehold('Alex', riveras)).toBeNull();
   });
 
   test('tolerates a title on the envelope', () => {
@@ -180,7 +181,9 @@ test.describe('matchHousehold — first-name combinations', () => {
     expect(matchHousehold('Dr. Riley Dubois & Casey Morgan', morganDubois)).toEqual({
       memberIds: ['c', 'd'],
     });
-    expect(matchHousehold('Casey & Dr. Riley', morganDubois)).toEqual({ memberIds: ['c', 'd'] });
+    // Both given names, no surname: the title is stripped, and what remains
+    // names the household by first name alone, which is no longer enough.
+    expect(matchHousehold('Casey & Dr. Riley', morganDubois)).toBeNull();
   });
 
   test('rejects a bare surname — it names nobody', () => {
@@ -337,7 +340,8 @@ test.describe('matchHousehold — multi-token given names', () => {
     expect(matchHousehold('Frances Holloway', sharedFirst)).toEqual({
       memberIds: ['d1', 'd2'],
     });
-    expect(matchHousehold('Frances', sharedFirst)).toEqual({ memberIds: ['d1', 'd2'] });
+    // ...but the surname is still required to get that far
+    expect(matchHousehold('Frances', sharedFirst)).toBeNull();
   });
 
   test('an unnamed +1 is offered alongside the host they are recorded under', () => {
@@ -531,9 +535,11 @@ test.describe('matchHousehold — Also Known As', () => {
     }),
   ];
 
-  test('accepts a single-token nickname on its own and with a surname', () => {
-    expect(matchHousehold('Pet', nickname)).toEqual({ memberIds: ['n1'] });
+  test('accepts a single-token nickname with a surname, never on its own', () => {
     expect(matchHousehold('Pet Nwachukwu', nickname)).toEqual({ memberIds: ['n1'] });
+    // A nickname widens which token satisfies the given-name half of the rule.
+    // It never removes the surname half — a nickname is not a login.
+    expect(matchHousehold('Pet', nickname)).toBeNull();
   });
 
   test('composes with the rest of the household', () => {
@@ -546,6 +552,33 @@ test.describe('matchHousehold — Also Known As', () => {
 
   test('does not admit a name nobody answers to', () => {
     expect(matchHousehold('Pat Nwachukwu', nickname)).toBeNull();
+  });
+
+  test('a full name in the alias field does not make the alias stand alone', () => {
+    // Writing the whole name into `Also Known As` is the intuitive fix for a
+    // nickname logging in on its own, and it does not work: the line is read as
+    // given name + surname, so the given half still stands exactly where the
+    // bare nickname did. Only the surname requirement stops it.
+    const fullNameAlias = [
+      guest({
+        id: 'f1',
+        name: 'Perpetua Nwachukwu',
+        firstName: 'Perpetua',
+        lastName: 'Nwachukwu',
+        relatedGuestIds: ['f2'],
+        aka: ['Pet Nwachukwu'],
+      }),
+      guest({
+        id: 'f2',
+        name: 'Bode Nwachukwu',
+        firstName: 'Bode',
+        lastName: 'Nwachukwu',
+        relatedGuestIds: ['f1'],
+      }),
+    ];
+
+    expect(matchHousehold('Pet Nwachukwu', fullNameAlias)).toEqual({ memberIds: ['f1'] });
+    expect(matchHousehold('Pet', fullNameAlias)).toBeNull();
   });
 });
 
@@ -817,5 +850,95 @@ test.describe('Identity claim tokens', () => {
     const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const hmac = hmacSha256Hex(process.env.SESSION_HMAC_SECRET!, payloadB64, 32);
     expect(parseClaimToken(`${payloadB64}.${hmac}`)).toBeNull();
+  });
+});
+
+/**
+ * The surname requirement, exercised across every way a given name can be
+ * derived. Each case asserts both halves: the given name alone is refused, and
+ * the same given name plus a household surname still works — so a failure here
+ * means the requirement moved, not that a name form broke.
+ *
+ * Regression cover for the rule accepting given names on their own from its
+ * first commit (2026-07-26) until 2026-08-12, which made a login as weak as a
+ * first name and let one typed token open an identity picker across households.
+ */
+test.describe('matchHousehold — a given name alone never logs anyone in', () => {
+  const household = [
+    guest({
+      id: 'r1',
+      name: 'Michael Ashworth',
+      firstName: 'Michael',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['r2', 'r3', 'r4'],
+      aka: ['Bitsy'],
+    }),
+    guest({
+      id: 'r2',
+      name: 'Anne-Sixtine Ashworth',
+      firstName: 'Anne-Sixtine',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['r1'],
+    }),
+    guest({
+      id: 'r3',
+      name: 'Sarah Jane Ashworth',
+      firstName: 'Sarah Jane',
+      lastName: 'Ashworth',
+      relatedGuestIds: ['r1'],
+    }),
+    guest({
+      id: 'r4',
+      name: 'Tomas Le Marchand',
+      firstName: 'Tomas',
+      lastName: 'Le Marchand',
+      relatedGuestIds: ['r1'],
+    }),
+  ];
+
+  const cases: [label: string, alone: string, withSurname: string, ids: string[]][] = [
+    ['a stored First Name', 'Michael', 'Michael Ashworth', ['r1']],
+    ['an Also Known As nickname', 'Bitsy', 'Bitsy Ashworth', ['r1']],
+    ['a common diminutive', 'Mike', 'Mike Ashworth', ['r1']],
+    ['derived initials', 'AS', 'AS Ashworth', ['r2']],
+    ['a hyphenated given name', 'Anne-Sixtine', 'Anne-Sixtine Ashworth', ['r2']],
+    ['a hyphenated given name typed unhyphenated', 'Anne Sixtine', 'Anne Sixtine Ashworth', ['r2']],
+    ['a two-word given name', 'Sarah Jane', 'Sarah Jane Ashworth', ['r3']],
+    ['a given name with another household surname', 'Tomas', 'Tomas Ashworth', ['r4']],
+    ['two given names at once', 'Michael Tomas', 'Michael Tomas Ashworth', ['r1', 'r4']],
+  ];
+
+  for (const [label, alone, withSurname, ids] of cases) {
+    test(`refuses ${label} on its own`, () => {
+      expect(matchHousehold(alone, household)).toBeNull();
+      expect(matchHousehold(withSurname, household)).toEqual({ memberIds: ids });
+    });
+  }
+
+  test('refuses a given name against the whole guest list, not just one household', () => {
+    // findMatchingHousehold is the path login actually takes, and the one that
+    // unions matches across households into a single identity picker.
+    expect(findMatchingHousehold('Michael', household)).toBeNull();
+    expect(findMatchingHousehold('Michael Ashworth', household)).toEqual(['r1']);
+  });
+
+  test('a multi-word surname typed closed up still satisfies the requirement', () => {
+    expect(matchHousehold('Tomas LeMarchand', household)).toEqual({ memberIds: ['r4'] });
+    expect(matchHousehold('Tomas Le Marchand', household)).toEqual({ memberIds: ['r4'] });
+  });
+
+  test('a stored envelope string is still exempt — it names the household', () => {
+    const withEnvelope = [
+      guest({
+        id: 'r5',
+        name: 'Robin Smith',
+        firstName: 'Robin',
+        lastName: 'Smith',
+        envelopeNames: ['The Smith Household'],
+      }),
+    ];
+    // Rule (a) matches printed text as printed; "Household" is not a surname.
+    expect(matchHousehold('The Smith Household', withEnvelope)).toEqual({ memberIds: ['r5'] });
+    expect(matchHousehold('Robin', withEnvelope)).toBeNull();
   });
 });

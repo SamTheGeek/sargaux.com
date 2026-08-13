@@ -67,10 +67,10 @@ test.describe('Alternate-name login (Notion-backed)', () => {
     expect(withSurname.status).toBe(200);
     expect(withSurname.guest).toBe(TEST_GUEST_NAME);
 
-    // A given name on its own already resolves when it names one person
+    // ...but never on its own: an alternate name widens which token satisfies
+    // the given-name half of the rule, it does not remove the surname half.
     const alone = await login(request, TEST_GUEST_AKA_GIVEN_NAME);
-    expect(alone.status).toBe(200);
-    expect(alone.guest).toBe(TEST_GUEST_NAME);
+    expect(alone.status).toBe(401);
   });
 
   test('an Also Known As surname joins the whole household', async ({ request }) => {
