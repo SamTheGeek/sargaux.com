@@ -94,6 +94,20 @@ function normalizeEmail(raw: string | undefined | null): string | undefined {
   return EMAIL_RE.test(cleaned) ? cleaned : undefined;
 }
 
+/**
+ * Never log a guest's address in full. This repo is public, so its Actions logs
+ * are world-readable and indexed — a failing sync used to publish the address it
+ * choked on. Keep the domain and the first two characters, which is enough to
+ * recognise a row while leaving nothing anyone can mail.
+ */
+function maskEmail(email: string | undefined): string {
+  if (!email) return '(no email)';
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '•••';
+  const local = email.slice(0, at);
+  return `${local.slice(0, 2)}${'•'.repeat(Math.max(local.length - 2, 1))}@${email.slice(at + 1)}`;
+}
+
 async function fetchNotionGuests(): Promise<NotionGuest[]> {
   const guests: NotionGuest[] = [];
   let cursor: string | undefined;
@@ -303,7 +317,7 @@ async function createContact(
       lastName: guest.lastName,
     });
     if (response.error) {
-      throw new Error(`Failed to create ${guest.email}: ${(response.error as any).message}`);
+      throw new Error(`Failed to create ${maskEmail(guest.email)}: ${(response.error as any).message}`);
     }
     return response;
   });
@@ -322,7 +336,7 @@ async function updateContactName(
       lastName: guest.lastName,
     });
     if (response.error) {
-      throw new Error(`Failed to update ${guest.email}: ${(response.error as any).message}`);
+      throw new Error(`Failed to update ${maskEmail(guest.email)}: ${(response.error as any).message}`);
     }
     return response;
   });
@@ -385,7 +399,12 @@ async function syncAudience(
         upserted++;
       }
     } catch (err) {
-      console.error(`  ✗ Failed to upsert ${guest.email}:`, err);
+      // Page ID rather than the address — it identifies the row for a human
+      // without publishing a mailable address to a public Actions log.
+      console.error(
+        `  ✗ Failed to upsert ${maskEmail(guest.email)} (Guest List page ${guest.id}):`,
+        err
+      );
       failed++;
     }
   }
@@ -396,9 +415,9 @@ async function syncAudience(
       try {
         await deleteContact(audienceId, contact.id);
         removed++;
-        console.log(`  - Removed stale contact: ${contact.email}`);
+        console.log(`  - Removed stale contact: ${maskEmail(contact.email)} (${contact.id})`);
       } catch (err) {
-        console.error(`  ✗ Failed to remove ${contact.email}:`, err);
+        console.error(`  ✗ Failed to remove ${maskEmail(contact.email)} (${contact.id}):`, err);
         failed++;
       }
     }
