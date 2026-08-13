@@ -16,7 +16,8 @@
  *       1. Upsert all Notion guests (with email) into the appropriate audience(s)
  *       2. Remove any contacts whose emails are no longer in the Notion list
  *   - Guests invited to both events appear in BOTH audiences
- *   - Guests without an email are counted and logged, not errored
+ *   - Guests without a usable email are counted and logged, not errored — an
+ *     address Notion stored as a `mailto:` link is normalized first
  */
 
 import { Resend } from 'resend';
@@ -71,6 +72,42 @@ interface ResendContact {
 
 // ─── Notion helpers ───────────────────────────────────────────────────────────
 
+/**
+ * A Notion email property holds whatever was typed into it, so an address pasted
+ * as a link is stored as `mailto:someone@example.com`. Resend rejects that with a
+ * 422, and because a rejected upsert counts as a failed operation, one such row
+ * exits the whole sync non-zero — every scheduled run stayed red for a single
+ * guest while the other ~95 synced fine.
+ *
+ * Strip what a paste leaves behind, and treat anything still unusable as "no
+ * email on file", which this script already tolerates and reports.
+ */
+const EMAIL_RE = /^[^\s@,;:<>]+@[^\s@,;:<>]+\.[A-Za-z]{2,}$/;
+
+function normalizeEmail(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw
+    .trim()
+    .replace(/^mailto:/i, '')
+    .replace(/^<|>$/g, '')
+    .trim();
+  return EMAIL_RE.test(cleaned) ? cleaned : undefined;
+}
+
+/**
+ * Never log a guest's address in full. This repo is public, so its Actions logs
+ * are world-readable and indexed — a failing sync used to publish the address it
+ * choked on. Keep the domain and the first two characters, which is enough to
+ * recognise a row while leaving nothing anyone can mail.
+ */
+function maskEmail(email: string | undefined): string {
+  if (!email) return '(no email)';
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '•••';
+  const local = email.slice(0, at);
+  return `${local.slice(0, 2)}${'•'.repeat(Math.max(local.length - 2, 1))}@${email.slice(at + 1)}`;
+}
+
 async function fetchNotionGuests(): Promise<NotionGuest[]> {
   const guests: NotionGuest[] = [];
   let cursor: string | undefined;
@@ -121,7 +158,12 @@ async function fetchNotionGuests(): Promise<NotionGuest[]> {
         '';
       if (!fullName) continue;
 
-      const email: string | undefined = props['Guest Email']?.email ?? undefined;
+      const rawEmail: string | undefined = props['Guest Email']?.email ?? undefined;
+      const email = normalizeEmail(rawEmail);
+      if (rawEmail && !email) {
+        // Page ID, never the address — this repo is public, so are its Actions logs.
+        console.warn(`  ⚠️  Unusable email on Guest List page ${page.id} — treating as no email`);
+      }
       const normalizedName = normalize(fullName);
       if (isTestGuestFromNotionProps(props) || isTestGuest({ normalizedName })) continue;
 
@@ -275,7 +317,7 @@ async function createContact(
       lastName: guest.lastName,
     });
     if (response.error) {
-      throw new Error(`Failed to create ${guest.email}: ${(response.error as any).message}`);
+      throw new Error(`Failed to create ${maskEmail(guest.email)}: ${(response.error as any).message}`);
     }
     return response;
   });
@@ -294,7 +336,7 @@ async function updateContactName(
       lastName: guest.lastName,
     });
     if (response.error) {
-      throw new Error(`Failed to update ${guest.email}: ${(response.error as any).message}`);
+      throw new Error(`Failed to update ${maskEmail(guest.email)}: ${(response.error as any).message}`);
     }
     return response;
   });
@@ -357,7 +399,12 @@ async function syncAudience(
         upserted++;
       }
     } catch (err) {
-      console.error(`  ✗ Failed to upsert ${guest.email}:`, err);
+      // Page ID rather than the address — it identifies the row for a human
+      // without publishing a mailable address to a public Actions log.
+      console.error(
+        `  ✗ Failed to upsert ${maskEmail(guest.email)} (Guest List page ${guest.id}):`,
+        err
+      );
       failed++;
     }
   }
@@ -368,9 +415,9 @@ async function syncAudience(
       try {
         await deleteContact(audienceId, contact.id);
         removed++;
-        console.log(`  - Removed stale contact: ${contact.email}`);
+        console.log(`  - Removed stale contact: ${maskEmail(contact.email)} (${contact.id})`);
       } catch (err) {
-        console.error(`  ✗ Failed to remove ${contact.email}:`, err);
+        console.error(`  ✗ Failed to remove ${maskEmail(contact.email)} (${contact.id}):`, err);
         failed++;
       }
     }
