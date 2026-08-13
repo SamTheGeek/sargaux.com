@@ -10,8 +10,8 @@
  * household's namespace distinct, and "close enough" surnames are how you sign
  * a guest into a stranger's RSVP.
  *
- * This table covers *common* diminutives. One-off nicknames ("Soso" for
- * Solène) are not derivable from the name and belong in the Notion
+ * This table covers *common* diminutives. One-off nicknames ("Bitsy" for
+ * Elizabeth) are not derivable from the name and belong in the Notion
  * `Also Known As` property instead, which needs no deploy to change.
  */
 
