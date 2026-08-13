@@ -13,14 +13,18 @@
  *
  * Two independent rules produce a match; see `matchHousehold`.
  *
+ * Both rules need a surname: a household is never unlocked by given names alone,
+ * however those given names were derived. An alternate name widens *which* token
+ * satisfies the given-name half, never whether the surname half is needed.
+ *
  * The rules also absorb the ways a guest's everyday name differs from the one
  * Notion holds, since this is the layer that runs once exact matching misses:
  *
  *  - a **space-free multi-word surname** ("LeGuezec" for "Le Guezec"), derived,
  *    no data entry;
  *  - **`Also Known As`** — hand-edited alternate given names and surnames on
- *    the Notion record (a maiden name, "PJ", "Soso"), which is the escape hatch
- *    for anything not derivable, and needs no deploy;
+ *    the Notion record (a maiden name, "Bitsy" for "Elizabeth"), which is the
+ *    escape hatch for anything not derivable, and needs no deploy;
  *  - **initials** of a hyphenated given name, and **common diminutives** from
  *    src/lib/nicknames.ts.
  *
@@ -170,7 +174,7 @@ function lastNameTokens(guest: GuestRecord): string[] {
  * given name only, since a bare surname must never unlock a household.
  *
  *   "PJ"              → given name "pj"
- *   "Soso"            → given name "soso"
+ *   "Bitsy"           → given name "bitsy"
  *   "Camille Garnier" → given name "camille", surname "garnier"
  *
  * Surnames join the *household's* pool rather than the individual's, matching
@@ -399,13 +403,25 @@ function matchesStoredEnvelope(inputTokens: string[], members: GuestRecord[]): b
 
 /**
  * Rule (b): every input token is a given name or a surname somewhere in this
- * household, at least one is a given name, and no two input tokens claim the
- * same member.
+ * household, at least one is a given name, **at least one is a surname**, and no
+ * two input tokens claim the same member.
  *
  * Accepts "Samuel Gross", "Samuel & Margaux Gross", "Margaux and Samuel Gross",
  * and "Margaux Gross" (Margaux's surname is Ancel, but Gross is a household
  * surname). Rejects "Gross" alone — a bare surname names nobody — and anything
  * containing a token this household doesn't own.
+ *
+ * It also rejects a given name standing alone ("Samuel", "Samuel & Margaux").
+ * This rule was always documented as first names *plus a household surname*, but
+ * until now it accepted the given names by themselves, which made a login as
+ * weak as a first name: on the real list every household was reachable that way,
+ * 183 lone given names logged straight in, and 49 more opened an identity picker
+ * spanning up to six people — a guest typing a common first name could see
+ * strangers' names and sign in as one of them.
+ *
+ * A household with no surname anywhere (its surname sits inside `First Name`)
+ * therefore matches nothing here. That is intentional and costs it nothing:
+ * exact `Full Name` matching runs first and still admits those guests.
  *
  * A "given name" here is whatever `nameForms` accepts for that member: their
  * `First Name`, plus — where it stays unambiguous within the household — their
@@ -468,6 +484,10 @@ function matchesFirstNameCombination(
     const key = givenNameKey(member);
     if (key && claimedKeys.has(key)) claimed.add(member.id);
   }
+
+  // A surname is required, not merely permitted: with none left over, the guest
+  // typed given names alone and the household is identified by a first name.
+  if (remaining.length === 0) return null;
 
   // Whatever is left must be surnames this household owns. A leftover given
   // name means it was typed twice ("Samuel Samuel Gross") or belongs to

@@ -126,7 +126,7 @@ test.describe('preserveFormerName', () => {
   });
 
   test('appends to existing alternates rather than replacing them', () => {
-    expect(preserveFormerName('Camille Muller', ['Soso'])).toBe('Soso\nCamille Muller');
+    expect(preserveFormerName('Camille Muller', ['Bitsy'])).toBe('Bitsy\nCamille Muller');
   });
 
   test('does not preserve an unnamed plus-one placeholder', () => {
@@ -141,6 +141,6 @@ test.describe('preserveFormerName', () => {
   });
 
   test('ignores a blank stored name', () => {
-    expect(preserveFormerName('   ', ['Soso'])).toBeNull();
+    expect(preserveFormerName('   ', ['Bitsy'])).toBeNull();
   });
 });
