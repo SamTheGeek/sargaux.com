@@ -145,8 +145,15 @@ const ok = (msg: string) => console.log(`  ✓ ${msg}`);
 const bad = (msg: string) => console.log(`  ✗ ${msg}`);
 const warn = (msg: string) => console.log(`  ! ${msg}`);
 
+/**
+ * A short but *distinguishing* label for a Notion page ID — the tail, not the
+ * head. Notion IDs are creation-ordered, so rows written in the same run share
+ * a long common prefix: taking the first 8 characters printed one identical
+ * "id" for seven different response rows, which reads as a single row being
+ * rewritten seven times.
+ */
 function shortId(id: string): string {
-  return id.replace(/-/g, '').slice(0, 8);
+  return id.replace(/-/g, '').slice(-8);
 }
 
 function hasFlag(name: string): boolean {
@@ -395,6 +402,21 @@ async function planEntry(
   }
   if (party.every((member) => !member.email) && emailWrites.length === 0) {
     warnings.push('no email on file for anyone in this party (fine, but they get no confirmations)');
+  }
+
+  // Say so when this party already has a stored answer. submitRSVP updates it
+  // in place rather than forking a row, which is right for a correction and
+  // wrong if the guest answered on the website in between and nobody noticed —
+  // and the dry run is the only place that distinction can still be made.
+  const existing = await getLatestRSVPForParty(
+    party.map((member) => member.id),
+    entry.event
+  );
+  if (existing) {
+    warnings.push(
+      `already has a stored ${existing.status} response from ${existing.submittedAt.slice(0, 10)} ` +
+        `("${existing.guestsAttending || 'nobody attending'}") — --write REPLACES it`
+    );
   }
 
   const attendingCount = normalized.filter((guest) => guest.attending).length;
