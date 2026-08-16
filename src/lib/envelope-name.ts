@@ -87,6 +87,13 @@ export function envelopeTokens(input: string): string[] {
     // Periods: normalize() keeps them, so "Mr." would never match the title
     // list, and an initial "J." should compare as "j".
     .replace(/\./g, '')
+    // Commas and semicolons separate names on an envelope line, and normalize()
+    // leaves them attached to the word before. A household of three or more is
+    // printed as a comma list — "Anne, Marc & Claire Dubois" — so a guest
+    // copying their own envelope off the invitation was tokenized as "anne,"
+    // and "marc,", matching no stored first name and failing login. The guests
+    // most likely to type the whole printed line were the ones it locked out.
+    .replace(/[,;]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
     .filter((token) => !TITLES.has(token))
