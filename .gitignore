@@ -180,6 +180,8 @@ public/apple-touch-icon-precomposed.png
 
 # Generated script outputs (contain guest PII — never commit)
 scripts/output/
+# Hand-written script inputs (offline RSVPs, keyed by real guest names — never commit)
+scripts/input/
 docs/IV_MTR_UserGuide_v2.19.8.pdf
 # France website source material (draft copy + private venue photos — never commit)
 docs/france-website-copy-edits/
