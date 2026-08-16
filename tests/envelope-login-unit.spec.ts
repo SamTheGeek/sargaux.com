@@ -481,6 +481,51 @@ test.describe('matchHousehold — multi-word surnames typed closed up', () => {
   });
 });
 
+test.describe('envelopeTokens / matchHousehold — comma-separated envelope lines', () => {
+  // Three or more people on one envelope are printed as a comma list, so this
+  // is the exact string such a household copies off its own invitation.
+  const household = ['h1', 'h2', 'h3', 'h4'].map((id, index) =>
+    guest({
+      id,
+      name: ['Anne-Sophie Dubois', 'Marc Dubois', 'Pierre-Thomas Dubois', 'Claire Dubois'][index],
+      firstName: ['Anne-Sophie', 'Marc', 'Pierre-Thomas', 'Claire'][index],
+      lastName: 'Dubois',
+      relatedGuestIds: ['h1', 'h2', 'h3', 'h4'].filter((other) => other !== id),
+      envelopeNames: ['Anne-Sophie, Marc, Pierre-Thomas & Claire Dubois'],
+    })
+  );
+
+  test('commas do not stay glued to the name before them', () => {
+    expect(envelopeTokens('Anne-Sophie, Marc & Claire Dubois')).toEqual([
+      'anne',
+      'sophie',
+      'marc',
+      'claire',
+      'dubois',
+    ]);
+    expect(envelopeTokens('Anne; Marc Dubois')).toEqual(['anne', 'marc', 'dubois']);
+  });
+
+  test('accepts the printed envelope line verbatim', () => {
+    expect(matchHousehold('Anne-Sophie, Marc, Pierre-Thomas & Claire Dubois', household)).toEqual({
+      memberIds: ['h1', 'h2', 'h3', 'h4'],
+    });
+  });
+
+  test('accepts a comma list that is not the stored line', () => {
+    expect(matchHousehold('Marc, Claire Dubois', household)).toEqual({ memberIds: ['h2', 'h4'] });
+  });
+
+  test('a trailing comma does not break a single name', () => {
+    expect(matchHousehold('Marc, Dubois', household)).toEqual({ memberIds: ['h2'] });
+  });
+
+  test('commas still cannot turn a bare surname into a match', () => {
+    expect(matchHousehold('Dubois,', household)).toBeNull();
+    expect(matchHousehold(',,,', household)).toBeNull();
+  });
+});
+
 test.describe('matchHousehold — Also Known As', () => {
   // A maiden name kept alongside a married one: one line covers every phrasing
   const maidenName = [
