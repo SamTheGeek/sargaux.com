@@ -12,6 +12,9 @@ const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const lb = strings.france.lookbook;
 
+/* One board per dress code — the two days are genuinely different moods
+ * (relaxed garden party vs. cocktail and hats), so each day's copy is
+ * followed by its own band of pins rather than a single shared board. */
 function sortedImages(glob: Record<string, { default: ImageMetadata }>): ImageMetadata[] {
   return Object.entries(glob)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -30,6 +33,11 @@ const saturdayImages = sortedImages(
     { eager: true }
   )
 );
+
+const days = [
+  { key: 'friday', copy: lb.friday, images: fridayImages },
+  { key: 'saturday', copy: lb.saturday, images: saturdayImages },
+] as const;
 ---
 
 <WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
@@ -46,98 +54,36 @@ const saturdayImages = sortedImages(
         <h1 class="lookbook-heading" aria-label={t(lb.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
         <p class="subtitle">{t(lb.subtitle)}</p>
       </div>
-
-      <div class="france-lookbook-gallery">
-        <section class="dresscode-day">
-          <div class="dresscode-day-head">
-            <span class="dresscode-day-label">{t(lb.friday.day)}</span>
-            <h2 class="dresscode-day-code">{t(lb.friday.code)}</h2>
-          </div>
-          <div class="dresscode-day-body">
-            {t(lb.friday.desc).split('\n\n').filter(Boolean).map((para) => (
-              <p>{para}</p>
-            ))}
-          </div>
-          {fridayImages.length > 0 && (
-            <div class="lookbook-grid">
-              {fridayImages.map(img => (
-                <figure class="lookbook-item">
-                  <Image src={img} alt="" loading="lazy" width={800} />
-                </figure>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section class="dresscode-day">
-          <div class="dresscode-day-head">
-            <span class="dresscode-day-label">{t(lb.saturday.day)}</span>
-            <h2 class="dresscode-day-code">{t(lb.saturday.code)}</h2>
-          </div>
-          <div class="dresscode-day-body">
-            {t(lb.saturday.desc).split('\n\n').filter(Boolean).map((para) => (
-              <p>{para}</p>
-            ))}
-          </div>
-          {saturdayImages.length > 0 && (
-            <div class="lookbook-grid">
-              {saturdayImages.map(img => (
-                <figure class="lookbook-item">
-                  <Image src={img} alt="" loading="lazy" width={800} />
-                </figure>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
     </div>
+
+    {days.map((day) => (
+      <section class="dresscode-day" data-day={day.key}>
+        <div class="dresscode-day-copy">
+          <div class="dresscode-day-head">
+            <span class="dresscode-day-label">{t(day.copy.day)}</span>
+            <h2 class="dresscode-day-code">{t(day.copy.code)}</h2>
+          </div>
+          <div class="dresscode-day-body">
+            {t(day.copy.desc).split('\n\n').filter(Boolean).map((para) => (
+              <p>{para}</p>
+            ))}
+          </div>
+        </div>
+
+        {day.images.length > 0 && (
+          <div class="france-lookbook-board">
+            <div class="lookbook-grid">
+              {day.images.map(img => (
+                <figure class="lookbook-item">
+                  <Image src={img} alt="" loading="lazy" width={800} />
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    ))}
   </main>
 
-  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
+  <SiteFooter className="france-lookbook-footer" guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
-
-<style>
-  .dresscode-day {
-    max-width: 760px;
-    margin: 0 auto 3.5rem;
-    padding: 0 2rem;
-  }
-
-  .dresscode-day-head {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .dresscode-day-label {
-    display: block;
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted);
-    margin-bottom: 0.35rem;
-  }
-
-  .dresscode-day-code {
-    font-family: var(--font-display);
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
-    font-weight: 400;
-    margin: 0;
-  }
-
-  .dresscode-day-body p {
-    font-size: 1.0625rem;
-    line-height: 1.6;
-    color: var(--color-text-muted);
-    margin: 0 0 1rem;
-    max-width: 60ch;
-  }
-
-  .dresscode-day-body p:last-child {
-    margin-bottom: 0;
-  }
-
-  .dresscode-day .lookbook-grid {
-    margin-top: 1.5rem;
-  }
-</style>
