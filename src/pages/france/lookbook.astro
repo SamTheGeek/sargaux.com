@@ -12,16 +12,32 @@ const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const lb = strings.france.lookbook;
 
-/* One flat board, matching the NYC lookbook. The pins are a single mood — a
- * colorful French wedding-guest wardrobe — rather than two separable days, so
- * they run beneath both dress codes instead of being split between them. */
-const globResult = import.meta.glob<{ default: ImageMetadata }>(
-  '../../assets/images/france/lookbook/*.{jpg,jpeg}',
-  { eager: true }
+/* One board per dress code — the two days are genuinely different moods
+ * (relaxed garden party vs. cocktail and hats), so each day's copy is
+ * followed by its own band of pins rather than a single shared board. */
+function sortedImages(glob: Record<string, { default: ImageMetadata }>): ImageMetadata[] {
+  return Object.entries(glob)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, mod]) => mod.default);
+}
+
+const fridayImages = sortedImages(
+  import.meta.glob<{ default: ImageMetadata }>(
+    '../../assets/images/france/lookbook/friday/*.{jpg,jpeg}',
+    { eager: true }
+  )
 );
-const images = Object.entries(globResult)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([, mod]) => mod.default);
+const saturdayImages = sortedImages(
+  import.meta.glob<{ default: ImageMetadata }>(
+    '../../assets/images/france/lookbook/saturday/*.{jpg,jpeg}',
+    { eager: true }
+  )
+);
+
+const days = [
+  { key: 'friday', copy: lb.friday, images: fridayImages },
+  { key: 'saturday', copy: lb.saturday, images: saturdayImages },
+] as const;
 ---
 
 <WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
@@ -38,45 +54,35 @@ const images = Object.entries(globResult)
         <h1 class="lookbook-heading" aria-label={t(lb.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
         <p class="subtitle">{t(lb.subtitle)}</p>
       </div>
-
-      <div class="france-lookbook-dresscode">
-        <section class="dresscode-day">
-          <div class="dresscode-day-head">
-            <span class="dresscode-day-label">{t(lb.friday.day)}</span>
-            <h2 class="dresscode-day-code">{t(lb.friday.code)}</h2>
-          </div>
-          <div class="dresscode-day-body">
-            {t(lb.friday.desc).split('\n\n').filter(Boolean).map((para) => (
-              <p>{para}</p>
-            ))}
-          </div>
-        </section>
-
-        <section class="dresscode-day">
-          <div class="dresscode-day-head">
-            <span class="dresscode-day-label">{t(lb.saturday.day)}</span>
-            <h2 class="dresscode-day-code">{t(lb.saturday.code)}</h2>
-          </div>
-          <div class="dresscode-day-body">
-            {t(lb.saturday.desc).split('\n\n').filter(Boolean).map((para) => (
-              <p>{para}</p>
-            ))}
-          </div>
-        </section>
-      </div>
     </div>
 
-    {images.length > 0 && (
-      <section class="france-lookbook-board">
-        <div class="lookbook-grid">
-          {images.map(img => (
-            <figure class="lookbook-item">
-              <Image src={img} alt="" loading="lazy" width={800} />
-            </figure>
-          ))}
+    {days.map((day) => (
+      <section class="dresscode-day" data-day={day.key}>
+        <div class="dresscode-day-copy">
+          <div class="dresscode-day-head">
+            <span class="dresscode-day-label">{t(day.copy.day)}</span>
+            <h2 class="dresscode-day-code">{t(day.copy.code)}</h2>
+          </div>
+          <div class="dresscode-day-body">
+            {t(day.copy.desc).split('\n\n').filter(Boolean).map((para) => (
+              <p>{para}</p>
+            ))}
+          </div>
         </div>
+
+        {day.images.length > 0 && (
+          <div class="france-lookbook-board">
+            <div class="lookbook-grid">
+              {day.images.map(img => (
+                <figure class="lookbook-item">
+                  <Image src={img} alt="" loading="lazy" width={800} />
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
-    )}
+    ))}
   </main>
 
   <SiteFooter className="france-lookbook-footer" guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />

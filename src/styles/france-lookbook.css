@@ -1,12 +1,16 @@
 /*
- * France Lookbook page — disc, dress-code copy, and the pinterest board.
+ * France Lookbook page — disc, dress-code copy, and the pinterest boards.
  * External file per the dark-mode-over-SPA-nav rule.
  *
- * Structure mirrors the NYC lookbook: hero + copy on the page background,
- * then a full-bleed inverted band carrying the masonry board down to the
- * footer. The France equivalent of NYC's dark moss is Prussian blue, which
+ * Structure mirrors the NYC lookbook, but runs twice: each dress code gets
+ * its copy on the page background followed by its own full-bleed inverted
+ * band of pins, so the two days stay visually separate while reading as one
+ * continuous page. The last band meets the footer, which is painted to match,
+ * so the board runs off the bottom as it does on the NYC lookbook.
+ *
+ * The France equivalent of NYC's dark moss is Prussian blue, which
  * --color-surface already resolves to (and re-resolves in dark mode), so the
- * band is themed by token rather than by hard-coded color.
+ * bands are themed by token rather than by hard-coded color.
  */
 
 html[data-event="france"][data-page="lookbook"] .site-header {
@@ -46,24 +50,22 @@ html[data-event="france"][data-page="lookbook"] .france-lookbook-intro .subtitle
 
 /* ── Dress code copy ─────────────────────────────────────────────────────── */
 
-/* Same content column as the intro, so the dress-code copy shares the
- * heading's left edge rather than sitting in its own centered measure. */
-html[data-event="france"][data-page="lookbook"] .france-lookbook-dresscode {
+/* Same content column as the intro, so the copy shares the heading's left
+ * edge rather than sitting in its own centered measure. */
+html[data-event="france"][data-page="lookbook"] .dresscode-day-copy {
   max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 0 var(--page-margin) var(--space-xl);
+  padding: 0 var(--page-margin) var(--space-lg);
 }
 
-html[data-event="france"][data-page="lookbook"] .dresscode-day {
-  max-width: 760px;
-  margin: 0 0 3.5rem;
-}
-
-html[data-event="france"][data-page="lookbook"] .dresscode-day:last-child {
-  margin-bottom: 0;
+/* A band separates the days, so the second dress code needs the chapter break
+ * above it that the intro provides for the first. */
+html[data-event="france"][data-page="lookbook"] .dresscode-day + .dresscode-day .dresscode-day-copy {
+  padding-top: var(--space-2xl);
 }
 
 html[data-event="france"][data-page="lookbook"] .dresscode-day-head {
+  max-width: 760px;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-border);
@@ -97,15 +99,15 @@ html[data-event="france"][data-page="lookbook"] .dresscode-day-body p:last-child
   margin-bottom: 0;
 }
 
-/* ── The board ───────────────────────────────────────────────────────────── */
+/* ── The boards ──────────────────────────────────────────────────────────── */
 
 html[data-event="france"][data-page="lookbook"] .france-lookbook-board {
   background: var(--color-surface);
   padding: var(--space-lg) var(--page-margin) var(--space-xl);
 }
 
-/* The band continues through the footer so the board reads as one panel
- * running off the bottom of the page, as it does on the NYC lookbook. */
+/* The final band continues through the footer so the last board reads as one
+ * panel running off the bottom of the page. */
 html[data-event="france"][data-page="lookbook"] .france-lookbook-footer {
   background: var(--color-surface);
   border-top: none;
@@ -132,8 +134,12 @@ html[data-event="france"][data-page="lookbook"] .france-lookbook-footer .flag-bt
     padding: 0 var(--page-margin-mobile) 2rem;
   }
 
-  html[data-event="france"][data-page="lookbook"] .france-lookbook-dresscode {
-    padding: 0 var(--page-margin-mobile) var(--space-lg);
+  html[data-event="france"][data-page="lookbook"] .dresscode-day-copy {
+    padding: 0 var(--page-margin-mobile) var(--space-md);
+  }
+
+  html[data-event="france"][data-page="lookbook"] .dresscode-day + .dresscode-day .dresscode-day-copy {
+    padding-top: var(--space-lg);
   }
 
   html[data-event="france"][data-page="lookbook"] .france-lookbook-board {
