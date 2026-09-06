@@ -1,6 +1,12 @@
 /*
- * France Lookbook page — disc and layout styles.
+ * France Lookbook page — disc, dress-code copy, and the pinterest board.
  * External file per the dark-mode-over-SPA-nav rule.
+ *
+ * Structure mirrors the NYC lookbook: hero + copy on the page background,
+ * then a full-bleed inverted band carrying the masonry board down to the
+ * footer. The France equivalent of NYC's dark moss is Prussian blue, which
+ * --color-surface already resolves to (and re-resolves in dark mode), so the
+ * band is themed by token rather than by hard-coded color.
  */
 
 html[data-event="france"][data-page="lookbook"] .site-header {
@@ -11,7 +17,6 @@ html[data-event="france"][data-page="lookbook"] .site-header {
 html[data-event="france"][data-page="lookbook"] main {
   position: relative;
   flex: 1;
-  padding-bottom: 3rem;
 }
 
 html[data-event="france"][data-page="lookbook"] .france-lookbook-shell {
@@ -39,16 +44,87 @@ html[data-event="france"][data-page="lookbook"] .france-lookbook-intro .subtitle
   margin: 0;
 }
 
-html[data-event="france"][data-page="lookbook"] .france-lookbook-gallery {
+/* ── Dress code copy ─────────────────────────────────────────────────────── */
+
+/* Same content column as the intro, so the dress-code copy shares the
+ * heading's left edge rather than sitting in its own centered measure. */
+html[data-event="france"][data-page="lookbook"] .france-lookbook-dresscode {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
   padding: 0 var(--page-margin) var(--space-xl);
 }
 
-html[data-event="france"][data-page="lookbook"] .lookbook-empty {
-  font-size: var(--font-size-body);
-  color: var(--color-text-muted);
+html[data-event="france"][data-page="lookbook"] .dresscode-day {
+  max-width: 760px;
+  margin: 0 0 3.5rem;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day:last-child {
+  margin-bottom: 0;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-head {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-label {
+  display: block;
+  font-size: 0.8125rem;
   text-transform: uppercase;
-  letter-spacing: var(--tracking-caption);
-  padding: var(--space-lg) 0;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-code {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 400;
+  margin: 0;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-body p {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0 0 1rem;
+  max-width: 60ch;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── The board ───────────────────────────────────────────────────────────── */
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-board {
+  background: var(--color-surface);
+  padding: var(--space-lg) var(--page-margin) var(--space-xl);
+}
+
+/* The band continues through the footer so the board reads as one panel
+ * running off the bottom of the page, as it does on the NYC lookbook. */
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer {
+  background: var(--color-surface);
+  border-top: none;
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer nav a,
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer nav span,
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer .copyright {
+  color: var(--color-surface-text-placeholder);
+}
+
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer nav a:hover {
+  color: var(--color-surface-text);
+}
+
+/* The active-language ring is --color-text, which equals the surface color
+ * here and would vanish against it. */
+html[data-event="france"][data-page="lookbook"] .france-lookbook-footer .flag-btn.active {
+  box-shadow: 0 0 0 2px var(--color-surface-text);
 }
 
 @media (max-width: 768px) {
@@ -56,7 +132,11 @@ html[data-event="france"][data-page="lookbook"] .lookbook-empty {
     padding: 0 var(--page-margin-mobile) 2rem;
   }
 
-  html[data-event="france"][data-page="lookbook"] .france-lookbook-gallery {
+  html[data-event="france"][data-page="lookbook"] .france-lookbook-dresscode {
     padding: 0 var(--page-margin-mobile) var(--space-lg);
+  }
+
+  html[data-event="france"][data-page="lookbook"] .france-lookbook-board {
+    padding: var(--space-md) var(--page-margin-mobile) var(--space-lg);
   }
 }

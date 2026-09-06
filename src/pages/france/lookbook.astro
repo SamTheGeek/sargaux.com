@@ -12,24 +12,16 @@ const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const lb = strings.france.lookbook;
 
-function sortedImages(glob: Record<string, { default: ImageMetadata }>): ImageMetadata[] {
-  return Object.entries(glob)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, mod]) => mod.default);
-}
-
-const fridayImages = sortedImages(
-  import.meta.glob<{ default: ImageMetadata }>(
-    '../../assets/images/france/lookbook/friday/*.{jpg,jpeg}',
-    { eager: true }
-  )
+/* One flat board, matching the NYC lookbook. The pins are a single mood — a
+ * colorful French wedding-guest wardrobe — rather than two separable days, so
+ * they run beneath both dress codes instead of being split between them. */
+const globResult = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/images/france/lookbook/*.{jpg,jpeg}',
+  { eager: true }
 );
-const saturdayImages = sortedImages(
-  import.meta.glob<{ default: ImageMetadata }>(
-    '../../assets/images/france/lookbook/saturday/*.{jpg,jpeg}',
-    { eager: true }
-  )
-);
+const images = Object.entries(globResult)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, mod]) => mod.default);
 ---
 
 <WireframeLayout title={t(strings.france.lookbook.pageTitle)} fullTitle="Chez Sargaux | France — Lookbook" event="france" page="lookbook">
@@ -47,7 +39,7 @@ const saturdayImages = sortedImages(
         <p class="subtitle">{t(lb.subtitle)}</p>
       </div>
 
-      <div class="france-lookbook-gallery">
+      <div class="france-lookbook-dresscode">
         <section class="dresscode-day">
           <div class="dresscode-day-head">
             <span class="dresscode-day-label">{t(lb.friday.day)}</span>
@@ -58,15 +50,6 @@ const saturdayImages = sortedImages(
               <p>{para}</p>
             ))}
           </div>
-          {fridayImages.length > 0 && (
-            <div class="lookbook-grid">
-              {fridayImages.map(img => (
-                <figure class="lookbook-item">
-                  <Image src={img} alt="" loading="lazy" width={800} />
-                </figure>
-              ))}
-            </div>
-          )}
         </section>
 
         <section class="dresscode-day">
@@ -79,65 +62,22 @@ const saturdayImages = sortedImages(
               <p>{para}</p>
             ))}
           </div>
-          {saturdayImages.length > 0 && (
-            <div class="lookbook-grid">
-              {saturdayImages.map(img => (
-                <figure class="lookbook-item">
-                  <Image src={img} alt="" loading="lazy" width={800} />
-                </figure>
-              ))}
-            </div>
-          )}
         </section>
       </div>
     </div>
+
+    {images.length > 0 && (
+      <section class="france-lookbook-board">
+        <div class="lookbook-grid">
+          {images.map(img => (
+            <figure class="lookbook-item">
+              <Image src={img} alt="" loading="lazy" width={800} />
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
   </main>
 
-  <SiteFooter guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
+  <SiteFooter className="france-lookbook-footer" guest={guest} lang={Astro.locals.lang ?? 'en'} homeHref="/france" />
 </WireframeLayout>
-
-<style>
-  .dresscode-day {
-    max-width: 760px;
-    margin: 0 auto 3.5rem;
-    padding: 0 2rem;
-  }
-
-  .dresscode-day-head {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .dresscode-day-label {
-    display: block;
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted);
-    margin-bottom: 0.35rem;
-  }
-
-  .dresscode-day-code {
-    font-family: var(--font-display);
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
-    font-weight: 400;
-    margin: 0;
-  }
-
-  .dresscode-day-body p {
-    font-size: 1.0625rem;
-    line-height: 1.6;
-    color: var(--color-text-muted);
-    margin: 0 0 1rem;
-    max-width: 60ch;
-  }
-
-  .dresscode-day-body p:last-child {
-    margin-bottom: 0;
-  }
-
-  .dresscode-day .lookbook-grid {
-    margin-top: 1.5rem;
-  }
-</style>
