@@ -32,7 +32,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@netlify/edge-functions": "^4.0.0",
     "@netlify/functions": "^6.0.0",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.63.0",
     "axe-core": "^4.13.0",
     "exceljs": "^4.4.0",
     "node-gyp": "^13.0.2",
