@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { parseEventPage } from '../src/lib/notion';
 
 /**
@@ -163,5 +164,52 @@ test.describe('parseEventPage — field mapping', () => {
     expect(result?.location).toBe('Grand Army Plaza');
     expect(result?.nameFr).toBe('Balade à vélo');
     expect(result?.dayId).toBe('day-1');
+  });
+});
+
+/**
+ * Static guards on the pages that render the catalog.
+ *
+ * With both NYC optional events cancelled, `optionalEvents` is empty on every
+ * request. These read the source rather than the rendered page because the
+ * empty state is only reachable with a Notion backend and a real catalog —
+ * the browser suites either skip (no credentials) or render the preview
+ * fixtures, so a regression here would not fail any test that actually runs.
+ */
+test.describe('empty optional-events state is guarded in the page source', () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf-8');
+
+  // Rendering the band unconditionally would leave a heading with nothing
+  // under it once the last optional event is cancelled.
+  for (const page of ['src/pages/nyc/rsvp.astro', 'src/pages/nyc/rsvp/confirmed.astro']) {
+    test(`${page} hides the optional band when the list is empty`, () => {
+      expect(read(page)).toContain('{optionalEvents.length > 0 && (');
+    });
+  }
+
+  // France keeps an optional excursion, so it says so rather than vanishing.
+  test('france/rsvp.astro renders a placeholder instead of hiding the section', () => {
+    const source = read('src/pages/france/rsvp.astro');
+    expect(source).toContain('optionalEvents.length === 0');
+    expect(source).toContain('data-testid="no-optional-events"');
+  });
+
+  // Both weddings must also survive an empty *core* list.
+  for (const page of [
+    'src/pages/nyc/rsvp.astro',
+    'src/pages/france/rsvp.astro',
+    'src/pages/nyc/rsvp/confirmed.astro',
+    'src/pages/france/rsvp/confirmed.astro',
+  ]) {
+    test(`${page} handles an empty core-events list`, () => {
+      expect(read(page)).toContain('coreEvents.length === 0');
+    });
+  }
+
+  // An empty catalog must not be read as "this party declined everything".
+  test('POST /api/rsvp guards its decline normalization on a non-empty catalog', () => {
+    expect(read('src/pages/api/rsvp.ts')).toContain(
+      'invitedEventIds.size > 0 && body.eventsAttending.length === 0'
+    );
   });
 });
