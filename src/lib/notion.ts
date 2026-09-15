@@ -724,8 +724,93 @@ const eventCatalogCache: Map<'nyc' | 'france', { at: number; events: EventRecord
   new Map();
 
 /**
+ * Parse one Event Catalog page into an EventRecord, or null if the row does
+ * not belong in `wedding`'s catalog.
+ *
+ * Exported for unit testing (like parseRSVPPage) — the filtering rules below
+ * decide what the whole site can see, and they are worth testing without a
+ * live Notion database.
+ *
+ * A row is skipped when it is untitled, belongs to the other wedding, or has
+ * `Show on Website` unchecked.
+ */
+export function parseEventPage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  page: any,
+  wedding: 'nyc' | 'france'
+): EventRecord | null {
+  if (page?.object !== 'page') return null;
+
+  const props = page.properties ?? {};
+
+  // Event Name (title)
+  const name = props['Event Name']?.title?.[0]?.plain_text || '';
+  if (!name) return null;
+
+  // Wedding (select) — stored as "New York" or "France", not "nyc"/"france"
+  const weddingLabel = wedding === 'nyc' ? 'New York' : 'France';
+  if (props['Wedding']?.select?.name !== weddingLabel) return null;
+
+  // Show on Website (checkbox) — the kill switch for an event.
+  //
+  // Unchecking it removes the event from the catalog entirely, which is what
+  // cancelling one means in practice: it disappears from the RSVP forms, from
+  // the confirmation pages, and from every personalized ICS feed
+  // (getAttendingEvents/refreshAllICS resolve stored event IDs against this
+  // catalog, so an absent event drops out of calendars on the next refresh).
+  // Responses that already name a cancelled event keep the ID in their Details
+  // JSON — harmless, since every reader filters through the catalog, and a
+  // guest who resubmits writes a list built from the form they were just shown.
+  //
+  // Deliberately filtered here rather than at each consumer: there are five of
+  // them (two RSVP forms, two confirmation pages, the ICS generator) and
+  // forgetting one would leave a cancelled event live on that surface. An
+  // unchecked box is also the only "cancel" that keeps the Notion page — and
+  // its page ID — alive, which matters because guests' stored responses and
+  // the Guest List `Events Attending` relation both point at it.
+  //
+  // The property was parsed into EventRecord but never consulted before this.
+  const showOnWebsite = props['Show on Website']?.checkbox === true;
+  if (!showOnWebsite) return null;
+
+  // Event Type (select)
+  const typeProp = props['Event Type']?.select?.name;
+  const type = typeProp === 'Optional' ? 'Optional' : 'Core';
+
+  return {
+    id: page.id,
+    name,
+    type,
+    wedding,
+    // Time (text) — display only
+    time: props['Time']?.rich_text?.[0]?.plain_text || undefined,
+    // Start Time (text) — authoritative for ICS calendar
+    startTime: props['Start Time']?.rich_text?.[0]?.plain_text || undefined,
+    // Duration (text) — e.g. "3h", "2h30m", "90m"
+    duration: props['Duration']?.rich_text?.[0]?.plain_text || undefined,
+    // Date (date property — YYYY-MM-DD)
+    date: props['Event Date']?.date?.start ?? undefined,
+    location: props['Location']?.rich_text?.[0]?.plain_text || undefined,
+    description: props['Description']?.rich_text?.[0]?.plain_text || undefined,
+    // French display variants ("* FR" rich_text properties) — optional;
+    // display falls back to the English field when unset. Timing fields
+    // (Start Time/Duration/Event Date) intentionally have no FR variant.
+    nameFr: props['Event Name FR']?.rich_text?.[0]?.plain_text || undefined,
+    timeFr: props['Time FR']?.rich_text?.[0]?.plain_text || undefined,
+    locationFr: props['Location FR']?.rich_text?.[0]?.plain_text || undefined,
+    descriptionFr: props['Description FR']?.rich_text?.[0]?.plain_text || undefined,
+    // Day (relation to Wedding Timeline)
+    dayId: props['Day']?.relation?.[0]?.id || undefined,
+    showOnWebsite,
+  };
+}
+
+/**
  * Fetch all events from the Event Catalog for a specific wedding.
  * Results are cached in memory for EVENT_CATALOG_TTL_MS.
+ *
+ * Only events with `Show on Website` checked are returned — see
+ * parseEventPage for why that filter lives there.
  */
 export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventRecord[]> {
   const cached = eventCatalogCache.get(wedding);
@@ -733,7 +818,6 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
     return cached.events;
   }
 
-  const notion = getClient();
   const dataSourceId = process.env.NOTION_EVENT_CATALOG_DB;
 
   if (!dataSourceId) {
@@ -745,9 +829,6 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
   const events: EventRecord[] = [];
   let cursor: string | undefined = undefined;
 
-  // Map our internal wedding key to the Notion select option name
-  const weddingLabel = wedding === 'nyc' ? 'New York' : 'France';
-
   do {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: any = await queryDatabase(dataSourceId, {
@@ -756,72 +837,8 @@ export async function getEventCatalog(wedding: 'nyc' | 'france'): Promise<EventR
     });
 
     for (const page of response.results) {
-      if (page.object !== 'page') continue;
-
-      const props = page.properties;
-
-      // Event Name (title)
-      const name = props['Event Name']?.title?.[0]?.plain_text || '';
-      if (!name) continue;
-
-      // Wedding (select) — stored as "New York" or "France", not "nyc"/"france"
-      const weddingProp = props['Wedding']?.select?.name;
-      if (weddingProp !== weddingLabel) continue; // Filter by wedding
-
-      // Event Type (select)
-      const typeProp = props['Event Type']?.select?.name;
-      const type = typeProp === 'Optional' ? 'Optional' : 'Core';
-
-      // Time (text) — display only
-      const time = props['Time']?.rich_text?.[0]?.plain_text || undefined;
-
-      // Start Time (text) — authoritative for ICS calendar
-      const startTime = props['Start Time']?.rich_text?.[0]?.plain_text || undefined;
-
-      // Duration (text) — e.g. "3h", "2h30m", "90m"
-      const duration = props['Duration']?.rich_text?.[0]?.plain_text || undefined;
-
-      // Location (text)
-      const location = props['Location']?.rich_text?.[0]?.plain_text || undefined;
-
-      // Description (rich text)
-      const description = props['Description']?.rich_text?.[0]?.plain_text || undefined;
-
-      // French display variants ("* FR" rich_text properties) — optional;
-      // display falls back to the English field when unset. Timing fields
-      // (Start Time/Duration/Event Date) intentionally have no FR variant.
-      const nameFr = props['Event Name FR']?.rich_text?.[0]?.plain_text || undefined;
-      const timeFr = props['Time FR']?.rich_text?.[0]?.plain_text || undefined;
-      const locationFr = props['Location FR']?.rich_text?.[0]?.plain_text || undefined;
-      const descriptionFr = props['Description FR']?.rich_text?.[0]?.plain_text || undefined;
-
-      // Date (date property — YYYY-MM-DD)
-      const date: string | undefined = props['Event Date']?.date?.start ?? undefined;
-
-      // Day (relation to Wedding Timeline)
-      const dayId = props['Day']?.relation?.[0]?.id || undefined;
-
-      // Show on Website (checkbox)
-      const showOnWebsite = props['Show on Website']?.checkbox === true;
-
-      events.push({
-        id: page.id,
-        name,
-        type,
-        wedding,
-        time,
-        startTime,
-        duration,
-        date,
-        location,
-        description,
-        nameFr,
-        timeFr,
-        locationFr,
-        descriptionFr,
-        dayId,
-        showOnWebsite,
-      });
+      const event = parseEventPage(page, wedding);
+      if (event) events.push(event);
     }
 
     cursor = response.has_more ? response.next_cursor : undefined;
