@@ -29,12 +29,13 @@
  *     the main page instead of crossfading.
  *   - Sibling (/nyc/* -> /nyc/*): suppress the disc on both sides.
  *
- * NYC index -> sub-page also TEMPORARILY gives the incoming sub-page hero
- * its own VT group so the entering headline block sits above the exiting
- * root snapshot. That VT name must be injected in before-swap and removed
- * on page-load; leaving it in the markup would keep the hero promoted
- * after the transition and break its normal z-index relationship with the
- * disc while scrolling.
+ * Entering a NYC sub-page from OUTSIDE the sub-page family (isNycSubpageEntry:
+ * /nyc -> /nyc/*, and also / -> /nyc/* when login returns a guest to a deep
+ * link) TEMPORARILY gives the incoming sub-page hero its own VT group so the
+ * entering headline block sits above the exiting root snapshot. That VT name
+ * must be injected in before-swap and removed on page-load; leaving it in the
+ * markup would keep the hero promoted after the transition and break its
+ * normal z-index relationship with the disc while scrolling.
  *
  * Header children (site-logo, event-toggle, nyc-rsvp-btn) have named VTs
  * only on /nyc/index, not on sub-pages. For any /nyc sub-page navigation
@@ -136,7 +137,12 @@ if (!window.__sargauxDiscTransitionSetup) {
     const isNycBackwardNav     = to === '/nyc' && from.startsWith('/nyc/');
     const isNycSiblingNav      = from.startsWith('/nyc/') && to.startsWith('/nyc/');
     const isNycIndexToSubpage  = from === '/nyc' && to.startsWith('/nyc/');
-    const useSafariMossFallback = isSafari && isNycIndexToSubpage;
+    // Entering a NYC sub-page from anywhere outside the sub-page family —
+    // /nyc, but also / (post-login deep link). Both need the incoming hero
+    // lifted out of the root snapshot; only the /nyc case has hero text to
+    // promote on the way out.
+    const isNycSubpageEntry    = to.startsWith('/nyc/') && !from.startsWith('/nyc/');
+    const useSafariMossFallback = isSafari && isNycSubpageEntry;
 
     // Give old-page moss its own VT group before the old snapshot.
     if (!useSafariMossFallback) {
@@ -199,8 +205,8 @@ if (!window.__sargauxDiscTransitionSetup) {
     const isNycForwardNav      = toDepth > fromDepth && from.startsWith('/nyc');
     const isNycBackwardNav     = to === '/nyc' && from.startsWith('/nyc/');
     const isNycSiblingNav      = from.startsWith('/nyc/') && to.startsWith('/nyc/');
-    const isNycIndexToSubpage  = from === '/nyc' && to.startsWith('/nyc/');
-    const useSafariMossFallback = isSafari && isNycIndexToSubpage;
+    const isNycSubpageEntry    = to.startsWith('/nyc/') && !from.startsWith('/nyc/');
+    const useSafariMossFallback = isSafari && isNycSubpageEntry;
 
     // Safari uses a DOM animation fallback for the incoming moss zone.
     // Leaving the VT name in place keeps the element in the compositor
@@ -220,7 +226,7 @@ if (!window.__sargauxDiscTransitionSetup) {
       suppressOnDoc(event.newDocument.querySelector('.nyc-disc'));
     }
 
-    if (isNycIndexToSubpage) {
+    if (isNycSubpageEntry) {
       setVTName(event.newDocument.querySelector('.nyc-page-main'), 'nyc-subpage-hero');
     }
 

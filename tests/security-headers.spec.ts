@@ -48,7 +48,8 @@ test.describe('Security headers on SSR responses', () => {
       maxRedirects: 0,
     });
     expect([302, 303, 307]).toContain(response.status());
-    expect(response.headers()['location']).toMatch(/\/$/);
+    // Homepage, carrying the requested page for post-login return.
+    expect(response.headers()['location']).toBe('/?next=%2Fnyc');
     expectSecurityHeaders(response);
   });
 

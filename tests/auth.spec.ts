@@ -146,8 +146,9 @@ test.describe('Authentication', () => {
     // Try to access protected route directly
     await page.goto('/nyc');
 
-    // Should redirect to homepage
-    await expect(page).toHaveURL('/');
+    // Should redirect to homepage, carrying the requested page so login can
+    // return the guest to it (see src/lib/return-to.ts).
+    await expect(page).toHaveURL('/?next=%2Fnyc');
   });
 
   test('should redirect authenticated users from homepage to /nyc', async ({ page }) => {
@@ -177,7 +178,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('#name')).toBeFocused();
 
     await page.goto('/nyc');
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/?next=%2Fnyc');
   });
 
   test('should have a visible back link on RSVP pages', async ({ page }) => {
@@ -485,5 +486,132 @@ test.describe('Envelope-name login', () => {
       .locator('#identity-picker button')
       .evaluateAll((nodes) => nodes.filter((node) => (node as HTMLElement).offsetParent !== null).length);
     expect(focusable).toBe(0);
+  });
+});
+
+test.describe('Deep-link return after login', () => {
+  const PARTNER_NAME = TEST_GUEST_PARTNER_NAME;
+  const ENVELOPE_NAME = `${TEST_GUEST_NAME} & ${PARTNER_NAME}`;
+
+  test.beforeEach(async ({ context }) => {
+    await context.clearCookies();
+  });
+
+  test('the login page varies its CDN cache on next', async ({ page }) => {
+    // The language switcher server-renders ?next= into its hrefs, so a shared
+    // cache variant would pin one guest's destination into everyone's links.
+    const response = await page.goto('/?next=%2Ffrance%2Flookbook');
+    expect(response?.headers()['netlify-vary']).toContain('next');
+  });
+
+  test('a protected deep link is carried to the login page', async ({ page }) => {
+    await page.goto('/france/lookbook');
+    await expect(page).toHaveURL('/?next=%2Ffrance%2Flookbook');
+    // The login bar is the landing state, not the event page.
+    await expect(page.locator('#login-trigger')).toBeVisible();
+  });
+
+  /*
+    The tests below that type a real name need the Notion backend. This one
+    does not: it mocks /api/login and asserts the *client* half of the contract
+    — that the homepage script lifts `next` out of location.search and posts it
+    — so the wiring stays covered even where guest credentials aren't
+    configured. The server half is covered by tests/return-to-unit.spec.ts.
+  */
+  test('the login POST carries the next param from the URL', async ({ page }) => {
+    let postedNext: string | null = null;
+
+    // The form posts multipart/form-data, so pull the field out of the raw body.
+    const readField = (body: string, field: string) =>
+      body.match(new RegExp(`name="${field}"\\r?\\n\\r?\\n([^\\r\\n]*)`))?.[1] ?? null;
+
+    await page.route('**/api/login', async (route) => {
+      postedNext = readField(route.request().postData() ?? '', 'next');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          guest: TEST_GUEST_NAME,
+          redirectPath: '/france/lookbook',
+        }),
+      });
+    });
+
+    await page.goto('/france/lookbook');
+    await expect(page).toHaveURL('/?next=%2Ffrance%2Flookbook');
+
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+
+    // The mocked response sets no session cookie, so middleware bounces the
+    // destination straight back to the login page. Watch for the navigation
+    // request itself rather than the final URL — what's under test here is
+    // that the client asked for the deep link, not that the session took.
+    const navigation = page.waitForRequest(
+      (request) => new URL(request.url()).pathname === '/france/lookbook'
+    );
+    await page.press('#name', 'Enter');
+    await navigation;
+
+    expect(postedNext).toBe('/france/lookbook');
+  });
+
+  test('logging in returns the guest to the page they asked for', async ({ page }) => {
+    await page.goto('/france/lookbook');
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+    await page.press('#name', 'Enter');
+
+    await expect(page).toHaveURL('/france/lookbook');
+    // The disc-as-O must be present on arrival — this is the shared
+    // `event-disc` element the transition FLIPs into.
+    await expect(page.locator('.lookbook-disc-slot .lookbook-disc')).toBeAttached();
+  });
+
+  test('a deep link survives the two-step identity picker', async ({ page }) => {
+    await page.goto('/nyc/travel');
+    await expect(page).toHaveURL('/?next=%2Fnyc%2Ftravel');
+
+    await page.click('#login-trigger');
+    await page.fill('#name', ENVELOPE_NAME);
+    await page.press('#name', 'Enter');
+
+    const picker = page.locator('#identity-picker');
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: PARTNER_NAME }).click();
+
+    await expect(page).toHaveURL('/nyc/travel');
+  });
+
+  test('a query string on the deep link is preserved', async ({ page }) => {
+    await page.goto('/france/schedule?lang=fr');
+    await expect(page).toHaveURL('/?next=%2Ffrance%2Fschedule%3Flang%3Dfr');
+
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+    await page.press('#name', 'Enter');
+
+    await expect(page).toHaveURL('/france/schedule?lang=fr');
+  });
+
+  test('an off-site next is refused and falls back to the default route', async ({ page }) => {
+    await page.goto('/?next=https%3A%2F%2Fevil.example');
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+    await page.press('#name', 'Enter');
+
+    await expect(page).toHaveURL('/nyc');
+  });
+
+  test('an already-authenticated guest hitting /?next= is forwarded too', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#login-trigger');
+    await page.fill('#name', TEST_GUEST_NAME);
+    await page.press('#name', 'Enter');
+    await expect(page).toHaveURL('/nyc');
+
+    await page.goto('/?next=%2Ffrance%2Flookbook');
+    await expect(page).toHaveURL('/france/lookbook');
   });
 });

@@ -4,7 +4,7 @@ import faviconLight from '../assets/common/favicon.svg?url';
 import faviconDark from '../assets/common/favicon-dark.svg?url';
 import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from '../lib/auth';
 import { isSiteEnabled, features } from '../config/features';
-import { getPrimaryEventRoute } from '../lib/event-routing';
+import { RETURN_TO_PARAM, resolveLoginDestination } from '../lib/return-to';
 import { strings } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 import SiteFooter from '../components/SiteFooter.astro';
@@ -19,7 +19,13 @@ if (isSiteEnabled()) {
     if (authGuest.eventInvitations.length === 0) {
       Astro.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
     } else {
-      const redirectPath = getPrimaryEventRoute(authGuest.eventInvitations);
+      // Honour ?next= here too: a guest who already has a session (another
+      // tab, a stale CDN copy of the 302) should still reach the deep link
+      // they followed rather than being dumped on their default route.
+      const redirectPath = resolveLoginDestination(
+        Astro.url.searchParams.get(RETURN_TO_PARAM),
+        authGuest.eventInvitations
+      );
       return Astro.redirect(redirectPath);
     }
   }
@@ -804,6 +810,16 @@ const identityExpired = t(strings.home.identity.expired);
         const submitLogin = async (body, onExpired) => {
           showError('');
           setSubmitState(true);
+
+          // Read from the live URL at submit time, not from anything
+          // server-rendered: this page is CDN-cached, so the browser's address
+          // bar is the authoritative copy of `next` (see src/lib/return-to.ts).
+          // Read at submit time rather than at init because this script re-runs
+          // on astro:page-load. Attached here rather than at each caller so the
+          // two-step identity picker carries it too. The server re-validates
+          // it — sending it is not the same as trusting it.
+          const nextParam = new URLSearchParams(window.location.search).get('next');
+          if (nextParam) body.append('next', nextParam);
 
           try {
             const response = await fetch('/api/login', { method: 'POST', body });
