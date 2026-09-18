@@ -34,9 +34,10 @@ test.describe('Security — Session tokens', () => {
       headers: { Cookie: `sargaux_auth=${unsigned}` },
       maxRedirects: 0,
     });
-    // Middleware redirects unauthenticated users to /
+    // Middleware redirects unauthenticated users to / (with the requested
+    // page attached for post-login return).
     expect([302, 303, 307]).toContain(response.status());
-    expect(response.headers()['location']).toMatch(/\/$/);
+    expect(response.headers()['location']).toBe('/?next=%2Fnyc');
   });
 
   test('tampered HMAC cookie is rejected', async ({ request }) => {
@@ -68,7 +69,7 @@ test.describe('Security — Session tokens', () => {
     });
     // Middleware treats the expired session as unauthenticated — no crash
     expect([302, 303, 307]).toContain(response.status());
-    expect(response.headers()['location']).toMatch(/\/$/);
+    expect(response.headers()['location']).toBe('/?next=%2Fnyc');
   });
 });
 

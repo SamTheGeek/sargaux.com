@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from './lib/auth';
 import { getPrimaryEventRoute } from './lib/event-routing';
+import { loginUrlFor } from './lib/return-to';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
 import { normalize } from './lib/normalize';
@@ -77,9 +78,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // two variants — varying on the raw header instead would shatter the cache,
       // and `header=` refuses Accept-Language for that reason. Without this, the
       // first visitor to warm a cold page would pin their language for everyone.
+      //
+      // `query=next` is required for the same reason: the login page's language
+      // switcher is server-rendered from `Astro.url` and deliberately preserves
+      // `?next=` (so a French guest who switches language keeps the deep link
+      // they followed). That puts the value in the HTML, so without varying on
+      // it the first anonymous visitor to warm `/` would pin *their*
+      // destination into every other guest's language links. The variant count
+      // stays small — `next` only ever appears on `/`, and only ever holds one
+      // of the handful of protected page paths.
       response.headers.set(
         'Netlify-Vary',
-        'query=lang,language=en|fr,cookie=sargaux_auth|sargaux_lang'
+        'query=lang|next,language=en|fr,cookie=sargaux_auth|sargaux_lang'
       );
 
       // Security headers (audit P1-5). These must be set here, not in
@@ -154,8 +164,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const auth = getAuthenticatedGuest(context.cookies);
 
   if (!auth) {
-    // Redirect to homepage for login
-    return withVary(context.redirect('/'));
+    // Redirect to homepage for login, carrying the requested page so login can
+    // land them there instead of on their default event route. Only this
+    // branch does so: the three redirects below delete the session cookie and
+    // are repair paths, where re-aiming a guest at a page they were just
+    // refused is noise rather than help.
+    return withVary(context.redirect(loginUrlFor(pathname, context.url.search)));
   }
 
   // Resolve event invitations (and country) from the live Notion record, not

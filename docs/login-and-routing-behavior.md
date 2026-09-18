@@ -129,6 +129,44 @@ Why this matters:
 - The same helper must be used everywhere default routing is decided.
 - Homepage auto-redirect, login API redirect, and middleware fallbacks should remain aligned.
 
+## Deep-Link Return (`?next=`)
+
+Relevant implementation:
+
+- `src/lib/return-to.ts`
+- `src/middleware.ts`
+- `src/pages/api/login.ts`
+- `src/pages/index.astro`
+
+Current rule:
+
+- An unauthenticated request for a protected page redirects to
+  `/?next=<encoded path>` instead of a bare `/`.
+- A successful login — one-step, or two-step through the identity picker —
+  lands the guest on that page instead of their default event route.
+- The default event route is still the fallback: for no `next`, for a `next`
+  that fails validation, and for a `next` pointing at an event the guest is not
+  invited to (silently, since the two guest lists barely overlap and a
+  forwarded link for the wrong event is routine).
+- Only `/nyc/*`, `/france/*`, `/couple` and `/registry` are returnable — the
+  same set `PROTECTED_ROUTES` guards.
+- Only the unauthenticated branch attaches `next`. The redirects that *delete*
+  the session cookie (descoped guest, name/record mismatch, empty invitations)
+  stay on a bare `/`; they are repair paths.
+
+Why this matters:
+
+- `sanitizeReturnTo` is the open-redirect gate. It must keep failing closed on
+  scheme-bearing, protocol-relative (`//host`), backslash and control-character
+  inputs, and on anything outside the returnable prefixes.
+- The destination is validated **server-side** in `/api/login`, where the
+  guest's real event invitations are known. The client sends `next`; it is never
+  trusted.
+- The login page's `Netlify-Vary` includes `query=next` because the language
+  switcher server-renders the param into its hrefs. Dropping that would let the
+  first visitor who warms the cached homepage pin their destination into every
+  other guest's language links.
+
 ## Regression Checks
 
 When touching login or routing, verify all of the following:
@@ -137,11 +175,15 @@ When touching login or routing, verify all of the following:
 - The hidden login shell is not exposed as focusable while collapsed.
 - Valid login still reaches the default route for that guest.
 - Dual-invite guests route to NYC before October 15, 2026 and France on/after October 15, 2026.
+- A logged-out hit on a protected page lands on `/?next=…`, and logging in from
+  there returns the guest to that page — including through the identity picker.
+- The shared amber disc still animates into its destination position on that
+  post-login navigation (compare against the equivalent in-site navigation).
 - The homepage script does not reintroduce a direct inline import of `astro:transitions/client`.
 
 Useful verification commands:
 
 ```bash
 npm run build
-npx playwright test tests/event-routing.spec.ts tests/auth.spec.ts tests/access-control.spec.ts
+npx playwright test tests/event-routing.spec.ts tests/auth.spec.ts tests/access-control.spec.ts tests/return-to-unit.spec.ts
 ```

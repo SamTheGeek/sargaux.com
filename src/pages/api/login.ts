@@ -14,7 +14,7 @@ import { findGuestsByName, findHouseholdByEnvelopeName, getGuestById } from '../
 import { findMatchingHousehold } from '../../lib/envelope-name';
 import type { EventInvitation } from '../../lib/auth';
 import type { GuestRecord } from '../../types';
-import { getPrimaryEventRoute } from '../../lib/event-routing';
+import { resolveLoginDestination } from '../../lib/return-to';
 import { getDefaultLocale } from '../../lib/locale-routing';
 import {
   checkRateLimit,
@@ -162,7 +162,8 @@ async function notFoundResponse(): Promise<Response> {
 /** Mint the session cookie and build the success response. */
 async function completeLogin(
   guest: ResolvedGuest,
-  cookies: Parameters<APIRoute>[0]['cookies']
+  cookies: Parameters<APIRoute>[0]['cookies'],
+  returnTo?: string | null
 ): Promise<Response> {
   // Descoped guests (Event Invitations intentionally cleared in Notion) must
   // not receive a session — minting one would either invent invitations or
@@ -188,7 +189,10 @@ async function completeLogin(
     throw err;
   }
 
-  const redirectPath = getPrimaryEventRoute(guest.eventInvitations);
+  // The client sends `next` from the URL it was bounced to, but the decision is
+  // made here: this is where the guest's real event invitations are known, and
+  // an unvalidated client-supplied path would be an open redirect.
+  const redirectPath = resolveLoginDestination(returnTo, guest.eventInvitations);
 
   cookies.set(AUTH_COOKIE_NAME, token, {
     path: '/',
@@ -217,6 +221,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
   const claim = formData.get('claim');
   const guestId = formData.get('guestId');
+  const nextField = formData.get('next');
+  const returnTo = typeof nextField === 'string' ? nextField : null;
 
   // ── Step 2: redeem an identity claim ──────────────────────────────────────
   if (typeof claim === 'string' && claim) {
@@ -248,7 +254,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return notFoundResponse();
     }
 
-    return completeLogin(guest, cookies);
+    return completeLogin(guest, cookies, returnTo);
   }
 
   // ── Step 1: resolve a typed name ──────────────────────────────────────────
@@ -285,7 +291,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   // One person named — log them straight in, same as a full-name login.
   if (matches.length === 1) {
-    return completeLogin(toResolvedGuest(matches[0]), cookies);
+    return completeLogin(toResolvedGuest(matches[0]), cookies, returnTo);
   }
 
   // Several records answer to this exact name. The identity picker can only

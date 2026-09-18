@@ -99,6 +99,8 @@ const lang = Astro.locals.lang ?? 'en';
   ::view-transition-group(france-index-hero-content)      { z-index: 3; }
   ::view-transition-group(france-index-body-content)      { z-index: 3; }
   ::view-transition-group(france-details-content)         { z-index: 3; }
+  ::view-transition-group(france-faq-content)             { z-index: 3; }
+  ::view-transition-group(france-lookbook-content)        { z-index: 3; }
   ::view-transition-group(france-schedule-content)        { z-index: 3; }
   ::view-transition-group(france-travel-content)          { z-index: 3; }
   ::view-transition-group(france-rsvp-content)            { z-index: 3; }
@@ -138,6 +140,7 @@ const lang = Astro.locals.lang ?? 'en';
   html[data-event="france"] .destination-header,
   html[data-event="france"] .france-index-body,
   html[data-event="france"] .france-page-content,
+  html[data-event="france"] .france-lookbook-shell,
   html[data-event="france"] .travel-shell {
     position: relative;
     z-index: 3;
