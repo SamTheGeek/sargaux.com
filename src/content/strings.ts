@@ -190,7 +190,7 @@ export const strings = {
       dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
       dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:     s('followed by', ''),
-      dancing:       s('Dancing at Café Balearica', 'Suivis d’une soirée dansante dans Williamsburg.'),
+      dancing:       s('Dancing at Café Balearica', 'Suivis d’une soirée dansante au Café Balearica.'),
     },
     dressCode: {
       heading: s('Dress Code', 'Tenue'),
@@ -258,11 +258,11 @@ export const strings = {
         sunsetTime: s('6:23 PM', '18 h 23'),
         sunset: s('Sunset behind the Manhattan skyline', 'Coucher du soleil sur Manhattan'),
         dancing: {
-          time:  s('9:30 PM – 11:59 PM', '21 h 30'),
+          time:  s('9:30 PM', '21 h 30'),
           title: s('After Party - Dancing', 'Soirée Dansante'),
           desc:  s(
             'Join us as we head to Café Balearica, just around the corner, and keep the night going until midnight. No reservations, just dancing and continued celebration.',
-            'La soirée continue à quelques pas du Bar Blondeau. Rejoignez-nous pour danser !',
+            'La soirée continue au Café Balearica, à quelques pas du Bar Blondeau, jusqu\'à minuit. Rejoignez-nous pour danser !',
           ),
         },
       },
@@ -340,7 +340,7 @@ export const strings = {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
           heading:        s('By Subway', 'En métro'),
-          intro:          s('The L train will not be running the weekend of the event. Take the G train to Nassau Avenue instead — about a 15-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue, puis comptez environ cinq minutes de marche jusqu'au Bar Blondeau."),
+          intro:          s('The L train will not be running the weekend of the event. Take the G train to Nassau Avenue instead — about a 10-minute walk to the venue.', "La ligne L ne circulera pas le week-end de la soirée. Prenez plutôt la ligne G jusqu'à Nassau Avenue, puis comptez environ dix minutes de marche jusqu'au Bar Blondeau."),
           fareBeforeLink: s('Single ride: $3 (set up ', 'Trajet simple : $3. Le moyen le plus simple et rapide de payer le métro à New York est d\'utiliser le système '),
           fareLinkText:   s('Express Transit', 'sans contact OMNY'),
           fareAfterLink:  s(' on your phone ahead of time)', ". Vous n'avez plus besoin d'acheter de ticket à l'avance ; passez simplement votre carte bancaire sans contact ou votre téléphone/montre (Apple Pay, Google Pay) directement sur le tourniquet."),
