@@ -124,7 +124,7 @@ function recentRsvpFor(
  *
  * The databaseId here is the Notion database PAGE ID (not the collection/data source ID).
  */
-async function queryDatabase(
+export async function queryDatabase(
   databaseId: string,
   body: Record<string, unknown> = {}
 ): Promise<{ results: any[]; has_more: boolean; next_cursor?: string }> {

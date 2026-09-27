@@ -8,7 +8,7 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
 import { Image } from 'astro:assets';
 import barBlondeau from '../../assets/images/nyc/bar-blondeau.avif';
-import blondeauPlaceholder from '../../assets/images/nyc/blondeau-placeholder.avif';
+import cafeBalearica from '../../assets/images/nyc/cafe-balearica.avif';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
@@ -35,21 +35,14 @@ function buildStaticMapUrl(lat: number, lng: number, zoom = 15): string {
   return u.toString();
 }
 
-function buildMapsLink(lat: number, lng: number): string {
-  const u = new URL('https://www.google.com/maps/search/');
-  u.searchParams.set('api', '1');
-  u.searchParams.set('query', `${lat},${lng}`);
-  return u.toString();
-}
-
-const DANCING_LAT = 40.7131;
-const DANCING_LNG = -73.9620;
+const DANCING_LAT = 40.72111;
+const DANCING_LNG = -73.95654;
 
 const dinnerMapSrc = MAPS_KEY ? buildStaticMapUrl(DINNER_LAT, DINNER_LNG) : null;
 const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
 
-const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG, 14) : null;
-const dancingMapsHref = buildMapsLink(DANCING_LAT, DANCING_LNG);
+const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG) : null;
+const dancingMapsHref = 'https://maps.app.goo.gl/hqd57njm2V3SuHeU8';
 const calendarToken = generateTokenIfPossible(guestId);
 ---
 
@@ -197,12 +190,12 @@ const calendarToken = generateTokenIfPossible(guestId);
           </div>
         </div>
 
-        <!-- Dancing venue (TBD) -->
+        <!-- Dancing venue -->
         <div class="venue-card">
           <div class="venue-photo">
             <Image
-              src={blondeauPlaceholder}
-              alt="Dancing venue"
+              src={cafeBalearica}
+              alt="Interior of Café Balearica, Brooklyn"
               class="venue-photo-img"
               loading="lazy"
               width={1200}
@@ -212,7 +205,7 @@ const calendarToken = generateTokenIfPossible(guestId);
             <div class="venue-text">
               <p class="venue-type">{t(strings.nyc.details.venues.dancing.title)}</p>
               <h3 class="venue-name">{t(strings.nyc.details.venues.dancing.name)}</h3>
-              <p class="venue-address">Williamsburg, Brooklyn</p>
+              <p class="venue-address">{t(strings.nyc.details.venues.dancing.address)}</p>
             </div>
             <div class="venue-map-section">
               {dancingMapSrc && (
@@ -221,12 +214,12 @@ const calendarToken = generateTokenIfPossible(guestId);
                   class="venue-map-link"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Open Williamsburg area in Google Maps"
+                  aria-label="Open Café Balearica in Google Maps"
                 >
                   <img
                     class="venue-map"
                     src={dancingMapSrc}
-                    alt="Map of Williamsburg, Brooklyn"
+                    alt="Map of Café Balearica, Brooklyn"
                     loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"
                     width="600"
@@ -234,12 +227,7 @@ const calendarToken = generateTokenIfPossible(guestId);
                   />
                 </a>
               )}
-              <a
-                href="https://maps.google.com"
-                class="venue-directions-link venue-directions-link--disabled"
-                aria-disabled="true"
-                tabindex="-1"
-              >
+              <a href={dancingMapsHref} class="venue-directions-link" target="_blank" rel="noopener noreferrer">
                 {t(strings.nyc.details.venues.getDirections)}
               </a>
             </div>
@@ -551,13 +539,6 @@ const calendarToken = generateTokenIfPossible(guestId);
     -webkit-text-fill-color: var(--color-burnt-amber);
   }
 
-  html[data-event="nyc"] .venue-directions-link--disabled {
-    opacity: 0.3;
-    pointer-events: none;
-    cursor: default;
-  }
-
-  /* TBD venue */
   /* ── Footer ──────────────────────────────────────── */
 
   html[data-event="nyc"] .nyc-footer {
