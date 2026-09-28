@@ -4,6 +4,7 @@ import {
   TEMPLATES,
   saveTheDateNYC,
   saveTheDateFrance,
+  reminderGeneral,
 } from '../src/lib/email-templates';
 import type { TemplateName } from '../src/lib/email-templates';
 
@@ -91,5 +92,51 @@ test.describe('Email — payload assembly', () => {
       expect(html).toContain(GUEST.name);
       expect(text).toContain(GUEST.name);
     }
+  });
+});
+
+test.describe('reminder-general body Markdown', () => {
+  const render = (body: string) => reminderGeneral({ guestName: 'Alex Rivera', subject: 'S', body });
+
+  test('bold, links and bullets become HTML', () => {
+    const { html } = render(
+      '**Meet Up Point:**\nBy the trees.\n\n* G train\n* Ferry\n\nBook [here](https://example.com/park?a=1&b=2).',
+    );
+    expect(html).toContain('<strong>Meet Up Point:</strong><br />By the trees.');
+    expect(html).toMatch(/<ul[^>]*><li[^>]*>G train<\/li><li[^>]*>Ferry<\/li><\/ul>/);
+    expect(html).toContain('<a href="https://example.com/park?a=1&amp;b=2"');
+    expect(html).toContain('>here</a>');
+    expect(html).not.toContain('**');
+    expect(html).not.toContain('](');
+  });
+
+  test('plain-text part drops markers and spells out links', () => {
+    const { text } = render('**Bold** and [here](https://example.com/x).\n\n- one\n- two\n\nSee [sargaux.com](http://sargaux.com/)');
+    expect(text).toContain('Bold and here (https://example.com/x).');
+    expect(text).toContain('• one\n• two');
+    expect(text).toContain('See http://sargaux.com/');
+  });
+
+  test('bold never rewrites a URL, and can still wrap a link', () => {
+    const { html, text } = render('Search [results](https://example.com/?q=**term**). **Book [here](https://example.com/b)**');
+    expect(html).toContain('href="https://example.com/?q=**term**"');
+    expect(html).toContain('<strong>Book <a href="https://example.com/b"');
+    expect(text).toContain('results (https://example.com/?q=**term**)');
+    expect(text).toContain('Book here (https://example.com/b)');
+  });
+
+  test('markup and unsafe link schemes are escaped, not rendered', () => {
+    const { html } = render('<script>x</script> [bad](javascript:alert(1)) "quoted"');
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).not.toContain('href="javascript:');
+    expect(html).toContain('&quot;quoted&quot;');
+  });
+
+  test('stray indentation and invisible paste characters are dropped', () => {
+    const { html, text } = render('First.\n\u2800\n Second.');
+    expect(html).toContain('>First.</p>');
+    expect(html).toContain('>Second.</p>');
+    expect(text).toBe('Dear Alex Rivera,\n\nFirst.\n\nSecond.');
   });
 });

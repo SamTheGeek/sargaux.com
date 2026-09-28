@@ -190,7 +190,7 @@ export const strings = {
       dinnerAddress: s('Wythe Hotel, 6th Floor · 80 Wythe Avenue · Brooklyn, New York', 'Wythe Hotel, 6e étage · 80 Wythe Avenue · Brooklyn, New York'),
       dinnerType:    s('Cocktails & Dinner', 'Cocktail & Dîner'),
       separator:     s('followed by', ''),
-      dancing:       s('Dancing (Location TBA)', 'Suivis d’une soirée dansante dans Williamsburg.'),
+      dancing:       s('Dancing at Café Balearica', 'Suivis d’une soirée dansante au Café Balearica.'),
     },
     dressCode: {
       heading: s('Dress Code', 'Tenue'),
@@ -261,8 +261,8 @@ export const strings = {
           time:  s('9:30 PM', '21 h 30'),
           title: s('After Party - Dancing', 'Soirée Dansante'),
           desc:  s(
-            'Join us as we head to a nearby venue and keep the night going. No reservations, just dancing and continued celebration.',
-            'La soirée continue à quelques pas du Bar Blondeau. Rejoignez-nous pour danser !',
+            'Join us as we head to Café Balearica, just around the corner, and keep the night going until midnight. No reservations, just dancing and continued celebration.',
+            'La soirée continue au Café Balearica, à quelques pas du Bar Blondeau, jusqu\'à minuit. Rejoignez-nous pour danser !',
           ),
         },
       },
@@ -277,7 +277,8 @@ export const strings = {
         },
         dancing: {
           title:          s('After Party - Dancing', 'Soirée Dansante'),
-          name:           s('Location TBA', 'Williamsburg, Brooklyn'),
+          name:           s('Café Balearica', 'Café Balearica'),
+          address:        s('44 Berry Street · Brooklyn, New York', '44 Berry Street · Brooklyn, New York'),
           mapPlaceholder: s('Map will be added here', 'La carte sera ajoutée ici'),
         },
       },
@@ -339,11 +340,15 @@ export const strings = {
         heading: s('Getting Around', 'Se déplacer'),
         subway: {
           heading:        s('By Subway', 'En métro'),
-          intro:          s('Take the L train to Bedford Avenue — a 5-minute walk to the venue.', "Prenez la ligne L jusqu'à Bedford Avenue, puis comptez environ cinq minutes de marche jusqu'au Bar Blondeau."),
+          intro:          s('The L train will not be running the weekend of the event. Take the G train to Nassau Avenue instead — about a 10-minute walk to the venue.', "La ligne L ne circulera pas le week-end de la soirée. Prenez plutôt la ligne G jusqu'à Nassau Avenue, puis comptez environ dix minutes de marche jusqu'au Bar Blondeau."),
           fareBeforeLink: s('Single ride: $3 (set up ', 'Trajet simple : $3. Le moyen le plus simple et rapide de payer le métro à New York est d\'utiliser le système '),
           fareLinkText:   s('Express Transit', 'sans contact OMNY'),
           fareAfterLink:  s(' on your phone ahead of time)', ". Vous n'avez plus besoin d'acheter de ticket à l'avance ; passez simplement votre carte bancaire sans contact ou votre téléphone/montre (Apple Pay, Google Pay) directement sur le tourniquet."),
           maps:           s('Apple Maps and Google Maps have great subway directions', "Apple Plans et Google Maps proposent d'excellents itinéraires en transports en commun."),
+        },
+        ferry: {
+          heading: s('By Ferry', 'En ferry'),
+          text:    s("NYC Ferry's East River route stops at North Williamsburg (North 6th Street), under a 10-minute walk from the Wythe Hotel.", "La ligne East River du NYC Ferry s'arrête à North Williamsburg (North 6th Street), à moins de dix minutes à pied du Wythe Hotel."),
         },
         bike: {
           heading: s('By Bike', 'À vélo'),

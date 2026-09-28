@@ -59,8 +59,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { Client } from '@notionhq/client';
-import { fetchAllGuests, fetchAllLatestRSVPs } from '../src/lib/notion';
+import { fetchAllGuests, fetchAllLatestRSVPs, queryDatabase } from '../src/lib/notion';
 import { memberAttendedResponse } from '../src/lib/rsvp-attendance';
 import { excludeTestGuests } from '../src/lib/test-guests';
 import type { GuestRecord, RSVPResponse } from '../src/types';
@@ -194,16 +193,17 @@ function requireEnv(name: string): string {
  * script exists to report on are exactly the ones it would hide.
  */
 async function fetchCatalog(): Promise<CatalogRow[]> {
-  const notion = new Client({ auth: requireEnv('NOTION_API_KEY') });
-  const dataSourceId = requireEnv('NOTION_EVENT_CATALOG_DB');
+  requireEnv('NOTION_API_KEY');
+  const databaseId = requireEnv('NOTION_EVENT_CATALOG_DB');
 
   const rows: CatalogRow[] = [];
   let cursor: string | undefined = undefined;
 
   do {
-    const response = await notion.dataSources.query({
-      data_source_id: dataSourceId,
-      start_cursor: cursor,
+    // The legacy databases/{id}/query endpoint, as the site uses: these IDs
+    // are database page IDs, which dataSources.query() rejects as not found.
+    const response = await queryDatabase(databaseId, {
+      ...(cursor ? { start_cursor: cursor } : {}),
       page_size: 100,
     });
 

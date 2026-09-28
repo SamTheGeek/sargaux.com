@@ -17,7 +17,8 @@
     {
       "name": "sargaux.com built",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["./dist/server/entry.mjs"],
+      "runtimeArgs": ["--env-file=.env.local", "./dist/server/entry.mjs"],
+      "env": { "HOST": "127.0.0.1", "PORT": "1213" },
       "port": 1213
     }
   ]
