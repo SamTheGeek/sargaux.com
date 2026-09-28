@@ -440,7 +440,7 @@ function parseBodyBlocks(body: string): BodyBlock[] {
   const blocks: BodyBlock[] = [];
   let current: BodyBlock | null = null;
 
-  for (const raw of body.replace(INVISIBLE_RE, '').split(/\r?\n/)) {
+  for (const raw of body.replace(INVISIBLE_RE, '').replace(/\u0000/g, '').split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) {
       current = null;
@@ -457,23 +457,43 @@ function parseBodyBlocks(body: string): BodyBlock[] {
   return blocks;
 }
 
+/**
+ * Apply inline formatting with links protected: each link is swapped for a
+ * placeholder before `**bold**` runs, so a URL containing `**` is never
+ * rewritten, while bold can still wrap around a link.
+ */
+function formatInline(
+  text: string,
+  renderLink: (label: string, url: string) => string,
+  renderBold: (inner: string) => string,
+): string {
+  const links: string[] = [];
+  const held = text.replace(LINK_RE, (_m, label: string, url: string) => {
+    links.push(renderLink(label.replace(BOLD_RE, (_b, inner: string) => renderBold(inner)), url));
+    return `\u0000${links.length - 1}\u0000`;
+  });
+  return held
+    .replace(BOLD_RE, (_b, inner: string) => renderBold(inner))
+    .replace(/\u0000(\d+)\u0000/g, (_m, i: string) => links[Number(i)]);
+}
+
 function inlineHtml(text: string, linkColor: string): string {
-  return escHtml(text)
-    .replace(
-      LINK_RE,
-      (_m, label: string, url: string) =>
-        `<a href="${url}" style="color:${linkColor};text-decoration:underline;">${label}</a>`,
-    )
-    .replace(BOLD_RE, '<strong>$1</strong>');
+  return formatInline(
+    escHtml(text),
+    (label, url) => `<a href="${url}" style="color:${linkColor};text-decoration:underline;">${label}</a>`,
+    (inner) => `<strong>${inner}</strong>`,
+  );
 }
 
 function inlineText(text: string): string {
-  return text
-    .replace(LINK_RE, (_m, label: string, url: string) => {
+  return formatInline(
+    text,
+    (label, url) => {
       const bare = url.replace(/^(?:https?:\/\/|mailto:)/, '').replace(/\/$/, '');
       return label === bare || label === url ? url : `${label} (${url})`;
-    })
-    .replace(BOLD_RE, '$1');
+    },
+    (inner) => inner,
+  );
 }
 
 /** Render a reminder body to email-safe HTML blocks with inline styles. */

@@ -117,6 +117,14 @@ test.describe('reminder-general body Markdown', () => {
     expect(text).toContain('See http://sargaux.com/');
   });
 
+  test('bold never rewrites a URL, and can still wrap a link', () => {
+    const { html, text } = render('Search [results](https://example.com/?q=**term**). **Book [here](https://example.com/b)**');
+    expect(html).toContain('href="https://example.com/?q=**term**"');
+    expect(html).toContain('<strong>Book <a href="https://example.com/b"');
+    expect(text).toContain('results (https://example.com/?q=**term**)');
+    expect(text).toContain('Book here (https://example.com/b)');
+  });
+
   test('markup and unsafe link schemes are escaped, not rendered', () => {
     const { html } = render('<script>x</script> [bad](javascript:alert(1)) "quoted"');
     expect(html).not.toContain('<script>');
