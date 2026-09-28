@@ -419,10 +419,91 @@ export function saveTheDateFrance({ guestName }: SaveTheDateParams): EmailTempla
 
 // ─── General Reminder ────────────────────────────────────────────────────────
 
+/**
+ * The small Markdown subset a hand-written reminder body may use.
+ *
+ * Blocks: blank lines separate paragraphs; lines starting with `* `, `- ` or
+ * `• ` form a bulleted list; other line breaks are kept. Inline: `**bold**`
+ * and `[text](url)` for http(s)/mailto URLs only. Everything else is escaped,
+ * so a body can never inject markup. Leading/trailing whitespace on each line
+ * and invisible "blank" characters pasted from notes apps (e.g. U+2800) are
+ * dropped, so a paste can't open an odd gap or indent.
+ */
+type BodyBlock = { kind: 'p'; lines: string[] } | { kind: 'ul'; items: string[] };
+
+const BULLET_RE = /^(?:[*•-])\s+/;
+const INVISIBLE_RE = /[\u2800\u200B-\u200D\u2060\uFEFF]/g;
+const LINK_RE = /\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g;
+const BOLD_RE = /\*\*(.+?)\*\*/g;
+
+function parseBodyBlocks(body: string): BodyBlock[] {
+  const blocks: BodyBlock[] = [];
+  let current: BodyBlock | null = null;
+
+  for (const raw of body.replace(INVISIBLE_RE, '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) {
+      current = null;
+      continue;
+    }
+    if (BULLET_RE.test(line)) {
+      if (current?.kind !== 'ul') blocks.push((current = { kind: 'ul', items: [] }));
+      current.items.push(line.replace(BULLET_RE, ''));
+    } else {
+      if (current?.kind !== 'p') blocks.push((current = { kind: 'p', lines: [] }));
+      current.lines.push(line);
+    }
+  }
+  return blocks;
+}
+
+function inlineHtml(text: string, linkColor: string): string {
+  return escHtml(text)
+    .replace(
+      LINK_RE,
+      (_m, label: string, url: string) =>
+        `<a href="${url}" style="color:${linkColor};text-decoration:underline;">${label}</a>`,
+    )
+    .replace(BOLD_RE, '<strong>$1</strong>');
+}
+
+function inlineText(text: string): string {
+  return text
+    .replace(LINK_RE, (_m, label: string, url: string) => {
+      const bare = url.replace(/^(?:https?:\/\/|mailto:)/, '').replace(/\/$/, '');
+      return label === bare || label === url ? url : `${label} (${url})`;
+    })
+    .replace(BOLD_RE, '$1');
+}
+
+/** Render a reminder body to email-safe HTML blocks with inline styles. */
+export function renderReminderBodyHtml(body: string, textStyle: string, linkColor: string): string {
+  return parseBodyBlocks(body)
+    .map((block) =>
+      block.kind === 'p'
+        ? `<p style="margin:0 0 16px;${textStyle}">${block.lines.map((l) => inlineHtml(l, linkColor)).join('<br />')}</p>`
+        : `<ul style="margin:0 0 16px;padding-left:22px;${textStyle}">${block.items
+            .map((item) => `<li style="margin:0 0 6px;">${inlineHtml(item, linkColor)}</li>`)
+            .join('')}</ul>`,
+    )
+    .join('\n');
+}
+
+/** Render a reminder body to plain text: markers removed, links spelled out. */
+export function renderReminderBodyText(body: string): string {
+  return parseBodyBlocks(body)
+    .map((block) =>
+      block.kind === 'p'
+        ? block.lines.map(inlineText).join('\n')
+        : block.items.map((item) => `• ${inlineText(item)}`).join('\n'),
+    )
+    .join('\n\n');
+}
+
 export interface ReminderGeneralParams {
   guestName: string;
   subject: string;
-  body: string; // plain paragraphs, newlines become <br>
+  body: string; // Markdown subset — see renderReminderBodyHtml
 }
 
 export function reminderGeneral({
@@ -434,7 +515,8 @@ export function reminderGeneral({
   const cream    = '#FFF9F0';
   const surface  = '#17320b';
   const bodyText = '#17320b';
-  const htmlBody = escHtml(body).replace(/\n/g, '<br />');
+  const textStyle = `font-family:${sans};font-size:16px;line-height:1.65;color:${bodyText};`;
+  const htmlBody = renderReminderBodyHtml(body, textStyle, bodyText);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -456,7 +538,7 @@ export function reminderGeneral({
           <tr>
             <td style="background:${cream};padding:32px 40px 40px;">
               <p style="margin:0 0 16px;font-family:${sans};font-size:16px;line-height:1.65;color:${bodyText};">Dear ${escHtml(guestName)},</p>
-              <p style="margin:0;font-family:${sans};font-size:16px;line-height:1.65;color:${bodyText};">${htmlBody}</p>
+              ${htmlBody}
             </td>
           </tr>
           <tr>
@@ -471,7 +553,7 @@ export function reminderGeneral({
 </body>
 </html>`;
 
-  const plainText = [`Dear ${guestName},`, '', body].join('\n');
+  const plainText = [`Dear ${guestName},`, '', renderReminderBodyText(body)].join('\n');
 
   return { subject, html, text: plainText };
 }
