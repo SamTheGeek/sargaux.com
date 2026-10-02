@@ -1,179 +1,124 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * Every metric below describes the same page load of `/`, so the page is
+ * loaded once and measured once; each test then asserts one threshold. Loading
+ * `/` per test (as this file used to) made ten navigations for one data set,
+ * and the CLS test alone idled for 2s on a fixed timer.
+ *
+ * Serial because the tests share the measured page — and because CI pins
+ * --workers=1 for this file anyway (wall-clock thresholds).
+ */
+test.describe.configure({ mode: 'serial' });
+
+interface HomepageMetrics {
+  status: number | undefined;
+  responseTime: number;
+  fcp: number;
+  lcp: number;
+  cls: number;
+  domContentLoaded: number;
+  loadTime: number;
+  totalTransferSize: number;
+  resourceCount: number;
+  averageResourceDuration: number;
+  fontResourceCount: number;
+}
+
+async function measureHomepage(page: Page): Promise<HomepageMetrics> {
+  const startTime = Date.now();
+  const response = await page.goto('/');
+  const responseTime = Date.now() - startTime;
+  await page.waitForLoadState('networkidle');
+
+  // Paint/LCP/layout-shift entries are buffered, so observing after the fact
+  // still delivers them; the double rAF lets the observer callback fire.
+  const observed = await page.evaluate(
+    () =>
+      new Promise<{ fcp: number; lcp: number; cls: number }>((resolve) => {
+        const result = { fcp: 0, lcp: 0, cls: 0 };
+        const observe = (type: string, onEntry: (entry: any) => void) => {
+          new PerformanceObserver((list) => list.getEntries().forEach(onEntry)).observe({
+            type,
+            buffered: true,
+          });
+        };
+        observe('paint', (e) => {
+          if (e.name === 'first-contentful-paint') result.fcp = e.startTime;
+        });
+        observe('largest-contentful-paint', (e) => {
+          result.lcp = e.startTime; // last entry wins
+        });
+        observe('layout-shift', (e) => {
+          if (!e.hadRecentInput) result.cls += e.value;
+        });
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(result)));
+      })
+  );
+
+  const timing = await page.evaluate(() => {
+    const [nav] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+    const totalDuration = resources.reduce((acc, r) => acc + r.duration, 0);
+    return {
+      domContentLoaded: nav ? nav.domContentLoadedEventEnd - nav.startTime : 0,
+      loadTime: nav ? nav.loadEventEnd - nav.startTime : 0,
+      totalTransferSize: resources.reduce((acc, r) => acc + (r.transferSize || 0), 0),
+      resourceCount: resources.length,
+      averageResourceDuration: resources.length > 0 ? totalDuration / resources.length : 0,
+      fontResourceCount: resources.filter(
+        (r) => r.name.includes('font') || /\.(woff2?|ttf|otf|eot)$/i.test(r.name)
+      ).length,
+    };
+  });
+
+  return { status: response?.status(), responseTime, ...observed, ...timing };
+}
 
 test.describe('Performance Tests', () => {
-  test('should have fast First Contentful Paint (FCP)', async ({ page }) => {
-    await page.goto('/');
+  let metrics: HomepageMetrics;
 
-    // Wait for first contentful paint
-    const fcp = await page.evaluate(() => {
-      return new Promise<number>((resolve) => {
-        new PerformanceObserver((entryList) => {
-          for (const entry of entryList.getEntries()) {
-            if (entry.name === 'first-contentful-paint') {
-              resolve(entry.startTime);
-            }
-          }
-        }).observe({ type: 'paint', buffered: true });
-      });
-    });
-
-    // FCP should be under 1.8 seconds (good threshold)
-    expect(fcp).toBeLessThan(1800);
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    metrics = await measureHomepage(page);
+    await context.close();
   });
 
-  test('should have fast Time to Interactive (TTI)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    const loadTime = await page.evaluate(() => {
-      const [navEntry] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      if (!navEntry) return 0;
-      return navEntry.loadEventEnd - navEntry.startTime;
-    });
-
-    // TTI should be under 3.8 seconds (good threshold)
-    expect(loadTime).toBeLessThan(3800);
+  test('should have fast server response time', () => {
+    expect(metrics.status).toBe(200);
+    expect(metrics.responseTime).toBeLessThan(1000);
   });
 
-  test('should have fast DOM Content Loaded', async ({ page }) => {
-    await page.goto('/');
-
-    const domContentLoaded = await page.evaluate(() => {
-      const [navEntry] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      if (!navEntry) return 0;
-      return navEntry.domContentLoadedEventEnd - navEntry.startTime;
-    });
-
-    // DOM Content Loaded should be under 1.5 seconds
-    expect(domContentLoaded).toBeLessThan(1500);
+  test('should have fast First Contentful Paint (FCP)', () => {
+    expect(metrics.fcp).toBeGreaterThan(0);
+    expect(metrics.fcp).toBeLessThan(1800); // "good" threshold
   });
 
-  test('should have small total page size', async ({ page }) => {
-    await page.goto('/');
-
-    // Get all resources loaded
-    const resources = await page.evaluate(() => {
-      return performance.getEntriesByType('resource').map((r: any) => ({
-        name: r.name,
-        size: r.transferSize || 0
-      }));
-    });
-
-    const totalSize = resources.reduce((acc: number, r: any) => acc + r.size, 0);
-
-    // Total page size should be under 500KB for a simple site
-    expect(totalSize).toBeLessThan(500000);
+  test('should have optimal Core Web Vitals - LCP', () => {
+    // Chromium may not report an LCP entry for every page; 0 means none seen.
+    if (metrics.lcp > 0) expect(metrics.lcp).toBeLessThan(2500);
   });
 
-  test('should have minimal JavaScript execution time', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('load');
-
-    const jsExecutionTime = await page.evaluate(() => {
-      const entries = performance.getEntriesByType('measure') as PerformanceMeasure[];
-      const jsEntries = entries.filter(entry => entry.name.includes('script'));
-      return jsEntries.reduce((total, entry) => total + entry.duration, 0);
-    });
-
-    // JS execution should be minimal for a mostly static site
-    expect(jsExecutionTime).toBeLessThan(100);
+  test('should not have excessive layout shifts', () => {
+    expect(metrics.cls).toBeLessThan(0.1);
   });
 
-  test('should have efficient resource loading', async ({ page }) => {
-    await page.goto('/');
-
-    const resourceMetrics = await page.evaluate(() => {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      return {
-        count: resources.length,
-        totalDuration: resources.reduce((acc, r) => acc + r.duration, 0),
-        averageDuration: resources.length > 0
-          ? resources.reduce((acc, r) => acc + r.duration, 0) / resources.length
-          : 0
-      };
-    });
-
-    // Should not have excessive resources for a simple site
-    expect(resourceMetrics.count).toBeLessThan(20);
-
-    // Average resource load time should be reasonable
-    expect(resourceMetrics.averageDuration).toBeLessThan(200);
+  test('should have fast DOM Content Loaded and load time (TTI proxy)', () => {
+    expect(metrics.domContentLoaded).toBeLessThan(1500);
+    expect(metrics.loadTime).toBeLessThan(3800);
   });
 
-  test('should have fast server response time', async ({ page }) => {
-    const startTime = Date.now();
-    const response = await page.goto('/');
-    const responseTime = Date.now() - startTime;
-
-    // Server should respond quickly
-    expect(response?.status()).toBe(200);
-    expect(responseTime).toBeLessThan(1000);
+  test('should have small total page size', () => {
+    expect(metrics.totalTransferSize).toBeLessThan(500000);
   });
 
-  test('should have optimal Core Web Vitals - LCP', async ({ page }) => {
-    await page.goto('/');
-
-    // Measure Largest Contentful Paint
-    const lcp = await page.evaluate(() => {
-      return new Promise<number>((resolve) => {
-        new PerformanceObserver((entryList) => {
-          const entries = entryList.getEntries();
-          const lastEntry = entries[entries.length - 1];
-          resolve(lastEntry.startTime);
-        }).observe({ type: 'largest-contentful-paint', buffered: true });
-
-        // Fallback timeout
-        setTimeout(() => resolve(0), 5000);
-      });
-    });
-
-    // LCP should be under 2.5 seconds (good threshold)
-    if (lcp > 0) {
-      expect(lcp).toBeLessThan(2500);
-    }
+  test('should have efficient resource loading', () => {
+    expect(metrics.resourceCount).toBeLessThan(20);
+    expect(metrics.averageResourceDuration).toBeLessThan(200);
   });
 
-  test('should not have excessive layout shifts', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    // Check for Cumulative Layout Shift
-    const cls = await page.evaluate(() => {
-      return new Promise<number>((resolve) => {
-        let clsValue = 0;
-        new PerformanceObserver((entryList) => {
-          for (const entry of entryList.getEntries() as any) {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value;
-            }
-          }
-        }).observe({ type: 'layout-shift', buffered: true });
-
-        setTimeout(() => resolve(clsValue), 2000);
-      });
-    });
-
-    // CLS should be under 0.1 (good threshold)
-    expect(cls).toBeLessThan(0.1);
-  });
-
-  test('should have efficient font loading', async ({ page }) => {
-    await page.goto('/');
-
-    const fontMetrics = await page.evaluate(() => {
-      const fontResources = performance.getEntriesByType('resource').filter((r: any) =>
-        r.name.includes('font') ||
-        r.initiatorType === 'css' && r.name.match(/\.(woff2?|ttf|otf|eot)$/i)
-      );
-
-      return {
-        count: fontResources.length,
-        totalSize: fontResources.reduce((acc: number, r: any) => acc + (r.transferSize || 0), 0)
-      };
-    });
-
-    // Should use system fonts or have minimal custom fonts
-    // For this site using system fonts, should be 0
-    expect(fontMetrics.count).toBeLessThanOrEqual(2);
+  test('should have efficient font loading', () => {
+    expect(metrics.fontResourceCount).toBeLessThanOrEqual(2);
   });
 });

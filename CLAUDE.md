@@ -1,1 +1,583 @@
-.agents/CLAUDE.md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is the wedding website repository for Sam & Margaux (sargaux.com), built with Astro.
+
+### Who You're Talking To
+
+The primary user is **Sam Gross**, one half of the couple getting married. Margaux Ancel is the other half and may review work or provide input.
+
+### Wedding Details
+
+Two separate events with distinct guest lists (minimal overlap):
+
+- **NYC Event**: October 11, 2026 — Dinner + Dancing (separate events) in New York City
+- **France Event**: May 28-30, 2027 — Weekend at Village De Sully
+
+### Key Architecture Decisions
+
+- **Notion Backend**: Guest data and event details stored in Notion, fetched at build-time
+- **Hybrid SSR**: Static pages + Astro server endpoints for RSVP writes
+- **Netlify Adapter**: @astrojs/netlify for server endpoints
+- **Auth**: Cookie-based sessions + localStorage for preferences
+- **Email**: Resend for transactional emails (save-the-dates, RSVP confirmations)
+- **URL Structure**: Event-centric (`/nyc/`, `/france/`) with shared pages (`/registry`)
+
+### Product Documentation
+
+See `docs/feature plan.md` for the full product specification including:
+
+- Feature list (F-001 through F-012)
+- Information architecture and URL structure
+- Milestones and timeline
+- Risks and mitigations
+
+## License
+
+The website source code (HTML, CSS, JavaScript) is licensed under **Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0)**:
+
+- ✅ You may reuse and adapt the code for non-commercial purposes
+- ✅ Attribution is required
+- ❌ Commercial use is not permitted
+
+**Important**: Website text, photos, and media are not licensed and remain © Sam Gross. Do not generate, include, or commit any placeholder content, images, or text without explicit user direction.
+
+## Tech Stack
+
+- **Framework**: Astro v7.x with SSR server mode (Vite 8 / Rolldown, Rust compiler)
+- **Adapter**: @astrojs/node v11 (standalone mode for local dev/tests); @astrojs/netlify v8 for production
+- **CDN caching**: Astro route caching with `@astrojs/netlify/cache` provider (see Architecture Notes)
+- **Language**: TypeScript **6.x**, strict mode enabled — pinned, see below
+- **CSS**: Astro scoped styles (Tailwind optional for design phase)
+- **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
+- **Email**: Resend (transactional)
+- **Hosting**: Netlify
+- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. The CI workflows' `node-version` must match it; change them together.
+- **Package Manager**: npm. `package-lock.json` is written by npm 11; the npm bundled with Node 22 (v10) rewrites it on `npm install` (dropping `libc` fields). Don't commit that churn.
+
+### TypeScript must stay on 6.x
+
+**Do not upgrade to TypeScript 7.** TS 7.0 is the native Go rewrite and **ships no compiler API** — its package `main` entry is `./lib/version.cjs`, a version string, with everything else under `./unstable/*`. Tools that embed the compiler break outright:
+
+- `@astrojs/check` peer-requires `^5 || ^6`, and the Netlify bundler's `ts-api-utils` (via `@netlify/zip-it-and-ship-it` → `precinct` → `@typescript-eslint/typescript-estree`) reads compiler internals that no longer exist. Both `astro build` and `astro check` fail at config load with `Cannot read properties of undefined (reading 'Intrinsic')`.
+- Microsoft explicitly lists **Astro** (with Vue, Svelte, MDX, Angular) among the ecosystems that must stay on 6.x, and plans the replacement API for **7.1** (reported for ~October 2026).
+
+`.github/dependabot.yml` ignores `typescript` `7.0.x` — scoped to 7.0 deliberately, so 7.1 still gets proposed when it ships. Re-evaluate then, and verify with `npm run build`, not `tsc` alone, since the failure is in config loading rather than type-checking.
+
+## Environment Setup
+
+To set up a fresh Mac for development, run:
+
+```bash
+./scripts/setup.sh
+```
+
+This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). It also configures the user's shell for Homebrew and `nvm`, and offers to create `.env.local` for local Notion-backed flows. The only prerequisite is a stock macOS install.
+
+**`.env.local` is created by `./scripts/setup-local-env.sh`, which prompts for API keys and refuses to run inside Claude Code** (it checks `CLAUDECODE`, which is also set under the `!` prompt prefix, whose output lands in the transcript). When running setup for the user, `setup.sh` skips that step; ask them to run `./scripts/setup-local-env.sh` in their own terminal window. Never ask for API keys in chat or write them to `.env.local` yourself. Re-running the helper keeps existing values (Enter at each prompt) and preserves keys it doesn't manage.
+
+After setup, authenticate once:
+
+```bash
+netlify login      # Authenticate with Netlify
+gh auth login      # Authenticate with GitHub
+```
+
+The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to the correct version.
+
+## Development Commands
+
+**Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open <http://localhost:1213> in a browser. This allows watching changes in real time as edits are made.
+
+**IMPORTANT - Port 1213**: The development server and all tests use port **1213** (December 13th - the engagement date). This is a sentimental choice and must NEVER be changed. Do not use port 4321 or any other port.
+
+**Server choice guidance**:
+
+- Prefer the built server path used by Playwright when validating production behavior. `npm test` and targeted Playwright runs are the most reliable source of truth for route transitions, auth redirects, and asset loading.
+- `npm run dev` can be less reliable in this repo because the Netlify adapter may attempt writes outside the workspace during local startup.
+- If browser behavior and source code disagree, rebuild first and then verify against the built app before assuming the code is wrong.
+
+```bash
+# Start development server (http://localhost:1213 - engagement date!)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build locally
+npm run preview
+
+# Type-check the whole repo (.ts, .astro, and bundled <script> blocks)
+# Must stay at 0 errors — CI gates on this
+npm run typecheck
+
+# Run all tests (accessibility, best practices, auth, and performance)
+# Note: This automatically installs Playwright browsers if needed
+# Tests run against the built server configured in playwright.config.ts
+npm test
+
+# Quick verification (build + all tests)
+npm run verify
+
+# Run specific test suites
+npx playwright test tests/accessibility.spec.ts
+npx playwright test tests/best-practices.spec.ts
+npx playwright test tests/performance.spec.ts
+
+# Quick accessibility-only test
+npm run test:quick
+
+# Manually install Playwright browsers
+npm run test:install
+```
+
+**Note**: The `npm test` command includes a `pretest` hook that automatically checks for and installs Playwright browsers if they're not already installed, so you don't need to run `test:install` manually in most cases.
+
+**Cloud sessions (Claude Code on the web) — do NOT run `playwright install`.** These images ship a pre-installed Chromium under `PLAYWRIGHT_BROWSERS_PATH` (`/opt/pw-browsers/chromium`) whose build number often won't match the `@playwright/test` version, so `npm run test:install` fails to download and is unnecessary. `playwright.config.ts` auto-detects that pre-installed browser and points `launchOptions.executablePath` at it (via `resolvePreinstalledChromium()`); the detection is a no-op on local Macs, so the normal managed-browser flow is unaffected there. Just run the tests directly (e.g. `npx playwright test …`).
+
+## Type Checking
+
+**`npm run typecheck` (`astro check`) must report 0 errors.** `.github/workflows/typecheck.yml` gates every non-draft PR on it, using the same draft-PR and docs-only skips as the test workflows. It needs no Playwright browsers, so it's the cheapest job in CI — run it before `npm test`.
+
+Things worth knowing:
+
+- **`astro build` does not type-check.** Vite/Rolldown strips types without checking them, so a build passing says nothing about type correctness. `astro check` is the only thing that checks `.astro` files and the `<script>` blocks inside them.
+- **`npx tsc --noEmit` is not a substitute** — it misses `.astro` files entirely and reports different (fewer) errors. Always use `astro check`.
+- **Bundled `<script>` blocks are type-checked and may use TypeScript syntax.** Annotations there are stripped at build like any other module. This does *not* apply to `<script is:inline>`, which ships verbatim to the browser — TS syntax in an inline script is a runtime SyntaxError.
+- **DOM queries need generics, not casts.** `querySelector('.x')` returns `Element`, which has no `.value`/`.checked`/`.dataset`/`.hidden`/`.style`. Write `querySelector<HTMLInputElement>('.x')`. This is the single most common error class in this repo.
+- **Narrowing does not survive into a callback.** A `let x: T | null` checked non-null before a `forEach` is still `T | null` inside it. Assign to a local `const` first and use that (see `preDeclineToggles` in the RSVP pages).
+- Warnings and hints do not fail the build (`astro check` fails on errors only), but the repo is currently at 0 errors *and* 0 warnings — keep it there.
+
+## Testing
+
+The project includes automated tests that run on every PR:
+
+### Test Suites (run in parallel)
+
+1. **Accessibility Tests** (`tests/accessibility.spec.ts`)
+   - WCAG 2.0/2.1 AA compliance
+   - Proper document structure (h1, lang, meta tags)
+   - Color contrast requirements
+   - Keyboard navigation support
+   - Semantic HTML structure
+
+2. **Auth Tests** (`tests/auth.spec.ts` + `tests/auth-unit.spec.ts`)
+   - Homepage inline login behavior (`Entrée` -> inline name field)
+   - Login with valid/invalid names, case sensitivity, whitespace
+   - Session cookie properties (httpOnly, base64 JSON payload)
+   - Login API response shapes (200, 400, 401)
+   - Protected route redirects and logout flow
+   - Session token round-trip with and without notionId
+   - Name normalization (case, accents, whitespace)
+   - Guest validation against GuestRecord lists
+
+3. **Best Practices Tests** (`tests/best-practices.spec.ts`)
+   - Valid HTML structure, meta tags, responsive viewport
+   - No JavaScript errors (one page load covers structure, meta tags, footer, image alts)
+
+4. **Performance Tests** (`tests/performance.spec.ts`)
+   - Core Web Vitals (LCP, FCP, CLS)
+   - Time to Interactive (TTI), DOM Content Loaded
+   - Page size, JavaScript execution time, resource loading
+
+5. **Pages Tests** (`tests/pages.spec.ts`)
+   - Back links ("← Return to event") present on all sub-pages
+   - NYC travel page hotel section content
+   - RSVP preview mode form rendering
+   - Couple page scattered gallery (exactly 8 cards)
+
+6. **Couple Randomization Tests** (`tests/couple-randomization.spec.ts`)
+   - Consecutive reloads of `/couple` render different photo selections
+   - No photo repeats within a load; the hero never reappears in the gallery
+   - Static guard that `/couple` is absent from `routeRules` — the browser tests
+     can't see CDN caching under the node adapter, so the config is asserted directly
+
+7. **Email Unit Tests** (`tests/email-unit.spec.ts`)
+   - `withRecipient` attaches `to` and can't be overridden by a template
+   - Every template in `TEMPLATES` composes into a complete, sendable payload
+   - Runs with `emailEnabled` off, which is why it catches what `admin.spec.ts` can't
+
+8. **Alternate-Name Login** (`tests/alternate-name-login.spec.ts`)
+   - Runs the envelope/alias matching end to end against Notion, using only the 🤖 party
+   - Covers what `envelope-login-unit.spec.ts` can't see: that `Also Known As` is read off the Guest List page, that the targeted candidate query finds a guest by an alias rather than their name, and the response shape for each outcome
+   - Depends on Notion data: `Also Known As` is `Lex` on Alex Rivera and `Jordan Delacroix` on Jordan Chen (see `TEST_GUEST_AKA_*` in `tests/fixtures.ts`)
+
+9. **RSVP Name Write-Back** (`tests/rsvp-name-writeback.mutating.spec.ts`) — see the `mutating` project below
+
+### The `mutating` Playwright project
+
+`playwright.config.ts` defines a **second project**, `mutating`, matching `*.mutating.spec.ts` (excluded from `chromium` via `testIgnore`) and declaring `dependencies: ['chromium']`. It therefore runs only after every other test has finished.
+
+That exists for one reason: the RSVP name write-back can only be tested by **renaming a real Guest List row**. Several suites assert on the synthetic party's names (`auth.spec.ts`, `alternate-name-login.spec.ts`, `pages.spec.ts`), files run in parallel under `fullyParallel: true`, and a rename window of even a few seconds would flake them. Running last means nothing is reading the name while it changes.
+
+The suite is **idempotent by construction**: both `beforeAll` and `afterAll` write the canonical names from `tests/fixtures.ts` rather than whatever was read at the start, so a run that dies mid-rename is repaired by the next one. If a crash ever leaves the party renamed and the rest of the suite red because of it, repair it directly with `npx playwright test --project=mutating`.
+
+Add nothing to this project that the other suites don't already tolerate running last, and don't move a mutating suite back into `chromium`.
+
+All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
+
+**Always run `npm test` locally before pushing any code changes.** Do not rely on CI to catch failures — draft PRs skip tests entirely, and a PR marked "Ready for review" will fail publicly if tests haven't been verified locally first. If Playwright browsers aren't installed, run `npm run test:install` once.
+
+### Delegate test runs to a subagent (Claude Code)
+
+**Run the full suite in a subagent, not inline.** A complete `npm test` run prints ~270 progress lines; piping that into the main conversation burns context better spent on the actual work. Spawn an agent whose only job is to run the suite and report back a summary.
+
+- Use the `Agent` tool (`subagent_type: "general-purpose"`) with a prompt like: *"Run `npm test` in /Users/sam/Developer/sargaux.com. Report only: total passed/failed/skipped, and for each failure the test name, file:line, and assertion diff. Do not fix anything."*
+- Ask for a **summary, not a transcript** — the per-test progress lines are the bloat, and the agent's tool output stays out of the main context.
+- **Tell the agent not to fix failures.** Diagnosis and fixes belong in the main session, where the code context lives.
+- **Never run two suites concurrently.** Playwright binds port **1213** and rebuilds `dist/`; a second run collides on both. One agent at a time, and never start an inline run while an agent's run is in flight.
+- The agent must run in the **primary working directory**, not a worktree — `dist/` is rebuilt from the checked-out branch, so a stale or mismatched tree gives misleading results.
+- For a quick single-suite check (`npm run test:quick`, or one spec file), running inline is fine — the output is small.
+
+**Test infrastructure notes:**
+
+- Tests use `BASE_URL = 'http://localhost:1213'` constant (port 1213 is sacred!)
+- API tests that require Notion backend use `test.skip()` to gracefully skip when `FEATURE_GLOBAL_NOTION_BACKEND` is not enabled
+- Use `.skip()` for placeholder tests that will be enabled in future phases
+- `beforeAll` hooks can get auth cookies once and reuse across test suite
+
+**Targeted verification commands that are especially useful:**
+
+```bash
+# Auth, event routing, and middleware access-control
+npx playwright test tests/event-routing.spec.ts tests/auth.spec.ts tests/access-control.spec.ts
+
+# Accessibility-only quick pass
+npm run test:quick
+```
+
+**Logging in during local testing:**
+
+- `.env.local` defines `LOCAL_TESTING_USERNAME` — a guest name that logs in successfully in a local environment (it must match a Notion Guest List `Full Name`, so display names like "Sam Gross" may not work; the stored value does). Use it whenever a test, script, or browser session needs an authenticated guest:
+
+- **The test login is a dedicated synthetic guest, never a real person.** `LOCAL_TESTING_USERNAME` and `TEST_GUEST_NAME` (`tests/fixtures.ts`) point at **Alex Rivera**, a synthetic Notion Guest List record (party of two with **Jordan Chen**, invited to NYC + France, Country USA, robot icon 🤖). A third bot, **Riley Dubois** (`TEST_GUEST_FRANCE_NAME`, Country FRANCE, added 2026-08-01), exists so the locale-defaulting tests can exercise the `fr` branch — the other two are Country USA, and before this the France test logged in as a real guest whose name was committed to this public repo. **Any test needing a Notion-backed login must use a 🤖 guest**; never a real one. Note the `Test Guest` checkbox that `isTestGuestFromNotionProps()` reads does **not** exist on the Guest List database — exclusion works purely by name via `TEST_GUEST_DISPLAY_NAMES`, so a new bot is only excluded from counts and mailings once its name is added there (and to the `scripts/lib/test-guests.mjs` mirror). The RSVP test suites write to and delete this party's real RSVP Responses rows on every run, and rewrite the party's Guest List `RSVP` status — that churn is expected and isolated. Never point tests at the couple's or any real guest's records (this previously wiped Sam & Margaux's real RSVP), and never delete the synthetic guest pages (page IDs are baked into calendar tokens; deletion breaks them permanently). The same two names exist in the hardcoded dev fallback list in `src/lib/auth.ts`, so the login works in both backend modes. See `docs/test-guests.md` and `isTestGuest()` in `src/lib/test-guests.ts` for how synthetic records are excluded from invitation counts, outbound email, and `scripts/` reporting utilities. See `docs/test-guests.md` and `isTestGuest()` in `src/lib/test-guests.ts` for how synthetic records are excluded from invitation counts, outbound email, and `scripts/` reporting utilities.
+
+  ```bash
+  curl -s -X POST http://localhost:1213/api/login \
+    -H "Origin: http://localhost:1213" \
+    --data-urlencode "name=$(grep '^LOCAL_TESTING_USERNAME' .env.local | cut -d= -f2-)" \
+    -c cookies.txt
+  ```
+
+- The login endpoint accepts form-encoded bodies only (`application/x-www-form-urlencoded` or `multipart/form-data`) — JSON bodies return a 500.
+
+**Homepage login behavior to remember when testing:**
+
+- The homepage login is an inline control, not a modal.
+- The active state is intentionally subtle: the dark bar stays in the same place, and the most visible change is `Entrée` becoming the `Your name` placeholder plus the arrow submit button.
+- If `Entrée` appears to "do nothing", inspect focus and DOM state before assuming a click handler failure.
+- The hidden state must keep the input shell out of the focus order. Regressions here will show up in the accessibility suite.
+
+**Transition testing notes:**
+
+- For NYC/France route transitions, verify both visual motion and element stability for the shared amber disc, the `Chez Sargaux` header logo, the event toggle, and the top-right RSVP button.
+- The header right-side controls are intended to stay pinned to the same right edge across NYC and France. Avoid changes that let differing text metrics shift those controls horizontally.
+- If a transition appears broken, confirm whether the element still has the expected `transition:name` before changing layout or JS.
+- Use two different fixes depending on the transition goal:
+- If the disc should keep animating independently but some text/UI must stay above it, put that content in its own named view-transition group and give that group a z-index above `event-disc`. This is the right fix for cases like the login page where the disc still animates but must not cover the entering text.
+- If the disc should remain visually behind a route family's content for the whole transition, suppress the disc's `view-transition-name` on both the old and new documents for that navigation.
+- NYC index → Details/Travel uses a hybrid of both rules: suppress the disc VT name so the disc stays in the root snapshot, then temporarily assign a named VT group to the incoming sub-page hero above `root` so the entering header block is not trapped under the exiting snapshot while the moss/content rises in above it.
+- For this NYC sub-page hero case, do not leave `transition:name` in the page markup. Inject the VT name during `astro:before-swap` and remove it on `astro:page-load`, otherwise the hero can remain compositor-promoted after the animation and end up layered incorrectly relative to the disc during normal scrolling.
+- If a sliding view-transition snapshot is visually correct at the end state but appears clipped during motion, check the transition pseudo tree before changing z-index. Allowing overflow on the relevant `::view-transition-group(...)` / `::view-transition-image-pair(...)` can fix content that should slide over neighboring layers but is being cropped to its snapshot box.
+- Keep the shared scale aligned with the global stack when using named groups: root `1`, disc `2`, content `3`, moss `4`, header `100`. Do not raise groups above this scale just to force visibility; choose the correct strategy instead.
+
+## Git Workflow
+
+**IMPORTANT**: Direct pushes to the `main` branch are not allowed. All code changes must go through the following process:
+
+1. Create a new branch for your changes
+2. Make commits to your branch
+3. **BEFORE pushing**: Verify changes locally
+   - **Always run**: `npm run typecheck` — must be 0 errors, and it's fast (no browsers)
+   - **Always run**: `npm run build` to ensure the build succeeds
+   - **Prefer to run**: `npm test` to run all tests (accessibility, best practices, performance)
+   - If Playwright browsers aren't installed, run `npm run test:install`
+4. Push your branch and create a pull request **in draft mode**
+5. Only humans should mark PRs as "Ready for review" via the GitHub website
+6. Wait for automated tests to pass (type check, accessibility, best practices, and performance run in parallel)
+7. Merge via pull request after approval
+
+**Note**: Always open PRs as drafts initially. Draft PRs do NOT trigger the automated test suite in CI - tests only run when a PR is marked as "Ready for review". This allows for review and iteration before consuming CI resources.
+
+**Local Testing Requirement**: You MUST verify builds and tests locally before creating PRs since draft PRs don't run CI tests. Even for non-code changes (documentation, configuration), always run at least `npm run build` to ensure nothing is broken. Use `npm run verify` for a complete local check (build + all tests), and `npm run typecheck` alongside it — `verify` does not type-check.
+
+**Test Skipping**: Automated tests are automatically skipped for PRs that only modify:
+
+- Markdown files (`*.md`)
+- YAML files (`*.yml`, `*.yaml`) - CI/CD and configuration
+- LICENSE file
+- `.gitignore`
+- `playwright.config.ts` - test configuration
+
+These changes are build configuration and documentation that don't affect the website's accessibility or functionality.
+
+Example workflow:
+
+```bash
+git checkout -b feature/my-changes
+# Make your changes and commit
+git commit -m "Your changes"
+
+# BEFORE pushing, verify locally:
+npm run build          # Always verify build works
+npm test              # Run all tests (or npm run test:quick for faster check)
+
+# If tests fail due to missing browsers:
+npm run test:install  # Install Playwright browsers
+
+# After tests pass locally:
+git push -u origin feature/my-changes
+gh pr create --draft --title "Your title" --body "Your description"
+```
+
+## Versioning
+
+The project version in `package.json` follows semantic versioning with wedding milestones:
+
+- **Patch** (`0.5.x`): Bump on every PR merge
+- **Minor** (`0.x.0`): Bump when a plan/epic is completed (e.g., Notion integration Phase 1 → 0.6.0)
+- **Major**: `1.0` = NYC event launch, `2.0` = France event launch
+
+**IMPORTANT**: Always bump the version BEFORE creating the PR:
+
+- Minor bump when completing a full implementation plan/epic/phase
+- Patch bump for smaller PRs (bug fixes, single features, dependency updates)
+- Check version is updated before running `git commit`
+- **Exception**: Changes confined to `scripts/` (one-off tooling, data exports, guest-list utilities) do not change site behavior and never bump the version, no matter the size of the change.
+
+## Project Structure
+
+- `src/pages/` - Astro pages (file-based routing)
+- `src/pages/api/` - Server-side API endpoints (login, logout, RSVP)
+- `src/lib/auth.ts` - Authentication utilities (name validation, session tokens)
+- `src/lib/event-routing.ts` - Shared default event-routing rules
+- `src/lib/notion.ts` - Notion client wrapper (guest data fetching)
+- `src/types/guest.ts` - GuestRecord type definition
+- `src/config/features.ts` - Build-time feature flags
+- `src/middleware.ts` - Route protection and auth context
+- `src/layouts/` - Page layouts (WireframeLayout, etc.)
+- `public/` - Static assets (served at root)
+- `tests/` - Playwright test suites
+- `docs/plans/` - Implementation plans
+- `astro.config.mjs` - Astro configuration
+- `tsconfig.json` - TypeScript configuration (extends astro/tsconfigs/strict)
+
+## Architecture Notes
+
+- Uses Astro's minimal template as the base
+- TypeScript strict mode is enabled for type safety
+- File-based routing: pages in `src/pages/` become routes
+- SVGs used by pages should prefer Astro-managed imports from `src/assets/` over hard-coded `/public` paths. This is especially important for critical visual elements like the NYC skyline and favicons.
+- SSR enabled with `@astrojs/node` adapter (standalone mode)
+- **Script gotcha**: Use `<script is:inline>` for scripts in pages with early returns (e.g., auth redirects) to avoid "Unknown chunk type: script" error
+- **Script gotcha**: The Astro 7 Rust compiler strips custom attributes (including `data-astro-rerun`) from `define:vars` inline scripts — the attribute never reaches the browser, so ClientRouter silently stops re-executing the script after swaps. Don't combine `define:vars` with `data-astro-rerun`; pass server values via `data-*` attributes and use the `astro:page-load` + init-guard pattern instead (see the homepage login script).
+- **Script gotcha**: Do not add direct `astro:transitions/client` imports inside `is:inline` page scripts. That can break browser execution or produce stale-bundle confusion. Let `ClientRouter` own transition interception, and use normal navigations it can intercept. **Type-only** imports are the exception and are how `src/scripts/transitions.ts` gets `TransitionBeforePreparationEvent` / `TransitionBeforeSwapEvent`: it is a bundled module (not inline), and `import type` is fully erased, so no runtime import reaches the browser. Verify with `grep -r "astro:transitions/client" dist/` after a build — it must return nothing.
+- **Script gotcha**: A `.ts` file with no top-level `import`/`export` is a *global script*, not a module, so `declare global { interface Window { … } }` inside it is invalid (`ts(2669)`) and every custom `window.*` property errors. `src/scripts/transitions.ts` is loaded via `import '../scripts/transitions'` but was still script-scoped until a type-only import made it a module. If you add a file with `declare global`, give it at least one import or `export {}`.
+- **Script gotcha**: Never suppress view transition animations for named elements using `html[data-astro-transition] ::view-transition-group(name)` CSS — this selector does not reliably fire because `data-astro-transition` may not be set at the right moment relative to pseudo-element creation. Use the `astro:after-preparation` event in JavaScript instead to modify `view-transition-name` on the element directly before the VT snapshot.
+- **Transition contract**: The shared amber disc uses `transition:name="event-disc"` (NO `transition:persist`) on all NYC pages (index, details, travel). Removing `transition:persist` was required to let the VT API reliably FLIP between pages. **The disc FLIP is NOT suppressed on forward navigation** — an older implementation did that via a `toDepth > fromDepth` check, and this paragraph described it long after it was replaced. Today `toDepth > fromDepth` only gates *header* suppression, and only under a `from.startsWith('/nyc')` guard; the sole place `event-disc` is suppressed is sibling navigation (`/nyc/* -> /nyc/*`), and the sole place it is restored is backward navigation (`/nyc/* -> /nyc`). `docs/nyc-transition-notes.md` is the accurate reference. Every other pair — including `/ -> /nyc`, `/ -> /france`, and the post-login deep links below — leaves the disc active on both documents so it FLIPs. Entering a NYC sub-page from outside the sub-page family (`isNycSubpageEntry` in `src/scripts/transitions.ts`: `/nyc -> /nyc/*` and `/ -> /nyc/*`) also injects a temporary `nyc-subpage-hero` VT group on the incoming `.nyc-page-main`, so the entering headline is not trapped under the exiting root snapshot. The NYC/France headers also intentionally share transition targets for `Chez Sargaux`, the event toggle, and the RSVP button.
+- **`WireframeLayout` `page` prop**: `WireframeLayout` accepts a `page` prop that sets `data-page` on `<html>` statically, allowing per-page CSS scoping without inline scripts. Currently used by `nyc/travel.astro` (passes `page="travel"`) to position the disc on the right side.
+- **Header overscroll fix**: `.site-header::before` in `base.css` extends a 25px panel above the header's top edge (using `position: absolute; top: -25px; background: inherit`) to cover springy overscroll bleed. This is purely cosmetic and does not affect header children layout.
+- **CDN caching contract**: Content pages (faq, details, travel, lookbook, schedule, registry, event indexes) are CDN-cached **per guest**: `routeRules` in `astro.config.mjs` sets `maxAge`/`swr`, and middleware sets `Netlify-Vary: cookie=sargaux_auth|sargaux_lang` on every page response *including redirects* so cache variants never leak across sessions and the login wall stays intact. RSVP pages are never cached (`private, no-store`). The logged-out homepage is cached via `Astro.cache.set()` after the auth redirect. `/api/calendar/[token].ics` is cached per-token URL and invalidated by `POST /api/rsvp` via `context.cache.invalidate({ path })`. Use only Astro's built-in cache API — never Netlify `purgeCache()` directly. The provider is only wired for the Netlify adapter; under `ASTRO_ADAPTER=node` caching is inert, so CDN behavior must be verified on deploy previews (`Cache-Status` header).
+- **`/couple` must never be CDN-cached**: the couple page re-draws every photo slot per request — a random portrait for the hero, then a Fisher–Yates shuffle of the remaining pool for the 8 scattered gallery cards — so a refresh shows a different set. Adding `/couple` to `routeRules` freezes one draw per guest for the whole cache window, which is exactly what happened between commit `0c75ac3` (2026-07-04, the Astro 7 / CDN-caching upgrade) and its removal. **This regression is invisible locally**: the cache provider is Netlify-only, so under `ASTRO_ADAPTER=node` (dev *and* Playwright) `routeRules` are inert and the page keeps randomizing. `tests/couple-randomization.spec.ts` guards both halves — the live per-reload variation, and a static assertion that `/couple` is absent from `routeRules`. Any future page whose render is intentionally non-deterministic needs the same treatment. Photo dates come from the curated map in `src/content/couplePhotoDates.ts` (the single source of truth); do not reintroduce a runtime EXIF read — the source images aren't in the serverless bundle, so it only ever fell through to that map.
+- **Notion guest cache**: `src/lib/notion.ts` layers in-memory → Netlify Blobs (`guest-cache` store, 15-min TTL) → targeted Notion fetches. `getGuestById`/`getGuestParty`/`getGuestEvents`/`submitRSVP` never trigger a full guest-list scan; only `fetchAllGuests` (login fallback, `/api/warm`, admin/scheduled jobs) does, and it persists the result to the blob for other instances. `clearGuestCache()` also deletes the blob. Login misses on a cached list fall through to a live title-filter query so newly added guests can always log in.
+- **Notion SDK**: Uses `@notionhq/client` v5.x targeting Notion API v2025-09-03. Key difference from older versions: `dataSources.query()` replaces `databases.query()`, using `data_source_id` instead of `database_id`. See [upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
+- **Dark mode token gotcha**: `--color-text` and `--color-surface-text` both resolve to `var(--color-warm-cream)` in dark mode. Never use both as `background` + `color` on the same element — use `--color-bg` for text color on `--color-text`-colored backgrounds in dark mode.
+- **Dark mode border visibility**: `--color-border` in dark mode (`#2E3E35`) is nearly invisible against the dark surface `#2F3F36`. Use `--color-text-muted` for interactive UI borders (event rows, custom checkboxes) that must be visible in dark mode.
+- **Custom checkbox pattern** (`src/pages/nyc/rsvp.astro`): Native `<input>` is hidden with `position: absolute; opacity: 0; pointer-events: none`; a sibling `<span class="event-check-mark">` drives the visual using the `~` general sibling combinator. `.event-check-mark` has `margin-top: 2px` for `flex-start` containers — reset to `0` inside `align-items: center` containers.
+- **RSVP subway bullets**: The RSVP hero uses real NYC subway bullet SVGs (`src/assets/nyc/subway-bullet-m.svg` and `subway-bullet-sf.svg`) as `<img>` elements, positioned and sized with CSS. The M bullet is recolored from subway orange to `--color-burnt-amber` (`#D96A1E`); the SF silver bullet is kept as-is. Source: Wikimedia Commons NYCS Standard Set (public domain).
+- **Party-level RSVP responses**: RSVP Responses rows are party-level — one row per party + event, with the `Guest` relation set to **every** party member. Pre-fill (`getLatestRSVPForParty`) matches responses related to any member, so a partner returning to update the RSVP sees the submitted state, never a blank form. `submitRSVP` also matches the existing row via any member so updates converge on one row instead of forking.
+- **A split household splits its response** (`src/lib/rsvp-split.ts`): a household can be separated into its own `Related Guests` groups *after* it has already RSVP'd — grown children invited on their parents' envelope, who may attend a different subset of the weekend. That leaves a row related to more people than any current party, and because `getLatestRSVPForParty` matches on **any** member, an in-place update would let one side's answer silently overwrite the other's. `submitRSVP` therefore detaches instead: when the matched row's `Guest` relation reaches outside the submitting party, the row is narrowed to the stranded members (attendee list rebuilt from those members alone, title re-pointed) and the submitting party gets a **new** row. **The rebuild reads `Status` before names**, exactly as `resolveGuestRSVP` in the follow-up export does: `Attending`/`Declined` are party-derived and settle every stranded member outright, and only `Partial` consults the attendee list. Names alone would read ordinary drift (a maiden surname, an `Also Known As` form, an unnamed +1) as "not attending" and **persist** that to Notion — silently downgrading the *other* household's row, which nobody is present to notice. The repair is lazy — each side separates as it responds — and converges no matter who submits first. Attendee names are only rewritten when every stranded member resolves, since that row is no longer ours to edit; narrowing the relation is what stops the next lookup finding it. Never "fix" a leftover shared row by re-linking `Related Guests`: the split is the RSVP boundary.
+- **`getGuestParty` returns the household's transitive closure**, matching the union-find households envelope login uses — *not* one hop. `Related Guests` is hand-edited and real households are routinely wired as a **star** (children linked to their parents but not to each other), so one hop returned a different party depending on who logged in: a sibling could not RSVP for a sibling, and the response's `Guest` relation depended on who submitted, which made the split detection above fragment one household across several rows. 11 of 141 households had this shape. The closure also dedupes, which fixes a row listing **itself** or the same person twice — that rendered a duplicate row on the RSVP form, filled in twice, landing in `Guests Attending` as a repeated name and a double headcount (Notion dedupes the relation on write, so the `Guest` relation looked correct while the attendee list did not — the mismatch was the only visible symptom).
+- **One place decides whether a member attended** (`memberAttendedResponse`, `src/lib/rsvp-attendance.ts`), used by the ICS calendar, the bulk ICS refresh, the Guest List write-back, the `Events Attending` relation, and the split planner. Order: (1) **`attendance` in the response's Details JSON** — per-member `{ guestId, attending }`, written by `submitRSVP`, exact; (2) **`Status` against the `Guest` relation** — party-derived, so `Attending`/`Declined` settle a member without reading names; (3) **the `Guests Attending` names**, only for `Partial` or a member off the relation. **Never resolve attendance by name alone.** Stored names legitimately drift from submitted ones (maiden/married surname, `Also Known As`, a nickname typed into the form, an unnamed +1), every one of these answers is written back to Notion, and name-first matching silently emptied renamed guests' calendars and downgraded their Guest List status. `rsvpIncludesGuest` was removed rather than left as a tempting shortcut.
+- **A submission must cover the whole party**: `POST /api/rsvp` rejects an id-threaded submission that omits a party member, because a response's `Status` is derived from the submission while its `Guest` relation is the party — readers can only trust Status to describe the relation if the two agree. The form always submits every `[data-guest-row]`, so a gap means a hand-rolled payload.
+- **A rename preserves the former name** (`preserveFormerName`, `src/lib/guest-name.ts`): renaming writes the previous `Full Name` into `Also Known As`, so a guest who shortens "Matthew" to "Matt" on the form can still log in as the name their invitation was addressed with, and the formal name survives for envelopes and place cards. Skipped for an unnamed plus-one, whose `<host> +1` is a slot rather than a name. Case-only edits still persist (repairing a badly-cased row is a real correction) **except** an all-lowercase retype over a properly-cased name, which is a phone keyboard.
+- **Guest List write-back on RSVP**: `submitRSVP` (`src/lib/notion.ts`) writes one merged update to **every party member's** Guest List row after each submission, then calls `clearGuestCache()` so reads don't lag the 15-min cache. Per member it writes: (1) **`RSVP` status** — resolved from their personal attendance across the latest response per invited event: all attending → Attending, none → Declined, mixed → Partial (the `Partial` option must exist in the Notion RSVP field — add manually, as DDL can't configure STATUS options via `notion-update-data-source`); (2) the submitted event's **invite status** (`NYC Invite Sent` / `France Save the Date Sent`) → **`Received`**, advance-forward only (skipped when already `Received`; `parseGuestPage` reads these into `GuestRecord.nycInviteStatus`/`franceSaveTheDateStatus`); (3) **`Last RSVP`** date; (4) **`Events Attending`** relation → the specific Event Catalog pages they're attending (reverse `Guests Attending` on Event Catalog); (5) **`Dietary Needs`** text (party-level). Attendance for the submitted event resolves by **member page ID** (`guestsAttending[].guestId`), not name, so a name edit doesn't misresolve it; other events still resolve by name against the stored row.
+- **RSVP name persistence** (decision in `src/lib/guest-name.ts`): the RSVP form threads each member's page ID via `data-guest-id` on the guest row, so an edited `guest-name` input persists. This applies to **every** party member on **both** events — `src/scripts/rsvp-form.ts` is shared by the NYC and France RSVP pages and submits every `[data-guest-row]` with an `attending` flag, so a member can be renamed whether or not they're attending, and `submitRSVP` is the only writer of `First Name`/`Last Name` anywhere in the codebase. Its main job is naming an unnamed plus-one: those rows are stored as `First Name: "<host> +1"` with an empty `Last Name`, which is why `firstNameTokens` runs the *stored* name through `envelopeTokens` too — otherwise the suffix makes that member unclaimable by the login rules and their household needs its envelope line verbatim. An emptied name field falls back to the input's `defaultValue`, never to a placeholder: the API requires a non-empty name, so submitting one would persist as a real rename and overwrite that guest's row. When a submitted entry's `guestId` maps to a party member whose typed name differs, `submitRSVP` writes `First Name`/`Last Name` (last whitespace-delimited token is the surname; drives the `Full Name` login formula) and the `Name of Guest` title. The API (`src/pages/api/rsvp.ts`) validates a `guestId`-bearing entry against the party roster by id (allowing the rename) and caps names at `NAME_MAX_CHARS`; entries without a `guestId` keep the legacy name-in-roster check. If the **authenticated** guest renames themselves, the POST handler re-signs the `sargaux_auth` cookie with the refreshed canonical name (re-fetched post-write) so `bindSessionToNotion` doesn't 401 on the next request.
+- **RSVP follow-up export** (`scripts/generate-rsvp-followup-{nyc,france}.mjs` + `scripts/lib/rsvp-followup.mjs`): the call-list companion to the invitation address export — one row per invited guest, grouped by household, with un-replied guests highlighted and sorted to the top. Each run writes **three** `.xlsx` workbooks to `scripts/output/`, split by the Guest List `Group` multi-select: `Sam Family`/`Gross Guests` → `…-Gross-YYYYMMDD.xlsx`, `Margaux Family`/`Ancel Guests` → `…-Ancels-YYYYMMDD.xlsx`, everyone else → `…-Sargaux-YYYYMMDD.xlsx`. Households stay whole and are filed by **majority vote** over their members' groups (ties and untagged households fall to Sargaux), so one caller owns a mixed household. Per-guest RSVP reads the response **`Status` before the attendee-name list** — `Status` is derived from the whole party, so it survives a guest who submitted under a name that differs from their Guest List record, which pure name matching reports as a *decline*; such drift is surfaced as a console warning instead of silently changing the column. Guests outside a response's `Guest` relation stay `Not yet` rather than inheriting a decline, since union-find households can be wider than the party that submitted. Household grouping and envelope naming come from `scripts/lib/envelope-csv.mjs`, so household lines match the invitation export exactly. Highlighting needs real cell fills, hence the `exceljs` **devDependency** — scripts-only, never bundled into the site.
+- **Manually recorded RSVPs** (`scripts/record-manual-rsvp.ts`): enters an RSVP that arrived by text, phone, or in person so the guest can later open the site and find their own answer pre-filled. It calls **`submitRSVP()`** — the same function `POST /api/rsvp` calls — rather than writing Notion properties itself, because the response row is the small part: the per-member `attendance` blob, the split-household detach, and the Guest List write-back (status, invite status → `Received`, `Last RSVP`, `Events Attending`, dietary) all live in there, and a hand-rolled write that skips them looks fine until the guest visits weeks later. Two steps: `scaffold <names.txt> --event nyc|france` resolves typed names through the same two tiers login uses (exact `Full Name`, then the envelope rules) and emits a JSON file with each party's members and event catalog, failing closed on ambiguity and on an envelope that spans parties; `apply <file.json>` dry-runs by default and writes with `--write`. It re-applies the endpoint's validation (party coverage, events ⊆ invited, field caps, the decline normalizations) since it bypasses the endpoint, deliberately **relaxing only the "one email per party" rule** — a phone RSVP legitimately has no address — and never sends confirmation email. After writing it re-reads the response and every member's Guest List row through a fresh client to verify, then hits `GET /api/warm` and `POST /api/admin/refresh-calendars` on production (`--no-sync` to skip): local runs have no Netlify Blobs, so without that step the site serves the pre-RSVP guest cache for 15 minutes and the ICS feeds stay stale indefinitely. Sub-event selections are **party-level**, matching the form — the response row stores one event list shared by everyone marked attending. Name lists and entry files are guest PII: they belong in the gitignored `scripts/input/`.
+- **`Show on Website` cancels an event**: unchecking that Event Catalog checkbox makes `parseEventPage` drop the row, so `getEventCatalog` never returns it and the event disappears from both RSVP forms, both confirmation pages, the RSVP confirmation email, and every personalized ICS feed at once (`getAttendingEvents`/`refreshAllICS` resolve stored event IDs against the catalog). The filter lives in `parseEventPage` rather than at the five consumers deliberately — forgetting one would leave a cancelled event live on that surface. **Never delete the Notion page to cancel an event**: its page ID is referenced by stored responses (`eventsAttending` in the Details JSON) and the Guest List `Events Attending` relation, and unchecking is both pointer-safe and instantly reversible. Stale IDs in old responses are inert (every reader filters through the catalog) and clear themselves when a party resubmits. An empty optional-events list is a supported state — NYC hides the whole band, France renders a placeholder note — and `POST /api/rsvp` guards its decline normalization on `invitedEventIds.size > 0` so an empty catalog can't mass-decline a party. `scripts/list-event-attendees.ts` finds the guests who had RSVP'd yes to a cancelled event (it reads hidden rows on purpose, since `getEventCatalog` can't see them, and resolves attendance through `memberAttendedResponse`, not names). See `docs/cancelling-an-event.md`.
+- **Events Invited relation is deprecated**: never read the Guest List `Events Invited` relation. The RSVP form lists the full Event Catalog for each wedding in the guest's `Event Invitations` multi-select (`getGuestEvents`). The personalized calendar ICS contains **only events the guest has RSVP'd to attend** (`getAttendingEvents` / `refreshAllICS` — latest non-declined response per wedding, and only if the guest is named in its attendee list); guests who haven't RSVP'd get a valid empty calendar.
+- **Event i18n** (`src/lib/event-i18n.ts`): the Event Catalog carries optional French **display** properties — `Event Name FR`, `Time FR`, `Location FR`, `Description FR`. All event display must go through `localizeEvent(event, lang)`, which falls back per field to English, so partially translated events always render. Timing is deliberately language-neutral: there are **no** FR variants of `Start Time`/`Duration`/`Event Date`, and ICS DTSTART/DTEND always come from the canonical fields. `getEventCatalog` sorts events by `Event Date` then parsed `Start Time`. Personalized ICS calendars are generated in the guest's locale via `getDefaultLocale(guest.country)` (`src/lib/locale-routing.ts`, same rule that seeds the login `sargaux_lang` cookie: FRANCE/CANADA → fr) — `buildICS(events, lang)` localizes only SUMMARY/DESCRIPTION/LOCATION.
+- **Joy registry integration** (`src/lib/joy.ts` + `src/pages/registry.astro`): `/registry` renders the couple's withjoy.com registry natively by querying Joy's **unofficial** GraphQL endpoint (`https://withjoy.com/graphql`, `registryItemsByEventId`) server-side with a 15-min in-memory cache. `JOY_EVENT_ID` / `JOY_EVENT_HANDLE` are runtime env vars (`.env.local` + Netlify Dashboard); when unset or when Joy is unreachable, the page falls back to a link-out card — the fetch must never throw. Joy models group-gifted physical items as `donationFund` entries with `fundType: "gift"` (real price, normal item-count semantics); only `fundType: "cash"` items belong in the Funds section. **Per-item deep links**: `https://withjoy.com/{handle}/registry?pid={registryItemId}` opens that item's detail/buy modal directly on Joy (`joyItemUrl()`) — always link cards to their item, not the registry root. Cash-fund `stillNeeded`/`totalRequested` are in cents of the goal, not item counts. The Joy-side theme CSS lives in `docs/joy-custom-css/` (pasted copy in Joy's designer is the live source of truth; fonts load cross-origin from sargaux.com and need the `/fonts/*` CORS header in `netlify.toml`).
+- **Registry split by country** (`src/lib/registry-routing.ts`): the registry destination is driven by the Guest List `Country` select. `FRANCE`/`UNITED KINGDOM` guests get the external MilleMercisMariage registry (`FRENCH_REGISTRY_URL`, opens in a new tab; the strip-row arrow rotates to ↗ on hover via the `--external` modifier class); everyone else (`USA`, `CANADA`, unset) gets the native Joy `/registry` page. All registry links must go through `getRegistryLink(Astro.locals.country)` — never hardcode `href="/registry"`. Middleware does **not** redirect `/registry`: since every UI link already sends French-side guests to MilleMercis, a direct hit on `/registry` is deliberate and is served the native Joy page. Don't re-add the redirect. `country` flows Notion → `GuestRecord` → `Astro.locals.country` (live lookup in middleware, session-cookie fallback like `eventInvitations`). MilleMercis has **no API** (server-rendered jQuery HTML; only a contribution POST endpoint) — it is always a link-out, never rendered natively.
+
+## Authentication
+
+- Name-based login (no passwords) — validates against guest list
+- When `global.notionBackend` flag is on: validates against Notion Guest List database
+- When flag is off (local dev without keys): falls back to hardcoded list in `src/lib/auth.ts`
+- Names normalized: lowercase, remove accents (NFD), collapse whitespace
+- Cookie: `sargaux_auth` (90-day expiry, httpOnly) — HMAC-signed (`SESSION_HMAC_SECRET`); format `base64url(payload).hmac`. Unsigned/legacy cookies fail closed (guests re-login once after deploy). Payload contains guest name + optional Notion page ID
+- **Event invitations are resolved live, never trusted from the cookie**: the cookie's `eventInvitations` snapshot is only a fallback (hardcoded-list mode, transient Notion failures). Middleware and the RSVP API read invitations from the live Notion record (`getGuestById`, served by the 15-min guest cache) so invitation changes take effect without re-login.
+- **Session binding**: when `notionId` is present, middleware and RSVP require `normalize(cookie.guest) === liveNotionRecord.normalizedName` so a calendar-leaked page ID cannot be paired with an arbitrary display name
+- **Login geo gate**: `netlify/edge-functions/login-geo-gate.ts` blocks `/api/login` from non-allowlisted countries (403, fails open when geo is missing). Edge-runtime only — it never runs under the local node adapter, so verify on deploy previews. Scoped to `/api/login` deliberately: never widen it to pages (would bypass per-guest CDN caching). See `docs/security-audit-2026-07.md`. It is the repo's **only** Deno surface, and it has no runtime dependencies — `import type { Config, Context } from '@netlify/edge-functions'` is fully erased at compile time. There is deliberately **no `deno.lock`** (gitignored): Netlify's edge bundler invokes Deno with `--no-config`, or from a temp dir with its own generated `deno.json`, so a repo-root lockfile is never read. One was committed in May 2026 and silently rotted against `package.json` for months (no Dependabot ecosystem covers Deno) before being deleted. Don't add it back.
+- **Envelope-name login** (`src/lib/envelope-name.ts`, flag `global.envelopeLogin`): guests may log in with the addressee line printed on their invitation envelope ("Samuel & Margaux Gross") or any combination of their household's first names plus a household surname. Exact `Full Name` still wins and is still one step — envelope rules only run on a miss. Two match rules: (1) the input's token set equals a stored `Envelope Names` string, (2) every token is a household first or last name, at least one is a first name, **at least one is a surname**, and no two tokens claim the same member. Neither a bare surname nor a bare given name ever matches — rule (2) was always documented as first names *plus a household surname*, but until 2026-08-12 it accepted the given names alone, which made every household reachable by typing one first name (183 logged straight in; 49 more opened an identity picker spanning up to six people, exposing other households' names). A household whose surname sits inside `First Name` matches nothing under rule (2) and relies on exact `Full Name`, which is checked first. Titles, connectors (`and`/`et`/`&`/`+`), periods, and the CSV generator's trailing ` +1` are stripped; collective words ("The", "Family") are deliberately **kept**, since stripping them would reduce "The Gross Family" to "gross" and let a surname alone unlock the household. Households are connected components via union-find over `Related Guests` — never `getGuestParty`, which walks one hop and misses C in a household wired A↔B, B↔C.
+- **One envelope may span several households, on purpose**: people invited together are deliberately split into separate `Related Guests` groups when they should RSVP separately, so the printed line names everyone while belonging to no single household. `findMatchingHousehold` therefore **unions** the matched households and lets the identity picker resolve it — the person the guest picks decides which group, and therefore which RSVP, they land on. The union is gated on the candidates being distinguishable *to the guest*: if two matched people share a `normalizedName` the picker would be asking them to recognise their own name among duplicates, so that still fails closed with a `console.warn`. Two members of the *same* household sharing a name stays allowed (that's how an unnamed +1 is recorded — one envelope, one address). Don't "fix" a split household by adding a `Related Guests` link; the split is the RSVP boundary.
+- **`Envelope Names` Guest List property** (`rich_text`, newline-separated): the hand-edited envelope strings actually printed, denormalized onto **every** household member so one targeted query finds a match. A household can hold two (NYC and France include different members). Populated by `scripts/import-envelope-names.mjs` from the invitation CSVs; household grouping and envelope formatting are shared with `scripts/generate-invitation-csv.mjs` via `scripts/lib/envelope-csv.mjs` so the import can reproduce the generator's output exactly and join unedited rows back to their household.
+- **Alternate names** (`src/lib/nicknames.ts` + `nameForms()`/`householdSurnames()` in `src/lib/envelope-name.ts`): the envelope rules also absorb the ways a guest's everyday name differs from their record. Four sources, all confined to rule (2) so exact `Full Name` matching is provably unaffected: (a) a **multi-word surname typed closed up** — "LeGuezec" for "Le Guezec" — derived both directions, since the Guest List holds the same surname both ways across rows; (b) the **`Also Known As`** property (below); (c) **initials of a hyphenated given name** ("Pierre-Jérôme" → "PJ"), for 2–3 token given names only; (d) **common diminutives** from the `NAME_CLASSES` table (Mike/Michael, Kate/Katherine, Stéphane/Steph). Diminutives are looked up **from the stored name**, never unioned — Edward and Theodore both accept "Ted", but Edward never accepts "Theo". Surnames are never fuzzy-matched beyond the spacing rule. `nameForms()` narrows tier by tier (diminutives off, then `Also Known As` and initials off) whenever a widening would let one typed token name two different members of the same household — so a household containing both an Alex and an Alexander silently reverts to stored-name matching rather than guessing. Members who genuinely share a first name are exempt from that check, since both being claimed is correct.
+- **`Also Known As` Guest List property** (`rich_text`, newline-separated): the escape hatch for names no rule can derive — a maiden or married surname, or a nickname sharing no stem with the record ("Bitsy" for "Elizabeth"). Per-guest, not denormalized across the household like `Envelope Names`. An alias widens *which* token satisfies the given-name half of rule (2); it never removes the surname half, so an alias alone never logs anyone in, and **writing the full name into this field does not change that** — the line is split into given name + surname, leaving the given half standing exactly where the bare alias did. Each line is read as a name: **the last whitespace-delimited token is a surname, the tokens before it are a given name**; a single-token line is a given name only (a bare surname must never unlock a household). Alternate surnames join the *household's* surname pool, so one line `Camille Garnier` on a Camille Muller record accepts "Camille Garnier", "Camille Muller", and "Camille Garnier Muller". This is the intended fix for a guest who reports a login problem: **edit Notion, no deploy** — the change is live after the 15-minute guest cache expires, or immediately via `GET /api/warm`. `queryGuestCandidates` filters on it alongside `Name of Guest` and `Envelope Names`, and tolerates that query 400ing so the code still runs against a database where the property is absent.
+- **Two-step login + identity claims**: when a name resolves to ≥2 people, `POST /api/login` returns `{ needsIdentity, claim, candidates }` and sets **no cookie**; the guest picks who they are and posts `claim` + `guestId` back to mint the session. Claims are HMAC-signed with `SESSION_HMAC_SECRET` (10-minute expiry, `typ: 'claim'` for domain separation — a session token can never be redeemed as a claim, and no second secret is needed), and a claim only ever authorizes the member IDs the server put in it. Redemption uses its own `claim:${ip}` rate-limit bucket so a two-step login doesn't consume two of the ten login attempts. The picker is inline on the homepage and uses `hidden` for visibility (CSS scoped to `:not([hidden])`) so it stays out of the focus order while collapsed.
+- Protected routes: `/nyc/*`, `/france/*`, `/couple`, `/registry` — middleware redirects to `/` if unauthenticated
+- **Deep-link return after login** (`src/lib/return-to.ts`): the unauthenticated redirect carries the requested page as `/?next=<encoded path>`, and login lands the guest there instead of on their default event route. The rules that matter: (1) **`sanitizeReturnTo` is the open-redirect gate** — same-site absolute paths only, rejecting protocol-relative (`//host`), scheme-bearing, backslash and control-character inputs, and anything outside the protected prefixes (`..` is resolved by `new URL` *before* the prefix check, so `/nyc/../api/logout` is refused rather than smuggled through). (2) **The destination is decided server-side** in `POST /api/login`, where the guest's real `eventInvitations` are known; the client sends `next`, it is never trusted, and a target for an uninvited event falls back silently to `getPrimaryEventRoute` (the two guest lists barely overlap — a relative forwarding the wrong event's link is routine, not an error). (3) **The homepage login script reads `next` from `location.search`**, never from server-rendered markup, and attaches it inside `submitLogin` so the two-step identity picker carries it too. (4) **`Netlify-Vary` must keep `query=next`** — `LangSwitcher` server-renders the param into its hrefs, so without it the first visitor to warm the CDN-cached logged-out homepage pins their destination into every other guest's language links. (5) Only the unauthenticated branch attaches `next`; the redirects that *delete* the session cookie (descoped, name/record mismatch, empty invitations) stay on a bare `/` because they are repair paths.
+- `Astro.locals.guest` (string) — guest display name, available in all protected pages
+- `Astro.locals.guestId` (string) — Notion page ID, available when notionBackend is enabled
+- Default event routing must be centralized through `src/lib/event-routing.ts`
+- Guests invited only to NYC default to `/nyc`
+- Guests invited only to France default to `/france`
+- Guests invited to both events default to `/nyc` through **October 14, 2026**
+- Guests invited to both events default to `/france` starting **October 15, 2026**
+- The dual-invite cutoff is evaluated in the `America/New_York` time zone
+- Homepage redirect, login API redirect, and middleware fallback redirects must stay aligned with the same shared helper
+
+## Admin Endpoints
+
+All admin endpoints live under `/api/admin/*` and require an
+`Authorization: Bearer {RESEND_ADMIN_SECRET}` header (401 otherwise).
+
+**Two gotchas when calling them with `curl`:**
+
+- Always send `-H "Content-Type: application/json"`, even with no body. Astro's built-in CSRF protection (`security.checkOrigin`) rejects any POST without a JSON content type as "Cross-site POST form submissions are forbidden" — and it runs before routing, so you get that error even for endpoints that don't exist on the deployed site yet.
+- **Do not fetch the secret with `netlify env:get`** — Netlify stores `RESEND_ADMIN_SECRET` as a write-only secret, and the CLI returns a placeholder that the deployed endpoint will reject with a 401 (it also defaults to the **dev** context, which has no value at all). Use the mirror in `.env.local`, which matches the deployed runtime value. The secret is also scoped to the `deploy-preview` context so the endpoints can be exercised on PR previews.
+
+- `POST /api/admin/refresh-calendars` — regenerate every guest's stored ICS calendar (same job as the scheduled `ics-refresh-daily`/`-weekly` functions, which are **not** publicly routable) and invalidate the CDN-cached calendar URLs. Returns `{ total, succeeded, failed }`. Use after editing events or RSVP responses directly in Notion, or after deploying a change to ICS semantics, so calendar subscriptions update without waiting for the next scheduled run:
+
+  ```bash
+  curl -X POST https://sargaux.com/api/admin/refresh-calendars \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(grep '^RESEND_ADMIN_SECRET' .env.local | cut -d= -f2-)"
+  ```
+
+- `POST /api/admin/send-stds` — bulk-send save-the-date emails for one event. Body: `{ "event": "nyc" | "france" }`.
+- `POST /api/admin/send-email` — send a single transactional email (see endpoint source for body shape).
+
+**Emailing guests always goes through this infrastructure — never Gmail.** Any message to guests (logistics changes, reminders, event updates) is sent through Resend via `POST /api/admin/send-email` on production, from `hello@mail.sargaux.com` (the `RESEND_FROM_ADDRESS` value; displayed as "Margaux Ancel & Sam Gross") with reply-to `hello@sargaux.com`. Don't draft in or send from a personal Gmail account, and don't BCC a guest list. The usual flow:
+
+1. Resolve recipients with `scripts/list-event-attendees.ts --event "<name>"`. It resolves attendance through `memberAttendedResponse`, drops 🤖 test guests, reports who has no email on file, and prints the exact `send-email` call with the `guestIds`.
+2. Draft the subject and body in a gitignored Markdown file under `scripts/input/` so Sam can edit it. The `reminder-general` template takes a free-form `subject` and `body`, and adds the "Dear {name}," greeting (the guest's stored Notion name, e.g. their full name) and the header itself. The body accepts a small Markdown subset (`renderReminderBodyHtml`): blank-line paragraphs, `* `/`- `/`• ` bullets, `**bold**`, and `[text](url)` for http(s)/mailto links. Everything else is escaped, and the plain-text part spells links out as `text (url)`. The test send must run the template code that will do the real send: if the template changed on a branch, production is still on the old code, so test through the same library path locally with `RESEND_FROM_ADDRESS=hello@mail.sargaux.com`, and do the real send only after the change is deployed.
+3. **Send a test to Sam first — always.** Before any send to guests, make the same `send-email` call with `guestIds` set to Sam's own Guest List ID only (his row is named `Samuel Gross`; look up the ID in the attendee report rather than hard-coding it here). He checks the real rendered email in his inbox — greeting, formatting, links, sender — and only after he approves it does the full send go out.
+4. Send to guests only after Sam explicitly approves the test email, the final text, and the recipient count. Keep the subject and body byte-for-byte identical between the test and the real send; any edit after the test means another test. Production builds with `FEATURE_GLOBAL_EMAIL_ENABLED = "true"` (`netlify.toml` `[build.environment]`), so the call delivers real mail. The endpoint returns `{ sent, failed, noEmail, unknownIds }`.
+
+**Outbound email payload contract**: template functions in `src/lib/email-templates.ts` return `EmailTemplate` (`{ subject, html, text }`) and carry **no recipient**. `sendToGuests` requires a full `EmailPayload`, which adds `to`. Always compose the two with `withRecipient(guest, template(...))` from `src/lib/email.ts` — it sets `to` last so a stray recipient on a template can't redirect the mail. Passing a bare template result is a silent failure: Resend rejects it, `sendToGuests` catches the throw, and every guest lands in the `failed` count with nothing logged per-guest.
+
+**Both bulk senders are untestable through the endpoint.** `global.emailEnabled` defaults to `false`, so `/api/admin/send-stds` and `/api/admin/send-email` short-circuit to `{ skipped: true }` before building any payload — `tests/admin.spec.ts` only ever reaches auth and validation. This is exactly how the missing-`to` bug survived from PR #40 to July 2026. Cover payload assembly at the unit level instead (`tests/email-unit.spec.ts`), where the flag is irrelevant. **Never flip `FEATURE_GLOBAL_EMAIL_ENABLED` to verify a change** — that sends real mail to real guests.
+
+Scheduled functions (`netlify/functions/`): `ics-refresh-weekly` runs every Sunday 03:00 UTC; `ics-refresh-daily` runs at 03:00 UTC but only inside the pre-wedding windows (Sep 27–Oct 13 2026, May 14–May 31 2027). Neither can be invoked over HTTP in production — use the admin endpoint above for on-demand refreshes.
+
+## Guest Privacy — This Repo Is Public
+
+**CRITICAL: never write a real guest's name into anything that lands in the repo or on GitHub.** That includes source and test files, code comments, commit messages, PR titles and descriptions, PR review comments, issues, and `docs/`. The repository is public, so all of it is world-readable and indexed.
+
+This is easy to violate by accident, because real names are exactly what's in front of you while debugging: a guest reports a login problem, the invitation CSVs are open, and the household that reproduces the bug gets pasted into a fixture or a commit message. Guests never consented to appear in a public repo.
+
+- **Test fixtures use invented names.** Copy the *shape* that matters — hyphenated given name, two-word given name, multi-word surname, two members sharing a first name, mixed surnames within a household — never the real name that exhibited it.
+- **Commit messages and PR text describe shapes, not people.** "a two-surname household where one member carries a title", not the household.
+- **Guest data files stay untracked.** `scripts/output/` is gitignored and must remain so; it holds names, postal addresses, and USPS serials. `scripts/data/usps-imb-serials.json` is tracked but safe — its keys are SHA-256 hashes, never plaintext.
+- **The couple's own names are fine** (Sam Gross, Margaux Ancel) — it's their wedding site. The rule protects third-party guests.
+- Redacting after a push is only a partial fix: force-pushing a branch removes names from the tip, but orphaned commits stay reachable by SHA on GitHub, and PR description edits keep a visible edit history. Get it right before pushing.
+
+## Secrets & API Keys
+
+**CRITICAL: Never commit API keys or secrets to the repository.**
+
+- `NOTION_API_KEY` — Notion integration token. Store in:
+  - **Netlify Dashboard** → Site settings → Environment variables (for builds/deploys)
+  - **GitHub Secrets** → Repository settings → Secrets and variables (for CI)
+- `NOTION_GUEST_LIST_DB` — Guest List Notion database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
+- `CALENDAR_HMAC_SECRET` — HMAC-SHA256 signing secret for personalized calendar subscription tokens. Must be stable across deploys — changing it invalidates all existing `webcal://` subscription URLs. Set in Netlify Dashboard (all contexts: production, deploy-preview, branch-deploy) and GitHub Secrets. **Never delete and recreate a guest's Notion page** — the page ID is baked into the subscription token; deletion invalidates the URL permanently (edit the existing page instead). Use `GET /api/calendar/health` to verify the secret is live without a real token (`{ ok: true }` only — no config flags).
+- `SESSION_HMAC_SECRET` — HMAC-SHA256 signing secret for `sargaux_auth` session cookies. **Do not reuse `CALENDAR_HMAC_SECRET`.** Generate with `openssl rand -hex 32`. Set in Netlify Dashboard (all contexts) and GitHub Secrets. Rotating it forces all guests to re-login.
+- `RESEND_ADMIN_SECRET` — bearer token protecting the admin endpoints (`/api/admin/*`) **and** `GET /api/warm`. Stored in Netlify as a **write-only secret** (runtime, `process.env`; scoped to production **and** deploy-preview contexts) and mirrored in `.env.local`. `netlify env:get` cannot read it back — it returns a placeholder that the endpoints reject — so treat `.env.local` as the readable copy (never paste the value into code, docs, or commit messages).
+- `CALENDAR_TEST_MODE` — when `"true"`, calendar endpoints use the mock blob store. **Keep unset/off in production.**
+- All secrets must be added to Netlify Dashboard and/or GitHub Secrets directly — never in `netlify.toml`, `.env` files committed to git, or source code
+- The `.gitignore` already excludes `.env` files, but always double-check before committing
+- **Runtime secrets use `process.env`**, not `import.meta.env` — Vite's `import.meta.env` only includes vars present at build time. Netlify Dashboard env vars are runtime-only. `process.env` is server-side only and never exposed to browser bundles.
+
+### GitHub Secrets Configuration
+
+The following secrets must be set in GitHub repository settings (Settings → Secrets and variables → Actions):
+
+- `NOTION_API_KEY` — Notion integration token
+- `NOTION_GUEST_LIST_DB` — Guest List database page ID
+- `NOTION_EVENT_CATALOG_DB` — Event Catalog database page ID
+- `NOTION_RSVP_RESPONSES_DB` — RSVP Responses database page ID
+- `CALENDAR_HMAC_SECRET` — Signing secret for calendar subscription tokens (must match Netlify)
+- `SESSION_HMAC_SECRET` — Signing secret for session cookies (must match Netlify; distinct from calendar secret)
+- `RESEND_ADMIN_SECRET` — Bearer for admin endpoints and cache warmup
+
+These are automatically injected into CI test runs via the workflow files (`.github/workflows/*.yml`). The GitHub Actions workflows pass these as environment variables to enable Notion-backed authentication and RSVP testing in CI.
+
+**To add/update secrets**: `gh secret set SESSION_HMAC_SECRET` (then paste the value when prompted)
+
+**Calendar subscription URLs** are capability secrets: anyone with the link can read that guest's attending schedule, and the token prefix is a decodable Notion page ID. Prefer not forwarding calendar links in group chats. Opaque server-stored tokens are a future improvement if sharing becomes a concern.
+
+## Feature Flags
+
+The site uses a **build-time** feature flag system (`src/config/features.ts`) for gradual rollout and protecting production. Flags are resolved at build time via Vite's static `import.meta.env` replacement — changing a flag requires a rebuild.
+
+### Master Switch
+
+The `global.weddingSiteEnabled` flag controls whether the full wedding site is visible:
+
+- **Production (default: `false`)**: Only shows a minimal "Chez Sargaux" placeholder
+- **Development (`npm run dev`)**: Automatically enabled — you always see the full site locally
+- **Netlify Preview Deploys**: Automatically enabled via `netlify.toml`
+
+### Running Locally
+
+```bash
+# Standard development - wedding site is automatically enabled
+npm run dev
+
+# To test with specific flags, set environment variables:
+FEATURE_NYC_CALENDAR_SUBSCRIBE=true npm run dev
+
+# To test production behavior (site disabled):
+FEATURE_GLOBAL_WEDDING_SITE_ENABLED=false npm run dev
+```
+
+### Environment Variable Format
+
+Flags use the format `FEATURE_{AREA}_{FLAG_NAME}`:
+
+- `global.weddingSiteEnabled` → `FEATURE_GLOBAL_WEDDING_SITE_ENABLED`
+- `nyc.calendarSubscribe` → `FEATURE_NYC_CALENDAR_SUBSCRIBE`
+- `france.euAllergens` → `FEATURE_FRANCE_EU_ALLERGENS`
+
+**Important**: Each flag must be a **static** `import.meta.env.FEATURE_*` reference in `features.ts` so Vite can replace it at build time. Dynamic access like `import.meta.env[key]` does NOT work.
+
+**Adding a new feature flag (4-step checklist):**
+
+1. Add to `FeatureFlags` type definition in `src/config/features.ts`
+2. Add static `import.meta.env.FEATURE_*` reference in features object
+3. Add to `ImportMetaEnv` interface in `src/env.d.ts`
+4. Add to `netlify.toml` `[context.deploy-preview.environment]` for preview deploys
+
+### Available Flags
+
+See `src/config/features.ts` for the full list. Key flags:
+
+- `global.weddingSiteEnabled` — Master switch for the entire wedding site
+- `global.notionBackend` — Use Notion Guest List for auth (requires `NOTION_API_KEY` and `NOTION_GUEST_LIST_DB`). When off, falls back to hardcoded guest list.
+- `global.i18n` — French language support
+- `nyc.*` / `france.*` — Event-specific features
+  - `nyc.wytheRoomBlock` — Controls visibility of the entire Wythe Hotel row on the travel page (default: false, enables when room block is bookable)
+  - `nyc.rsvpPreview` — Renders RSVP forms (NYC and France) with mock party data when no Notion guestId is present. Used for local/preview without Notion backend. **Keep off in production** (enabled on deploy-preview via `netlify.toml`).
+- `global.rsvpDeleteEnabled` — Allows authenticated guests to `DELETE /api/rsvp` (test cleanup). **Keep off in production**; enabled in Playwright and deploy-preview. Admin Bearer can also authorize DELETE when the flag is off.
+- `global.testGuestLogin` — Allows the synthetic 🤖 guests to log in. **The one flag that must NOT be added to `netlify.toml`** — deploy previews are shareable URLs, so the bots have to be refused there as well as in production. It is on via `import.meta.env.DEV` for `npm run dev` and set explicitly in `playwright.config.ts`'s `webServer.env`, which is the only reason the suite can log in at all. `POST /api/login` filters blocked bots through `denyTestGuests()` and returns the same 401 as an unknown name, so a refusal can't confirm a bot exists. `tests/auth-unit.spec.ts` asserts the flag is absent from `netlify.toml`.
+- `registry.enabled` — Registry page visibility
+
+### For Netlify Preview Deploys
+
+When developing new features, add their flags to `netlify.toml` so preview deploys show them:
+
+```toml
+[context.deploy-preview.environment]
+  FEATURE_GLOBAL_WEDDING_SITE_ENABLED = "true"
+  FEATURE_NYC_CALENDAR_SUBSCRIBE = "true"  # example
+```
+
+Always add new feature flags to the deploy-preview environment in `netlify.toml` when developing them.

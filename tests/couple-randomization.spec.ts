@@ -130,24 +130,21 @@ test.describe('Couple page — CDN cache guard', () => {
    * never sees CDN caching and would happily pass with `/couple` cached in
    * production. Assert against the config itself instead.
    */
-  test('/couple is not in routeRules', async () => {
+  test('/couple is not in routeRules, and the cached pages still are', async () => {
+    // One import: loading astro.config.mjs is the slow part (~2s), so both
+    // assertions share it.
     const { default: config } = await import('../astro.config.mjs');
-    const routeRules = (config.routeRules ?? {}) as Record<string, unknown>;
+    const routes = Object.keys((config.routeRules ?? {}) as Record<string, unknown>);
 
     expect(
-      Object.keys(routeRules),
+      routes,
       'Caching /couple freezes its randomized photo selection per guest for the whole cache window.'
     ).not.toContain('/couple');
-  });
 
-  test('the pages that are cached are still cached', async () => {
     // The fix for the randomization bug was removing one entry, not disabling
     // CDN caching. If this list empties out, something over-corrected.
-    const { default: config } = await import('../astro.config.mjs');
-    const routeRules = (config.routeRules ?? {}) as Record<string, unknown>;
-
     for (const route of ['/nyc', '/france', '/registry']) {
-      expect(Object.keys(routeRules)).toContain(route);
+      expect(routes).toContain(route);
     }
   });
 });

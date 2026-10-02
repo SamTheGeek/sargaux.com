@@ -67,7 +67,12 @@ export default defineConfig({
   // own process. The performance workflow pins --workers=1 on the CLI since
   // its tests assert wall-clock thresholds.
   workers: process.env.CI ? 4 : undefined,
-  reporter: 'html',
+  // CI uploads the HTML report as an artifact; locally the `html` reporter
+  // serves a report server after any failure and blocks the terminal, so use
+  // the plain list reporter (run `npx playwright show-report` when wanted).
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never' }]]
+    : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:1213',
     trace: 'on-first-retry',
