@@ -55,8 +55,8 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
-- **Node.js**: v24.12.0 (LTS v22.x recommended)
-- **Package Manager**: npm v11.6.2
+- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. The CI workflows' `node-version` must match it; change them together.
+- **Package Manager**: npm. `package-lock.json` is written by npm 11; the npm bundled with Node 22 (v10) rewrites it on `npm install` (dropping `libc` fields). Don't commit that churn.
 
 ### TypeScript must stay on 6.x
 
@@ -76,6 +76,8 @@ To set up a fresh Mac for development, run:
 ```
 
 This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). It also configures the user's shell for Homebrew and `nvm`, and offers to create `.env.local` for local Notion-backed flows. The only prerequisite is a stock macOS install.
+
+**`.env.local` is created by `./scripts/setup-local-env.sh`, which prompts for API keys and refuses to run inside Claude Code** (it checks `CLAUDECODE`, which is also set under the `!` prompt prefix, whose output lands in the transcript). When running setup for the user, `setup.sh` skips that step; ask them to run `./scripts/setup-local-env.sh` in their own terminal window. Never ask for API keys in chat or write them to `.env.local` yourself. Re-running the helper keeps existing values (Enter at each prompt) and preserves keys it doesn't manage.
 
 After setup, authenticate once:
 

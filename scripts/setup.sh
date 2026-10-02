@@ -79,8 +79,11 @@ maybe_setup_local_env() {
     return
   fi
 
-  if [[ ! -t 0 || ! -t 1 ]]; then
-    warn "Skipping .env.local setup in non-interactive mode"
+  # The env helper prompts for API keys. Inside Claude Code (or any
+  # non-interactive shell) skip it, so keys never land in a transcript.
+  if [[ -n "${CLAUDECODE:-}" || ! -t 0 || ! -t 1 ]]; then
+    warn "Skipped .env.local setup: it prompts for API keys, so run it in your own terminal:"
+    warn "  ./scripts/setup-local-env.sh"
     return
   fi
 
@@ -137,7 +140,7 @@ fi
 info "Checking nvm..."
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 
-if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+if [[ -s "$NVM_DIR/nvm.sh" ]] || brew list nvm &>/dev/null; then
   ok "nvm already installed"
 else
   info "Installing nvm..."
@@ -146,14 +149,30 @@ else
   ok "nvm installed"
 fi
 
+# nvm is not written for `set -eu`: its internals return non-zero and read
+# unset variables in normal operation, and on load it auto-switches to the
+# .nvmrc version — which fails (exit 3) before that version is installed,
+# silently killing this script. Load it with --no-use and run every nvm call
+# with strict mode suspended.
+mkdir -p "$NVM_DIR"
+nvm_safe() {
+  local rc=0
+  set +eu
+  "$@" || rc=$?
+  set -eu
+  return "$rc"
+}
+
 # Source nvm for this session
 # shellcheck disable=SC1091
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  nvm_safe source "$NVM_DIR/nvm.sh" --no-use
+fi
 # Also try the Homebrew path
 if ! command -v nvm &>/dev/null; then
   NVM_BREW_PREFIX="$(brew --prefix nvm 2>/dev/null || true)"
   if [[ -s "$NVM_BREW_PREFIX/nvm.sh" ]]; then
-    source "$NVM_BREW_PREFIX/nvm.sh"
+    nvm_safe source "$NVM_BREW_PREFIX/nvm.sh" --no-use
   fi
 fi
 
@@ -165,10 +184,11 @@ info "Configuring shell profiles for Homebrew and nvm..."
 configure_shell_profiles
 
 # Install the Node version from .nvmrc
-REQUIRED_NODE_VERSION=$(cat .nvmrc 2>/dev/null || echo "22")
+[[ -f .nvmrc ]] || fail ".nvmrc not found — it pins the Node.js version for this repo."
+REQUIRED_NODE_VERSION=$(cat .nvmrc)
 info "Installing Node.js v${REQUIRED_NODE_VERSION} (from .nvmrc)..."
-nvm install "$REQUIRED_NODE_VERSION"
-nvm use "$REQUIRED_NODE_VERSION"
+nvm_safe nvm install "$REQUIRED_NODE_VERSION" || fail "nvm could not install Node.js v${REQUIRED_NODE_VERSION}."
+nvm_safe nvm use "$REQUIRED_NODE_VERSION" || fail "nvm could not switch to Node.js v${REQUIRED_NODE_VERSION}."
 ok "Node.js $(node --version) active"
 
 # ---------- npm dependencies ----------
@@ -210,7 +230,7 @@ echo ""
 ok "Xcode CLT    — $(xcode-select -p)"
 ok "Homebrew     — $(brew --version | head -1)"
 ok "Git          — $(git --version)"
-ok "nvm          — $(nvm --version 2>/dev/null || echo 'installed')"
+ok "nvm          — $(nvm_safe nvm --version 2>/dev/null || echo 'installed')"
 ok "Node.js      — $(node --version)"
 ok "npm          — $(npm --version)"
 ok "Playwright   — chromium installed"
@@ -219,10 +239,10 @@ ok "GitHub CLI   — $(gh --version 2>/dev/null | head -1)"
 echo ""
 info "Next steps:"
 echo "  1. npm run dev          — Start the dev server at http://localhost:1213"
-echo "  2. npm run verify       — Build + run all 51 tests"
+echo "  2. npm run verify       — Build + run all tests"
 echo "  3. netlify login        — Authenticate with Netlify (one-time)"
 echo "  4. gh auth login        — Authenticate with GitHub (one-time)"
-echo "  5. ./scripts/setup-local-env.sh — Create or refresh .env.local if you skipped it"
+echo "  5. ./scripts/setup-local-env.sh — Create or update .env.local (run in your own terminal, not via Claude)"
 echo ""
 echo "  Notion API keys are stored in Netlify Dashboard — never commit them."
 echo ""
