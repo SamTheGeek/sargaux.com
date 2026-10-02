@@ -187,3 +187,8 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
 
 `.nvmrc`, the six workflow files in `.github/workflows/`, `CLAUDE.md`, `package.json` (version),
 possibly `package-lock.json` (only if Phase 1 shows a legitimate npm 11 rewrite).
+
+## Follow-up
+
+Once this upgrade has finished its 7-day watch, adopt the Node 24 features worth taking:
+[Node 24 Feature Adoption](2026-10-02-node-24-feature-adoption.md). That plan stays blocked until then.
