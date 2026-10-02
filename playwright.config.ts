@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { UNIT_SPECS } from './tests/unit-specs';
 
 function loadDotEnvLocal(): void {
   const envPath = path.resolve(process.cwd(), '.env.local');
@@ -48,6 +49,13 @@ const preinstalledChromium = resolvePreinstalledChromium();
  */
 const MUTATING_SPEC = /\.mutating\.spec\.ts$/;
 
+/**
+ * CI runs the pure unit specs in their own fast job (`playwright.unit.config.ts`,
+ * no build or browser), so its e2e job sets SKIP_UNIT_SPECS=1 to not run them
+ * twice. Locally they stay in, so `npm test` is still the full suite.
+ */
+const unitSpecIgnore = process.env.SKIP_UNIT_SPECS ? UNIT_SPECS : [];
+
 // Ensure session signing works for hand-built cookies in unit/e2e helpers
 if (!process.env.SESSION_HMAC_SECRET) {
   process.env.SESSION_HMAC_SECRET = 'test-session-hmac-secret-for-playwright';
@@ -67,7 +75,12 @@ export default defineConfig({
   // own process. The performance workflow pins --workers=1 on the CLI since
   // its tests assert wall-clock thresholds.
   workers: process.env.CI ? 4 : undefined,
-  reporter: 'html',
+  // CI uploads the HTML report as an artifact; locally the `html` reporter
+  // serves a report server after any failure and blocks the terminal, so use
+  // the plain list reporter (run `npx playwright show-report` when wanted).
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never' }]]
+    : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:1213',
     trace: 'on-first-retry',
@@ -79,7 +92,7 @@ export default defineConfig({
     {
       name: 'chromium',
       // The mutating suite is excluded here and runs as its own project below
-      testIgnore: MUTATING_SPEC,
+      testIgnore: [MUTATING_SPEC, ...unitSpecIgnore],
       use: {
         ...devices['Desktop Chrome'],
         ...(preinstalledChromium

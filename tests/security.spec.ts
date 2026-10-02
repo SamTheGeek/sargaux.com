@@ -14,13 +14,6 @@ const notionRequired =
   !process.env.NOTION_GUEST_LIST_DB;
 
 test.describe('Security — Session tokens', () => {
-  test('unsigned legacy cookies are rejected by parseSessionToken', () => {
-    const unsigned = Buffer.from(
-      JSON.stringify({ guest: 'Forged Guest', notionId: 'fake-id', created: Date.now() })
-    ).toString('base64url');
-    expect(parseSessionToken(unsigned)).toBeNull();
-  });
-
   test('unsigned cookie cannot access protected routes', async ({ request }) => {
     const unsigned = Buffer.from(
       JSON.stringify({

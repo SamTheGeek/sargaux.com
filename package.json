@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "scripts": {
     "dev": "astro dev",
     "icons": "tsx scripts/generate-icons.ts",
@@ -12,6 +12,7 @@
     "typecheck": "astro check",
     "pretest": "bash scripts/ensure-browsers.sh",
     "test": "playwright test",
+    "test:unit": "playwright test -c playwright.unit.config.ts",
     "test:ui": "playwright test --ui",
     "test:quick": "playwright test tests/accessibility.spec.ts",
     "test:install": "playwright install --with-deps chromium",

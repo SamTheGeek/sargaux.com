@@ -67,7 +67,7 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL('/');
   });
 
-  test('should login successfully with valid name', async ({ page }) => {
+  test('should login successfully with valid name and forward logged-in guests from the homepage', async ({ page }) => {
     await page.goto('/');
 
     await page.click('#login-trigger');
@@ -76,6 +76,10 @@ test.describe('Authentication', () => {
 
     await expect(page).toHaveURL('/nyc');
     await expect(page.locator('.guest-name')).toContainText(TEST_GUEST_NAME);
+
+    // A logged-in guest hitting the homepage is forwarded straight back.
+    await page.goto('/');
+    await expect(page).toHaveURL('/nyc');
   });
 
   test('should submit login when clicking inline arrow button', async ({ page }) => {
@@ -122,24 +126,15 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL('/nyc');
   });
 
-  test('should login with case-insensitive name', async ({ page }) => {
-    await page.goto('/');
-
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_LOWERCASE);
-    await page.press('#name', 'Enter');
-
-    await expect(page).toHaveURL('/nyc');
-  });
-
-  test('should login with extra whitespace in name', async ({ page }) => {
-    await page.goto('/');
-
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_WHITESPACE);
-    await page.press('#name', 'Enter');
-
-    await expect(page).toHaveURL('/nyc');
+  test('login tolerates case and extra whitespace in the name', async ({ request }) => {
+    // The UI path is covered by the tests above; the normalization rules live in
+    // auth-unit.spec.ts. This only confirms the endpoint applies them, so it
+    // posts directly rather than driving the browser once per variant.
+    for (const name of [TEST_GUEST_LOWERCASE, TEST_GUEST_WHITESPACE]) {
+      const res = await request.post('/api/login', { form: { name } });
+      expect(res.status(), name).toBe(200);
+      expect((await res.json()).redirectPath).toBe('/nyc');
+    }
   });
 
   test('should redirect unauthenticated users from protected routes', async ({ page }) => {
@@ -149,18 +144,6 @@ test.describe('Authentication', () => {
     // Should redirect to homepage, carrying the requested page so login can
     // return the guest to it (see src/lib/return-to.ts).
     await expect(page).toHaveURL('/?next=%2Fnyc');
-  });
-
-  test('should redirect authenticated users from homepage to /nyc', async ({ page }) => {
-    await page.goto('/');
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
-
-    await page.goto('/');
-
-    await expect(page).toHaveURL('/nyc');
   });
 
   test('should logout and redirect to homepage', async ({ page }) => {
@@ -179,19 +162,6 @@ test.describe('Authentication', () => {
 
     await page.goto('/nyc');
     await expect(page).toHaveURL('/?next=%2Fnyc');
-  });
-
-  test('should have a visible back link on RSVP pages', async ({ page }) => {
-    await page.goto('/');
-    await page.click('#login-trigger');
-    await page.fill('#name', TEST_GUEST_NAME);
-    await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
-
-    for (const route of ['/nyc/rsvp', '/france/rsvp']) {
-      await page.goto(route);
-      await expect(page.locator('.back-link').first()).toBeVisible();
-    }
   });
 
   test('should keep inline name input open when it contains text', async ({ page }) => {

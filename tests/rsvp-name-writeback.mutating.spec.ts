@@ -13,9 +13,10 @@
  * canonical names from tests/fixtures.ts rather than whatever was read at the
  * start, so a run that dies mid-rename is repaired by the next one. If a crash
  * ever leaves the party renamed and the rest of the suite red because of it,
- * repair it directly with:
+ * run the `Repair Test Party` workflow (.github/workflows/repair-test-party.yml)
+ * or, locally:
  *
- *     npx playwright test --project=mutating
+ *     npx playwright test --project=mutating --no-deps --grep "restoring puts the original name back"
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test';
