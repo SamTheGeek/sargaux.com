@@ -1,4 +1,4 @@
-name: Security Tests
+name: E2E Tests
 
 on:
   pull_request:
@@ -7,6 +7,12 @@ on:
   push:
     branches: [main]
 
+# Accessibility, best-practices, security/auth/access-control and the page,
+# RSVP, calendar and i18n specs share ONE job so the site is built and Chromium
+# installed once (they used to be separate workflows, each paying for both).
+# Pure unit specs run in unit-tests.yml instead (SKIP_UNIT_SPECS below), and
+# performance-tests.yml stays separate because it needs --workers=1.
+#
 # The suite mutates the shared 🤖 Notion party (create/update/archive RSVP
 # Responses). Parallel runs across stacked PRs race those rows and flake as
 # "Can't edit block that is archived" or GET-after-POST misses. Queue rather
@@ -16,10 +22,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  security:
-    name: Security, Auth & Access Control
+  e2e:
+    name: E2E, Accessibility & Security
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     # Skip tests for draft PRs
     if: github.event_name == 'push' || github.event.pull_request.draft == false
 
@@ -28,11 +34,9 @@ jobs:
         uses: actions/checkout@v7
 
       # `predicate-quantifier: every` is load-bearing. The default, 'some', ORs
-      # the patterns together, so the old list's bare '**' matched every changed
-      # file and `non_docs` was true on every PR — the docs-only skip could
-      # never fire. With 'every' a file counts only if it matches all the
-      # negations, i.e. it really is a non-docs file, and the filter is true
-      # when at least one such file changed.
+      # the patterns together, so a bare '**' would match every changed file and
+      # the docs-only skip could never fire. With 'every' a file counts only if
+      # it matches all the negations, i.e. it really is a non-docs file.
       - name: Filter docs/config changes
         id: paths
         uses: dorny/paths-filter@v4
@@ -92,10 +96,14 @@ jobs:
 
       # No separate build step — the Playwright webServer command runs
       # `npm run build` itself, so a standalone build would run twice.
-      - name: Run security tests
+      # --project=chromium leaves out the `mutating` project: it renames a real
+      # Guest List row and has never run in CI; run it deliberately instead.
+      # performance.spec.ts is left to performance-tests.yml (needs --workers=1).
+      - name: Run e2e tests
         if: steps.filter.outputs.docs_only != 'true'
-        run: npm run test:security
+        run: npx playwright test --project=chromium --grep-invert "Performance Tests"
         env:
+          SKIP_UNIT_SPECS: '1'
           FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
           FEATURE_GLOBAL_NOTION_BACKEND: 'true'
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
@@ -110,7 +118,7 @@ jobs:
         if: steps.filter.outputs.docs_only != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: security-test-report
+          name: e2e-test-report
           path: playwright-report/
           retention-days: 30
 
@@ -118,7 +126,7 @@ jobs:
         if: steps.filter.outputs.docs_only != 'true' && failure()
         uses: actions/upload-artifact@v7
         with:
-          name: security-test-traces
+          name: e2e-test-traces
           path: test-results/
           retention-days: 30
 

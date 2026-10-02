@@ -217,7 +217,15 @@ The suite is **idempotent by construction**: both `beforeAll` and `afterAll` wri
 
 Add nothing to this project that the other suites don't already tolerate running last, and don't move a mutating suite back into `chromium`.
 
-All test suites run simultaneously in CI. **Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
+CI runs three test workflows plus typecheck, in parallel:
+
+- **`unit-tests.yml`** — `npm run test:unit` (`playwright.unit.config.ts`). The pure-logic specs listed in `tests/unit-specs.ts`: no build, no browser, no Notion secrets, a few seconds. **Add any new spec that needs neither `page`, `request`, nor network to `UNIT_SPECS`**, or CI won't run it in this job.
+- **`e2e-tests.yml`** — every other spec in the `chromium` project (accessibility, best-practices, security, auth, pages, RSVP, calendar, i18n…) in one job, so the site is built and Chromium installed once. It sets `SKIP_UNIT_SPECS=1` so the unit specs aren't run twice, excludes `performance.spec.ts`, and leaves out the `mutating` project (run that deliberately with `npx playwright test --project=mutating`). The job is in the `notion-security-tests` concurrency group because the suite mutates the shared 🤖 Notion party.
+- **`performance-tests.yml`** — `performance.spec.ts` with `--workers=1` (wall-clock thresholds).
+
+Locally, `npm test` still runs everything (unit specs included).
+
+**Important**: CI tests only run when PRs are marked as "Ready for review" - draft PRs are skipped to conserve resources.
 
 **Always run `npm test` locally before pushing any code changes.** Do not rely on CI to catch failures — draft PRs skip tests entirely, and a PR marked "Ready for review" will fail publicly if tests haven't been verified locally first. If Playwright browsers aren't installed, run `npm run test:install` once.
 
