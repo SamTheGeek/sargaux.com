@@ -224,7 +224,7 @@ The project includes automated tests that run on every PR:
 
 That exists for one reason: the RSVP name write-back can only be tested by **renaming a real Guest List row**. Several suites assert on the synthetic party's names (`auth.spec.ts`, `alternate-name-login.spec.ts`, `pages.spec.ts`), files run in parallel under `fullyParallel: true`, and a rename window of even a few seconds would flake them. Running last means nothing is reading the name while it changes.
 
-The suite is **idempotent by construction**: both `beforeAll` and `afterAll` write the canonical names from `tests/fixtures.ts` rather than whatever was read at the start, so a run that dies mid-rename is repaired by the next one. If a crash ever leaves the party renamed and the rest of the suite red because of it, repair it directly with `npx playwright test --project=mutating`.
+The suite is **idempotent by construction**: both `beforeAll` and `afterAll` write the canonical names from `tests/fixtures.ts` rather than whatever was read at the start, so a run that dies mid-rename is repaired by the next one. If a crash ever leaves the party renamed and the rest of the suite red because of it, repair it directly with `npx playwright test --project=mutating --no-deps`. **`--no-deps` is required**: without it Playwright runs the `chromium` dependency first, which fails on the renamed party, so the repair suite never starts. The usual cause of a crash is Notion rate limiting (`429` / "You have been rate limited" in the WebServer log), from running suites back to back. Wait several minutes before retrying, or the repair is rate-limited too.
 
 Add nothing to this project that the other suites don't already tolerate running last, and don't move a mutating suite back into `chromium`.
 
