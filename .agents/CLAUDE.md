@@ -88,6 +88,17 @@ gh auth login      # Authenticate with GitHub
 
 The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to the correct version.
 
+### Agents: verify you're on the `.nvmrc` Node
+
+**Claude's Bash tool runs a non-interactive shell that never reads `~/.zshrc`**, which is where `setup.sh` loads nvm. On a Mac that also has Homebrew's `node` formula installed, `node` therefore silently resolves to Homebrew's latest major (Node 26 at the time of writing) instead of the pinned one. Builds and tests then run on a Node that Netlify and CI never use. This happened: a type-check and build were reported green while running on Node 26.
+
+Two guards exist, and both are committed:
+
+- **SessionStart hook** (`.claude/settings.json` → `.claude/hooks/use-nvmrc-node.sh`): loads nvm, runs `nvm use`, and exports the result through `$CLAUDE_ENV_FILE`, so every later Bash call in the session uses the pinned Node. Where nvm is absent (cloud sessions, CI), it only checks the version and injects a warning into the session on a mismatch. It always exits 0. A hook added mid-session takes effect on the next session start (or after opening `/hooks`).
+- **`scripts/check-node-version.mjs`**, run by `predev`, `prebuild`, `pretypecheck`, `pretest`, `pretest:unit`, and `pretest:quick`: fails fast when the running Node's major isn't the one in `.nvmrc`. This covers agents without hooks, IDE tasks, and humans who forgot `nvm use`. Bypass it only deliberately, with `SKIP_NODE_VERSION_CHECK=1`. Because Netlify (`npm run build`) and CI also run these scripts (the typecheck job runs `npm run typecheck`, the unit job `npm run test:unit`, and the e2e and performance jobs build through the Playwright `webServer`'s `npm run build`), **changing `.nvmrc` without updating the workflows' `node-version` now fails CI** rather than silently testing on the old major.
+
+Still run `node -v` before reporting a build or test result. If it doesn't match `.nvmrc`, prefix commands with `. "$NVM_DIR/nvm.sh" && nvm use` (Homebrew installs nvm at `/opt/homebrew/opt/nvm/nvm.sh`). Don't uninstall the Homebrew `node` to "fix" this; it may be in use outside this repo.
+
 ## Development Commands
 
 **Collaborative Sessions**: When working together on code changes, always start the dev server (`npm run dev`) and open <http://localhost:1213> in a browser. This allows watching changes in real time as edits are made.
@@ -213,7 +224,7 @@ The project includes automated tests that run on every PR:
 
 That exists for one reason: the RSVP name write-back can only be tested by **renaming a real Guest List row**. Several suites assert on the synthetic party's names (`auth.spec.ts`, `alternate-name-login.spec.ts`, `pages.spec.ts`), files run in parallel under `fullyParallel: true`, and a rename window of even a few seconds would flake them. Running last means nothing is reading the name while it changes.
 
-The suite is **idempotent by construction**: both `beforeAll` and `afterAll` write the canonical names from `tests/fixtures.ts` rather than whatever was read at the start, so a run that dies mid-rename is repaired by the next one. If a crash ever leaves the party renamed and the rest of the suite red because of it, repair it directly with `npx playwright test --project=mutating`.
+The suite is **idempotent by construction**: both `beforeAll` and `afterAll` write the canonical names from `tests/fixtures.ts` rather than whatever was read at the start, so a run that dies mid-rename is repaired by the next one. If a crash ever leaves the party renamed and the rest of the suite red because of it, repair it directly with `npx playwright test --project=mutating --no-deps`. **`--no-deps` is required**: without it Playwright runs the `chromium` dependency first, which fails on the renamed party, so the repair suite never starts. The usual cause of a crash is Notion rate limiting (`429` / "You have been rate limited" in the WebServer log), from running suites back to back. Wait several minutes before retrying, or the repair is rate-limited too. In CI, `repair-test-party.yml` runs the same `--no-deps` repair automatically after a crashed run.
 
 Add nothing to this project that the other suites don't already tolerate running last, and don't move a mutating suite back into `chromium`.
 

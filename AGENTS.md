@@ -17,3 +17,10 @@
 - In this codebase, branded custom fonts in `src/styles/tokens.css` should use `font-display: block`, not `swap`, when visible fallback text causes a noticeable first-paint flicker.
 - When debugging a text flicker, delay the font request in Playwright and compare the text geometry before and after `document.fonts.ready`. A width or height change confirms a font-swap regression.
 - Preload the exact custom font files used above the fold for a route. Do not assume a single preload covers neighboring weights.
+
+## Node Version
+
+- Builds, tests, and scripts must run on the Node major pinned in `.nvmrc`. Check `node -v` before reporting any build or test result.
+- Agent shells are often non-interactive and never load nvm from `~/.zshrc`, so `node` can silently resolve to another install (e.g. Homebrew's latest major). If `node -v` doesn't match, run `. "$NVM_DIR/nvm.sh" && nvm use` (Homebrew path: `/opt/homebrew/opt/nvm/nvm.sh`) in the same command.
+- `npm run dev|build|typecheck|test|test:unit|test:quick` fail fast on a mismatch (`scripts/check-node-version.mjs`). Fix the environment instead of setting `SKIP_NODE_VERSION_CHECK=1`.
+- Claude Code sessions get this automatically from the SessionStart hook in `.claude/settings.json`. See CLAUDE.md, "Agents: verify you're on the `.nvmrc` Node".
