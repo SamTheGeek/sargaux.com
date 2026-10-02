@@ -77,6 +77,8 @@ To set up a fresh Mac for development, run:
 
 This installs everything from scratch (Xcode CLT, Homebrew, nvm, Node.js, npm deps, Playwright browsers, Netlify CLI, GitHub CLI). It also configures the user's shell for Homebrew and `nvm`, and offers to create `.env.local` for local Notion-backed flows. The only prerequisite is a stock macOS install.
 
+**`.env.local` is created by `./scripts/setup-local-env.sh`, which prompts for API keys and refuses to run inside Claude Code** (it checks `CLAUDECODE`, which is also set under the `!` prompt prefix, whose output lands in the transcript). When running setup for the user, `setup.sh` skips that step; ask them to run `./scripts/setup-local-env.sh` in their own terminal window. Never ask for API keys in chat or write them to `.env.local` yourself. Re-running the helper keeps existing values (Enter at each prompt) and preserves keys it doesn't manage.
+
 After setup, authenticate once:
 
 ```bash
