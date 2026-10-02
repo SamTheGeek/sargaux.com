@@ -140,7 +140,7 @@ fi
 info "Checking nvm..."
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 
-if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+if [[ -s "$NVM_DIR/nvm.sh" ]] || brew list nvm &>/dev/null; then
   ok "nvm already installed"
 else
   info "Installing nvm..."
@@ -149,14 +149,30 @@ else
   ok "nvm installed"
 fi
 
+# nvm is not written for `set -eu`: its internals return non-zero and read
+# unset variables in normal operation, and on load it auto-switches to the
+# .nvmrc version — which fails (exit 3) before that version is installed,
+# silently killing this script. Load it with --no-use and run every nvm call
+# with strict mode suspended.
+mkdir -p "$NVM_DIR"
+nvm_safe() {
+  local rc=0
+  set +eu
+  "$@" || rc=$?
+  set -eu
+  return "$rc"
+}
+
 # Source nvm for this session
 # shellcheck disable=SC1091
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  nvm_safe source "$NVM_DIR/nvm.sh" --no-use
+fi
 # Also try the Homebrew path
 if ! command -v nvm &>/dev/null; then
   NVM_BREW_PREFIX="$(brew --prefix nvm 2>/dev/null || true)"
   if [[ -s "$NVM_BREW_PREFIX/nvm.sh" ]]; then
-    source "$NVM_BREW_PREFIX/nvm.sh"
+    nvm_safe source "$NVM_BREW_PREFIX/nvm.sh" --no-use
   fi
 fi
 
@@ -171,8 +187,8 @@ configure_shell_profiles
 [[ -f .nvmrc ]] || fail ".nvmrc not found — it pins the Node.js version for this repo."
 REQUIRED_NODE_VERSION=$(cat .nvmrc)
 info "Installing Node.js v${REQUIRED_NODE_VERSION} (from .nvmrc)..."
-nvm install "$REQUIRED_NODE_VERSION"
-nvm use "$REQUIRED_NODE_VERSION"
+nvm_safe nvm install "$REQUIRED_NODE_VERSION" || fail "nvm could not install Node.js v${REQUIRED_NODE_VERSION}."
+nvm_safe nvm use "$REQUIRED_NODE_VERSION" || fail "nvm could not switch to Node.js v${REQUIRED_NODE_VERSION}."
 ok "Node.js $(node --version) active"
 
 # ---------- npm dependencies ----------
@@ -214,7 +230,7 @@ echo ""
 ok "Xcode CLT    — $(xcode-select -p)"
 ok "Homebrew     — $(brew --version | head -1)"
 ok "Git          — $(git --version)"
-ok "nvm          — $(nvm --version 2>/dev/null || echo 'installed')"
+ok "nvm          — $(nvm_safe nvm --version 2>/dev/null || echo 'installed')"
 ok "Node.js      — $(node --version)"
 ok "npm          — $(npm --version)"
 ok "Playwright   — chromium installed"
