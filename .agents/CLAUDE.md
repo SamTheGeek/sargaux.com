@@ -55,8 +55,8 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
-- **Node.js**: v24.12.0 (LTS v22.x recommended)
-- **Package Manager**: npm v11.6.2
+- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. The CI workflows' `node-version` must match it; change them together.
+- **Package Manager**: npm. `package-lock.json` is written by npm 11; the npm bundled with Node 22 (v10) rewrites it on `npm install` (dropping `libc` fields). Don't commit that churn.
 
 ### TypeScript must stay on 6.x
 
