@@ -1,0 +1,124 @@
+name: Repair Test Party
+
+# Puts the synthetic 🤖 Notion party (Alex Rivera + Jordan Chen) back to the
+# names and `Also Known As` values in tests/fixtures.ts.
+#
+# Why this exists: `rsvp-name-writeback.mutating.spec.ts` renames a real Guest
+# List row and restores it in afterAll. If that run dies in between (a local
+# `npm test` that is interrupted, a killed process), the party is left renamed
+# and every suite that logs in as it goes red — the picker never shows
+# "Jordan Chen", envelope/alias logins return the wrong person, and so on.
+#
+# It reuses the mutating spec's own restore (`restoreCanonicalNames`, run from
+# its beforeAll and afterAll) instead of duplicating it. `--no-deps` skips the
+# `chromium` project that `mutating` otherwise waits on, and the grep selects
+# the one test that asserts the restore worked, so this is a build + a few
+# Notion writes — no browser, no full suite.
+#
+# Triggers:
+#   - manually, from the Actions tab
+#   - automatically after an `E2E Tests` run fails, since a renamed party is the
+#     usual cause of an otherwise-inexplicable red e2e run. The repair is
+#     idempotent and only ever touches the synthetic party, so running it when
+#     the failure had another cause is harmless. After repairing, the failed
+#     jobs are re-run once (first attempt only) so the PR doesn't wait on a
+#     human.
+#
+# Note: `workflow_run` workflows are read from the default branch, so the
+# automatic trigger only becomes active once this file is on `main`; the manual
+# trigger works from any branch that contains it.
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['E2E Tests']
+    types: [completed]
+
+# Same group as e2e-tests.yml: both write to the shared Notion party, so they
+# must never overlap. Queue rather than cancel so a repair is never dropped
+# in favour of a newer e2e run that would just fail again.
+concurrency:
+  group: notion-security-tests
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # Only used to re-run the failed e2e jobs once, after a successful repair.
+  actions: write
+
+jobs:
+  repair:
+    name: Repair synthetic test party
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The spec skips itself (and Playwright still exits 0) when the Notion
+      # backend isn't configured, which would report a repair that never
+      # happened. Fail loudly instead.
+      - name: Require Notion credentials
+        run: |
+          missing=0
+          for name in NOTION_API_KEY NOTION_GUEST_LIST_DB NOTION_EVENT_CATALOG_DB NOTION_RSVP_RESPONSES_DB; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set; the repair would be skipped, not performed"
+              missing=1
+            fi
+          done
+          exit $missing
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
+          NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
+          NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
+
+      # No browser is installed: this test only uses Playwright's request
+      # context. The webServer command builds and starts the site itself.
+      - name: Restore the synthetic party
+        run: npx playwright test --project=mutating --no-deps --grep "restoring puts the original name back"
+        env:
+          FEATURE_GLOBAL_WEDDING_SITE_ENABLED: 'true'
+          FEATURE_GLOBAL_NOTION_BACKEND: 'true'
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_GUEST_LIST_DB: ${{ secrets.NOTION_GUEST_LIST_DB }}
+          NOTION_EVENT_CATALOG_DB: ${{ secrets.NOTION_EVENT_CATALOG_DB }}
+          NOTION_RSVP_RESPONSES_DB: ${{ secrets.NOTION_RSVP_RESPONSES_DB }}
+          CALENDAR_HMAC_SECRET: ${{ secrets.CALENDAR_HMAC_SECRET }}
+          SESSION_HMAC_SECRET: ${{ secrets.SESSION_HMAC_SECRET }}
+          RESEND_ADMIN_SECRET: ${{ secrets.RESEND_ADMIN_SECRET }}
+
+      # First attempt only, so a failure with another cause is retried once and
+      # then left red for a human instead of looping.
+      - name: Re-run the failed e2e jobs once
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.run_attempt == 1
+        run: gh run rerun "$RUN_ID" --failed --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: repair-test-party-traces
+          path: test-results/
+          retention-days: 14
