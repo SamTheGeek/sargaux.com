@@ -36,7 +36,28 @@ before production.
 | Netlify build | `.nvmrc` (**unless** a `NODE_VERSION` env var is set in the Netlify UI, which wins) | Must check the UI |
 | Netlify Functions (SSR + `ics-refresh-*` scheduled) | Build Node version, **unless** `AWS_LAMBDA_JS_RUNTIME` is set | This is the production runtime, so it's the real risk |
 | Netlify Edge (`login-geo-gate.ts`) | Deno | Unaffected |
-| GitHub Actions | hard-coded `node-version: '22'` in 6 workflows | Must match `.nvmrc` (CLAUDE.md rule) |
+| GitHub Actions | hard-coded `node-version: '22'` in 6 workflows | Must match `.nvmrc`. **Enforced** by `scripts/check-node-version.mjs` (see below) |
+
+### The Node-version guard changes how this upgrade fails
+
+`scripts/check-node-version.mjs` (added by the `chore/agents-use-nvmrc-node` PR) runs before `dev`,
+`build`, `typecheck`, `test`, and `test:quick`. It exits non-zero when the running Node's major
+version differs from `.nvmrc`. A SessionStart hook (`.claude/hooks/use-nvmrc-node.sh`) also puts the
+`.nvmrc` Node on PATH for Claude sessions. Every environment that builds this site goes through
+those npm scripts: the CI typecheck job (`npm run typecheck`), every Playwright CI job (the
+`webServer` runs `npm run build`), the Dependabot auto-merge build, Netlify (`npm run build`), and
+local dev. So once `.nvmrc` says `24`:
+
+- **CI fails on any workflow still pinned to `node-version: '22'`.** The workflows and `.nvmrc` must
+  change **in the same commit**. Switching to `node-version-file: '.nvmrc'` removes the problem for
+  good, which is one more reason to prefer it.
+- **A stale Netlify `NODE_VERSION` override fails the build loudly** instead of quietly keeping
+  production on 22. The deploy fails at `prebuild` with the check's error, so Phase 0's env audit is
+  backed by an automatic tripwire on the preview.
+- **Locally, nothing runs until Node 24 is installed.** Once `.nvmrc` changes, the hook's `nvm use`
+  finds no 24 and falls back to a warning, and every npm script refuses to run. Install 24 first.
+- Never set `SKIP_NODE_VERSION_CHECK=1` to get past any of these. Each one is the guard catching a
+  real mismatch.
 
 Node APIs used directly by the app are minimal: `node:dns` `resolveMx` in `src/pages/api/rsvp.ts`
 (it **returns false on any error**, so a runtime DNS regression would silently reject every RSVP
@@ -57,7 +78,10 @@ indirect risk.
 4. Re-check `engines` in `package-lock.json` for anything that *excludes* 24:
    `node -e 'const l=require("./package-lock.json");for(const[k,v]of Object.entries(l.packages))if(v.engines?.node)console.log(k,v.engines.node)' | grep -v ">=\|\*"`
    and review any range with an upper bound.
-5. **Re-check the TypeScript 7 pin** (`.github/dependabot.yml` ignores `typescript` `7.0.x`; CLAUDE.md
+5. **Confirm the Node-version guard is on `main`** (`scripts/check-node-version.mjs` exists and
+   `package.json` has the `pre*` hooks). If that PR never merged, this plan still works, but the
+   tripwires described above don't exist. Do the Netlify env audit (step 1) with extra care.
+6. **Re-check the TypeScript 7 pin** (`.github/dependabot.yml` ignores `typescript` `7.0.x`; CLAUDE.md
    "TypeScript must stay on 6.x"). It was still required on 2026-10-02: `latest` was 7.0.2 with
    `main` = `./lib/version.cjs` (no compiler API), `@astrojs/check@0.9.10` peered on `^5 || ^6`,
    `@typescript-eslint/typescript-estree@8.71.0` (Netlify bundler chain) peered on `<6.1.0`, and 7.1
@@ -77,6 +101,9 @@ Edits. Keep them to exactly these:
 - `.github/workflows/{accessibility-tests,performance-tests,security-tests,typecheck,sync-contacts,dependabot-automerge}.yml`:
   `node-version: '22'` → `'24'`. A better change is `node-version-file: '.nvmrc'`, so `.nvmrc` really
   is the single source of truth and this edit never has to be repeated. Recommended.
+  - **This must land in the same commit as `.nvmrc`.** Otherwise the Node-version guard fails every
+    CI job that still runs on 22. Before pushing, `grep -rn "node-version" .github/workflows` should
+    show no `'22'`.
   - Note: `dependabot-automerge.yml` runs on `pull_request_target`, so it uses `main`'s copy. It
     only switches over after merge, which is fine.
 - `CLAUDE.md`:
@@ -88,7 +115,8 @@ Edits. Keep them to exactly these:
 - `package-lock.json`: run `nvm use && npm ci` (not `npm install`). The lockfile should be **unchanged**.
   If npm 11 under Node 24 rewrites it, inspect the diff, and commit it only if it's limited to metadata.
 
-Local toolchain (Sam's machine, not committed):
+Local toolchain (Sam's machine, not committed). Do this **before** editing `.nvmrc`, because the
+Node-version guard blocks every npm script on a 22/24 mismatch:
 `nvm install 24 && nvm use && nvm alias default 24`, then reinstall global CLIs, since nvm keeps them per version:
 `npm install -g netlify-cli`. Also `rm -rf node_modules && npm ci`, because `sharp` and the Astro
 compiler bindings are native/platform packages and must be installed fresh.
@@ -130,7 +158,9 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
 
 1. **Runtime confirmed:** the deploy log shows `Now using node v24.x`, and the Functions tab shows a Node 24
    runtime for the SSR function and both `ics-refresh-*` functions. If the functions still show 22,
-   stop and fix the env override from Phase 0.
+   stop and fix the env override from Phase 0. (If the **build** ran on 22 because of a `NODE_VERSION`
+   override, you won't get this far: the Node-version guard fails the deploy at `prebuild`. A
+   failed preview with the check's "pins Node 24" error means the override is still there.)
 2. **Unauthenticated, read-only:**
    - `curl -sI <preview>/`: 200, security headers present (compare the header set with production).
    - `curl <preview>/api/calendar/health` → `{"ok":true}`
@@ -178,7 +208,7 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
 ## Explicitly out of scope
 
 - No dependency bumps beyond what `npm ci` resolves. No TypeScript 7 in this PR: the pin still
-  stands as of 2026-10-02, and lifting it, if Phase 0 step 5 shows it's safe, is a follow-up PR.
+  stands as of 2026-10-02, and lifting it, if Phase 0 step 6 shows it's safe, is a follow-up PR.
 - No Node 24-only API adoption (e.g. `URLPattern`, native TS stripping) in this PR. That can come
   later, separately.
 - Edge function (Deno) and Notion schema: untouched.
