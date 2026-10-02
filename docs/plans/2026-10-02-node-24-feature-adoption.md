@@ -51,8 +51,9 @@ while production runs Node 22, and after the upgrade, Node 24. A Node 25/26-only
 2. `.github/dependabot.yml`: ignore `@types/node` major versions above 24 (`versions: [">=25"]`), with a
    comment in the style of the TypeScript 7 entry: *the major tracks `.nvmrc`; bump both together*.
 3. CLAUDE.md, under Tech Stack: one line saying `@types/node`'s major must equal `.nvmrc`.
-4. **Client-bundle guard**: add a static check to `tests/best-practices.spec.ts`, or a new
-   `tests/client-bundle-unit.spec.ts`. After `npm run build`, scan `dist/_astro/*.js` and fail if any
+4. **Client-bundle guard**: add a static check to `tests/best-practices.spec.ts` (which runs under
+   the main config, after the `webServer` build). It must **not** be a `*-unit` spec: the unit config
+   (`playwright.unit.config.ts`) never builds, so `dist/` would be missing or stale there. After `npm run build`, scan `dist/_astro/*.js` and fail if any
    file references a server-only global from a denylist: `URLPattern`, `RegExp.escape`,
    `process.permission`, `Error.isError`. This follows the precedent of the
    `grep -r "astro:transitions/client" dist/` rule. It's a cheap, string-level check that catches
@@ -95,7 +96,8 @@ which returns null on invalid input. This one dates from Node 22.1, but it's the
   patterns `/nyc*` to keep the prefix semantics. That's a one-character change, so decide in review.
 
 **Verify:**
-- New `tests/route-patterns-unit.spec.ts`: an equivalence table running **old logic vs new** over a
+- New `tests/route-patterns-unit.spec.ts`, **added to `UNIT_SPECS` in `tests/unit-specs.ts`** (otherwise
+  CI's unit job never runs it, and the e2e job skips it too): an equivalence table running **old logic vs new** over a
   corpus. Include every real route from `src/pages/`, trailing slashes, `/nyc/../api/logout`, encoded
   segments (`/nyc%2Ftravel`), case variants (`/NYC`, which stays case-sensitive like `startsWith`), and
   `/nycfoo`. The test fails on any difference except the documented `/nycfoo` row.

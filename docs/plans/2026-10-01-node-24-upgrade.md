@@ -36,7 +36,7 @@ before production.
 | Netlify build | `.nvmrc` (**unless** a `NODE_VERSION` env var is set in the Netlify UI, which wins) | Must check the UI |
 | Netlify Functions (SSR + `ics-refresh-*` scheduled) | Build Node version, **unless** `AWS_LAMBDA_JS_RUNTIME` is set | This is the production runtime, so it's the real risk |
 | Netlify Edge (`login-geo-gate.ts`) | Deno | Unaffected |
-| GitHub Actions | hard-coded `node-version: '22'` in 6 workflows | Must match `.nvmrc`. **Enforced** by `scripts/check-node-version.mjs` (see below) |
+| GitHub Actions | hard-coded `node-version: '22'` in 7 workflows | Must match `.nvmrc`. **Enforced** by `scripts/check-node-version.mjs` (see below) |
 
 ### The Node-version guard changes how this upgrade fails
 
@@ -44,8 +44,8 @@ before production.
 `build`, `typecheck`, `test`, and `test:quick`. It exits non-zero when the running Node's major
 version differs from `.nvmrc`. A SessionStart hook (`.claude/hooks/use-nvmrc-node.sh`) also puts the
 `.nvmrc` Node on PATH for Claude sessions. Every environment that builds this site goes through
-those npm scripts: the CI typecheck job (`npm run typecheck`), every Playwright CI job (the
-`webServer` runs `npm run build`), the Dependabot auto-merge build, Netlify (`npm run build`), and
+those npm scripts: the CI typecheck job (`npm run typecheck`), the unit job (`npm run test:unit`),
+the e2e and performance jobs (the Playwright `webServer` runs `npm run build`), the Dependabot auto-merge build, Netlify (`npm run build`), and
 local dev. So once `.nvmrc` says `24`:
 
 - **CI fails on any workflow still pinned to `node-version: '22'`.** The workflows and `.nvmrc` must
@@ -98,7 +98,8 @@ indirect risk.
 Edits. Keep them to exactly these:
 
 - `.nvmrc`: `22` → `24`
-- `.github/workflows/{accessibility-tests,performance-tests,security-tests,typecheck,sync-contacts,dependabot-automerge}.yml`:
+- `.github/workflows/{unit-tests,e2e-tests,performance-tests,typecheck,repair-test-party,sync-contacts,dependabot-automerge}.yml`
+  (the set as of 2026-10-02; re-list with `grep -ln "node-version" .github/workflows/*` at execution time):
   `node-version: '22'` → `'24'`. A better change is `node-version-file: '.nvmrc'`, so `.nvmrc` really
   is the single source of truth and this edit never has to be repeated. Recommended.
   - **This must land in the same commit as `.nvmrc`.** Otherwise the Node-version guard fails every
@@ -135,7 +136,9 @@ Run in this order and stop at the first failure:
    RSVP API + Notion write-back, calendar/ICS, email payload units, security headers, couple
    randomization, and the `mutating` project last. Compare the pass/skip counts against a Node 22 run of `main`.
    The **skip count must match** too, because a newly skipped Notion-backed suite would hide a regression.
-4. `npm run test:security` explicitly (the CI job that gates security).
+4. `npm run test:unit` and `npm run test:security` explicitly. `test:unit` mirrors CI's fast unit job.
+   `test:security` is no longer its own CI job (CI was split into unit + e2e), but it is still the
+   quickest focused pass over auth, headers, and rate limiting.
 5. Watch server output during the test run for new **runtime deprecation warnings**
    (`DEP0169 url.parse`, `punycode`, etc.). Node 24 turns several into runtime warnings. Note any
    that come from dependencies, and fix any that come from our own code.

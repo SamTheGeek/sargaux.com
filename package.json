@@ -14,6 +14,7 @@
     "typecheck": "astro check",
     "pretest": "node scripts/check-node-version.mjs && bash scripts/ensure-browsers.sh",
     "test": "playwright test",
+    "pretest:unit": "node scripts/check-node-version.mjs",
     "test:unit": "playwright test -c playwright.unit.config.ts",
     "test:ui": "playwright test --ui",
     "pretest:quick": "node scripts/check-node-version.mjs",
