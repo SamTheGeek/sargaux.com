@@ -148,14 +148,21 @@ a:hover {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Extend header background above viewport to cover springy overscroll bleed */
+/* Header fill panel, extending a full viewport above the header's top edge.
+ * It is the "lampshade" fill: src/scripts/elastic-edges.ts slides the header
+ * down over the content when the page is pulled past its top, and this panel
+ * covers everything between the header and the top of the screen. It also
+ * covers a native top bounce wherever the script doesn't run. Same on NYC and
+ * France — the rubber-band never travels a full viewport, so this always
+ * covers it. The extra 1px overlaps the header's top edge so no antialiased
+ * seam opens between the two at a fractional offset mid-animation. */
 .site-header::before {
   content: '';
   position: absolute;
-  top: -25px;
+  top: -100vh;
   left: 0;
   right: 0;
-  height: 25px;
+  height: calc(100vh + 1px);
   background: inherit;
 }
 
