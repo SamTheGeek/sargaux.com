@@ -181,6 +181,9 @@ a:hover {
 ::view-transition-group(rsvp-disc-s){ z-index: 3; }
 ::view-transition-group(nyc-skyline){ z-index: 3; }
 ::view-transition-group(site-header){ z-index: 100; }
+/* iOS edge bars (src/scripts/vt-edges.ts): above all content, below the header. */
+::view-transition-group(vt-edge-top),
+::view-transition-group(vt-edge-bottom) { z-index: 99; }
 /* Header children flatten into top-level VT groups (siblings of site-header),
  * so keep them above the opaque site-header background (z:100). Without this
  * they default to z:auto and hide behind the header panel for the whole
@@ -531,4 +534,29 @@ a:focus-visible {
    (e.g. a strip CTA arrow that yields its spot to the dots). */
 .is-loading .loading-hide {
   display: none;
+}
+
+/* ── iOS view-transition edge bars ──────────────────────────────────────────
+ * Shown only while a page transition runs on iOS (src/scripts/vt-edges.ts).
+ * Each reaches from the edge of the visible area out past the screen edge,
+ * covering the strip under the status bar / floating toolbar that WebKit
+ * leaves out of the transition's root snapshot. The top bar also spans the
+ * header's safe-area padding, which it is sampled from, so the overlap is
+ * invisible. z-index mirrors the VT groups' 99. */
+.vt-edge {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  pointer-events: none;
+}
+
+.vt-edge-top {
+  top: -300px;
+  height: calc(300px + env(safe-area-inset-top));
+}
+
+.vt-edge-bottom {
+  top: min(100%, var(--vt-edge-visible-h, 100%));
+  height: 300px;
 }

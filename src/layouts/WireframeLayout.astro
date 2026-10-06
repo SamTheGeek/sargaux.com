@@ -47,11 +47,15 @@ const lang = Astro.locals.lang ?? 'en';
     <script>
       import '../scripts/transitions';
       import '../scripts/elastic-edges';
+      import '../scripts/vt-edges';
     </script>
     <title>{fullTitle ?? `${title} | Chez Sargaux`}</title>
   </head>
   <body>
     <slot />
+    <!-- iOS view-transition edge bars: see src/scripts/vt-edges.ts -->
+    <div class="vt-edge vt-edge-top" aria-hidden="true" hidden></div>
+    <div class="vt-edge vt-edge-bottom" aria-hidden="true" hidden></div>
   </body>
 </html>
 
