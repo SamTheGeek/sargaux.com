@@ -314,22 +314,56 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
       Header (~56px) + heading + date + venue ≈ 350–400px total fixed content.
       A 40vh spacer gives comfortable breathing room.
     */
-    height: 40vh;
+    height: var(--nyc-spacer-h);
   }
 
   /* ── Skyline — z:3, scrolls over fixed text ── */
+
+  /*
+    The skyline is bottom-anchored in a band, and as the page widens the image
+    outgrows the band and its top rises above it. Two things went wrong with
+    that overflow: on wide, short windows (a 1440×800 laptop) the spire rose
+    under the sticky header, and the overflow relied on overflow-x:clip leaving
+    the y axis visible — the spire is precisely the part that overflowed.
+
+    So the wrap is sized to hold the whole image, and a negative margin pulls
+    it back up over the spacer by the same amount, leaving the layout where the
+    overflow used to put it. The margin is floored so the wrap — and with it
+    the spire — never rises closer than --nyc-skyline-gap to the header; on
+    those wide, short windows the page grows instead.
+
+    --nyc-skyline-img-h mirrors .nyc-skyline-img's rendered height:
+    (100% + 10px bleed) wide at the SVG's 6037×3089 aspect ratio. 100vw stands
+    in for the wrap's width (percent heights resolve against height, not
+    width); a classic scrollbar makes it a few px high, which only leaves a
+    sliver of empty band above the spire.
+  */
+  html[data-event="nyc"] {
+    --nyc-spacer-h: 40vh;
+    --nyc-skyline-band: clamp(220px, 48vh, 520px);
+    --nyc-skyline-img-h: calc((100vw + 10px) * 3089 / 6037);
+    --nyc-skyline-gap: 24px;
+  }
 
   html[data-event="nyc"] .nyc-skyline-wrap {
     position: relative;
     z-index: 3;
     width: 100%;
-    height: clamp(220px, 48vh, 520px);
+    height: max(var(--nyc-skyline-band), var(--nyc-skyline-img-h));
+    margin-top: max(
+      calc(var(--nyc-skyline-gap) - var(--nyc-spacer-h)),
+      min(0px, calc(var(--nyc-skyline-band) - var(--nyc-skyline-img-h)))
+    );
+    /* The wrap's box now extends up into the sky over the fixed hero text;
+       let pointer events (text selection) pass through it to the text. */
+    pointer-events: none;
     /* Clip the image's ±5px horizontal bleed here (see .nyc-skyline-img) so the
        wrap stays exactly viewport-wide and never adds to the document's scroll
        width — an oversized wrap left a 5px horizontally-scrollable strip that
        exposed cream to the right of the full-width moss sections.
-       overflow-x:clip keeps overflow-y visible (unlike hidden/auto), so building
-       tops still overflow upward into the cream sky and sticky isn't broken. */
+       The wrap holds the full image height (above), so nothing needs to
+       overflow vertically; overflow-x:clip (not hidden) still avoids creating
+       a scroll container, which would break position:sticky. */
     overflow-x: clip;
     overflow-y: visible;
   }
@@ -625,13 +659,10 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
       font-size: clamp(36px, 10vw, 64px);
     }
 
-    html[data-event="nyc"] .nyc-spacer {
+    html[data-event="nyc"] {
       /* Taller spacer so skyline starts below the hero text block */
-      height: 50vh;
-    }
-
-    html[data-event="nyc"] .nyc-skyline-wrap {
-      height: clamp(180px, 40vw, 320px);
+      --nyc-spacer-h: 50vh;
+      --nyc-skyline-band: clamp(180px, 40vw, 320px);
     }
 
     html[data-event="nyc"] .nyc-explore-band {

@@ -46,6 +46,7 @@ const lang = Astro.locals.lang ?? 'en';
     <ClientRouter />
     <script>
       import '../scripts/transitions';
+      import '../scripts/elastic-edges';
     </script>
     <title>{fullTitle ?? `${title} | Chez Sargaux`}</title>
   </head>
@@ -73,15 +74,6 @@ const lang = Astro.locals.lang ?? 'en';
     background-color: var(--color-bg);
     color: var(--color-text);
     line-height: var(--line-height-body);
-  }
-
-  /* ── Overscroll protection for NYC ─────────────────────────────────────────
-   * Extend the header's background fill panel further above the viewport edge
-   * so elastic bounce can't expose the fixed disc peeking above the header.
-   * base.css provides 25px globally; NYC pages need more travel. */
-  html[data-event="nyc"] .site-header::before {
-    top: -100px;
-    height: 100px;
   }
 
   /* ── View-transition z-ordering (site-wide) ────────────────────────────────
