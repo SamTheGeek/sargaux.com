@@ -33,30 +33,87 @@ function rubberBand(distance: number, dim: number): number {
   return (1 - 1 / ((distance * 0.55) / dim + 1)) * dim;
 }
 
-const SPRING_BACK = 'transform 450ms cubic-bezier(0.25, 1, 0.5, 1)';
-
 let header: HTMLElement | null = null;
 let atBottomHalf: boolean | null = null;
 
 /* ── Header offset ─────────────────────────────────────────────────────── */
 
 let pull = 0; // raw (un-dampened) pull distance in px
+let springFrame = 0;
 
-function setPull(raw: number, animate = false): void {
-  pull = Math.max(0, raw);
+/** Inverse of rubberBand(): the raw pull that displays as `offset`. */
+function unRubberBand(offset: number, dim: number): number {
+  return offset >= dim ? Infinity : (dim / 0.55) * (1 / (1 - offset / dim) - 1);
+}
+
+/**
+ * Every frame of the header's motion — pull, spring-back and fling bounce —
+ * goes through this one inline-transform write. Safari drops a sticky header
+ * from the screen for the length of a CSS transition (or a Web Animation) on
+ * its transform and paints it again at the end, so the motion is never handed
+ * to the compositor: it is stepped from requestAnimationFrame instead, exactly
+ * like the finger-driven pull that already rendered correctly.
+ */
+function paintOffset(offset: number): void {
   const el = header;
   if (!el) return;
-  el.style.transition = animate ? SPRING_BACK : 'none';
   // Snap to device pixels: at a fractional offset the antialiased seam between
   // the fill panel and the header lets whatever is behind (the NYC disc) bleed
   // through as a hairline.
   const dpr = window.devicePixelRatio || 1;
-  const offset = Math.round(rubberBand(pull, window.innerHeight) * dpr) / dpr;
-  el.style.transform = pull > 0 ? `translateY(${offset}px)` : '';
+  const snapped = Math.round(offset * dpr) / dpr;
+  el.style.transform = snapped > 0 ? `translateY(${snapped}px)` : '';
+}
+
+function cancelSpring(): void {
+  if (springFrame) cancelAnimationFrame(springFrame);
+  springFrame = 0;
+}
+
+function setPull(raw: number): void {
+  cancelSpring();
+  pull = Math.max(0, raw);
+  paintOffset(rubberBand(pull, window.innerHeight));
+}
+
+const easeOutQuart = (t: number) => 1 - (1 - t) ** 4;
+const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+/**
+ * Animate the displayed offset through `stops`, one eased segment per pair.
+ * `pull` tracks the displayed offset each frame, so a new pull that interrupts
+ * the animation picks the header up where it is rather than jumping.
+ */
+function animateOffset(stops: { to: number; ms: number; ease: (t: number) => number }[]): void {
+  cancelSpring();
+  const dim = window.innerHeight;
+  let from = rubberBand(pull, dim);
+  let segment = 0;
+  let segmentStart = performance.now();
+
+  const step = (now: number) => {
+    const stop = stops[segment];
+    // A rAF timestamp is the frame start, which can precede segmentStart.
+    const t = Math.min(1, Math.max(0, (now - segmentStart) / stop.ms));
+    const offset = from + (stop.to - from) * stop.ease(t);
+    pull = unRubberBand(offset, dim);
+    paintOffset(offset);
+    if (t < 1) {
+      springFrame = requestAnimationFrame(step);
+    } else if (++segment < stops.length) {
+      from = stop.to;
+      segmentStart = now;
+      springFrame = requestAnimationFrame(step);
+    } else {
+      pull = 0;
+      springFrame = 0;
+    }
+  };
+  springFrame = requestAnimationFrame(step);
 }
 
 function release(): void {
-  if (pull > 0) setPull(0, true);
+  if (pull > 0) animateOffset([{ to: 0, ms: 450, ease: easeOutQuart }]);
 }
 
 /* ── Edge state: which half of the page are we in? ─────────────────────── */
@@ -132,7 +189,10 @@ function insideScrolledContainer(target: EventTarget | null): boolean {
 
 function onTouchStart(e: TouchEvent): void {
   touchActive = e.touches.length === 1 && !insideScrolledContainer(e.target);
-  anchorY = e.touches[0]?.clientY ?? 0;
+  // Catching the header mid-spring: carry on from where it is. A touch this
+  // module ignores leaves the spring running, or the header would stay down.
+  if (touchActive) cancelSpring();
+  anchorY = (e.touches[0]?.clientY ?? 0) - pull;
 }
 
 function onTouchMove(e: TouchEvent): void {
@@ -206,17 +266,12 @@ function onScroll(): void {
     lastWheel < lastTouchEnd && // trackpad momentum is handled by onWheel
     velocity < -0.3;
 
-  if (flungIntoTop && header) {
-    const depth = Math.round(Math.min(window.innerHeight * 0.12, -velocity * 40));
-    header.style.transition = 'none';
-    header.animate(
-      [
-        { transform: 'translateY(0)', easing: 'cubic-bezier(0.25, 1, 0.5, 1)' },
-        { transform: `translateY(${depth}px)`, offset: 0.3, easing: 'cubic-bezier(0.45, 0, 0.55, 1)' },
-        { transform: 'translateY(0)' },
-      ],
-      { duration: 600 },
-    );
+  if (flungIntoTop) {
+    const depth = Math.min(window.innerHeight * 0.12, -velocity * 40);
+    animateOffset([
+      { to: depth, ms: 180, ease: easeOutQuart },
+      { to: 0, ms: 420, ease: easeInOutSine },
+    ]);
   }
 
   lastScrollY = y;
