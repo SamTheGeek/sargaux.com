@@ -7,24 +7,30 @@
  * overscroll can't do this: it moves the whole document, header and content
  * together. So while the page is in its top half, native overscroll is switched
  * off (`overscroll-behavior-y: none`) and the pull is driven here, from touch
- * drags, trackpad wheel events, and touch flings that hit the top.
+ * drags and touch flings that hit the top.
  *
  * Bottom edge: native bounce, kept. While the page is in its bottom half,
  * overscroll is restored and the canvas (html background, which is what the
  * browser paints in the overscroll area) takes the color at the bottom edge of
  * the page, so the footer appears to extend into the bounce.
  *
- * Only platforms that rubber-band natively (Apple) get any of this, and only
- * browsers that honor overscroll-behavior. Everywhere else — and on pages with
- * no sticky header — the native behavior is left untouched, which is the
- * fallback: the header fill panel still covers a native top bounce.
+ * iPhone and iPad only (touch), and only browsers that honor
+ * overscroll-behavior. Desktop — Mac Safari included — keeps plain native
+ * scrolling: driving the shade from trackpad wheel events meant cancelling
+ * real wheel input and toggling overscroll-behavior mid-scroll, which made the
+ * header behave strangely there. Everywhere this doesn't run, and on pages with
+ * no sticky header, the native behavior is left untouched; the header fill
+ * panel still covers a native top bounce.
  */
 
 export {};
 
-const ELASTIC_PLATFORM = /Macintosh|iPhone|iPad|iPod/.test(navigator.userAgent);
+// iPadOS Safari reports a Mac user agent; touch points tell it apart from a Mac.
+const TOUCH_APPLE =
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 const SUPPORTED =
-  ELASTIC_PLATFORM &&
+  TOUCH_APPLE &&
   typeof CSS !== 'undefined' &&
   CSS.supports('overscroll-behavior-y', 'none');
 
@@ -222,31 +228,6 @@ function onTouchEnd(e: TouchEvent): void {
   release();
 }
 
-/* ── Trackpad: wheel past the top ──────────────────────────────────────── */
-
-let wheelReleaseTimer = 0;
-let lastWheel = 0;
-
-function onWheel(e: WheelEvent): void {
-  lastWheel = performance.now();
-  if (!header || e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-  // Ignore the near-zero tail of a momentum scroll so the shade springs back
-  // promptly, the way a native bounce does, instead of hanging until it ends.
-  if (Math.abs(e.deltaY) < 1) return;
-
-  if (pull > 0 && e.deltaY > 0) {
-    // Pushing back up: retract the shade before the page starts scrolling.
-    setPull(pull - e.deltaY);
-    e.preventDefault();
-  } else if (window.scrollY === 0 && e.deltaY < 0) {
-    setPull(pull - e.deltaY);
-  } else {
-    return;
-  }
-  window.clearTimeout(wheelReleaseTimer);
-  wheelReleaseTimer = window.setTimeout(release, 90);
-}
-
 /* ── Touch fling that hits the top ─────────────────────────────────────── */
 
 let lastScrollY = window.scrollY;
@@ -263,7 +244,6 @@ function onScroll(): void {
     !touchActive &&
     pull === 0 &&
     now - lastTouchEnd < 3000 &&
-    lastWheel < lastTouchEnd && // trackpad momentum is handled by onWheel
     velocity < -0.3;
 
   if (flungIntoTop) {
@@ -293,7 +273,6 @@ if (SUPPORTED) {
   window.addEventListener('touchmove', onTouchMove, { passive: false });
   window.addEventListener('touchend', onTouchEnd, { passive: true });
   window.addEventListener('touchcancel', onTouchEnd, { passive: true });
-  window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', () => updateEdgeState(true));
   window
@@ -301,9 +280,6 @@ if (SUPPORTED) {
     .addEventListener('change', () => updateEdgeState(true));
 
   // A view transition must never snapshot a half-pulled header.
-  document.addEventListener('astro:before-preparation', () => {
-    window.clearTimeout(wheelReleaseTimer);
-    setPull(0);
-  });
+  document.addEventListener('astro:before-preparation', () => setPull(0));
   document.addEventListener('astro:page-load', bindPage);
 }
