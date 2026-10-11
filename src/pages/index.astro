@@ -327,6 +327,18 @@ const identityExpired = t(strings.home.identity.expired);
         cursor: text;
       }
 
+      /* AutoFill paints the field with the browser's own pale yellow (a UA
+         !important background we can't override), but our cream
+         -webkit-text-fill-color still wins over its text color — leaving
+         cream text on yellow. Switch to dark moss while autofilled, in both
+         color schemes. Specificity (0,2,1) beats the dark-mode rule above and
+         loses to the is-loading rule, which must keep hiding the text. */
+      input.inline-name-input:-webkit-autofill {
+        color: var(--color-dark-moss);
+        -webkit-text-fill-color: var(--color-dark-moss);
+        caret-color: var(--color-dark-moss);
+      }
+
       /*
         Identity picker. `[hidden]` is the source of truth for visibility — the
         display rule is scoped to :not([hidden]) so it can never resurrect a
