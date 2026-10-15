@@ -36,7 +36,10 @@ function loadRegistry() {
 }
 
 function saveRegistry(registry) {
-  mkdirSync(dirname(REGISTRY_PATH), { recursive: true });
+  // Only when missing: a recursive mkdir of an existing directory still needs
+  // write access to it, and generate-invitation-csv's sandbox grants the
+  // registry file alone.
+  if (!existsSync(dirname(REGISTRY_PATH))) mkdirSync(dirname(REGISTRY_PATH), { recursive: true });
   const sorted = Object.fromEntries(Object.entries(registry).sort(([a], [b]) => a.localeCompare(b)));
   writeFileSync(REGISTRY_PATH, JSON.stringify(sorted, null, 2) + '\n', 'utf8');
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=.
 /**
  * Count France wedding invitation households.
  *
@@ -8,12 +8,15 @@
  * 3. Find connected components (= households) via union-find
  * 4. Report household count, size distribution, and outliers
  *
- * Usage: node scripts/count-france-invitations.mjs
+ * Usage: ./scripts/count-france-invitations.mjs
  * Requires: NOTION_API_KEY and NOTION_GUEST_LIST_DB in .env.local
  */
 
 import { readFileSync } from 'fs';
 import { excludeTestGuestPages } from './lib/test-guests.mjs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 // Load .env.local
 const envPath = new URL('../.env.local', import.meta.url).pathname;

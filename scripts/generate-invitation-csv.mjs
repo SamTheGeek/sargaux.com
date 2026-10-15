@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=. --allow-fs-write=./scripts/output --allow-fs-write=./scripts/data/usps-imb-serials.json --allow-child-process
 /**
  * Generate invitation mailing CSV(s) for NYC and/or France.
  *
@@ -30,7 +30,7 @@
  * so re-running this script never changes an already-assigned serial.
  *
  * Usage:
- *   node scripts/generate-invitation-csv.mjs [nyc|france|both]
+ *   ./scripts/generate-invitation-csv.mjs [nyc|france|both]
  *   Defaults to 'both' if no argument given.
  *
  * Output:
@@ -58,6 +58,9 @@ import {
   formatEnvelopeName,
   isPlaceholderPlusOne,
 } from './lib/envelope-csv.mjs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
@@ -275,7 +278,7 @@ const arg = (process.argv[2] || 'both').toLowerCase();
 const events = arg === 'both' ? VALID_EVENTS : [arg];
 
 if (!events.every(e => VALID_EVENTS.includes(e))) {
-  console.error('Usage: node scripts/generate-invitation-csv.mjs [nyc|france|both]');
+  console.error('Usage: ./scripts/generate-invitation-csv.mjs [nyc|france|both]');
   process.exit(1);
 }
 
