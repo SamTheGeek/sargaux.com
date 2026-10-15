@@ -1,4 +1,17 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test, expect } from '@playwright/test';
+
+// Globals that exist in Node 24 but not in every browser guests use. URLPattern,
+// for one, only reached Safari in version 26. Source in src/lib/ is shared
+// between the server and client bundles, and the type environment includes both
+// DOM and Node typings, so `astro check` can't tell when one of these leaks into
+// a browser bundle. This scan of the built output can.
+const SERVER_ONLY_GLOBALS = ['URLPattern', 'RegExp.escape', 'process.permission', 'Error.isError'];
+
+// Client bundles land in dist/_astro under the Netlify adapter and in
+// dist/client/_astro under the node adapter that the Playwright webServer builds with.
+const CLIENT_BUNDLE_DIRS = ['dist/client/_astro', 'dist/_astro'];
 
 test.describe('Best Practices Tests', () => {
   // One page load asserts everything about the logged-out homepage's markup;
@@ -40,5 +53,23 @@ test.describe('Best Practices Tests', () => {
       (imgs) => imgs.filter((el) => !el.hasAttribute('alt')).length
     );
     expect(imagesMissingAlt).toBe(0);
+  });
+});
+
+test.describe('Client bundles', () => {
+  // Runs under the main config only, after the webServer build, so dist/ is
+  // current. Not a unit spec: the unit config never builds.
+  test('no server-only Node 24 globals in browser JavaScript', () => {
+    const dir = CLIENT_BUNDLE_DIRS.find((d) => existsSync(d));
+    expect(dir, 'no built client bundle directory; was the site built?').toBeDefined();
+
+    const files = readdirSync(dir!).filter((f) => f.endsWith('.js'));
+    expect(files.length).toBeGreaterThan(0);
+
+    const leaks = files.flatMap((file) => {
+      const source = readFileSync(join(dir!, file), 'utf8');
+      return SERVER_ONLY_GLOBALS.filter((name) => source.includes(name)).map((name) => `${file}: ${name}`);
+    });
+    expect(leaks).toEqual([]);
   });
 });

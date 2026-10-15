@@ -51,6 +51,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Adapter**: @astrojs/node v11 (standalone mode for local dev/tests); @astrojs/netlify v8 for production
 - **CDN caching**: Astro route caching with `@astrojs/netlify/cache` provider (see Architecture Notes)
 - **Language**: TypeScript **6.x**, strict mode enabled — pinned, see below
+- **Node typings**: `@types/node` is a direct devDependency whose major must equal `.nvmrc`'s. Dependabot ignores newer majors, so bump both together. Server-only Node 24 globals (`URLPattern`, `RegExp.escape`, …) are kept out of browser bundles by a scan in `tests/best-practices.spec.ts`.
 - **CSS**: Astro scoped styles (Tailwind optional for design phase)
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
