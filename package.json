@@ -1,12 +1,12 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
-    "icons": "tsx scripts/generate-icons.ts",
-    "prebuild": "node scripts/check-node-version.mjs && tsx scripts/generate-icons.ts",
+    "icons": "node scripts/generate-icons.ts",
+    "prebuild": "node scripts/check-node-version.mjs && node scripts/generate-icons.ts",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
