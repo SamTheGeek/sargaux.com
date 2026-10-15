@@ -500,7 +500,7 @@ test.describe('Deep-link return after login', () => {
 
     // The form posts multipart/form-data, so pull the field out of the raw body.
     const readField = (body: string, field: string) =>
-      body.match(new RegExp(`name="${field}"\\r?\\n\\r?\\n([^\\r\\n]*)`))?.[1] ?? null;
+      body.match(new RegExp(`name="${RegExp.escape(field)}"\\r?\\n\\r?\\n([^\\r\\n]*)`))?.[1] ?? null;
 
     await page.route('**/api/login', async (route) => {
       postedNext = readField(route.request().postData() ?? '', 'next');
