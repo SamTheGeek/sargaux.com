@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=.
 /**
  * Check USPS tracking status for every assigned IMb barcode (invitations and
  * save-the-dates), via the Informed Visibility Mail Tracking & Reporting
@@ -31,7 +31,7 @@
  * (https://postalpro.usps.com/informedvisibility/APItoolkit).
  *
  * Usage:
- *   node scripts/check-usps-imb-status.mjs [nyc|france|both]
+ *   ./scripts/check-usps-imb-status.mjs [nyc|france|both]
  *   Defaults to 'both' if no argument given.
  *
  * Requires: NOTION_API_KEY, NOTION_GUEST_LIST_DB, USPS_BCG_USERNAME,
@@ -43,6 +43,9 @@ import { mailpieceKey, lookupSerial, formatSerial } from './lib/usps-serial-regi
 import { USPS_MAILER_ID, USPS_SERVICE_TYPE, USPS_SERIAL_DIGITS, MAIL_PIECES } from './lib/usps-mailer-config.mjs';
 import { authenticate, getBarcodesByMidSerial, getPieceByImb } from './lib/usps-iv-mtr.mjs';
 import { excludeTestGuestPages } from './lib/test-guests.mjs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
@@ -242,7 +245,7 @@ const arg = (process.argv[2] || 'both').toLowerCase();
 const events = arg === 'both' ? VALID_EVENTS : [arg];
 
 if (!events.every(e => VALID_EVENTS.includes(e))) {
-  console.error('Usage: node scripts/check-usps-imb-status.mjs [nyc|france|both]');
+  console.error('Usage: ./scripts/check-usps-imb-status.mjs [nyc|france|both]');
   process.exit(1);
 }
 

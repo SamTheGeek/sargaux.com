@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=. --allow-fs-write=./scripts/output
 /**
  * Generate a manifest file for retroactively registering existing mailpieces
  * in USPS Informed Visibility (IV-MTR).
@@ -23,12 +23,15 @@
  * - PieceType
  *
  * Usage:
- *   node scripts/generate-iv-mtr-manifest.mjs
+ *   ./scripts/generate-iv-mtr-manifest.mjs
  *
  * Requires: usps-imb-serials.json, invitation-addresses-*.csv files
  */
 
 import { readFileSync, writeFileSync } from 'fs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 // Simple CSV parser
 function parseCSV(csvText) {

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=. --allow-fs-write=./scripts/output --allow-child-process
 /**
  * Generate the France RSVP follow-up workbooks.
  *
@@ -16,7 +16,7 @@
  *   everyone else                  → …-Sargaux-YYYYMMDD.xlsx
  *
  * Usage:
- *   node scripts/generate-rsvp-followup-france.mjs
+ *   ./scripts/generate-rsvp-followup-france.mjs
  *
  * Output:
  *   scripts/output/rsvp-followup-france-{Gross,Ancels,Sargaux}-YYYYMMDD.xlsx
@@ -25,6 +25,9 @@
  */
 
 import { generateFollowUpExport, openOutputFolder } from './lib/rsvp-followup.mjs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 generateFollowUpExport('france')
   .then(() => {

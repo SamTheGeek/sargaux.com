@@ -11,7 +11,7 @@
 // ─── Spreadsheet reading ──────────────────────────────────────────────────────
 
 import { readFileSync } from 'fs';
-import { execFileSync } from 'child_process';
+import { inflateRawSync } from 'node:zlib';
 
 /**
  * Read an invitation spreadsheet into row objects keyed by header.
@@ -32,12 +32,10 @@ export function readTable(path) {
  * exotic (formulas, dates, multiple sheets) is out of scope: export to CSV.
  */
 function parseXLSX(path) {
+  const zip = readFileSync(path);
   const readEntry = (entry) => {
     try {
-      return execFileSync('unzip', ['-p', path, entry], {
-        encoding: 'utf8',
-        maxBuffer: 64 * 1024 * 1024,
-      });
+      return readZipEntry(zip, entry);
     } catch {
       return null;
     }
@@ -61,7 +59,7 @@ function parseXLSX(path) {
 
   const sheetXml = readEntry('xl/worksheets/sheet1.xml');
   if (sheetXml === null) {
-    throw new Error(`Could not read ${path} — is it a valid .xlsx? (needs \`unzip\`)`);
+    throw new Error(`Could not read ${path} — is it a valid .xlsx?`);
   }
 
   const columnIndex = (ref) => {
@@ -99,6 +97,50 @@ function parseXLSX(path) {
   return body.map(cells =>
     Object.fromEntries(headers.map((h, i) => [h.trim(), (cells[i] ?? '').trim()]))
   );
+}
+
+/**
+ * Read one entry out of a zip archive as UTF-8 text, or null if it isn't there.
+ *
+ * In-process rather than shelling out to `unzip`, so scripts running under
+ * Node's permission model don't need --allow-child-process just to read a
+ * spreadsheet. Handles the two methods .xlsx files use (stored and deflate).
+ * No zip64: an invitation list is nowhere near 4 GB.
+ */
+function readZipEntry(zip, name) {
+  // The end-of-central-directory record sits in the last 22 bytes plus an
+  // optional comment of up to 64 KB, so scan backwards for its signature.
+  let eocd = -1;
+  for (let i = zip.length - 22; i >= Math.max(0, zip.length - 22 - 0xffff); i--) {
+    if (zip.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd === -1) throw new Error('not a zip archive');
+
+  const entries = zip.readUInt16LE(eocd + 10);
+  let offset = zip.readUInt32LE(eocd + 16);
+  for (let n = 0; n < entries; n++) {
+    if (zip.readUInt32LE(offset) !== 0x02014b50) throw new Error('corrupt central directory');
+    const method = zip.readUInt16LE(offset + 10);
+    const compressedSize = zip.readUInt32LE(offset + 20);
+    const nameLength = zip.readUInt16LE(offset + 28);
+    const extraLength = zip.readUInt16LE(offset + 30);
+    const commentLength = zip.readUInt16LE(offset + 32);
+    const localHeader = zip.readUInt32LE(offset + 42);
+    const entryName = zip.toString('utf8', offset + 46, offset + 46 + nameLength);
+
+    if (entryName === name) {
+      // The local header repeats the name and has its own extra field, so the
+      // data starts after those, not at the central directory's lengths.
+      const dataStart =
+        localHeader + 30 + zip.readUInt16LE(localHeader + 26) + zip.readUInt16LE(localHeader + 28);
+      const data = zip.subarray(dataStart, dataStart + compressedSize);
+      if (method === 0) return data.toString('utf8');
+      if (method === 8) return inflateRawSync(data).toString('utf8');
+      throw new Error(`unsupported zip compression method ${method}`);
+    }
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return null;
 }
 
 // ─── CSV parsing ──────────────────────────────────────────────────────────────

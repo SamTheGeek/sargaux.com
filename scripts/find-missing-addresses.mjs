@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=. --allow-fs-write=./scripts/output --allow-child-process
 /**
  * Find envelopes (households) with no mailing address on file.
  *
@@ -10,7 +10,7 @@
  * to be filled in.
  *
  * Usage:
- *   node scripts/find-missing-addresses.mjs [group[,group...]]
+ *   ./scripts/find-missing-addresses.mjs [group[,group...]]
  *
  *   [group] — optional, comma-separated, case-insensitive exact match against
  *             the guest's "Group" property (e.g. "Sam Family,Gross Guests").
@@ -26,6 +26,9 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { excludeTestGuestPages } from './lib/test-guests.mjs';
+import { warnIfUnsandboxed } from './lib/permission-guard.mjs';
+
+warnIfUnsandboxed();
 
 // ─── Env ──────────────────────────────────────────────────────────────────────
 
