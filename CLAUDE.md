@@ -459,6 +459,8 @@ All admin endpoints live under `/api/admin/*` and require an
     -H "Authorization: Bearer $(grep '^RESEND_ADMIN_SECRET' .env.local | cut -d= -f2-)"
   ```
 
+- `scripts/verify-rollout.mjs` — a post-deploy smoke check for any runtime or infrastructure rollout: homepage + security headers, calendar health, login 401, the `next`/CDN-variant contract, and `/api/warm`. Read-only unless you pass `--refresh-calendars`, which it refuses for any base except production. `--base <preview URL>` checks a deploy preview against production.
+
 - `POST /api/admin/send-stds` — bulk-send save-the-date emails for one event. Body: `{ "event": "nyc" | "france" }`.
 - `POST /api/admin/send-email` — send a single transactional email (see endpoint source for body shape).
 
