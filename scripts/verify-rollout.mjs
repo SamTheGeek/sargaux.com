@@ -86,6 +86,9 @@ if (args['refresh-calendars'] && !isProduction) {
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
 const adminSecret = process.env.RESEND_ADMIN_SECRET;
 
+// Every request below uses redirect: 'manual', so a redirect fails its status
+// check instead of being followed. A preview that redirected to production would
+// otherwise pass by checking production against itself.
 let failures = 0;
 
 function pass(name, detail = '') {
@@ -142,7 +145,7 @@ await check('homepage + security headers', async () => {
 });
 
 await check('calendar health', async () => {
-  const res = await fetch(`${base}/api/calendar/health`);
+  const res = await fetch(`${base}/api/calendar/health`, { redirect: 'manual' });
   const body = await res.text();
   if (res.status !== 200) return fail('calendar health', `status ${res.status}`);
   if (body.trim() !== '{"ok":true}') return fail('calendar health', `unexpected body ${body.slice(0, 80)}`);
@@ -153,6 +156,7 @@ await check('login rejects an unknown name', async () => {
   const name = `rollout check ${randomBytes(6).toString('hex')}`;
   const res = await fetch(`${base}/api/login`, {
     method: 'POST',
+    redirect: 'manual',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: base },
     body: new URLSearchParams({ name }),
   });
@@ -185,7 +189,10 @@ await check('deep-link homepage keeps its own next', async () => {
 await check('cache warm', async () => {
   if (!adminSecret) return skip('cache warm', 'RESEND_ADMIN_SECRET not in .env.local');
   const started = performance.now();
-  const res = await fetch(`${base}/api/warm`, { headers: { Authorization: `Bearer ${adminSecret}` } });
+  const res = await fetch(`${base}/api/warm`, {
+    headers: { Authorization: `Bearer ${adminSecret}` },
+    redirect: 'manual',
+  });
   const ms = Math.round(performance.now() - started);
   const body = await res.json().catch(() => null);
   if (res.status !== 200 || body?.warmed !== true) {
@@ -201,7 +208,7 @@ if (args['compare-ics']) {
       return fail('calendar feed matches production', 'the calendar URL is not on this site; refusing to fetch it');
     }
     const fetchIcs = async (origin) => {
-      const res = await fetch(`${origin}${path.pathname}${path.search}`);
+      const res = await fetch(`${origin}${path.pathname}${path.search}`, { redirect: 'manual' });
       if (res.status !== 200) throw new Error(`${origin} returned ${res.status}`);
       return (await res.text()).split(/\r?\n/).filter((line) => !line.startsWith('DTSTAMP:'));
     };
@@ -224,6 +231,7 @@ if (args['refresh-calendars']) {
     if (!adminSecret) return fail('refresh calendars', 'RESEND_ADMIN_SECRET not in .env.local');
     const res = await fetch(`${base}/api/admin/refresh-calendars`, {
       method: 'POST',
+      redirect: 'manual',
       // A JSON content type is required even with no body, or Astro's
       // checkOrigin rejects the POST before it reaches the endpoint.
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminSecret}` },
