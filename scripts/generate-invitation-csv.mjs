@@ -1,5 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --permission --allow-fs-read=.
 /**
+ * RETIRED (2026-10-17). Every invitation has been mailed, so this script
+ * refuses to run, and the USPS serial assigner it called throws. It stays in
+ * the repo because it's the reference implementation of household grouping
+ * and envelope formatting that other scripts and src/lib/envelope-name.ts
+ * cite and mirror. scripts/lib/envelope-csv.mjs is the shared code that's still live.
+ *
  * Generate invitation mailing CSV(s) for NYC and/or France.
  *
  * For each event, builds a list of households (connected components via
@@ -30,7 +36,7 @@
  * so re-running this script never changes an already-assigned serial.
  *
  * Usage:
- *   node scripts/generate-invitation-csv.mjs [nyc|france|both]
+ *   ./scripts/generate-invitation-csv.mjs [nyc|france|both]
  *   Defaults to 'both' if no argument given.
  *
  * Output:
@@ -58,6 +64,12 @@ import {
   formatEnvelopeName,
   isPlaceholderPlusOne,
 } from './lib/envelope-csv.mjs';
+
+console.error(
+  'generate-invitation-csv is retired: every invitation has been mailed, and USPS serial ' +
+    'assignment is frozen (see scripts/lib/usps-serial-registry.mjs). Nothing was written.'
+);
+process.exit(1);
 
 /** Split a US postcode ("11238-4002" or "11238") into 5-digit zip + optional plus4. */
 function parseUsZip(postcode) {
@@ -275,7 +287,7 @@ const arg = (process.argv[2] || 'both').toLowerCase();
 const events = arg === 'both' ? VALID_EVENTS : [arg];
 
 if (!events.every(e => VALID_EVENTS.includes(e))) {
-  console.error('Usage: node scripts/generate-invitation-csv.mjs [nyc|france|both]');
+  console.error('Usage: ./scripts/generate-invitation-csv.mjs [nyc|france|both]');
   process.exit(1);
 }
 
