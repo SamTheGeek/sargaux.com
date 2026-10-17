@@ -1,11 +1,18 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createSessionToken } from '../src/lib/auth';
+import { getPrimaryEventRoute } from '../src/lib/event-routing';
 import { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME, TEST_GUEST_PARTNER_NAME } from './fixtures';
 
 // Name variants for normalization tests, derived from the synthetic test
 // guest so no real guest record is exercised by the suite.
 const TEST_GUEST_LOWERCASE = TEST_GUEST_NAME.toLowerCase();
 const TEST_GUEST_WHITESPACE = `  ${TEST_GUEST_NAME.split(' ').join('   ')}  `;
+
+// The 🤖 party is invited to both events, so its default landing page flips
+// from /nyc to /france at the dual-invite cutoff. Ask the app's own rule
+// rather than hard-coding either side; event-routing.spec.ts pins the cutoff
+// itself with explicit dates.
+const DUAL_INVITE_ROUTE = getPrimaryEventRoute(['nyc', 'france']);
 
 test.describe('Authentication', () => {
   test.beforeEach(async ({ context }) => {
@@ -74,12 +81,12 @@ test.describe('Authentication', () => {
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
 
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
     await expect(page.locator('.guest-name')).toContainText(TEST_GUEST_NAME);
 
     // A logged-in guest hitting the homepage is forwarded straight back.
     await page.goto('/');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
   });
 
   test('should submit login when clicking inline arrow button', async ({ page }) => {
@@ -89,7 +96,7 @@ test.describe('Authentication', () => {
     await page.fill('#name', TEST_GUEST_NAME);
     await page.click('#inline-submit');
 
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
   });
 
   test('should show loading state while login is in progress', async ({ page }) => {
@@ -133,7 +140,7 @@ test.describe('Authentication', () => {
     for (const name of [TEST_GUEST_LOWERCASE, TEST_GUEST_WHITESPACE]) {
       const res = await request.post('/api/login', { form: { name } });
       expect(res.status(), name).toBe(200);
-      expect((await res.json()).redirectPath).toBe('/nyc');
+      expect((await res.json()).redirectPath).toBe(DUAL_INVITE_ROUTE);
     }
   });
 
@@ -151,7 +158,7 @@ test.describe('Authentication', () => {
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
 
     await page.click('a[href="/api/logout"]');
     await expect(page).toHaveURL('/');
@@ -189,7 +196,7 @@ test.describe('Authentication', () => {
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.guest).toBe(TEST_GUEST_NAME);
-    expect(response.body.redirectPath).toBe('/nyc');
+    expect(response.body.redirectPath).toBe(DUAL_INVITE_ROUTE);
   });
 
   test('login defaults France-based guests to the French locale', async ({ page, context }) => {
@@ -280,7 +287,7 @@ test.describe('Authentication', () => {
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
 
     // Check the cookie exists
     const cookies = await context.cookies();
@@ -295,7 +302,7 @@ test.describe('Authentication', () => {
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
 
     const cookies = await context.cookies();
     const authCookie = cookies.find(c => c.name === 'sargaux_auth');
@@ -433,7 +440,7 @@ test.describe('Envelope-name login', () => {
     await expect(picker.locator('.identity-option')).toHaveCount(2);
 
     await picker.getByRole('button', { name: PARTNER_NAME }).click();
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
   });
 
   test('"none of these" restores the name field', async ({ page }) => {
@@ -571,7 +578,7 @@ test.describe('Deep-link return after login', () => {
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
 
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
   });
 
   test('an already-authenticated guest hitting /?next= is forwarded too', async ({ page }) => {
@@ -579,7 +586,7 @@ test.describe('Deep-link return after login', () => {
     await page.click('#login-trigger');
     await page.fill('#name', TEST_GUEST_NAME);
     await page.press('#name', 'Enter');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(DUAL_INVITE_ROUTE);
 
     await page.goto('/?next=%2Ffrance%2Flookbook');
     await expect(page).toHaveURL('/france/lookbook');
