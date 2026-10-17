@@ -18,11 +18,18 @@
  *
  * The registry stores only opaque mailpiece-key hashes → serial numbers; it
  * contains no guest names, addresses, or other PII, so it's safe to commit.
+ *
+ * **Frozen (2026-10-17).** The invitations are all mailed and no more pieces
+ * will be, so serial assignment is retired: `createSerialAssigner()` throws,
+ * and nothing in the repo writes the registry any more. It's kept as the
+ * read-only record of the barcodes already in the mail, which
+ * check-usps-imb-status.mjs reads through `lookupSerial()`. The derivation
+ * described above is history; the registry, not a re-derivation, is the
+ * source of truth.
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 const REGISTRY_PATH = new URL('../data/usps-imb-serials.json', import.meta.url).pathname;
 
@@ -33,15 +40,6 @@ function hashKey(householdKey) {
 function loadRegistry() {
   if (!existsSync(REGISTRY_PATH)) return {};
   return JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
-}
-
-function saveRegistry(registry) {
-  // Only when missing: a recursive mkdir of an existing directory still needs
-  // write access to it, and generate-invitation-csv's sandbox grants the
-  // registry file alone.
-  if (!existsSync(dirname(REGISTRY_PATH))) mkdirSync(dirname(REGISTRY_PATH), { recursive: true });
-  const sorted = Object.fromEntries(Object.entries(registry).sort(([a], [b]) => a.localeCompare(b)));
-  writeFileSync(REGISTRY_PATH, JSON.stringify(sorted, null, 2) + '\n', 'utf8');
 }
 
 /**
@@ -71,38 +69,16 @@ export function lookupSerial(key) {
 }
 
 /**
- * Get the previously-assigned serial for every known household key, plus a
- * function to assign new ones — batched so collision resolution for a whole
- * run is computed against a single consistent snapshot of the registry.
- * @param {number} serialDigits  6 or 9 — width of the serial number field
+ * Retired. Assigning a serial wrote a new entry to the registry, and no new
+ * mailpieces will be sent, so this now refuses rather than ever growing or
+ * touching the record of barcodes already in the mail.
+ * @returns {never}
  */
-export function createSerialAssigner(serialDigits) {
-  const serialSpace = 10 ** serialDigits;
-  const registry = loadRegistry();
-  const used = new Set(Object.values(registry));
-  let dirty = false;
-
-  /** @param {string} key  Output of mailpieceKey() */
-  function getOrAssignSerial(key) {
-    const hash = hashKey(key);
-    if (registry[hash] !== undefined) return registry[hash];
-
-    let candidate = parseInt(hash.slice(0, 12), 16) % serialSpace;
-    while (used.has(candidate)) {
-      candidate = (candidate + 1) % serialSpace;
-    }
-
-    registry[hash] = candidate;
-    used.add(candidate);
-    dirty = true;
-    return candidate;
-  }
-
-  function flush() {
-    if (dirty) saveRegistry(registry);
-  }
-
-  return { getOrAssignSerial, flush };
+export function createSerialAssigner() {
+  throw new Error(
+    'USPS serial assignment is retired: every invitation has been mailed, and ' +
+      'scripts/data/usps-imb-serials.json is now a frozen record. Use lookupSerial() to read it.'
+  );
 }
 
 /** Zero-pad a serial number to the given field width. */
