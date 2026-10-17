@@ -1,8 +1,22 @@
 # Node 24 Feature Adoption
 
 **Date written:** 2026-10-02
-**Status:** Planned. **Blocked on** [the Node 22 → 24 upgrade](2026-10-01-node-24-upgrade.md):
-don't start until that upgrade is in production **and** its 7-day watch period has passed cleanly.
+**Status:** Implemented 2026-10-14 as a chain of stacked draft PRs on top of the runtime upgrade:
+`chore/types-node-24` (Items 0 + 4) ← `chore/native-ts-scripts` (Item 2) ← `chore/script-permissions`
+(Item 3) ← `feat/url-pattern-routes` (Item 1). **Merges are still blocked on** [the Node 22 → 24
+upgrade](2026-10-01-node-24-upgrade.md): none merges until that upgrade is in production **and** its
+7-day watch period has passed cleanly.
+
+Deviations from the text below, found during implementation:
+- Item 0: `@types/node` is also nested at 14.x under exceljs's fast-csv. That copy is scoped to
+  those packages, so the check is that the *hoisted* copy is 24.x. `npm install` under npm 11.6
+  churned unrelated `libc`/`@emnapi` lockfile entries, so the lockfile was patched to change only
+  `@types/node` and `undici-types`.
+- Item 3: `check-usps-imb-status` turned out to be read-only (no write grant). `envelope-csv`
+  shelled out to `unzip`; it now reads the zip in-process. The Finder `open` reveal was kept, so the
+  scripts that use it are granted `--allow-child-process`.
+- Item 1: `%2F`-encoded paths (`/nyc%2Ftravel`) join `/nycfoo` in the intended-change class, because
+  Astro decodes with `decodeURI`, which leaves `%2F` encoded, so they route as one literal segment and 404.
 **Version bump:** patch per PR, except PRs confined to `scripts/`, which never bump (per CLAUDE.md).
 
 ## Context
