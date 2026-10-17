@@ -1,5 +1,6 @@
 import { test, expect, type BrowserContext } from '@playwright/test';
 import { createSessionToken, type EventInvitation } from '../src/lib/auth';
+import { getPrimaryEventRoute } from '../src/lib/event-routing';
 
 async function setSessionCookie(
   context: BrowserContext,
@@ -76,10 +77,13 @@ test.describe('Event Access Control', () => {
     expect(cookies.find((c) => c.name === 'sargaux_auth')).toBeUndefined();
   });
 
-  test('homepage redirects dual-invited guests to NYC before October 15, 2026', async ({ page, context }) => {
+  // The date-specific cutoff (NYC through Oct 14, France from Oct 15) is pinned
+  // with explicit dates in event-routing.spec.ts; this checks the homepage
+  // applies that rule to today's date.
+  test('homepage redirects dual-invited guests to their date-based default event', async ({ page, context }) => {
     await setSessionCookie(context, ['nyc', 'france']);
     await page.goto('/');
-    await expect(page).toHaveURL('/nyc');
+    await expect(page).toHaveURL(getPrimaryEventRoute(['nyc', 'france']));
   });
 
   test('dual-invited guest can access both events and sees switcher', async ({ page, context }) => {
