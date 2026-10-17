@@ -2,19 +2,14 @@ import { defineMiddleware } from 'astro:middleware';
 import { getAuthenticatedGuest, AUTH_COOKIE_NAME } from './lib/auth';
 import { getPrimaryEventRoute } from './lib/event-routing';
 import { loginUrlFor } from './lib/return-to';
+import { eventForPath, isProtectedPath } from './lib/route-patterns';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
 import { normalize } from './lib/normalize';
 import { detectLocaleFromAcceptLanguage } from './lib/locale-routing';
 import type { Lang } from './content/strings';
 
-// Routes that require authentication
-const PROTECTED_ROUTES = [
-  '/nyc',
-  '/france',
-  '/couple',
-  '/registry',
-];
+// Routes that require authentication are defined in src/lib/route-patterns.ts.
 
 // Routes that are always public
 const PUBLIC_ROUTES = [
@@ -155,7 +150,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Check if route is protected
-  const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+  const isProtected = isProtectedPath(pathname);
   if (!isProtected) {
     return withCacheVary();
   }
@@ -246,11 +241,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const primaryEventRoute = getPrimaryEventRoute(eventInvitations);
 
   // Event-level route access control
-  if (pathname.startsWith('/nyc') && !invitedToNyc) {
+  const event = eventForPath(pathname);
+  if (event === 'nyc' && !invitedToNyc) {
     return withVary(context.redirect(primaryEventRoute, 302));
   }
 
-  if (pathname.startsWith('/france') && !invitedToFrance) {
+  if (event === 'france' && !invitedToFrance) {
     return withVary(context.redirect(primaryEventRoute, 302));
   }
 

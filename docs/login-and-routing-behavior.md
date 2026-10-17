@@ -148,8 +148,11 @@ Current rule:
   that fails validation, and for a `next` pointing at an event the guest is not
   invited to (silently, since the two guest lists barely overlap and a
   forwarded link for the wrong event is routine).
-- Only `/nyc/*`, `/france/*`, `/couple` and `/registry` are returnable — the
-  same set `PROTECTED_ROUTES` guards.
+- Only `/nyc/*`, `/france/*`, `/couple` and `/registry` are returnable. That's
+  the same set the auth wall guards; both use `isProtectedPath` in
+  `src/lib/route-patterns.ts`. Matching is by path segment: `/nycfoo` is not an
+  NYC route, so a logged-out request for it gets the 404 page rather than a
+  redirect to login.
 - Only the unauthenticated branch attaches `next`. The redirects that *delete*
   the session cookie (descoped guest, name/record mismatch, empty invitations)
   stay on a bare `/`; they are repair paths.
