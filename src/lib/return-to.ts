@@ -1,5 +1,6 @@
 import type { EventInvitation } from './auth';
 import { getPrimaryEventRoute } from './event-routing';
+import { eventForPath, isProtectedPath } from './route-patterns';
 
 /**
  * Query parameter carrying the page an unauthenticated guest originally asked
@@ -18,14 +19,6 @@ import { getPrimaryEventRoute } from './event-routing';
  * cached body ever disagreed with the URL.
  */
 export const RETURN_TO_PARAM = 'next';
-
-/**
- * Mirrors PROTECTED_ROUTES in src/middleware.ts — the only routes a guest can
- * be bounced off, and so the only ones worth returning to. Keeping the list
- * closed (rather than allowing any same-site path) means a stray `next` can't
- * aim login at an API route or a page that never required a session.
- */
-const RETURNABLE_PREFIXES = ['/nyc', '/france', '/couple', '/registry'] as const;
 
 /** Generous enough for any real path + query, short enough to bound abuse. */
 const MAX_RETURN_TO_LENGTH = 512;
@@ -59,21 +52,19 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
   if (!value.startsWith('/') || value.startsWith('//')) return null;
   if (UNSAFE_PATH_CHARS.test(value)) return null;
 
-  let url: URL;
-  try {
-    url = new URL(value, 'http://return-to.invalid');
-  } catch {
-    return null;
-  }
+  const url = URL.parse(value, 'http://return-to.invalid');
+  if (!url) return null;
 
   // `new URL` resolves `..` segments, so this is the post-normalization path —
   // `/nyc/../api/logout` has already collapsed to `/api/logout` and is refused
-  // by the prefix check below rather than sneaking through it.
+  // by the check below rather than sneaking through it.
+  //
+  // Only protected routes are returnable: they're the only pages a guest can be
+  // bounced off, so the only ones worth returning to. Keeping the set closed
+  // (rather than allowing any same-site path) means a stray `next` can't aim
+  // login at an API route or a page that never required a session.
   const { pathname } = url;
-  const isReturnable = RETURNABLE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-  if (!isReturnable) return null;
+  if (!isProtectedPath(pathname)) return null;
 
   return `${pathname}${url.search}`;
 }
@@ -96,12 +87,9 @@ export function resolveLoginDestination(
   const returnTo = sanitizeReturnTo(raw);
 
   if (returnTo) {
-    const path = returnTo.split('?')[0];
-    const allowed = path.startsWith('/nyc')
-      ? eventInvitations.includes('nyc')
-      : path.startsWith('/france')
-        ? eventInvitations.includes('france')
-        : true; // /couple and /registry are open to any authenticated guest
+    const event = eventForPath(returnTo.split('?')[0]);
+    // /couple and /registry belong to no event: open to any authenticated guest
+    const allowed = event === null || eventInvitations.includes(event);
     if (allowed) return returnTo;
   }
 

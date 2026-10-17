@@ -24,6 +24,7 @@ export const UNIT_SPECS = [
   'rate-limit-unit',
   'registry-routing',
   'return-to-unit',
+  'route-patterns-unit',
   'rsvp-attendance-unit',
   'rsvp-split-unit',
 ].map((name) => `${name}.spec.ts`);
