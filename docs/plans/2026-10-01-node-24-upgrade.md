@@ -1,8 +1,8 @@
 # Node.js 22 → 24 Upgrade
 
 **Date written:** 2026-10-01
-**Status:** Planned. Do not start before **2026-10-15** (see Timing).
-**Version bump:** patch (runtime/dependency change, per CLAUDE.md versioning)
+**Status:** In progress. Work started 2026-10-14; merge gated to **2026-10-16 or later** (see Timing).
+**Version bump:** major, 2.0.0 (Sam's call; CLAUDE.md versioning updated to match)
 
 ## Context
 
@@ -22,6 +22,7 @@ before production.
 - **Earliest start: 2026-10-15.** That date is after the NYC wedding (Oct 11), after the daily ICS refresh
   window ends (Oct 13), and on the first day of the dual-invite `/france` routing cutoff. Don't
   combine a runtime change with the routing flip on the same day. Starting Oct 16 or later is cleaner.
+  *Executed:* the branch, local verification and draft PR were done on 2026-10-14; only the merge waits for Oct 16+.
 - **Must be in production by 2027-03-31.** That leaves a month of margin before Node 22 EOL and six
   weeks before the France ICS daily window. Netlify may also stop offering Node 22 for functions
   after EOL.
@@ -218,7 +219,7 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
 
 ## Files that change
 
-`.nvmrc`, the six workflow files in `.github/workflows/`, `CLAUDE.md`, `package.json` (version),
+`.nvmrc`, the seven workflow files in `.github/workflows/`, `CLAUDE.md`, `package.json` (version),
 possibly `package-lock.json` (only if Phase 1 shows a legitimate npm 11 rewrite).
 
 ## Follow-up

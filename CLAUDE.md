@@ -55,8 +55,8 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
-- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. The CI workflows' `node-version` must match it; change them together.
-- **Package Manager**: npm. `package-lock.json` is written by npm 11; the npm bundled with Node 22 (v10) rewrites it on `npm install` (dropping `libc` fields). Don't commit that churn.
+- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. CI reads it too (`node-version-file: '.nvmrc'` in every workflow), so changing `.nvmrc` is the whole upgrade.
+- **Package Manager**: npm. `package-lock.json` is written by npm 11, the version bundled with Node 24.
 
 ### TypeScript must stay on 6.x
 
@@ -86,7 +86,7 @@ netlify login      # Authenticate with Netlify
 gh auth login      # Authenticate with GitHub
 ```
 
-The `.nvmrc` file pins Node.js to the LTS v22.x line. Run `nvm use` to switch to the correct version.
+The `.nvmrc` file pins Node.js to the LTS v24.x line. Run `nvm use` to switch to the correct version.
 
 ## Development Commands
 
@@ -347,7 +347,7 @@ The project version in `package.json` follows semantic versioning with wedding m
 
 - **Patch** (`0.5.x`): Bump on every PR merge
 - **Minor** (`0.x.0`): Bump when a plan/epic is completed (e.g., Notion integration Phase 1 → 0.6.0)
-- **Major**: `1.0` = NYC event launch, `2.0` = France event launch
+- **Major**: `1.0` = NYC event launch, `2.0` = Node 24 runtime upgrade, `3.0` = France event launch
 
 **IMPORTANT**: Always bump the version BEFORE creating the PR:
 
