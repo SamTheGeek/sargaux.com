@@ -17,6 +17,9 @@ Deviations from the text below, found during implementation:
   scripts that use it are granted `--allow-child-process`.
 - Item 1: `%2F`-encoded paths (`/nyc%2Ftravel`) join `/nycfoo` in the intended-change class, because
   Astro decodes with `decodeURI`, which leaves `%2F` encoded, so they route as one literal segment and 404.
+  Sam chose the 404 over `/nyc*` parity, with a custom 404 page whose Home button goes to `/`.
+- Item 3: `generate-invitation-csv` was retired (it refuses to run) and USPS serial assignment frozen,
+  since every invitation has been mailed.
 **Version bump:** patch per PR, except PRs confined to `scripts/`, which never bump (per CLAUDE.md).
 
 ## Context
