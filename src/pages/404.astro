@@ -1,0 +1,56 @@
+---
+import WireframeLayout from '../layouts/WireframeLayout.astro';
+import { strings } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+// The button always goes to `/`, never straight to an event route. The
+// homepage already decides where "home" is: a logged-in guest is sent on to
+// their default event route (resolveLoginDestination → getPrimaryEventRoute),
+// a descoped guest has their cookie cleared, and everyone else gets the login.
+// Linking there keeps one owner for that decision, and the login is never skipped.
+const t = createTranslator(Astro.locals.lang ?? 'en');
+---
+
+<WireframeLayout title={t(strings.notFound.pageTitle)}>
+  <main class="not-found">
+    <p class="not-found-code" aria-hidden="true">404</p>
+    <h1 class="not-found-title">{t(strings.notFound.pageTitle)}</h1>
+    <a href="/" class="btn btn-primary not-found-home">{t(strings.nav.home)}</a>
+  </main>
+</WireframeLayout>
+
+<style>
+  .not-found {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 32px 16px;
+    text-align: center;
+  }
+
+  .not-found-code {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 18vw, 8rem);
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+
+  .not-found-title {
+    margin: 0;
+  }
+
+  /* .btn-primary pairs --color-text with --color-surface-text, and both are
+     cream in dark mode, which hides the label. --color-bg matches
+     --color-surface-text in light mode and is the dark surface in dark mode,
+     so it's correct in both without a media query here (one inside a
+     component's <style> wouldn't apply after a client-side swap). */
+  .not-found-home,
+  .not-found-home:hover {
+    color: var(--color-bg);
+  }
+</style>
