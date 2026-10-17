@@ -165,7 +165,8 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
    stop and fix the env override from Phase 0. (If the **build** ran on 22 because of a `NODE_VERSION`
    override, you won't get this far: the Node-version guard fails the deploy at `prebuild`. A
    failed preview with the check's "pins Node 24" error means the override is still there.)
-2. **Unauthenticated, read-only:**
+2. **Unauthenticated, read-only.** `node scripts/verify-rollout.mjs --base <preview>` runs all of these, plus
+   step 5, and compares the preview's security headers with production's:
    - `curl -sI <preview>/`: 200, security headers present (compare the header set with production).
    - `curl <preview>/api/calendar/health` → `{"ok":true}`
    - `curl -X POST <preview>/api/login -d name=nobody -H "Origin: <preview>"` → 401, same shape as production.
@@ -177,7 +178,7 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
    failures), FAQ, both RSVP forms (pre-filled with his existing answers), both languages, and the
    NYC↔France view transitions. Then log out.
 4. **Calendar feed:** fetch Sam's own `webcal`/`.ics` URL from the preview and diff it against production.
-   It should be identical apart from `DTSTAMP`.
+   It should be identical apart from `DTSTAMP`. To automate: add `--compare-ics <url>` to the script.
 5. **Warm path:** `GET <preview>/api/warm` with the admin bearer (from `.env.local`). It's idempotent
    and rewrites the shared guest-cache blob with the same data. Confirm 200 and timings comparable
    to production.
@@ -192,11 +193,13 @@ preview writes to production data. The 🤖 bots also **cannot log in** on previ
 ## Phase 4 — Production rollout
 
 1. Merge (squash) during a quiet window. Watch the production deploy log for `node v24`.
-2. Within 10 minutes, repeat Phase 3 steps 1–4 and 7 against `https://sargaux.com`.
+2. Within 10 minutes, run `node scripts/verify-rollout.mjs --refresh-calendars` from the repo root. It
+   covers Phase 3 steps 2 and 5 against `https://sargaux.com`, then step 4 below. Check step 1
+   (runtime) and step 7 (function logs) by hand; the script prints that list when it finishes.
 3. Manually dispatch `calendar-health.yml` and `cache-warmup.yml` (`gh workflow run …`). Both should pass.
-4. `POST /api/admin/refresh-calendars` once (per CLAUDE.md), so the stored ICS for every guest is
-   regenerated on Node 24 now, rather than at the next Sunday 03:00 UTC run. Expect
-   `failed: 0` and `total` equal to the pre-upgrade count.
+4. `POST /api/admin/refresh-calendars` once (per CLAUDE.md; the script's `--refresh-calendars` does this),
+   so the stored ICS for every guest is regenerated on Node 24 now, rather than at the next Sunday 03:00
+   UTC run. Expect `failed: 0` and `total` equal to the pre-upgrade count.
 5. **Watch period, 7 days:** check the first scheduled `ics-refresh-weekly` run's logs (Sunday 03:00 UTC),
    check function error rates in Netlify, and check Notion for RSVPs arriving at the normal rate. A sudden
    absence of RSVPs with email addresses is the signature of an MX-lookup regression.
