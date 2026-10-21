@@ -55,7 +55,7 @@ The website source code (HTML, CSS, JavaScript) is licensed under **Creative Com
 - **Backend**: Notion API v2025-09-03 via `@notionhq/client` v5.x
 - **Email**: Resend (transactional)
 - **Hosting**: Netlify
-- **Node.js**: the major version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. CI reads it too (`node-version-file: '.nvmrc'` in every workflow), so changing `.nvmrc` is the whole upgrade.
+- **Node.js**: the exact version pinned in `.nvmrc` — the single source of truth, read by `nvm`, `scripts/setup.sh`, and Netlify's build. CI reads it too (`node-version-file: '.nvmrc'` in every workflow), so changing `.nvmrc` is the whole upgrade. It's pinned to a full `24.x.y` rather than a bare `24` so a Node security release is a one-line PR that's guaranteed to land: a major-only pin lets Netlify and `setup-node` resolve whatever 24.x they have cached. Nothing bumps it automatically (Dependabot has no `.nvmrc` ecosystem), so bump it by hand on each Node security release. `scripts/check-node-version.mjs` and the SessionStart hook still compare the major only. The pin covers the build and CI; Netlify Functions run on AWS Lambda's `nodejs24.x` runtime, whose patch level AWS controls.
 - **Package Manager**: npm. `package-lock.json` is written by npm 11, the version bundled with Node 24.
 
 ### TypeScript must stay on 6.x
@@ -86,7 +86,7 @@ netlify login      # Authenticate with Netlify
 gh auth login      # Authenticate with GitHub
 ```
 
-The `.nvmrc` file pins Node.js to the LTS v24.x line. Run `nvm use` to switch to the correct version.
+The `.nvmrc` file pins an exact Node.js release on the LTS v24.x line. Run `nvm install` (once per bump) and then `nvm use` to switch to it.
 
 ## Development Commands
 
