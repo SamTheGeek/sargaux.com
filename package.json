@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
