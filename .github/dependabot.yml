@@ -26,6 +26,11 @@ updates:
       # Dependabot should still propose it the moment it ships.
       - dependency-name: "typescript"
         versions: ["7.0.x"]
+      # The @types/node major tracks the runtime in .nvmrc; bump both together.
+      # Newer types would let code type-check against Node APIs production
+      # doesn't have (e.g. Uint8Array.fromBase64 is Node 25+).
+      - dependency-name: "@types/node"
+        versions: [">=25"]
     groups:
       astro:
         patterns:
