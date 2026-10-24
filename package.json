@@ -33,10 +33,10 @@
     "resend": "^6.33.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
-    "@netlify/edge-functions": "^4.0.2",
-    "@netlify/functions": "^6.0.2",
+    "@netlify/edge-functions": "^4.0.3",
+    "@netlify/functions": "^6.0.3",
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "axe-core": "^4.14.0",
