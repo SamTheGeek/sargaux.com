@@ -1,12 +1,12 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
-    "icons": "tsx scripts/generate-icons.ts",
-    "prebuild": "node scripts/check-node-version.mjs && tsx scripts/generate-icons.ts",
+    "icons": "node scripts/generate-icons.ts",
+    "prebuild": "node scripts/check-node-version.mjs && node scripts/generate-icons.ts",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
@@ -38,6 +38,7 @@
     "@netlify/edge-functions": "^4.0.2",
     "@netlify/functions": "^6.0.2",
     "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
     "axe-core": "^4.14.0",
     "exceljs": "^4.4.0",
     "node-gyp": "^13.1.0",

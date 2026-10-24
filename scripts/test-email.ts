@@ -1,13 +1,13 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 /**
  * Quick test: sends a sample RSVP confirmation email via Resend.
  *
  * Usage:
  *   RESEND_API_KEY=re_xxx RESEND_FROM_ADDRESS="Sam Gross <sam@mail.sargaux.com>" \
- *     npx tsx scripts/test-email.ts
+ *     node scripts/test-email.ts
  *
  * Or add RESEND_API_KEY to .env.local and run:
- *   npx tsx scripts/test-email.ts
+ *   node scripts/test-email.ts
  */
 
 import { Resend } from 'resend';
@@ -15,7 +15,7 @@ import { Resend } from 'resend';
 const apiKey = process.env.RESEND_API_KEY;
 if (!apiKey) {
   console.error('❌  RESEND_API_KEY is not set. Pass it as an env var:\n');
-  console.error('  RESEND_API_KEY=re_xxx npx tsx scripts/test-email.ts\n');
+  console.error('  RESEND_API_KEY=re_xxx node scripts/test-email.ts\n');
   process.exit(1);
 }
 
