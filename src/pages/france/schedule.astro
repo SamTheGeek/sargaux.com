@@ -1,7 +1,9 @@
 ---
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { generateTokenIfPossible } from '../../lib/calendar';
+import { getGuestParty, getLatestRSVPForParty } from '../../lib/notion';
 import { strings } from '../../content/strings';
+import type { LocalizedString } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
@@ -13,9 +15,36 @@ const guestId = Astro.locals.guestId;
 const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const calendarToken = generateTokenIfPossible(guestId);
+const sch = strings.france.schedule;
+const dc = strings.france.dressCode;
+
+/* The calendar button depends on where the party is with their France RSVP:
+ *   - attending (incl. partial) → subscribe link, no note
+ *   - declined                  → greyed-out button + short note
+ *   - not yet (or unknown)      → button and note both lead to the RSVP form
+ * The page is `no-store`, so this is read live on every request. A Notion
+ * failure falls back to "not yet": sending someone to their RSVP (which
+ * pre-fills whatever they already submitted) is harmless. */
+type RsvpState = 'attending' | 'declined' | 'none';
+let rsvpState: RsvpState = 'none';
+if (guestId) {
+  try {
+    const party = await getGuestParty(guestId);
+    const latest = await getLatestRSVPForParty(
+      party.length > 0 ? party.map((member) => member.id) : [guestId],
+      'france',
+    );
+    if (latest) rsvpState = latest.status === 'Declined' ? 'declined' : 'attending';
+  } catch (error) {
+    console.error('Failed to load France RSVP state for the schedule page:', error);
+  }
+}
+
+const dressCodeLine = (name: LocalizedString) => `${t(dc.label)}${t(dc.sep)}${t(name)}`;
+const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
 ---
 
-<WireframeLayout title={t(strings.france.schedule.pageTitle)} event="france" page="schedule">
+<WireframeLayout title={t(sch.pageTitle)} event="france" page="schedule">
   <header class="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo">{t(strings.global.siteName)}</a>
@@ -25,135 +54,152 @@ const calendarToken = generateTokenIfPossible(guestId);
 
   <main>
     <div class="france-page-content" transition:name="france-schedule-content">
-      <h1>{t(strings.france.schedule.heading)}</h1>
-      <p class="subtitle">{t(strings.france.schedule.subtitle)}</p>
+      <h1>{t(sch.heading)}</h1>
+      <p class="subtitle">{t(sch.subtitle)}</p>
 
-      <CalendarCta
-        event="france"
-        token={calendarToken}
-        label={t(strings.france.schedule.calendarBtn)}
-        note={t(strings.france.schedule.calendarNote)}
-        noteHref="/france/rsvp"
-        unavailableNote={t(strings.france.schedule.calendarNote)}
-      />
+      {rsvpState === 'attending' && calendarToken ? (
+        <CalendarCta event="france" token={calendarToken} label={t(sch.calendarBtn)} showNote={false} />
+      ) : rsvpState === 'declined' ? (
+        <CalendarCta
+          event="france"
+          token={null}
+          label={t(sch.calendarBtn)}
+          unavailableNote={t(sch.calendarDeclinedNote)}
+        />
+      ) : (
+        <CalendarCta
+          event="france"
+          linkHref="/france/rsvp"
+          label={t(sch.calendarBtn)}
+          note={t(sch.calendarNote)}
+          noteHref="/france/rsvp"
+        />
+      )}
 
       <section class="weekend-weather">
-        <h2>{t(strings.france.schedule.weather.heading)}</h2>
-        <p class="weather-value"><strong>{t(strings.france.schedule.weather.value)}</strong></p>
-        <p class="weather-note">{t(strings.france.schedule.weather.note)}</p>
+        <h2>{t(sch.weather.heading)}</h2>
+        <p class="weather-value"><strong>{t(sch.weather.value)}</strong></p>
+        <p class="weather-note">{t(sch.weather.note)}</p>
       </section>
 
       <section class="days">
       <!-- Friday -->
       <div class="day-section">
-        <h2>{t(strings.france.schedule.friday.heading)}</h2>
+        <h2>{t(sch.friday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.friday.checkin.time)}</span>
+            <span class="time">{t(sch.friday.checkin.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.friday.checkin.title)}</h4>
-              <p>{t(strings.france.schedule.friday.checkin.desc)}</p>
+              <h4>{t(sch.friday.checkin.title)}</h4>
+              <p>{t(sch.friday.checkin.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.friday.dinner.time)}</span>
+            <span class="time">{t(sch.friday.dinner.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.friday.dinner.title)}</h4>
-              <p class="location">{t(strings.france.schedule.friday.dinner.location)}</p>
-              <p>{t(strings.france.schedule.friday.dinner.desc)}</p>
+              <h4>{t(sch.friday.dinner.title)}</h4>
+              <p class="location">{t(sch.friday.dinner.location)}</p>
+              <p>{t(sch.friday.dinner.desc)}</p>
+              <div class="event-dresscode">
+                <a class="dresscode-link" href="/france/lookbook#friday">{dressCodeLine(dc.friday)}</a>
+                {paras(sch.friday.dressCode.desc).map((para) => <p class="dresscode-desc">{para}</p>)}
+              </div>
             </div>
           </div>
-        </div>
-        <div class="day-dresscode">
-          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
-          <p class="dresscode-code">{t(strings.france.schedule.friday.dressCode.code)}</p>
-          {t(strings.france.schedule.friday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
-            <p class="dresscode-desc">{para}</p>
-          ))}
         </div>
       </div>
 
       <!-- Saturday -->
       <div class="day-section highlight">
-        <h2>{t(strings.france.schedule.saturday.heading)}</h2>
+        <h2>{t(sch.saturday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.saturday.breakfast.time)}</span>
+            <span class="time time--range">
+              <span>{t(sch.saturday.breakfast.time)}</span>
+              <span class="time-dash">—</span>
+              <span>{t(sch.saturday.breakfast.timeEnd)}</span>
+            </span>
             <div class="event">
-              <h4>{t(strings.france.schedule.saturday.breakfast.title)}</h4>
-              <p>{t(strings.france.schedule.saturday.breakfast.desc)}</p>
+              <h4>{t(sch.saturday.breakfast.title)}</h4>
+              <p>{t(sch.saturday.breakfast.desc)}</p>
             </div>
           </div>
           <div class="timeline-item optional">
-            <span class="time">{t(strings.france.schedule.saturday.excursion.time)}</span>
+            <span class="time">{t(sch.saturday.excursion.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.saturday.excursion.title)}</h4>
-              <p>{t(strings.france.schedule.saturday.excursion.desc)}</p>
+              <h4>{t(sch.saturday.excursion.title)}</h4>
+              <p>{t(sch.saturday.excursion.desc)}</p>
             </div>
           </div>
-          <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.saturday.ceremony.time)}</span>
-            <div class="event">
-              <h4>{t(strings.france.schedule.saturday.ceremony.title)}</h4>
-              <p class="location">{t(strings.france.schedule.saturday.ceremony.location)}</p>
+          <!-- Ceremony → cocktail → reception run continuously, so they share
+               one box with a connecting rule instead of three separate cards. -->
+          <div class="timeline-group" data-testid="saturday-evening">
+            <div class="timeline-step">
+              <span class="time">{t(sch.saturday.ceremony.time)}</span>
+              <div class="event">
+                <h4>{t(sch.saturday.ceremony.title)}</h4>
+                <p class="location">{t(sch.saturday.ceremony.location)}</p>
+              </div>
+            </div>
+            <div class="timeline-step">
+              <span class="time">{t(sch.saturday.cocktail.time)}</span>
+              <div class="event">
+                <h4>{t(sch.saturday.cocktail.title)}</h4>
+                <p class="location">{t(sch.saturday.cocktail.location)}</p>
+              </div>
+            </div>
+            <div class="timeline-step">
+              <span class="time">{t(sch.saturday.reception.time)}</span>
+              <div class="event">
+                <h4>{t(sch.saturday.reception.title)}</h4>
+                <p>{t(sch.saturday.reception.desc)}</p>
+              </div>
+            </div>
+            <div class="event-dresscode event-dresscode--group">
+              <a class="dresscode-link" href="/france/lookbook#saturday">{dressCodeLine(dc.saturday)}</a>
+              {paras(sch.saturday.dressCode.desc).map((para) => <p class="dresscode-desc">{para}</p>)}
+              <p class="hat-callout">{t(dc.hats)}</p>
             </div>
           </div>
-          <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.saturday.cocktail.time)}</span>
-            <div class="event">
-              <h4>{t(strings.france.schedule.saturday.cocktail.title)}</h4>
-              <p class="location">{t(strings.france.schedule.saturday.cocktail.location)}</p>
-            </div>
-          </div>
-          <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.saturday.reception.time)}</span>
-            <div class="event">
-              <h4>{t(strings.france.schedule.saturday.reception.title)}</h4>
-              <p>{t(strings.france.schedule.saturday.reception.desc)}</p>
-            </div>
-          </div>
-        </div>
-        <div class="day-dresscode">
-          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
-          <p class="dresscode-code">{t(strings.france.schedule.saturday.dressCode.code)}</p>
-          {t(strings.france.schedule.saturday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
-            <p class="dresscode-desc">{para}</p>
-          ))}
         </div>
       </div>
 
       <!-- Sunday -->
       <div class="day-section">
-        <h2>{t(strings.france.schedule.sunday.heading)}</h2>
+        <h2>{t(sch.sunday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.sunday.breakfast.time)}</span>
+            <span class="time time--range">
+              <span>{t(sch.sunday.breakfast.time)}</span>
+              <span class="time-dash">—</span>
+              <span>{t(sch.sunday.breakfast.timeEnd)}</span>
+            </span>
             <div class="event">
-              <h4>{t(strings.france.schedule.sunday.breakfast.title)}</h4>
-              <p>{t(strings.france.schedule.sunday.breakfast.desc)}</p>
+              <h4>{t(sch.sunday.breakfast.title)}</h4>
+              <p>{t(sch.sunday.breakfast.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.sunday.brunch.time)}</span>
+            <span class="time time--range">
+              <span>{t(sch.sunday.brunch.time)}</span>
+              <span class="time-dash">—</span>
+              <span>{t(sch.sunday.brunch.timeEnd)}</span>
+            </span>
             <div class="event">
-              <h4>{t(strings.france.schedule.sunday.brunch.title)}</h4>
-              <p class="location">{t(strings.france.schedule.sunday.brunch.location)}</p>
-              <p>{t(strings.france.schedule.sunday.brunch.desc)}</p>
+              <h4>{t(sch.sunday.brunch.title)}</h4>
+              <p class="location">{t(sch.sunday.brunch.location)}</p>
+              <p>{t(sch.sunday.brunch.desc)}</p>
+              <div class="event-dresscode">
+                <span class="dresscode-name">{dressCodeLine(dc.sunday)}</span>
+              </div>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(strings.france.schedule.sunday.venueCloses.time)}</span>
+            <span class="time">{t(sch.sunday.venueCloses.time)}</span>
             <div class="event">
-              <h4>{t(strings.france.schedule.sunday.venueCloses.title)}</h4>
+              <h4>{t(sch.sunday.venueCloses.title)}</h4>
             </div>
           </div>
-        </div>
-        <div class="day-dresscode">
-          <span class="dresscode-label">{t(strings.france.schedule.dressCodeLabel)}</span>
-          <p class="dresscode-code">{t(strings.france.schedule.sunday.dressCode.code)}</p>
-          {t(strings.france.schedule.sunday.dressCode.desc).split('\n\n').filter(Boolean).map((para) => (
-            <p class="dresscode-desc">{para}</p>
-          ))}
         </div>
       </div>
       </section>
@@ -331,40 +377,111 @@ main {
     color: var(--color-text-muted) !important;
   }
 
-  /* Per-day dress code */
-  .day-dresscode {
-    margin-top: 1.25rem;
-    padding: 1.25rem;
-    border-left: 3px solid var(--color-accent);
-    background: var(--color-bg);
+  /* Stacked time range: start / dash / end on their own lines. */
+  .time--range {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
   }
 
-  .dresscode-label {
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  .time-dash {
     color: var(--color-text-muted);
   }
 
-  .dresscode-code {
-    margin: 0.25rem 0 0.5rem 0;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--color-text);
+  /* Ceremony, cocktail hour and reception: one continuous box. Each step's
+   * time sits on a vertical rule with a disc, so the eye reads one evening
+   * rather than three separate appointments. */
+  .timeline-group {
+    border: 2px solid var(--color-text);
+    background: var(--color-bg);
+    padding: 1rem;
   }
 
-  .dresscode-desc {
+  .timeline-step {
+    position: relative;
+    display: flex;
+    gap: 1.5rem;
+    padding: 0 0 1.25rem 1.5rem;
+  }
+
+  .timeline-step::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 0.45rem;
+    bottom: -0.45rem;
+    width: 2px;
+    background: var(--color-accent);
+  }
+
+  /* Last step: no rule running on past its disc. (:last-of-type would match
+   * the dress-code div that follows, so test for a following step.) */
+  .timeline-step:not(:has(+ .timeline-step))::before {
+    bottom: auto;
+    height: 0;
+  }
+
+  .timeline-step::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.3rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+
+  /* Dress code, inside the box of the event it applies to. */
+  .event-dresscode {
+    margin-top: 1rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .event-dresscode--group {
+    margin-top: 0.25rem;
+  }
+
+  .dresscode-link,
+  .dresscode-name {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-h3);
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+  }
+
+  .dresscode-link {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
+
+  .dresscode-link::after {
+    content: ' →';
+    font-family: var(--font-arrow);
+  }
+
+  .dresscode-link:hover {
+    color: var(--color-accent-text);
+  }
+
+  .dresscode-desc,
+  .event .dresscode-desc {
     margin: 0 0 0.5rem 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
     line-height: 1.55;
     color: var(--color-text-muted);
   }
 
-  .dresscode-desc:last-child {
-    margin-bottom: 0;
+  .event-dresscode .hat-callout {
+    margin-top: 0.75rem;
   }
-
 
   @media (max-width: 480px) {
     .stay-info {
@@ -384,6 +501,22 @@ main {
 
     .time {
       min-width: auto;
+    }
+
+    .timeline-step {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .dresscode-link,
+    .dresscode-name {
+      font-size: 1.0625rem;
+    }
+
+    /* Single-column layout: the range reads fine on one line again. */
+    .time--range {
+      flex-direction: row;
+      gap: 0.4em;
     }
   }
 </style>

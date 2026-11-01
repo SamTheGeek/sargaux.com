@@ -70,6 +70,11 @@ html[data-event="france"][data-page="travel"] .travel-sections {
   gap: 1.5rem;
 }
 
+/* #from-paris is a link target; keep it clear of the sticky header. */
+html[data-event="france"][data-page="travel"] #from-paris {
+  scroll-margin-top: 72px;
+}
+
 html[data-event="france"][data-page="travel"] .travel-card {
   border: 1px solid rgba(13, 36, 77, 0.16);
   backdrop-filter: blur(10px);
@@ -127,7 +132,7 @@ html[data-event="france"][data-page="travel"] .travel-card li:last-child {
 }
 
 html[data-event="france"][data-page="travel"] .travel-inline-link {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 html[data-event="france"][data-page="travel"] .travel-btn {

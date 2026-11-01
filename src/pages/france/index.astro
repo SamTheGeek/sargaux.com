@@ -12,6 +12,9 @@ const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
+const dc = strings.france.dressCode;
+const dressCodeLine = (name: typeof dc.friday) => `${t(dc.label)}${t(dc.sep)}${t(name)}`;
+const rsvpFirst = features.france.rsvpFirstInExplore;
 ---
 
 <WireframeLayout title={t(strings.france.pageTitle)} fullTitle="Chez Sargaux | France" description="France Wedding - May 2027" event="france">
@@ -25,6 +28,9 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             <span class="divider">|</span>
             <span class="active event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</span>
           </div>
+        )}
+        {!showEventToggle && (
+          <a href="/france/faq" class="header-faq-link">{t(strings.france.nav.faq.title)}</a>
         )}
         <a href="/france/rsvp" class="btn btn-primary rsvp-btn" transition:name="header-rsvp" data-loading-button>{t(strings.global.rsvpBtn)}<LoadingDots /></a>
       </div>
@@ -59,7 +65,10 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             </div>
             <div class="event-item">
               <span class="event-time">{t(strings.france.weekend.friday.dinner.time)}</span>
-              <span class="event-name">{t(strings.france.weekend.friday.dinner.name)}</span>
+              <span class="event-name">
+                {t(strings.france.weekend.friday.dinner.name)}
+                <a class="event-dresscode" href="/france/lookbook#friday">{dressCodeLine(dc.friday)}</a>
+              </span>
             </div>
           </div>
         </div>
@@ -77,7 +86,11 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             </div>
             <div class="event-item">
               <span class="event-time">{t(strings.france.weekend.saturday.celebration.time)}</span>
-              <span class="event-name">{t(strings.france.weekend.saturday.celebration.name)}</span>
+              <span class="event-name">
+                {t(strings.france.weekend.saturday.celebration.name)}
+                <a class="event-dresscode" href="/france/lookbook#saturday">{dressCodeLine(dc.saturday)}</a>
+                <span class="event-dresscode-note">{t(strings.france.weekend.saturdayHats)}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -127,6 +140,7 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
                 {t(strings.france.where.googleMapLink)}
               </a>
             </div>
+            <a class="details-link details-link--cta" href="/france/travel#from-paris">{t(strings.france.howToGetThere)}</a>
           </div>
         </div>
         <hr class="timetable-rule">
@@ -145,6 +159,13 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
     <div class="band-header">{t(strings.global.explore)}</div>
     <section class="nav-section">
       <nav class="strip-nav page-content" aria-label="Event sections">
+        {rsvpFirst && (
+          <a href="/france/rsvp" class="strip-link strip-link--cta" data-loading-button>
+            <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
+            <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
+            <span class="strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
+          </a>
+        )}
         <a href="/france/schedule" class="strip-link">
           <span class="strip-title">{t(strings.france.nav.schedule.title)}</span>
           <span class="strip-desc">{t(strings.france.nav.schedule.desc)}</span>
@@ -160,9 +181,9 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
           <span class="strip-desc">{t(strings.france.nav.travel.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
-        <a href="/couple" class="strip-link">
-          <span class="strip-title">{t(strings.france.nav.couple.title)}</span>
-          <span class="strip-desc">{t(strings.france.nav.couple.desc)}</span>
+        <a href="/france/faq" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.faq.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.faq.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
         <a href="/france/lookbook" class="strip-link">
@@ -182,16 +203,18 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             <span class="strip-arrow">→</span>
           </a>
         )}
-        <a href="/france/faq" class="strip-link">
-          <span class="strip-title">{t(strings.france.nav.faq.title)}</span>
-          <span class="strip-desc">{t(strings.france.nav.faq.desc)}</span>
+        <a href="/couple" class="strip-link">
+          <span class="strip-title">{t(strings.france.nav.couple.title)}</span>
+          <span class="strip-desc">{t(strings.france.nav.couple.desc)}</span>
           <span class="strip-arrow">→</span>
         </a>
-        <a href="/france/rsvp" class="strip-link strip-link--cta" data-loading-button>
-          <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
-          <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
-          <span class="strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
-        </a>
+        {!rsvpFirst && (
+          <a href="/france/rsvp" class="strip-link strip-link--cta" data-loading-button>
+            <span class="strip-title">{t(strings.france.nav.rsvp.title)}</span>
+            <span class="strip-desc">{t(strings.france.nav.rsvp.desc)}</span>
+            <span class="strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
+          </a>
+        )}
       </nav>
     </section>
     </div>
@@ -289,7 +312,7 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
   }
 
   .programme-row--main .day-label {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
   .day-events {
@@ -325,6 +348,33 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
     font-size: var(--font-size-body);
     min-width: 0;
   }
+
+  /* Dress code under the event it applies to, linking to that day's lookbook. */
+  .event-dresscode {
+    display: block;
+    width: fit-content;
+    margin-top: 4px;
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caption);
+    color: var(--color-accent-text);
+    text-decoration: none;
+  }
+
+  .event-dresscode:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+
+  .event-dresscode-note {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
 
   .timetable-rule {
     border: none;
@@ -407,7 +457,7 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
 
   .details-link--cta {
     margin-top: 4px;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
   /* ── Navigation strip ── */
@@ -433,7 +483,7 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
   }
 
   .strip-link:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
   .strip-title {
@@ -443,9 +493,13 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
     letter-spacing: var(--tracking-heading);
   }
 
+  /* Larger and in the text color so the subline reads at a glance, but kept
+   * in the body face and well under the title's size so it stays secondary. */
   .strip-desc {
-    font-size: var(--font-size-caption);
-    color: var(--color-text-muted);
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text);
+    opacity: 0.8;
     text-align: right;
   }
 
@@ -468,7 +522,7 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
 
   .strip-link--cta .strip-title,
   .strip-link--cta .strip-arrow {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
   /* ── Header nav button — fixed height prevents font-metric jumps between events ── */

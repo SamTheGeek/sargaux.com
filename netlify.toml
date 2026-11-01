@@ -28,6 +28,8 @@
   FEATURE_FRANCE_LOCATION_MAP = "true"
   FEATURE_FRANCE_RSVP_ENABLED = "true"
   FEATURE_FRANCE_STAYING_OVERVIEW = "false"
+  FEATURE_FRANCE_ROOM_TYPES = "false"
+  FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE = "true"
   FEATURE_REGISTRY_ENABLED = "true"
 
 # `netlify dev`: the Astro dev server runs on the project's sacred port 1213
@@ -60,3 +62,5 @@
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
   FEATURE_FRANCE_STAYING_OVERVIEW = "false"
+  FEATURE_FRANCE_ROOM_TYPES = "false"
+  FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE = "true"

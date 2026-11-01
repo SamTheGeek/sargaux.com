@@ -108,6 +108,7 @@
   --color-text: var(--color-dark-moss);
   --color-text-muted: var(--color-espresso);
   --color-accent: var(--color-burnt-amber);
+  --color-accent-text: var(--color-accent); /* overridden by the France theme */
   --color-surface: var(--color-dark-moss);
   --color-surface-text: var(--color-warm-cream);
   --color-border: var(--color-dark-moss);
@@ -174,12 +175,36 @@
 
 [data-event="france"] {
   --color-text: var(--color-prussian-blue);
-  --color-text-muted: rgba(13, 36, 77, 0.58); /* muted prussian blue — replaces dark-moss green */
+  /* Muted prussian blue. 0.72 alpha (≈6:1 on cream); the old 0.58 was 3.96:1
+     and failed WCAG AA for body text. */
+  --color-text-muted: rgba(13, 36, 77, 0.72);
+  /* Orange for text. Burnt amber itself is only 3.4:1 on cream, so text uses
+     a deeper burn (4.7:1); fills, borders and discs keep --color-accent. */
+  --color-accent-text: #c24a10;
   --color-surface: var(--color-prussian-blue);
   --color-border: var(--color-prussian-blue);
 
   --font-display: 'Peignot', 'Georgia', serif;
   --font-body: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
+}
+
+/* France type scale (2026-11-01 readability pass, from guest testing).
+ * Scaling the root font size grows every rem-sized rule on the France pages
+ * in one place; the px tokens are bumped alongside. Desktop gets the larger
+ * step, phones a smaller one. NYC and the shared homepage are untouched. */
+@media (min-width: 769px) {
+  html[data-event="france"] {
+    font-size: 112.5%; /* 1rem = 18px */
+    --font-size-body: 20px;
+    --font-size-caption: 15px;
+    --font-size-h3: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  html[data-event="france"] {
+    font-size: 106.25%; /* 1rem = 17px */
+  }
 }
 
 /* France typography weights per brand spec */
@@ -215,7 +240,11 @@
   [data-event="france"] {
     --color-bg: #0F1A2E;
     --color-text: var(--color-warm-cream);
-    --color-text-muted: #7B8FAA;
+    /* Brighter than the old #7B8FAA, which guests found hard to read
+       (9:1 on the dark bg, 6.6:1 on the dark surface). */
+    --color-text-muted: #A9BCD6;
+    /* Lighter orange for text on navy (6.2:1). */
+    --color-accent-text: #f07a3a;
     --color-surface: #1E3060;
     --color-border: #1A2844;
     --color-info-bg: #0D1E38;

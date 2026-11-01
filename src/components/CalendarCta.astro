@@ -9,6 +9,12 @@ interface Props {
   showNote?: boolean;
   compact?: boolean;
   testId?: string;
+  /**
+   * France only: send the button somewhere other than the calendar feed —
+   * the Weekend page points it at the RSVP form for a guest who hasn't
+   * replied yet. Takes precedence over `token`.
+   */
+  linkHref?: string | null;
 }
 
 const {
@@ -21,6 +27,7 @@ const {
   showNote = true,
   compact = false,
   testId,
+  linkHref = null,
 } = Astro.props;
 
 const isNyc = event === 'nyc';
@@ -52,9 +59,9 @@ const isNyc = event === 'nyc';
   </div>
 ) : (
   <section class:list={['calendar-subscribe', compact && 'calendar-subscribe--compact']}>
-    {token ? (
+    {linkHref || token ? (
       <a
-        href={`webcal://sargaux.com/api/calendar/${token}.ics`}
+        href={linkHref ?? `webcal://sargaux.com/api/calendar/${token}.ics`}
         class:list={['calendar-btn', !showNote && 'calendar-btn--standalone']}
         data-testid={testId}
       >
@@ -68,9 +75,9 @@ const isNyc = event === 'nyc';
     {showNote && (
       <p class="calendar-note">
         {noteHref ? (
-          <a href={noteHref} class="calendar-note-link">{token ? note : unavailableNote}</a>
+          <a href={noteHref} class="calendar-note-link">{linkHref || token ? note : unavailableNote}</a>
         ) : (
-          token ? note : unavailableNote
+          linkHref || token ? note : unavailableNote
         )}
       </p>
     )}
@@ -186,23 +193,31 @@ const isNyc = event === 'nyc';
     opacity: 0.85;
   }
 
+  /* Greyed out, not a pale orange: a guest who declined should read this
+   * as "not for you", in both color schemes. */
   .calendar-btn:disabled {
-    background: color-mix(in srgb, var(--color-accent) 42%, white);
-    color: var(--color-surface-text);
+    background: color-mix(in srgb, var(--color-text) 18%, var(--color-bg));
+    color: color-mix(in srgb, var(--color-text) 60%, var(--color-bg));
     cursor: not-allowed;
     opacity: 1;
   }
 
   .calendar-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-style: italic;
+    font-size: var(--font-size-caption);
+    color: var(--color-text);
     margin: 0;
   }
 
+  /* --color-text, not the accent: orange on the dark-mode navy was illegible. */
   .calendar-note-link {
-    color: var(--color-accent);
+    color: var(--color-text);
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .calendar-note-link:hover {
+    color: var(--color-accent);
   }
 </style>

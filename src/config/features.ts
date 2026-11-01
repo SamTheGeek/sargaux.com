@@ -66,6 +66,8 @@ type FeatureFlags = {
     locationMap: boolean;
     rsvpEnabled: boolean;
     stayingOverview: boolean;
+    roomTypes: boolean;
+    rsvpFirstInExplore: boolean;
   };
   registry: {
     enabled: boolean;
@@ -118,6 +120,11 @@ const features: FeatureFlags = {
     locationMap: flag(import.meta.env.FEATURE_FRANCE_LOCATION_MAP, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_FRANCE_RSVP_ENABLED, false),
     stayingOverview: flag(import.meta.env.FEATURE_FRANCE_STAYING_OVERVIEW, false),
+    // Village page "Room Types" cards. Hidden while room assignments are
+    // handled by the couple after the RSVP deadline.
+    roomTypes: flag(import.meta.env.FEATURE_FRANCE_ROOM_TYPES, false),
+    // France homepage Explore list: RSVP row at the top (true) or the bottom.
+    rsvpFirstInExplore: flag(import.meta.env.FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE, true),
   },
   registry: {
     enabled: flag(import.meta.env.FEATURE_REGISTRY_ENABLED, false),
