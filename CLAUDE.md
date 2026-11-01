@@ -137,6 +137,8 @@ npm run test:install
 
 **Note**: The `npm test` command includes a `pretest` hook that automatically checks for and installs Playwright browsers if they're not already installed, so you don't need to run `test:install` manually in most cases.
 
+**Cloud sessions use nvm too.** The SessionStart hook (`.claude/hooks/use-nvmrc-node.sh`, a symlink into `.agents/hooks/`) loads nvm and runs `nvm use` locally; in cloud sessions (`CLAUDE_CODE_REMOTE=true`), where the image has no nvm and `/opt/node22` first on PATH, it downloads a pinned nvm into `~/.nvm` and runs `nvm install`, so every Bash call runs the exact `.nvmrc` release (~7s on a fresh container). It never installs anything on a local machine — that's `scripts/setup.sh`'s job.
+
 **Cloud sessions (Claude Code on the web) — do NOT run `playwright install`.** These images ship a pre-installed Chromium under `PLAYWRIGHT_BROWSERS_PATH` (`/opt/pw-browsers/chromium`) whose build number often won't match the `@playwright/test` version, so `npm run test:install` fails to download and is unnecessary. `playwright.config.ts` auto-detects that pre-installed browser and points `launchOptions.executablePath` at it (via `resolvePreinstalledChromium()`); the detection is a no-op on local Macs, so the normal managed-browser flow is unaffected there. Just run the tests directly (e.g. `npx playwright test …`).
 
 ## Type Checking
