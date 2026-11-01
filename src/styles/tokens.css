@@ -181,6 +181,9 @@
   /* Orange for text. Burnt amber itself is only 3.4:1 on cream, so text uses
      a deeper burn (4.7:1); fills, borders and discs keep --color-accent. */
   --color-accent-text: #c24a10;
+  /* Fill for orange buttons carrying cream text: cream on burnt amber is
+     3.4:1, on this deeper burn 4.7:1. Same in both color schemes. */
+  --color-accent-fill: #c24a10;
   --color-surface: var(--color-prussian-blue);
   --color-border: var(--color-prussian-blue);
 

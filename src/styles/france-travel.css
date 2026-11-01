@@ -147,9 +147,9 @@ html[data-event="france"][data-page="travel"] .travel-btn {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   text-decoration: none;
-  background: var(--color-accent);
+  background: var(--color-accent-fill);
   color: var(--color-warm-cream);
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-accent-fill);
   transition: opacity 0.15s;
 }
 

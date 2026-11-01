@@ -175,8 +175,10 @@ const isNyc = event === 'nyc';
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     line-height: 1;
-    background: var(--color-accent);
-    color: var(--color-surface-text);
+    /* Deeper orange than --color-accent so the cream label passes AA. Falls
+       back to the accent outside the France theme. */
+    background: var(--color-accent-fill, var(--color-accent));
+    color: var(--color-warm-cream);
     border: none;
     cursor: pointer;
     margin-bottom: 0.5rem;
@@ -188,8 +190,8 @@ const isNyc = event === 'nyc';
   }
 
   .calendar-btn:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: var(--color-surface-text);
+    background: var(--color-accent-fill, var(--color-accent));
+    color: var(--color-warm-cream);
     opacity: 0.85;
   }
 
