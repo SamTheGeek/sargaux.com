@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../../../lib/auth';
 import { features } from '../../../../config/features';
 import { getNycGallery, isPhotoTestFixture } from '../../../../content/nycGalleries';
-import { resolvePhotoUrls, URL_TTL_MS } from '../../../../lib/icloud-photos';
+import { redirectMaxAge, resolvePhotoUrls } from '../../../../lib/icloud-photos';
 
 /**
  * GET /api/photos/{gallery}/{guid}?size=thumb|full
@@ -17,7 +17,9 @@ import { resolvePhotoUrls, URL_TTL_MS } from '../../../../lib/icloud-photos';
  *   that embeds them already ran middleware's live Notion checks.
  * - Not an open proxy: only a GUID in a visible gallery's committed manifest
  *   resolves, and `parseAssetUrls` only accepts Apple-hosted https URLs.
- * - The redirect is browser-cached (private) for less than the URL lifetime.
+ * - Apple's URLs expire ~15 minutes after issue, so the redirect is
+ *   browser-cached only for what is left of that URL's life (minus a margin),
+ *   never longer than 5 minutes.
  */
 export const GET: APIRoute = async ({ params, url, cookies }) => {
   if (!features.nyc.photoGallery) return new Response(null, { status: 404 });
@@ -41,7 +43,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
   }
 
   if (!gallery.albumToken) return new Response(null, { status: 404 });
-  const urls = await resolvePhotoUrls(
+  const { urls, fetchedAt } = await resolvePhotoUrls(
     gallery.albumToken,
     gallery.photos.map((p) => p.guid)
   );
@@ -54,8 +56,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
     status: 302,
     headers: {
       Location: target,
-      // Shorter than our own cache TTL, which is itself well inside Apple's expiry.
-      'Cache-Control': `private, max-age=${Math.floor(URL_TTL_MS / 2000)}`,
+      'Cache-Control': `private, max-age=${redirectMaxAge(fetchedAt)}`,
     },
   });
 };
