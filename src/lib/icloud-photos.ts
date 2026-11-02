@@ -14,7 +14,7 @@
  * 502 for that image, the same fail-soft contract as `src/lib/joy.ts`.
  */
 import { getStore } from '@netlify/blobs';
-import { parseAssetUrls, postStream } from './icloud-stream';
+import { fetchAlbum, urlsByChecksum } from './icloud-stream';
 
 /** How long Apple's signed asset URLs stay valid after issue. */
 export const URL_LIFETIME_MS = 15 * 60 * 1000;
@@ -34,14 +34,32 @@ export interface ResolvedUrls {
   fetchedAt: number;
 }
 
-/** Seconds a browser may cache a redirect to a URL issued at `fetchedAt`. */
-export function redirectMaxAge(fetchedAt: number, now: number = Date.now()): number {
-  const left = fetchedAt + URL_LIFETIME_MS - URL_SAFETY_MS - now;
-  return Math.max(0, Math.min(300, Math.floor(left / 1000)));
+/**
+ * When a signed URL expires (ms since epoch), from its `e=` parameter (unix
+ * seconds), or null when it has none.
+ */
+export function urlExpiry(url: string): number | null {
+  try {
+    const e = Number(new URL(url).searchParams.get('e'));
+    return Number.isFinite(e) && e > 0 ? e * 1000 : null;
+  } catch {
+    return null;
+  }
 }
 
-/** Apple rejects very large `photoGuids` lists; chunk well under that. */
-const GUID_BATCH = 25;
+/**
+ * Seconds a browser may cache a redirect to a URL issued at `fetchedAt`:
+ * never more than 5 minutes, and never past the URL's expiry minus a margin.
+ * The expiry is the URL's own `e=` when present, else issue time + 15 minutes,
+ * whichever is sooner.
+ */
+export function redirectMaxAge(fetchedAt: number, now: number = Date.now(), url?: string): number {
+  const assumed = fetchedAt + URL_LIFETIME_MS;
+  const stated = url ? urlExpiry(url) : null;
+  const expiry = stated === null ? assumed : Math.min(stated, assumed);
+  const left = expiry - URL_SAFETY_MS - now;
+  return Math.max(0, Math.min(300, Math.floor(left / 1000)));
+}
 
 const FETCH_TIMEOUT_MS = 8000;
 const BLOB_STORE = 'photo-urls';
@@ -53,15 +71,13 @@ interface CachedUrls {
 
 const memory = new Map<string, CachedUrls>();
 const inFlight = new Map<string, Promise<ResolvedUrls>>();
-/** The album's partition host, learnt from the first 330 redirect. */
-const hosts = new Map<string, string>();
 
 function fresh(entry: CachedUrls | null | undefined): entry is CachedUrls {
   return Boolean(entry && Date.now() - entry.fetchedAt < CACHE_TTL_MS);
 }
 
 function blobKey(token: string): string {
-  return `v2:${token}`;
+  return `v3:${token}`;
 }
 
 async function readBlob(token: string): Promise<CachedUrls | null> {
@@ -82,32 +98,14 @@ async function writeBlob(token: string, entry: CachedUrls): Promise<void> {
   }
 }
 
-async function fetchUrls(token: string, guids: string[]): Promise<Map<string, string>> {
-  const signal = AbortSignal.timeout(FETCH_TIMEOUT_MS);
-  const batches: string[][] = [];
-  for (let i = 0; i < guids.length; i += GUID_BATCH) batches.push(guids.slice(i, i + GUID_BATCH));
-
-  // Resolve the partition host with the first batch, then run the rest in parallel.
-  const urls = new Map<string, string>();
-  const first = await postStream(fetch, token, 'webasseturls', { photoGuids: batches[0] }, hosts.get(token), signal);
-  hosts.set(token, first.host);
-  for (const [k, v] of parseAssetUrls(first.body)) urls.set(k, v);
-
-  const rest = await Promise.all(
-    batches.slice(1).map((photoGuids) =>
-      postStream(fetch, token, 'webasseturls', { photoGuids }, first.host, signal)
-    )
-  );
-  for (const { body } of rest) for (const [k, v] of parseAssetUrls(body)) urls.set(k, v);
-  return urls;
+async function fetchUrls(token: string): Promise<Map<string, string>> {
+  // One resolve + one query (the album fits in a page) returns every photo's
+  // renditions with freshly signed URLs.
+  return urlsByChecksum(await fetchAlbum(fetch, token, AbortSignal.timeout(FETCH_TIMEOUT_MS)));
 }
 
-/**
- * Checksum → signed URL for every photo in an album. `guids` should be the
- * gallery's full manifest so one call warms every image on the page.
- */
-export async function resolvePhotoUrls(token: string, guids: string[]): Promise<ResolvedUrls> {
-  if (guids.length === 0) return { urls: new Map(), fetchedAt: Date.now() };
+/** Rendition checksum → signed URL for every photo in an album; one fetch warms every image on the page. */
+export async function resolvePhotoUrls(token: string): Promise<ResolvedUrls> {
 
   const cached = memory.get(token);
   if (fresh(cached)) return { urls: new Map(Object.entries(cached.urls)), fetchedAt: cached.fetchedAt };
@@ -124,7 +122,7 @@ export async function resolvePhotoUrls(token: string, guids: string[]): Promise<
     // Stamp before the request: Apple's clock starts when it signs, not when we finish reading.
     const fetchedAt = Date.now();
     try {
-      const urls = await fetchUrls(token, guids);
+      const urls = await fetchUrls(token);
       if (urls.size > 0) {
         const entry: CachedUrls = { fetchedAt, urls: Object.fromEntries(urls) };
         memory.set(token, entry);

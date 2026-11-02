@@ -1,5 +1,7 @@
 /**
- * Pure helpers for Apple's (unofficial) iCloud shared-album web API.
+ * Pure helpers for reading an iCloud Photos shared album through its public
+ * link (`https://photos.icloud.com/shared/album/{token}`). The API is
+ * unofficial — it is what the photos.icloud.com web app itself calls.
  *
  * Shared by `scripts/sync-nyc-photos.ts` (which builds the committed photo
  * manifests) and `src/lib/icloud-photos.ts` (which resolves short-lived image
@@ -7,15 +9,19 @@
  * non-erasable TypeScript syntax, because the sync script runs it under Node's
  * built-in type stripping rather than through Vite.
  *
- * How the API works:
- *   1. POST https://p{NN}-sharedstreams.icloud.com/{token}/sharedstreams/webstream
- *      with `{"streamCtag":null}`. The first host usually answers 330 with the
- *      album's real partition in `X-Apple-MMe-Host`; retry against that host.
- *   2. The response's `photos[]` lists each item's GUID, capture time and
- *      `derivatives` (one entry per rendition size, keyed by size).
- *   3. POST …/webasseturls with `{"photoGuids":[…]}` maps each derivative's
- *      checksum to a signed, expiring URL. Those URLs must never be stored —
- *      the manifest keeps GUIDs and checksums and the URLs are resolved fresh.
+ * How it works (CloudKit, container `com.apple.photos.cloud`):
+ *   1. POST ckdatabasews.icloud.com/…/public/records/resolve with the link's
+ *      token as a short GUID. The answer names the album's zone, its database
+ *      partition host, and an anonymous access token (valid ~20 minutes). The
+ *      answer also carries the album owner's identity — never persist it.
+ *   2. POST {partition}/…/shared/records/query for
+ *      `CPLAssetAndMasterByAssetDateWithoutHiddenOrDeleted` in that zone,
+ *      following `continuationMarker`. Each photo is a `CPLAsset` (capture
+ *      date, a reference to its master) plus a `CPLMaster` (the renditions).
+ *   3. Each rendition carries a signed `downloadURL` on *.icloud-content.com
+ *      that expires ~15 minutes after issue. Those URLs must never be stored —
+ *      the manifest keeps asset ids and rendition checksums, and URLs are
+ *      re-fetched on demand.
  */
 
 export interface PhotoDerivative {
@@ -26,6 +32,7 @@ export interface PhotoDerivative {
 
 /** One photo as committed to `src/content/nycPhotos/{gallery}.json`. */
 export interface ManifestPhoto {
+  /** The CPLAsset record name (a UUID). */
   guid: string;
   /** ISO capture time. Used only to sort the gallery oldest-first; never rendered. */
   takenAt: string;
@@ -35,110 +42,245 @@ export interface ManifestPhoto {
   featured?: boolean;
 }
 
-/** Thumbnails narrower than this look soft in a 3-column grid. */
-export const MIN_THUMB_WIDTH = 400;
+/** A parsed photo plus the signed URLs that came with this particular fetch. */
+export interface ResolvedPhoto extends ManifestPhoto {
+  thumbUrl: string;
+  fullUrl: string;
+}
+
+export interface ShareHandle {
+  /** e.g. https://p121-ckdatabasews.icloud.com */
+  partition: string;
+  accessToken: string;
+  zoneID: { zoneName: string; ownerRecordName: string; zoneType?: string };
+}
 
 /** How many photos the first sync features in a gallery's preview. */
 export const DEFAULT_FEATURED_COUNT = 6;
 
-/** The partition host to try first; a 330 redirects to the album's real one. */
-export function initialHost(token: string): string {
-  // Apple derives the partition from the token, but any partition answers with
-  // a redirect to the right one, so a fixed starting point is sufficient.
-  void token;
-  return 'p23-sharedstreams.icloud.com';
-}
+const RESOLVE_HOST = 'https://ckdatabasews.icloud.com';
+const DB_PATH = '/database/1/com.apple.photos.cloud/production';
+const ASSET_QUERY = 'CPLAssetAndMasterByAssetDateWithoutHiddenOrDeleted';
+const PAGE_SIZE = 500;
+const MAX_PAGES = 20;
 
-export function streamBaseUrl(host: string, token: string): string {
-  return `https://${host}/${encodeURIComponent(token)}/sharedstreams`;
-}
-
-/** Album tokens are short base62-ish strings; reject anything else before it reaches a URL. */
+/** Share-link tokens are short URL-safe strings; reject anything else before it reaches a URL. */
 export function isValidAlbumToken(token: string): boolean {
   return /^[A-Za-z0-9_-]{6,64}$/.test(token);
 }
 
-/** iCloud photo GUIDs are uppercase hex UUIDs, but accept any conservative id shape. */
+/** Asset record names are UUIDs; accept only a conservative id shape. */
 export function isValidPhotoGuid(guid: string): boolean {
   return /^[A-Za-z0-9-]{8,64}$/.test(guid);
 }
 
-interface RawDerivative {
-  checksum?: unknown;
-  width?: unknown;
-  height?: unknown;
+type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
+
+async function postJson(fetchImpl: Fetch, url: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
+  const res = await fetchImpl(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain', Origin: 'https://photos.icloud.com' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok) throw new Error(`iCloud ${new URL(url).pathname.split('/').pop()} returned ${res.status}`);
+  return res.json();
 }
 
-interface RawPhoto {
-  photoGuid?: unknown;
-  dateCreated?: unknown;
-  batchDateCreated?: unknown;
-  mediaAssetType?: unknown;
-  derivatives?: Record<string, RawDerivative | undefined>;
+/** Accepts only a CloudKit partition origin, so a hostile answer can't redirect our queries. */
+export function parseShareHandle(body: unknown): ShareHandle | null {
+  const result = (body as { results?: unknown[] })?.results?.[0] as Record<string, any> | undefined;
+  const access = result?.anonymousPublicAccess;
+  const zoneID = result?.zoneID;
+  if (!access || typeof access.token !== 'string' || typeof access.databasePartition !== 'string') return null;
+  if (!zoneID || typeof zoneID.zoneName !== 'string' || typeof zoneID.ownerRecordName !== 'string') return null;
+  let partition: URL;
+  try {
+    partition = new URL(access.databasePartition);
+  } catch {
+    return null;
+  }
+  if (partition.protocol !== 'https:' || !/^p\d+-ckdatabasews\.icloud\.com$/.test(partition.hostname)) return null;
+  return {
+    partition: `https://${partition.hostname}`,
+    accessToken: access.token,
+    // Copy only the zone fields; the resolve answer also names the owner.
+    zoneID: { zoneName: zoneID.zoneName, ownerRecordName: zoneID.ownerRecordName, zoneType: zoneID.zoneType },
+  };
 }
 
-function toPositiveInt(value: unknown): number | null {
-  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+export async function resolveShare(fetchImpl: Fetch, token: string, signal?: AbortSignal): Promise<ShareHandle> {
+  const qs = new URLSearchParams({ sharing_url_key: token });
+  const body = await postJson(
+    fetchImpl,
+    `${RESOLVE_HOST}${DB_PATH}/public/records/resolve?${qs}`,
+    { shortGUIDs: [{ value: token }] },
+    signal
+  );
+  const handle = parseShareHandle(body);
+  if (!handle) throw new Error('iCloud share did not resolve to a public album');
+  return handle;
+}
+
+/** Every asset and master record in the album, following pagination. */
+export async function queryAlbumRecords(
+  fetchImpl: Fetch,
+  token: string,
+  share: ShareHandle,
+  signal?: AbortSignal
+): Promise<unknown[]> {
+  const qs = new URLSearchParams({
+    remapEnums: 'true',
+    sharing_url_key: token,
+    publicAccessAuthToken: share.accessToken,
+  });
+  const url = `${share.partition}${DB_PATH}/shared/records/query?${qs}`;
+  const records: unknown[] = [];
+  let marker: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const body = (await postJson(
+      fetchImpl,
+      url,
+      {
+        query: {
+          recordType: ASSET_QUERY,
+          filterBy: [
+            { fieldName: 'direction', comparator: 'EQUALS', fieldValue: { value: 'ASCENDING', type: 'STRING' } },
+            { fieldName: 'startRank', comparator: 'EQUALS', fieldValue: { value: 0, type: 'INT64' } },
+          ],
+        },
+        zoneID: share.zoneID,
+        resultsLimit: PAGE_SIZE,
+        ...(marker ? { continuationMarker: marker } : {}),
+      },
+      signal
+    )) as { records?: unknown[]; continuationMarker?: string };
+    const batch = Array.isArray(body.records) ? body.records : [];
+    records.push(...batch);
+    marker = typeof body.continuationMarker === 'string' ? body.continuationMarker : undefined;
+    if (!marker || batch.length === 0) return records;
+  }
+  throw new Error('iCloud album query did not finish paginating');
+}
+
+/** resolve + query: everything needed to build a manifest or a URL map. */
+export async function fetchAlbum(fetchImpl: Fetch, token: string, signal?: AbortSignal): Promise<ResolvedPhoto[]> {
+  const share = await resolveShare(fetchImpl, token, signal);
+  return parseAlbumRecords(await queryAlbumRecords(fetchImpl, token, share, signal));
+}
+
+interface RawRecord {
+  recordName?: unknown;
+  recordType?: unknown;
+  fields?: Record<string, { value?: unknown } | undefined>;
+}
+
+const APPLE_CONTENT_HOST = /(^|\.)icloud-content\.com$/i;
+
+/**
+ * A rendition's signed URL with its `${f}` filename placeholder filled in.
+ * Only https URLs on *.icloud-content.com pass, so a malformed or hostile
+ * response can't turn the photo endpoint into an open redirect.
+ */
+export function buildAssetUrl(downloadURL: unknown, filename = 'photo.jpg'): string | null {
+  if (typeof downloadURL !== 'string') return null;
+  try {
+    const url = new URL(downloadURL.replace('${f}', encodeURIComponent(filename)));
+    if (url.protocol !== 'https:' || !APPLE_CONTENT_HOST.test(url.hostname)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function num(field: { value?: unknown } | undefined): number | null {
+  const n = Number(field?.value);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }
 
-function parseDerivatives(raw: RawPhoto['derivatives']): PhotoDerivative[] {
-  if (!raw || typeof raw !== 'object') return [];
-  const out: PhotoDerivative[] = [];
-  for (const [key, d] of Object.entries(raw)) {
-    // Videos carry `PosterFrame` and HLS renditions alongside stills; only
-    // numerically-keyed sizes are plain image renditions.
-    if (!/^\d+$/.test(key) || !d) continue;
-    const width = toPositiveInt(d.width);
-    const height = toPositiveInt(d.height);
-    if (typeof d.checksum !== 'string' || !d.checksum || !width || !height) continue;
-    out.push({ checksum: d.checksum, width, height });
+/** One rendition (`resJPEGThumb`, `resJPEGMed`, …) of a record, with its signed URL. */
+function rendition(
+  fields: RawRecord['fields'],
+  prefix: string
+): (PhotoDerivative & { url: string }) | null {
+  if (!fields) return null;
+  const res = fields[`${prefix}Res`]?.value as { fileChecksum?: unknown; downloadURL?: unknown } | undefined;
+  const width = num(fields[`${prefix}Width`]);
+  const height = num(fields[`${prefix}Height`]);
+  const url = buildAssetUrl(res?.downloadURL);
+  if (!res || typeof res.fileChecksum !== 'string' || !width || !height || !url) return null;
+  return { checksum: res.fileChecksum, width, height, url };
+}
+
+function strip({ url: _url, ...d }: PhotoDerivative & { url: string }): PhotoDerivative {
+  void _url;
+  return d;
+}
+
+/**
+ * Pairs each CPLAsset with its CPLMaster and returns the photos oldest-first.
+ * The grid uses the ~500px `resJPEGThumb`; the lightbox uses the ~2000px
+ * `resJPEGMed` (the original can be several MB). An edited photo carries its
+ * rendered edit on the asset record, which wins over the master's renditions.
+ * Videos and anything without both JPEG renditions are skipped. Nothing
+ * caption- or filename-like is copied — the repo is public.
+ */
+export function parseAlbumRecords(records: unknown[]): ResolvedPhoto[] {
+  const masters = new Map<string, RawRecord>();
+  const assets: RawRecord[] = [];
+  for (const raw of records as RawRecord[]) {
+    if (!raw || typeof raw.recordName !== 'string') continue;
+    if (raw.recordType === 'CPLMaster') masters.set(raw.recordName, raw);
+    else if (raw.recordType === 'CPLAsset') assets.push(raw);
   }
-  return out;
-}
 
-/**
- * Picks the grid thumbnail and the lightbox rendition from a photo's sizes:
- * the smallest rendition at least MIN_THUMB_WIDTH wide (falling back to the
- * largest when none is) and the largest overall.
- */
-export function pickDerivatives(
-  derivatives: PhotoDerivative[]
-): { thumb: PhotoDerivative; full: PhotoDerivative } | null {
-  if (derivatives.length === 0) return null;
-  const bySize = [...derivatives].sort((a, b) => a.width * a.height - b.width * b.height);
-  const full = bySize[bySize.length - 1];
-  const thumb = bySize.find((d) => d.width >= MIN_THUMB_WIDTH) ?? full;
-  return { thumb, full };
-}
+  const out: ResolvedPhoto[] = [];
+  const seen = new Set<string>();
+  for (const asset of assets) {
+    const guid = asset.recordName as string;
+    if (!isValidPhotoGuid(guid) || seen.has(guid)) continue;
+    const masterName = (asset.fields?.masterRef?.value as { recordName?: unknown } | undefined)?.recordName;
+    const master = typeof masterName === 'string' ? masters.get(masterName) : undefined;
+    if (!master) continue;
+    const itemType = String(master.fields?.itemType?.value ?? '');
+    if (/movie|video|mpeg/i.test(itemType)) continue;
 
-function toIsoDate(value: unknown): string | null {
-  if (typeof value !== 'string' || !value) return null;
-  const ms = Date.parse(value);
-  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
-}
+    const thumb = rendition(asset.fields, 'resJPEGThumb') ?? rendition(master.fields, 'resJPEGThumb');
+    const full =
+      rendition(asset.fields, 'resJPEGFull') ??
+      rendition(asset.fields, 'resJPEGMed') ??
+      rendition(master.fields, 'resJPEGMed');
+    if (!thumb || !full) continue;
 
-/**
- * Turns a webstream response into manifest entries, sorted oldest-first.
- * Videos and items without a usable still are skipped. Nothing caption-like
- * is copied — the repo is public and captions could name guests.
- */
-export function parseWebstream(body: unknown): ManifestPhoto[] {
-  const photos = (body as { photos?: unknown })?.photos;
-  if (!Array.isArray(photos)) return [];
-  const out: ManifestPhoto[] = [];
-  for (const raw of photos as RawPhoto[]) {
-    if (!raw || typeof raw !== 'object') continue;
-    if (raw.mediaAssetType === 'video') continue;
-    const guid = typeof raw.photoGuid === 'string' ? raw.photoGuid : '';
-    if (!isValidPhotoGuid(guid)) continue;
-    const picked = pickDerivatives(parseDerivatives(raw.derivatives));
-    if (!picked) continue;
-    const takenAt = toIsoDate(raw.dateCreated) ?? toIsoDate(raw.batchDateCreated);
-    if (!takenAt) continue;
-    out.push({ guid, takenAt, ...picked });
+    const ms = Number(asset.fields?.assetDate?.value ?? master.fields?.originalCreationDate?.value);
+    if (!Number.isFinite(ms)) continue;
+
+    seen.add(guid);
+    out.push({
+      guid,
+      takenAt: new Date(ms).toISOString(),
+      thumb: strip(thumb),
+      full: strip(full),
+      thumbUrl: thumb.url,
+      fullUrl: full.url,
+    });
   }
   return sortChronologically(out);
+}
+
+/** Manifest entries (no URLs) from a fetch. */
+export function toManifest(photos: ResolvedPhoto[]): ManifestPhoto[] {
+  return photos.map(({ guid, takenAt, thumb, full }) => ({ guid, takenAt, thumb, full }));
+}
+
+/** rendition checksum → signed URL, for the photo endpoint. */
+export function urlsByChecksum(photos: ResolvedPhoto[]): Map<string, string> {
+  const urls = new Map<string, string>();
+  for (const p of photos) {
+    urls.set(p.thumb.checksum, p.thumbUrl);
+    urls.set(p.full.checksum, p.fullUrl);
+  }
+  return urls;
 }
 
 /** Oldest first; GUID breaks ties so reruns produce a stable order. */
@@ -180,79 +322,4 @@ export function applyFeatured(
   return next.map(({ guid, takenAt, thumb, full }) =>
     chosen.has(guid) ? { guid, takenAt, thumb, full, featured: true } : { guid, takenAt, thumb, full }
   );
-}
-
-/**
- * Parses a webasseturls response into checksum → absolute URL.
- * Only https URLs on an Apple-controlled host are accepted, so a malformed or
- * hostile response can't turn the photo endpoint into an open redirect.
- */
-export function parseAssetUrls(body: unknown): Map<string, string> {
-  const items = (body as { items?: unknown })?.items;
-  const out = new Map<string, string>();
-  if (!items || typeof items !== 'object') return out;
-  for (const [checksum, item] of Object.entries(items as Record<string, unknown>)) {
-    const loc = (item as { url_location?: unknown })?.url_location;
-    const path = (item as { url_path?: unknown })?.url_path;
-    if (typeof loc !== 'string' || typeof path !== 'string') continue;
-    const url = buildAssetUrl(loc, path);
-    if (url) out.set(checksum, url);
-  }
-  return out;
-}
-
-const APPLE_HOST = /(^|\.)(icloud-content\.com|icloud\.com|apple\.com)$/i;
-
-export function buildAssetUrl(location: string, path: string): string | null {
-  if (!path.startsWith('/')) return null;
-  try {
-    const url = new URL(`https://${location}${path}`);
-    if (url.protocol !== 'https:' || !APPLE_HOST.test(url.hostname)) return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-/** Reads the redirect host from a 330 response, if it names a sharedstreams host. */
-export function redirectHost(status: number, headerValue: string | null): string | null {
-  if (status !== 330 || !headerValue) return null;
-  const host = headerValue.trim().toLowerCase();
-  return /^p\d+-sharedstreams\.icloud\.com$/.test(host) ? host : null;
-}
-
-type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
-
-/**
- * POSTs to a sharedstreams endpoint, following the one-time 330 partition
- * redirect. Returns the parsed body plus the host that answered (worth caching
- * so later calls skip the redirect).
- */
-export async function postStream(
-  fetchImpl: Fetch,
-  token: string,
-  endpoint: 'webstream' | 'webasseturls',
-  payload: unknown,
-  host: string = initialHost(token),
-  signal?: AbortSignal
-): Promise<{ body: unknown; host: string }> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetchImpl(`${streamBaseUrl(host, token)}/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      redirect: 'manual',
-      signal,
-    });
-    const next = redirectHost(res.status, res.headers.get('X-Apple-MMe-Host'));
-    if (next) {
-      // Body of a 330 is a tiny JSON blob naming the same host; discard it.
-      await res.body?.cancel();
-      host = next;
-      continue;
-    }
-    if (!res.ok) throw new Error(`iCloud ${endpoint} returned ${res.status}`);
-    return { body: await res.json(), host };
-  }
-  throw new Error(`iCloud ${endpoint} redirected more than once`);
 }

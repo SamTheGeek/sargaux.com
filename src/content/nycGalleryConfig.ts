@@ -15,7 +15,7 @@ export type NycGalleryId = 'preparation' | 'event' | 'afterparty';
 
 export interface NycGalleryConfig {
   id: NycGalleryId;
-  /** The token from the album's public share link (icloud.com/sharedalbum/#TOKEN). */
+  /** The token from the album's public link (photos.icloud.com/shared/album/TOKEN). */
   albumToken: string | null;
 }
 
