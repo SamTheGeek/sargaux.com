@@ -21,6 +21,7 @@ export const UNIT_SPECS = [
   'locale-routing',
   'login-geo-unit',
   'notion-rsvp',
+  'nyc-photos-unit',
   'rate-limit-unit',
   'registry-routing',
   'return-to-unit',

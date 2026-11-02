@@ -153,6 +153,10 @@ export default defineConfig({
       FEATURE_FRANCE_RSVP_ENABLED:
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',
       FEATURE_REGISTRY_ENABLED: process.env.FEATURE_REGISTRY_ENABLED ?? 'true',
+      FEATURE_NYC_PHOTO_GALLERY: process.env.FEATURE_NYC_PHOTO_GALLERY ?? 'true',
+      // Fixture photo gallery + placeholder images, so the gallery tests don't
+      // depend on iCloud or on what the committed manifests currently hold.
+      PHOTOS_TEST_FIXTURE: 'true',
     },
   },
 });
