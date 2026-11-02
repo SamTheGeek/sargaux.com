@@ -56,6 +56,8 @@ type FeatureFlags = {
     sevilleSoldOut: boolean;
     rsvpEnabled: boolean;
     rsvpPreview: boolean;
+    /** Photo galleries on /nyc and /nyc/photos/[gallery]. Off in production; on in dev and deploy previews. */
+    photoGallery: boolean;
   };
   france: {
     calendarSubscribe: boolean;
@@ -108,6 +110,7 @@ const features: FeatureFlags = {
     sevilleSoldOut: flag(import.meta.env.FEATURE_NYC_SEVILLE_SOLD_OUT, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_NYC_RSVP_ENABLED, false),
     rsvpPreview: flag(import.meta.env.FEATURE_NYC_RSVP_PREVIEW, false),
+    photoGallery: flag(import.meta.env.FEATURE_NYC_PHOTO_GALLERY, false) || import.meta.env.DEV,
   },
   france: {
     calendarSubscribe: flag(import.meta.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE, false),

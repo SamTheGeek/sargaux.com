@@ -1,0 +1,540 @@
+---
+/**
+ * Full-screen photo viewer for PhotoGallery, ported from samthegeek.net's
+ * Lightbox.astro. Kept: the zoom-from-thumbnail open/close animation, showing
+ * the cached thumbnail at once and upgrading to the full rendition, scroll
+ * lock, Esc / backdrop close, and the `?photo=` deep link. Dropped: the EXIF,
+ * map and info panel. Added: previous/next (buttons, ←/→, swipe) within the
+ * clicked photo's gallery, and dialog focus handling.
+ *
+ * Render once per page that shows a PhotoGallery. Clicks are delegated from
+ * `.photo-gallery-item` links, so a gallery works as plain links without JS.
+ */
+import { strings, type Lang } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const t = createTranslator(Astro.props.lang);
+---
+
+<div id="photo-lightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label={t(strings.nyc.photos.band)}>
+  <div class="photo-lightbox-content">
+    <img id="photo-lightbox-image" class="photo-lightbox-image" alt="" />
+  </div>
+  <button class="photo-lightbox-btn photo-lightbox-close" type="button" aria-label={t(strings.nyc.photos.close)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19" /></svg>
+  </button>
+  <button class="photo-lightbox-btn photo-lightbox-prev" type="button" aria-label={t(strings.nyc.photos.previous)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+  </button>
+  <button class="photo-lightbox-btn photo-lightbox-next" type="button" aria-label={t(strings.nyc.photos.next)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+  </button>
+</div>
+
+<script>
+  interface Dimensions {
+    width: number;
+    height: number;
+  }
+
+  const ZOOM_MS = 400;
+  const SWIPE_PX = 50;
+
+  // Per-page element references, refreshed on every `astro:page-load`.
+  let lightbox: HTMLElement | null = null;
+  let lightboxImage: HTMLImageElement | null = null;
+  let content: HTMLElement | null = null;
+
+  let activeItem: HTMLAnchorElement | null = null;
+  let loadToken = 0;
+  let isClosing = false;
+  let closeTimeout: number | undefined;
+  let bodyPaddingRight = '';
+  let touchStartX: number | null = null;
+
+  function bind() {
+    lightbox = document.getElementById('photo-lightbox');
+    lightboxImage = document.querySelector<HTMLImageElement>('#photo-lightbox-image');
+    content = lightbox?.querySelector<HTMLElement>('.photo-lightbox-content') ?? null;
+    activeItem = null;
+    isClosing = false;
+    if (!lightbox || lightbox.dataset.lightboxInit === 'true') return;
+    lightbox.dataset.lightboxInit = 'true';
+
+    lightbox.querySelector('.photo-lightbox-close')?.addEventListener('click', () => closeLightbox());
+    lightbox.querySelector('.photo-lightbox-prev')?.addEventListener('click', () => step(-1));
+    lightbox.querySelector('.photo-lightbox-next')?.addEventListener('click', () => step(1));
+    lightbox.addEventListener('click', (e) => {
+      const target = e.target as Node;
+      if (lightboxImage?.contains(target)) return;
+      if ((target as Element).closest?.('.photo-lightbox-btn')) return;
+      closeLightbox();
+    });
+    lightbox.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches.length === 1 ? e.touches[0].clientX : null;
+    }, { passive: true });
+    lightbox.addEventListener('touchend', (e) => {
+      if (touchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      touchStartX = null;
+      if (Math.abs(dx) >= SWIPE_PX) step(dx < 0 ? 1 : -1);
+    });
+
+    openFromUrlParam();
+  }
+
+  function isOpen() {
+    return Boolean(lightbox?.classList.contains('active'));
+  }
+
+  function itemsFor(item: HTMLAnchorElement): HTMLAnchorElement[] {
+    const grid = item.closest('[data-photo-gallery]');
+    return grid ? Array.from(grid.querySelectorAll<HTMLAnchorElement>('.photo-gallery-item')) : [item];
+  }
+
+  function thumbOf(item: HTMLAnchorElement | null) {
+    return item?.querySelector<HTMLImageElement>('img') ?? null;
+  }
+
+  function fullDimensions(item: HTMLAnchorElement): Dimensions | null {
+    const width = Number(item.dataset.fullWidth);
+    const height = Number(item.dataset.fullHeight);
+    return width && height ? { width, height } : null;
+  }
+
+  // ── Open / close ────────────────────────────────────────────
+
+  function openLightbox(item: HTMLAnchorElement) {
+    if (!lightbox || !lightboxImage) return;
+    window.clearTimeout(closeTimeout);
+    isClosing = false;
+    lightbox.classList.remove('is-closing');
+    const token = ++loadToken;
+    const wasOpen = isOpen();
+
+    showSource(activeItem);
+    activeItem = item;
+    const thumb = thumbOf(item);
+    const dims = fullDimensions(item);
+    if (!thumb || !dims) return;
+
+    lightboxImage.alt = thumb.alt;
+    // Show the already-loaded thumbnail at once, then upgrade in the background.
+    lightboxImage.src = thumb.currentSrc || thumb.src;
+    loadFull(item, token);
+    setPhotoParam(item);
+    updateNavButtons();
+
+    const target = targetRect(dims);
+    if (!target) return;
+    sizeImage(target);
+
+    if (wasOpen) {
+      // Stepping between photos: swap in place and keep the grid in sync, so
+      // closing zooms back to the photo actually on screen.
+      resetTransform();
+      hideSource(item);
+      item.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+
+    lightbox.classList.add('active');
+    lockScroll();
+    hideSource(item);
+    lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-close')?.focus({ preventScroll: true });
+
+    // FLIP: start the full-size image transformed onto the thumbnail, then let
+    // the CSS transition carry it to its resting place.
+    const start = transformBetween(thumb.getBoundingClientRect(), target);
+    if (!start) return;
+    lightboxImage.style.transformOrigin = 'top left';
+    lightboxImage.style.transition = 'none';
+    lightboxImage.style.transform = start;
+    lightboxImage.getBoundingClientRect();
+    lightboxImage.style.transition = '';
+    requestAnimationFrame(() => {
+      if (token !== loadToken || !lightboxImage) return;
+      lightboxImage.style.transform = 'translateZ(0) scale(1)';
+    });
+  }
+
+  function closeLightbox() {
+    if (!lightbox || !lightboxImage || isClosing || !isOpen()) return;
+    isClosing = true;
+    lightbox.classList.add('is-closing');
+    const item = activeItem;
+    const thumb = thumbOf(item);
+    const dims = item ? fullDimensions(item) : null;
+    const from = dims ? targetRect(dims) : null;
+    const back = thumb && from ? transformBetween(thumb.getBoundingClientRect(), from) : '';
+    if (back) {
+      lightboxImage.style.transformOrigin = 'top left';
+      lightboxImage.style.transform = back;
+    }
+    closeTimeout = window.setTimeout(finalizeClose, back ? ZOOM_MS : 0);
+  }
+
+  function finalizeClose() {
+    if (!lightbox || !lightboxImage) return;
+    loadToken++;
+    lightbox.classList.remove('active', 'is-closing');
+    isClosing = false;
+    unlockScroll();
+    clearPhotoParam();
+    resetTransform();
+    lightboxImage.removeAttribute('src');
+    lightboxImage.style.width = '';
+    lightboxImage.style.height = '';
+    const item = activeItem;
+    showSource(item);
+    activeItem = null;
+    item?.focus({ preventScroll: true });
+  }
+
+  function step(delta: number) {
+    if (!activeItem || isClosing) return;
+    const items = itemsFor(activeItem);
+    const next = items[items.indexOf(activeItem) + delta];
+    if (next) openLightbox(next);
+  }
+
+  function updateNavButtons() {
+    if (!lightbox || !activeItem) return;
+    const items = itemsFor(activeItem);
+    const index = items.indexOf(activeItem);
+    const prev = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-prev');
+    const next = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-next');
+    if (prev) prev.hidden = index <= 0;
+    if (next) next.hidden = index >= items.length - 1;
+  }
+
+  // ── Image loading & geometry ────────────────────────────────
+
+  function loadFull(item: HTMLAnchorElement, token: number) {
+    const fullSrc = item.dataset.fullSrc;
+    if (!fullSrc) return;
+    const hires = new Image();
+    hires.onload = () => {
+      if (token === loadToken && lightboxImage) lightboxImage.src = fullSrc;
+    };
+    hires.src = fullSrc;
+  }
+
+  // Same sizing rule as samthegeek.net: fit inside the padded content box,
+  // capped at 1400 × min(90vh, 860), never upscaled past the rendition.
+  function targetRect(dims: Dimensions): DOMRect | null {
+    if (!content) return null;
+    const rect = content.getBoundingClientRect();
+    const styles = window.getComputedStyle(content);
+    const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+    const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+    const contentW = Math.max(0, (rect.width || window.innerWidth) - padX);
+    const contentH = Math.max(0, (rect.height || window.innerHeight) - padY);
+    const maxW = Math.min(contentW, 1400);
+    const maxH = Math.min(contentH, window.innerHeight * 0.9, 860);
+    const scale = Math.min(1, maxW / dims.width, maxH / dims.height);
+    const width = Math.max(1, dims.width * scale);
+    const height = Math.max(1, dims.height * scale);
+    return {
+      left: rect.left + padX / 2 + (contentW - width) / 2,
+      top: rect.top + padY / 2 + (contentH - height) / 2,
+      width,
+      height,
+    } as DOMRect;
+  }
+
+  function sizeImage(rect: DOMRect) {
+    if (!lightboxImage) return;
+    lightboxImage.style.width = `${Math.floor(rect.width)}px`;
+    lightboxImage.style.height = `${Math.floor(rect.height)}px`;
+  }
+
+  function transformBetween(source: DOMRect, target: DOMRect): string {
+    if (!source.width || !source.height || !target.width || !target.height) return '';
+    const scaleX = source.width / target.width;
+    const scaleY = source.height / target.height;
+    return `translate3d(${source.left - target.left}px, ${source.top - target.top}px, 0) scale(${scaleX}, ${scaleY})`;
+  }
+
+  function resetTransform() {
+    if (!lightboxImage) return;
+    lightboxImage.style.transform = '';
+    lightboxImage.style.transformOrigin = '';
+  }
+
+  function hideSource(item: HTMLAnchorElement | null) {
+    const img = thumbOf(item);
+    if (img) img.style.visibility = 'hidden';
+  }
+
+  function showSource(item: HTMLAnchorElement | null) {
+    const img = thumbOf(item);
+    if (img) img.style.visibility = '';
+  }
+
+  function lockScroll() {
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    bodyPaddingRight = document.body.style.paddingRight || '';
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+
+  function unlockScroll() {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = bodyPaddingRight;
+    bodyPaddingRight = '';
+  }
+
+  window.addEventListener('resize', () => {
+    if (!isOpen() || isClosing || !activeItem) return;
+    const dims = fullDimensions(activeItem);
+    const rect = dims ? targetRect(dims) : null;
+    if (rect) sizeImage(rect);
+  });
+
+  // ── ?photo= deep link ───────────────────────────────────────
+  // replaceState keeps ClientRouter's own history.state intact.
+
+  function setPhotoParam(item: HTMLAnchorElement) {
+    const guid = item.dataset.photoGuid;
+    if (!guid) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('photo', guid);
+    history.replaceState(history.state, '', url);
+  }
+
+  function clearPhotoParam() {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('photo')) return;
+    url.searchParams.delete('photo');
+    history.replaceState(history.state, '', url);
+  }
+
+  function openFromUrlParam() {
+    const guid = new URL(window.location.href).searchParams.get('photo');
+    if (!guid) return;
+    const item = Array.from(document.querySelectorAll<HTMLAnchorElement>('.photo-gallery-item')).find(
+      (el) => el.dataset.photoGuid === guid
+    );
+    if (!item) return;
+    item.scrollIntoView({ block: 'center' });
+    const thumb = thumbOf(item);
+    // A lazy thumbnail below the fold hasn't started loading yet.
+    if (thumb) thumb.loading = 'eager';
+    requestAnimationFrame(() => openLightbox(item));
+  }
+
+  // ── Global listeners (registered once per document lifetime) ─
+
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const item = (e.target as Element).closest?.<HTMLAnchorElement>('a.photo-gallery-item');
+    if (!item || !lightbox) return;
+    e.preventDefault();
+    openLightbox(item);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!isOpen() || !lightbox) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      step(-1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      step(1);
+    } else if (e.key === 'Tab') {
+      // Keep focus on the dialog's own controls.
+      const buttons = Array.from(lightbox.querySelectorAll<HTMLButtonElement>('.photo-lightbox-btn')).filter(
+        (b) => !b.hidden
+      );
+      if (buttons.length === 0) return;
+      const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const nextIndex = e.shiftKey
+        ? (index <= 0 ? buttons.length - 1 : index - 1)
+        : (index === -1 || index === buttons.length - 1 ? 0 : index + 1);
+      e.preventDefault();
+      buttons[nextIndex].focus();
+    }
+  });
+
+  // Never carry an open lightbox (or a locked body) across a ClientRouter swap.
+  document.addEventListener('astro:before-swap', () => {
+    if (isOpen()) {
+      window.clearTimeout(closeTimeout);
+      unlockScroll();
+    }
+  });
+
+  document.addEventListener('astro:page-load', bind);
+  bind();
+</script>
+
+<style>
+  .photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    pointer-events: none;
+    --zoom-duration: 400ms;
+    --fade-duration: 340ms;
+    --fade-delay-open: calc(var(--zoom-duration) - var(--fade-duration));
+  }
+
+  .photo-lightbox.active {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .photo-lightbox.is-closing {
+    pointer-events: none;
+  }
+
+  .photo-lightbox::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 45%, rgba(23, 50, 11, 0.55) 0%, rgba(10, 20, 6, 0.9) 72%, rgba(8, 14, 5, 0.95) 100%);
+    opacity: 0;
+    transition: opacity var(--fade-duration) ease;
+  }
+
+  .photo-lightbox.active::before {
+    opacity: 1;
+    transition-delay: var(--fade-delay-open);
+  }
+
+  .photo-lightbox.is-closing::before {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+
+  .photo-lightbox-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 4rem;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .photo-lightbox-image {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    max-width: min(100%, 1400px);
+    max-height: min(90vh, 860px);
+    object-fit: contain;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 249, 240, 0.08);
+    transform: translateZ(0);
+    transition: transform var(--zoom-duration) cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    pointer-events: auto;
+  }
+
+  .photo-lightbox-btn {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 249, 240, 0.25);
+    background: rgba(23, 50, 11, 0.7);
+    color: var(--color-warm-cream);
+    cursor: pointer;
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+    transition: opacity var(--fade-duration) ease, transform var(--zoom-duration) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .photo-lightbox-btn[hidden] {
+    display: none;
+  }
+
+  .photo-lightbox.active .photo-lightbox-btn {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: var(--fade-delay-open);
+  }
+
+  .photo-lightbox.is-closing .photo-lightbox-btn {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+
+  .photo-lightbox-btn:hover,
+  .photo-lightbox-btn:focus-visible {
+    border-color: var(--color-burnt-amber);
+    color: var(--color-burnt-amber);
+  }
+
+  .photo-lightbox-btn:focus-visible {
+    outline: 2px solid var(--color-burnt-amber);
+    outline-offset: 2px;
+  }
+
+  .photo-lightbox-btn svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .photo-lightbox-close {
+    top: 20px;
+    right: 22px;
+  }
+
+  .photo-lightbox-prev,
+  .photo-lightbox-next {
+    top: 50%;
+    margin-top: -1.25rem;
+  }
+
+  .photo-lightbox-prev {
+    left: 1rem;
+  }
+
+  .photo-lightbox-next {
+    right: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .photo-lightbox-content {
+      padding: 4rem 0.75rem;
+    }
+
+    .photo-lightbox-prev,
+    .photo-lightbox-next {
+      top: auto;
+      bottom: 1.25rem;
+      margin-top: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo-lightbox {
+      --zoom-duration: 1ms;
+      --fade-duration: 1ms;
+    }
+  }
+</style>

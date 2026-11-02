@@ -59,4 +59,5 @@
 # Preview deploys (PRs) add dev-only flags on top of production
 [context.deploy-preview.environment]
   FEATURE_NYC_RSVP_PREVIEW = "true"
+  FEATURE_NYC_PHOTO_GALLERY = "true"
   FEATURE_FRANCE_STAYING_OVERVIEW = "false"

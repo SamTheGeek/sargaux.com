@@ -46,6 +46,12 @@ export default defineConfig({
     '/nyc/travel': contentPageCache,
     '/nyc/faq': contentPageCache,
     '/nyc/lookbook': contentPageCache,
+    // Photo galleries render deterministically (the /nyc preview is picked at
+    // sync time, not per request) and only embed stable /api/photos paths —
+    // the expiring iCloud URLs are resolved by that endpoint, never cached here.
+    '/nyc/photos/preparation': contentPageCache,
+    '/nyc/photos/event': contentPageCache,
+    '/nyc/photos/afterparty': contentPageCache,
     '/france': contentPageCache,
     '/france/details': contentPageCache,
     '/france/travel': contentPageCache,
