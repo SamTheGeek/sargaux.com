@@ -24,3 +24,17 @@ export const NYC_GALLERY_CONFIG: readonly NycGalleryConfig[] = [
   { id: 'event', albumToken: null },
   { id: 'afterparty', albumToken: '0d25IMBv-34QfR6fX_9rXc9aA' },
 ];
+
+/**
+ * The name a downloaded photo is saved under: gallery plus its 1-based position
+ * in the (oldest-first) gallery, e.g. `sargaux-nyc-afterparty-012.jpg`. iCloud's
+ * own filenames are never used — they can carry people's names.
+ */
+export function downloadFilename(galleryId: NycGalleryId, position: number, ext = 'jpg'): string {
+  return `sargaux-nyc-${galleryId}-${String(position).padStart(3, '0')}.${ext}`;
+}
+
+/** Same-origin path that streams a photo's original as an attachment. */
+export function downloadPath(galleryId: NycGalleryId, guid: string): string {
+  return `/api/photos/${galleryId}/${encodeURIComponent(guid)}/download`;
+}

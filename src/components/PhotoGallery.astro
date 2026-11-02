@@ -14,7 +14,13 @@
  * - The script is a bundled module re-run on `astro:page-load` (ClientRouter).
  */
 import type { ManifestPhoto } from '../lib/icloud-stream';
-import type { NycGalleryId } from '../content/nycGalleries';
+import {
+  downloadFilename,
+  downloadPath,
+  getNycGallery,
+  isPhotoTestFixture,
+  type NycGalleryId,
+} from '../content/nycGalleries';
 import { strings, type Lang } from '../content/strings';
 import { createTranslator } from '../lib/i18n';
 
@@ -36,6 +42,10 @@ const altFor = (n: number) =>
     .replace('{gallery}', title)
     .replace('{n}', String(n))
     .replace('{total}', String(total));
+// A download is named by the photo's place in the whole gallery, so the same
+// photo gets the same file name from the /nyc preview and the full page.
+const positions = new Map((getNycGallery(gallery)?.photos ?? photos).map((p, i) => [p.guid, i + 1]));
+const downloadExt = isPhotoTestFixture() ? 'svg' : 'jpg';
 // Matches the column breakpoints below.
 const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(50vw - 1rem), calc(33vw - 1rem)';
 ---
@@ -49,6 +59,8 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
       data-full-src={src(photo.guid, 'full')}
       data-full-width={photo.full.width}
       data-full-height={photo.full.height}
+      data-download-src={downloadPath(gallery, photo.guid)}
+      data-download-name={downloadFilename(gallery, positions.get(photo.guid) ?? index + 1, downloadExt)}
     >
       <img
         src={src(photo.guid, 'thumb')}

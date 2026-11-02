@@ -272,6 +272,8 @@ export const strings = {
       previous:  s('Previous photo', 'Previous photo'),
       // TODO(sam/margaux): French copy needed — English placeholder
       next:      s('Next photo', 'Next photo'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      download:  s('Download photo', 'Download photo'),
       // "{gallery} photo {n} of {total}" — alt text, filled in by PhotoGallery.
       // TODO(sam/margaux): French copy needed — English placeholder
       alt:       s('{gallery} photo {n} of {total}', '{gallery} photo {n} of {total}'),

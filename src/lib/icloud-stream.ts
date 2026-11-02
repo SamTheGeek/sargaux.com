@@ -38,6 +38,8 @@ export interface ManifestPhoto {
   takenAt: string;
   thumb: PhotoDerivative;
   full: PhotoDerivative;
+  /** The best JPEG to hand a guest who downloads the photo (see pickOriginal). */
+  original: PhotoDerivative;
   /** Shown in the gallery's preview on /nyc. */
   featured?: boolean;
 }
@@ -46,6 +48,7 @@ export interface ManifestPhoto {
 export interface ResolvedPhoto extends ManifestPhoto {
   thumbUrl: string;
   fullUrl: string;
+  originalUrl: string;
 }
 
 export interface ShareHandle {
@@ -331,6 +334,7 @@ export function parseAlbumRecords(records: unknown[]): ResolvedPhoto[] {
       rendition(asset.fields, 'resJPEGMed') ??
       rendition(master.fields, 'resJPEGMed');
     if (!thumb || !full) continue;
+    const original = pickOriginal(asset.fields, master.fields) ?? full;
 
     const ms = Number(asset.fields?.assetDate?.value ?? master.fields?.originalCreationDate?.value);
     if (!Number.isFinite(ms)) continue;
@@ -341,16 +345,38 @@ export function parseAlbumRecords(records: unknown[]): ResolvedPhoto[] {
       takenAt: new Date(ms).toISOString(),
       thumb: strip(thumb),
       full: strip(full),
+      original: strip(original),
       thumbUrl: thumb.url,
       fullUrl: full.url,
+      originalUrl: original.url,
     });
   }
   return sortChronologically(out);
 }
 
+/**
+ * The rendition a guest downloads: an edit if the photo has one (the rendered
+ * edit lives on the asset), else the camera original — but only when it is a
+ * JPEG, since an iPhone HEIC original won't open everywhere — else the largest
+ * JPEG the album has.
+ */
+function pickOriginal(
+  assetFields: RawRecord['fields'],
+  masterFields: RawRecord['fields']
+): (PhotoDerivative & { url: string }) | null {
+  const edited = rendition(assetFields, 'resJPEGFull');
+  if (edited) return edited;
+  const type = String(masterFields?.resOriginalFileType?.value ?? '');
+  if (/jpe?g/i.test(type)) {
+    const original = rendition(masterFields, 'resOriginal');
+    if (original) return original;
+  }
+  return rendition(masterFields, 'resJPEGFull') ?? rendition(masterFields, 'resJPEGMed');
+}
+
 /** Manifest entries (no URLs) from a fetch. */
 export function toManifest(photos: ResolvedPhoto[]): ManifestPhoto[] {
-  return photos.map(({ guid, takenAt, thumb, full }) => ({ guid, takenAt, thumb, full }));
+  return photos.map(({ guid, takenAt, thumb, full, original }) => ({ guid, takenAt, thumb, full, original }));
 }
 
 /** rendition checksum → signed URL, for the photo endpoint. */
@@ -359,6 +385,7 @@ export function urlsByChecksum(photos: ResolvedPhoto[]): Map<string, string> {
   for (const p of photos) {
     urls.set(p.thumb.checksum, p.thumbUrl);
     urls.set(p.full.checksum, p.fullUrl);
+    urls.set(p.original.checksum, p.originalUrl);
   }
   return urls;
 }
@@ -401,7 +428,9 @@ export function applyFeatured(
     [pool[i], pool[j]] = [pool[j], pool[i]];
     chosen.add(pool[i]);
   }
-  return next.map(({ guid, takenAt, thumb, full }) =>
-    chosen.has(guid) ? { guid, takenAt, thumb, full, featured: true } : { guid, takenAt, thumb, full }
+  return next.map(({ guid, takenAt, thumb, full, original }) =>
+    chosen.has(guid)
+      ? { guid, takenAt, thumb, full, original, featured: true }
+      : { guid, takenAt, thumb, full, original }
   );
 }

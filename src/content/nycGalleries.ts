@@ -15,6 +15,7 @@ import afterparty from './nycPhotos/afterparty.json';
 import fixture from './nycPhotos/fixture.json';
 
 export type { NycGalleryId };
+export { downloadFilename, downloadPath } from './nycGalleryConfig';
 
 const MANIFESTS: Record<NycGalleryId, ManifestPhoto[]> = {
   preparation: preparation as ManifestPhoto[],

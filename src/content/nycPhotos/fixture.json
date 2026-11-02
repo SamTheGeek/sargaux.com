@@ -11,6 +11,11 @@
       "checksum": "fixturefull0001",
       "width": 1536,
       "height": 2048
+    },
+    "original": {
+      "checksum": "fixtureoriginal0001",
+      "width": 2304,
+      "height": 3072
     }
   },
   {
@@ -26,6 +31,11 @@
       "width": 2048,
       "height": 1536
     },
+    "original": {
+      "checksum": "fixtureoriginal0002",
+      "width": 3072,
+      "height": 2304
+    },
     "featured": true
   },
   {
@@ -40,6 +50,11 @@
       "checksum": "fixturefull0003",
       "width": 2048,
       "height": 1536
+    },
+    "original": {
+      "checksum": "fixtureoriginal0003",
+      "width": 3072,
+      "height": 2304
     }
   },
   {
@@ -54,6 +69,11 @@
       "checksum": "fixturefull0004",
       "width": 1536,
       "height": 2048
+    },
+    "original": {
+      "checksum": "fixtureoriginal0004",
+      "width": 2304,
+      "height": 3072
     },
     "featured": true
   },
@@ -70,6 +90,11 @@
       "width": 2048,
       "height": 1152
     },
+    "original": {
+      "checksum": "fixtureoriginal0005",
+      "width": 3072,
+      "height": 1728
+    },
     "featured": true
   },
   {
@@ -84,6 +109,11 @@
       "checksum": "fixturefull0006",
       "width": 1536,
       "height": 2048
+    },
+    "original": {
+      "checksum": "fixtureoriginal0006",
+      "width": 2304,
+      "height": 3072
     }
   },
   {
@@ -98,6 +128,11 @@
       "checksum": "fixturefull0007",
       "width": 2048,
       "height": 1536
+    },
+    "original": {
+      "checksum": "fixtureoriginal0007",
+      "width": 3072,
+      "height": 2304
     }
   },
   {
@@ -113,6 +148,11 @@
       "width": 1152,
       "height": 2048
     },
+    "original": {
+      "checksum": "fixtureoriginal0008",
+      "width": 1728,
+      "height": 3072
+    },
     "featured": true
   },
   {
@@ -127,6 +167,11 @@
       "checksum": "fixturefull0009",
       "width": 2048,
       "height": 2048
+    },
+    "original": {
+      "checksum": "fixtureoriginal0009",
+      "width": 3072,
+      "height": 3072
     }
   },
   {
@@ -141,6 +186,11 @@
       "checksum": "fixturefull0010",
       "width": 2048,
       "height": 1536
+    },
+    "original": {
+      "checksum": "fixtureoriginal0010",
+      "width": 3072,
+      "height": 2304
     },
     "featured": true
   },
@@ -157,6 +207,11 @@
       "width": 1536,
       "height": 2048
     },
+    "original": {
+      "checksum": "fixtureoriginal0011",
+      "width": 2304,
+      "height": 3072
+    },
     "featured": true
   },
   {
@@ -171,6 +226,11 @@
       "checksum": "fixturefull0012",
       "width": 2048,
       "height": 1536
+    },
+    "original": {
+      "checksum": "fixtureoriginal0012",
+      "width": 3072,
+      "height": 2304
     }
   }
 ]

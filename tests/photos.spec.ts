@@ -234,3 +234,107 @@ test.describe('/api/photos', () => {
     }
   });
 });
+
+test.describe('Photo downloads', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+
+  const downloadHref = (guid: string) => `/api/photos/afterparty/${guid}/download`;
+  /** 1-based place in the whole gallery, matching downloadFilename(). */
+  const fileFor = (guid: string) =>
+    `sargaux-nyc-afterparty-${String(fixture.findIndex((p) => p.guid === guid) + 1).padStart(3, '0')}.svg`;
+
+  test('the lightbox offers a download for the photo on screen, and follows ←/→', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    const items = page.locator('.photo-gallery-item');
+    const download = page.locator('.photo-lightbox-download');
+
+    await items.nth(1).click();
+    await expect(download).toBeVisible();
+    const second = (await items.nth(1).getAttribute('data-photo-guid'))!;
+    await expect(download).toHaveAttribute('href', downloadHref(second));
+    await expect(download).toHaveAttribute('download', fileFor(second));
+    await expect(download).toHaveAttribute('aria-label', /download/i);
+
+    await page.keyboard.press('ArrowRight');
+    const third = (await items.nth(2).getAttribute('data-photo-guid'))!;
+    await expect(download).toHaveAttribute('href', downloadHref(third));
+    await expect(download).toHaveAttribute('download', fileFor(third));
+
+    // Reachable in the dialog's Tab cycle.
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    let reached = false;
+    for (let i = 0; i < 5 && !reached; i++) {
+      await page.keyboard.press('Tab');
+      reached = await download.evaluate((el) => el === document.activeElement);
+    }
+    expect(reached).toBe(true);
+  });
+
+  test('a preview tile on /nyc names its download by its place in the whole gallery', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc');
+    const tile = page.locator('[data-gallery-preview="afterparty"] .photo-gallery-item').first();
+    const guid = (await tile.getAttribute('data-photo-guid'))!;
+    await expect(tile).toHaveAttribute('data-download-name', fileFor(guid));
+  });
+
+  test('desktop: download sits bottom-right, in the same column as close', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    const close = (await page.locator('.photo-lightbox-close').boundingBox())!;
+    const dl = (await page.locator('.photo-lightbox-download').boundingBox())!;
+    expect(Math.abs(dl.x + dl.width - (close.x + close.width))).toBeLessThanOrEqual(1);
+    expect(900 - (dl.y + dl.height)).toBeLessThanOrEqual(40);
+  });
+
+  test('phone: download keeps the bottom-right corner, ‹ › pair up bottom-left', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    const dl = (await page.locator('.photo-lightbox-download').boundingBox())!;
+    const prev = (await page.locator('.photo-lightbox-prev').boundingBox())!;
+    const next = (await page.locator('.photo-lightbox-next').boundingBox())!;
+    expect(dl.x).toBeGreaterThan(390 / 2);
+    expect(844 - (dl.y + dl.height)).toBeLessThanOrEqual(40);
+    expect(prev.x + prev.width).toBeLessThanOrEqual(390 / 2);
+    expect(next.x + next.width).toBeLessThanOrEqual(390 / 2);
+    expect(next.x).toBeGreaterThan(prev.x + prev.width);
+    expect(Math.abs(next.y - dl.y)).toBeLessThanOrEqual(1);
+  });
+
+  test('the endpoint serves the original as a named attachment to a logged-in guest', async ({ page }) => {
+    await login(page);
+    const guid = fixture[3].guid;
+    const res = await page.request.get(downloadHref(guid), { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    expect(res.headers()['content-disposition']).toBe(`attachment; filename="${fileFor(guid)}"`);
+  });
+
+  test('the endpoint requires a session and a manifest photo', async ({ page, request }) => {
+    const guid = fixture[0].guid;
+    expect((await request.get(downloadHref(guid), { maxRedirects: 0 })).status()).toBe(401);
+    await login(page);
+    for (const path of [
+      '/api/photos/afterparty/NOT-IN-MANIFEST-0000/download',
+      `/api/photos/event/${guid}/download`,
+      `/api/photos/nope/${guid}/download`,
+    ]) {
+      expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
+    }
+  });
+
+  test('desktop clicks are a plain download, not the share sheet', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.photo-lightbox-download').click()]);
+    expect(dl.suggestedFilename()).toMatch(/^sargaux-nyc-afterparty-\d{3}\.svg$/);
+  });
+});
