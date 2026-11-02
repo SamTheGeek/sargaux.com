@@ -2,6 +2,7 @@
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import { generateTokenIfPossible } from '../../lib/calendar';
 import { getGuestParty, getLatestRSVPForParty } from '../../lib/notion';
+import { memberAttendedResponse } from '../../lib/rsvp-attendance';
 import { strings } from '../../content/strings';
 import type { LocalizedString } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
@@ -20,12 +21,17 @@ const sch = strings.france.schedule;
 const dc = strings.france.dressCode;
 
 /* The calendar button depends on where the party is with their France RSVP:
- *   - attending (incl. partial) → subscribe link, no note
- *   - declined                  → greyed-out button + short note
+ *   - this guest attending      → subscribe link, no note
+ *   - this guest declined       → greyed-out button + short note
  *   - not yet (or unknown)      → button and note both lead to the RSVP form
  * The page is `no-store`, so this is read live on every request. A Notion
  * failure falls back to "not yet": sending someone to their RSVP (which
- * pre-fills whatever they already submitted) is harmless. */
+ * pre-fills whatever they already submitted) is harmless.
+ *
+ * The response is party-level, but the decision is per guest: in a Partial
+ * response one member can be coming while another isn't. Resolve it with
+ * memberAttendedResponse, the same rule the ICS feed uses, so the button is
+ * never live for someone whose calendar would be empty. */
 type RsvpState = 'attending' | 'declined' | 'none';
 let rsvpState: RsvpState = 'none';
 if (guestId) {
@@ -35,7 +41,13 @@ if (guestId) {
       party.length > 0 ? party.map((member) => member.id) : [guestId],
       'france',
     );
-    if (latest) rsvpState = latest.status === 'Declined' ? 'declined' : 'attending';
+    if (latest) {
+      const self = party.find((member) => member.id === guestId);
+      const attending = self
+        ? memberAttendedResponse(latest, self)
+        : latest.status !== 'Declined';
+      rsvpState = attending ? 'attending' : 'declined';
+    }
   } catch (error) {
     console.error('Failed to load France RSVP state for the schedule page:', error);
   }
