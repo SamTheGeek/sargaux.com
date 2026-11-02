@@ -6,8 +6,10 @@ import {
   buildAssetUrl,
   parseAlbumRecords,
   parseShareHandle,
+  queryAlbumReactions,
   queryAlbumRecords,
   sortChronologically,
+  thumbsDownAssetIds,
   toManifest,
   urlsByChecksum,
   DEFAULT_FEATURED_COUNT,
@@ -192,6 +194,93 @@ test('sortChronologically breaks ties by GUID so reruns are stable', () => {
   expect(sortChronologically([photo('B', t), photo('A', t)]).map((p) => p.guid)).toEqual(['A', 'B']);
 });
 
+test.describe('thumbsDownAssetIds', () => {
+  const react = (asset: string, emoji: string, extra: Record<string, unknown> = {}) => ({
+    recordName: `R-${asset}-${emoji.codePointAt(0)}`,
+    recordType: 'CPLReact',
+    created: { userRecordName: '_reactor-secret', timestamp: 1 },
+    modified: { userRecordName: '_reactor-secret', timestamp: 1 },
+    fields: {
+      emojiStringEnc: { type: 'STRING', value: emoji },
+      associatedAssetRef: { type: 'REFERENCE', value: { recordName: asset, zoneID: ZONE } },
+    },
+    ...extra,
+  });
+
+  test('a 👎 from anyone hides the photo, with any skin tone or presentation selector', () => {
+    const ids = thumbsDownAssetIds([
+      react('aaaaaaaa-1', '👎'),
+      react('bbbbbbbb-2', '👎🏽'),
+      react('cccccccc-3', '👎\uFE0F'),
+    ]);
+    expect([...ids].sort()).toEqual(['aaaaaaaa-1', 'bbbbbbbb-2', 'cccccccc-3']);
+  });
+
+  test('other reactions are ignored', () => {
+    expect(thumbsDownAssetIds([react('aaaaaaaa-1', '👍'), react('bbbbbbbb-2', '❤️'), react('cccccccc-3', '😂')]).size).toBe(0);
+  });
+
+  test('a removed 👎 (tombstone) does not hide the photo', () => {
+    const removed = { recordName: 'R-gone', recordType: 'CPLReact', deleted: true };
+    const deletedWithFields = react('aaaaaaaa-1', '👎', { deleted: true });
+    expect(thumbsDownAssetIds([removed, deletedWithFields]).size).toBe(0);
+  });
+
+  test('several 👎 on one photo count once, and non-reaction records are skipped', () => {
+    const ids = thumbsDownAssetIds([
+      react('aaaaaaaa-1', '👎'),
+      react('aaaaaaaa-1', '👎🏻'),
+      master('M1'),
+      asset('bbbbbbbb-2', 'M1', 1),
+    ]);
+    expect([...ids]).toEqual(['aaaaaaaa-1']);
+  });
+
+  test('never reads who reacted', () => {
+    const ids = thumbsDownAssetIds([react('aaaaaaaa-1', '👎')]);
+    expect(JSON.stringify([...ids])).not.toContain('_reactor-secret');
+  });
+});
+
+test.describe('queryAlbumReactions', () => {
+  const share: ShareHandle = { partition: 'https://p121-ckdatabasews.icloud.com', accessToken: 'TOK', zoneID: ZONE };
+  const reactRecord = (n: number) => ({
+    recordName: `R${n}`,
+    recordType: 'CPLReact',
+    fields: { emojiStringEnc: { value: '👎' }, associatedAssetRef: { value: { recordName: `aaaaaaaa-${n}` } } },
+  });
+
+  test('follows the change feed across pages and keeps only reactions', async () => {
+    const bodies: Array<Record<string, any>> = [];
+    const urls: string[] = [];
+    const fake = async (url: string, init?: RequestInit) => {
+      urls.push(url);
+      bodies.push(JSON.parse(String(init?.body)));
+      const page = bodies.length;
+      const zone =
+        page === 1
+          ? { records: [reactRecord(1), master('M1')], syncToken: 'T1', moreComing: true }
+          : { records: [reactRecord(2)], syncToken: 'T2', moreComing: false };
+      return new Response(JSON.stringify({ zones: [zone] }), { status: 200 });
+    };
+    const records = await queryAlbumReactions(fake, 'SHARETOKEN', share);
+    expect(records.map((r) => (r as { recordName: string }).recordName)).toEqual(['R1', 'R2']);
+    expect(bodies[0].zones[0].desiredRecordTypes).toEqual(['CPLReact']);
+    expect(bodies[0].zones[0].zoneID).toEqual(ZONE);
+    expect(bodies[0].zones[0].syncToken).toBeUndefined();
+    expect(bodies[1].zones[0].syncToken).toBe('T1');
+    const u = new URL(urls[0]);
+    expect(u.pathname).toContain('/shared/changes/zone');
+    expect(u.searchParams.get('publicAccessAuthToken')).toBe('TOK');
+    expect(u.searchParams.get('sharing_url_key')).toBe('SHARETOKEN');
+  });
+
+  test('surfaces an HTTP error', async () => {
+    const fake = async () => new Response('{}', { status: 403 });
+    await expect(queryAlbumReactions(fake, 'SHARETOKEN', share)).rejects.toThrow(/403/);
+  });
+});
+
 test.describe('applyFeatured', () => {
   const photos = Array.from({ length: 20 }, (_, i) =>
     photo(`G${String(i).padStart(2, '0')}`, `2026-10-11T23:${String(i).padStart(2, '0')}:00.000Z`)
@@ -208,10 +297,23 @@ test.describe('applyFeatured', () => {
     expect(out.map((p) => p.guid)).toEqual(photos.map((p) => p.guid));
   });
 
-  test('a resync keeps the existing featured choice', () => {
+  test('a resync that loses nothing leaves a hand-curated set exactly as it was', () => {
     const previous = photos.map((p) => (['G03', 'G11'].includes(p.guid) ? { ...p, featured: true } : p));
     const out = applyFeatured(photos, previous, DEFAULT_FEATURED_COUNT, () => 0);
     expect(out.filter((p) => p.featured).map((p) => p.guid)).toEqual(['G03', 'G11']);
+  });
+
+  test('a featured photo that drops out (e.g. thumbed down) is replaced, keeping the count', () => {
+    const featuredBefore = ['G01', 'G05', 'G09', 'G13', 'G15', 'G17'];
+    const previous = photos.map((p) => (featuredBefore.includes(p.guid) ? { ...p, featured: true } : p));
+    // G05 and G13 got a 👎, so the sync leaves them out.
+    const next = photos.filter((p) => p.guid !== 'G05' && p.guid !== 'G13');
+    const out = applyFeatured(next, previous, DEFAULT_FEATURED_COUNT, () => 0.5);
+    const featured = out.filter((p) => p.featured).map((p) => p.guid);
+    expect(featured).toHaveLength(6);
+    for (const kept of ['G01', 'G09', 'G15', 'G17']) expect(featured).toContain(kept);
+    expect(featured).not.toContain('G05');
+    expect(featured).not.toContain('G13');
   });
 
   test('draws a fresh set only when every featured photo has left the album', () => {

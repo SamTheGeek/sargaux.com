@@ -13,10 +13,15 @@
  * the /api/photos endpoint fetches fresh ones), and no captions, filenames or
  * owner details (the repo is public). Commit the result.
  *
+ * Filtering: a photo with a 👎 reaction from any album member is left out.
+ * Removing the 👎 in Photos brings it back on the next sync. Who reacted is
+ * never read.
+ *
  * Preview: the first sync marks DEFAULT_FEATURED_COUNT random photos
  * `featured`, which is what /nyc shows. Reruns keep those flags, so you can
- * also hand-edit them to curate the preview; `--reshuffle` draws a new random
- * set.
+ * also hand-edit them to curate the preview; a featured photo that gets a 👎
+ * (or leaves the album) is replaced at random. `--reshuffle` draws a new
+ * random set.
  *
  * Needs network access to *.icloud.com (ckdatabasews + its p*- partitions).
  */
@@ -25,7 +30,7 @@ import { join } from 'node:path';
 import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig.ts';
 import {
   applyFeatured,
-  fetchAlbum,
+  fetchAlbumForSync,
   isValidAlbumToken,
   toManifest,
   type ManifestPhoto,
@@ -70,9 +75,11 @@ for (const gallery of targets) {
   }
 
   try {
-    const photos = toManifest(await fetchAlbum(fetch, gallery.albumToken));
+    const album = await fetchAlbumForSync(fetch, gallery.albumToken);
+    const hidden = album.photos.filter((p) => album.thumbsDown.has(p.guid)).length;
+    const photos = toManifest(album.photos.filter((p) => !album.thumbsDown.has(p.guid)));
     if (photos.length === 0) {
-      console.error(`${gallery.id}: the album returned no photos — manifest left unchanged`);
+      console.error(`${gallery.id}: no photos left to show — manifest left unchanged`);
       failed = true;
       continue;
     }
@@ -85,7 +92,7 @@ for (const gallery of targets) {
     const removed = previous.filter((p) => !after.has(p.guid)).length;
     const featured = manifest.filter((p) => p.featured).length;
     console.log(
-      `${gallery.id}: ${manifest.length} photos (+${added} / -${removed}), ${featured} featured → ${file}`
+      `${gallery.id}: ${manifest.length} photos (${hidden} hidden by 👎; +${added} / -${removed}), ${featured} featured → ${file}`
     );
   } catch (err) {
     console.error(`${gallery.id}: ${err instanceof Error ? err.message : err}`);

@@ -163,10 +163,90 @@ export async function queryAlbumRecords(
   throw new Error('iCloud album query did not finish paginating');
 }
 
-/** resolve + query: everything needed to build a manifest or a URL map. */
+/** resolve + query: everything the runtime URL resolver needs. */
 export async function fetchAlbum(fetchImpl: Fetch, token: string, signal?: AbortSignal): Promise<ResolvedPhoto[]> {
   const share = await resolveShare(fetchImpl, token, signal);
   return parseAlbumRecords(await queryAlbumRecords(fetchImpl, token, share, signal));
+}
+
+/**
+ * Every reaction record in the album. Reactions (`CPLReact`) never appear in
+ * the asset query above — they are only reachable through the zone's change
+ * feed. `desiredRecordTypes` narrows it server-side, but the type is checked
+ * again here in case the server ignores the hint.
+ */
+export async function queryAlbumReactions(
+  fetchImpl: Fetch,
+  token: string,
+  share: ShareHandle,
+  signal?: AbortSignal
+): Promise<unknown[]> {
+  const qs = new URLSearchParams({
+    remapEnums: 'true',
+    sharing_url_key: token,
+    publicAccessAuthToken: share.accessToken,
+  });
+  const url = `${share.partition}${DB_PATH}/shared/changes/zone?${qs}`;
+  const records: unknown[] = [];
+  let syncToken: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const body = (await postJson(
+      fetchImpl,
+      url,
+      {
+        zones: [{ zoneID: share.zoneID, desiredRecordTypes: ['CPLReact'], ...(syncToken ? { syncToken } : {}) }],
+        resultsLimit: PAGE_SIZE,
+      },
+      signal
+    )) as { zones?: Array<{ records?: unknown[]; syncToken?: string; moreComing?: boolean }> };
+    const zone = body.zones?.[0];
+    for (const r of zone?.records ?? []) {
+      if ((r as RawRecord)?.recordType === 'CPLReact') records.push(r);
+    }
+    const next = typeof zone?.syncToken === 'string' ? zone.syncToken : undefined;
+    if (!zone?.moreComing || !next || next === syncToken) return records;
+    syncToken = next;
+  }
+  throw new Error('iCloud reaction feed did not finish paginating');
+}
+
+const THUMBS_DOWN = '\u{1F44E}';
+
+/** 👎 with any skin tone or emoji-presentation selector reduces to the bare 👎. */
+function normalizeEmoji(value: string): string {
+  return value.replace(/[\u{FE0F}\u{1F3FB}-\u{1F3FF}]/gu, '').trim();
+}
+
+/**
+ * Asset ids carrying at least one live 👎 from any album member. Tombstones
+ * (a removed reaction) don't count, so taking a 👎 back restores the photo on
+ * the next sync. Only the emoji and the asset reference are read — never
+ * `created`/`modified`, which identify who reacted.
+ */
+export function thumbsDownAssetIds(records: unknown[]): Set<string> {
+  const ids = new Set<string>();
+  for (const raw of records as Array<RawRecord & { deleted?: unknown }>) {
+    if (!raw || raw.recordType !== 'CPLReact' || raw.deleted === true || !raw.fields) continue;
+    const emoji = raw.fields.emojiStringEnc?.value;
+    if (typeof emoji !== 'string' || normalizeEmoji(emoji) !== THUMBS_DOWN) continue;
+    const ref = (raw.fields.associatedAssetRef?.value as { recordName?: unknown } | undefined)?.recordName;
+    if (typeof ref === 'string' && isValidPhotoGuid(ref)) ids.add(ref);
+  }
+  return ids;
+}
+
+/** One share resolve, then the photos and the set of thumbed-down asset ids. */
+export async function fetchAlbumForSync(
+  fetchImpl: Fetch,
+  token: string,
+  signal?: AbortSignal
+): Promise<{ photos: ResolvedPhoto[]; thumbsDown: Set<string> }> {
+  const share = await resolveShare(fetchImpl, token, signal);
+  const [records, reactions] = await Promise.all([
+    queryAlbumRecords(fetchImpl, token, share, signal),
+    queryAlbumReactions(fetchImpl, token, share, signal),
+  ]);
+  return { photos: parseAlbumRecords(records), thumbsDown: thumbsDownAssetIds(reactions) };
 }
 
 interface RawRecord {
@@ -294,9 +374,11 @@ export function sortChronologically<T extends { guid: string; takenAt: string }>
 
 /**
  * Carries the `featured` choice across a resync. Existing flags are kept for
- * photos still in the album (so a hand-curated preview survives); only when
- * none remain are `count` photos chosen at random. `random` is injectable so
- * tests are deterministic.
+ * photos still in the album, so a hand-curated preview survives untouched.
+ * When some featured photos dropped out (thumbed down or removed from the
+ * album), the same number of replacements is drawn at random from the rest,
+ * so the preview keeps its size. A first sync draws `count` at random.
+ * `random` is injectable so tests are deterministic.
  */
 export function applyFeatured(
   next: ManifestPhoto[],
@@ -304,20 +386,20 @@ export function applyFeatured(
   count: number = DEFAULT_FEATURED_COUNT,
   random: () => number = Math.random
 ): ManifestPhoto[] {
-  const kept = new Set(previous.filter((p) => p.featured).map((p) => p.guid));
+  const previouslyFeatured = previous.filter((p) => p.featured).map((p) => p.guid);
+  const kept = new Set(previouslyFeatured);
   const stillPresent = next.filter((p) => kept.has(p.guid)).map((p) => p.guid);
-  let chosen: Set<string>;
-  if (stillPresent.length > 0) {
-    chosen = new Set(stillPresent);
-  } else {
-    // Partial Fisher–Yates: the first `count` slots end up a uniform sample.
-    const pool = next.map((p) => p.guid);
-    const n = Math.min(count, pool.length);
-    for (let i = 0; i < n; i++) {
-      const j = i + Math.floor(random() * (pool.length - i));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    chosen = new Set(pool.slice(0, n));
+  // First sync (nothing featured before, or nothing left of it): a fresh draw.
+  // Otherwise refill exactly the slots that were lost.
+  const wanted = stillPresent.length === 0 ? count : previouslyFeatured.length;
+  const chosen = new Set(stillPresent);
+  // Partial Fisher–Yates over the rest: the first slots end up a uniform sample.
+  const pool = next.map((p) => p.guid).filter((g) => !chosen.has(g));
+  const n = Math.min(Math.max(0, wanted - chosen.size), pool.length);
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+    chosen.add(pool[i]);
   }
   return next.map(({ guid, takenAt, thumb, full }) =>
     chosen.has(guid) ? { guid, takenAt, thumb, full, featured: true } : { guid, takenAt, thumb, full }
