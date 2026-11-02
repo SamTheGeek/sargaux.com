@@ -14,6 +14,7 @@ import {
   type ManifestPhoto,
 } from '../src/lib/icloud-stream';
 import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig';
+import { CACHE_TTL_MS, URL_LIFETIME_MS, URL_SAFETY_MS, redirectMaxAge } from '../src/lib/icloud-photos';
 
 const derivative = (checksum: string, width: number, height: number) => ({
   checksum,
@@ -206,4 +207,35 @@ test.describe('committed manifests', () => {
       }
     });
   }
+});
+
+test.describe('redirectMaxAge (iCloud URLs expire ~15 minutes after issue)', () => {
+  const t0 = Date.UTC(2026, 10, 2, 12, 0, 0);
+  const min = 60 * 1000;
+
+  test('a freshly issued URL may be cached for at most 5 minutes', () => {
+    expect(redirectMaxAge(t0, t0)).toBe(300);
+  });
+
+  test('never lets a browser hold a redirect past the URL lifetime minus the margin', () => {
+    // Issued 8 min ago (the oldest a cached set can be): 15 − 2 − 8 = 5 min left.
+    expect(redirectMaxAge(t0, t0 + CACHE_TTL_MS)).toBe(300);
+    expect(redirectMaxAge(t0, t0 + 11 * min)).toBe(120);
+    for (let ago = 0; ago <= 15 * min; ago += 30 * 1000) {
+      const now = t0 + ago;
+      const maxAge = redirectMaxAge(t0, now);
+      if (maxAge > 0) {
+        expect(now + maxAge * 1000).toBeLessThanOrEqual(t0 + URL_LIFETIME_MS - URL_SAFETY_MS);
+      }
+    }
+  });
+
+  test('an expired or nearly expired URL is not cached at all', () => {
+    expect(redirectMaxAge(t0, t0 + 13 * min)).toBe(0);
+    expect(redirectMaxAge(t0, t0 + 20 * min)).toBe(0);
+  });
+
+  test('the server cache is shorter than the URL lifetime minus the margin', () => {
+    expect(CACHE_TTL_MS).toBeLessThan(URL_LIFETIME_MS - URL_SAFETY_MS);
+  });
 });
