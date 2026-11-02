@@ -946,7 +946,7 @@ export const strings = {
         heading: s('Overview', 'Votre séjour'),
         items: [
           s('Private accommodations are available for couples, families, and larger groups.', 'Des chambres sont disponibles pour les couples, les familles et les groupes.'),
-          s('Village Rooms (limited availability)', 'Chambres du Village (Disponibilité limitée)'),
+          s('Village Rooms', 'Chambres du Village'),
           s('Orient-Express train car suites', 'Suites dans les wagons Orient-Express'),
           s('Louisiana train car suites', 'Suites dans les wagons Louisiane'),
           s('Breakfast included each morning', 'Petit déjeuner inclus chaque matin'),
@@ -980,9 +980,8 @@ export const strings = {
         ),
       },
       roomTypes: {
-        heading: s('Room Types', 'Types de chambres'),
         village: {
-          title: s('Village Rooms (Limited Availability)', 'Chambres du Village (Disponibilité limitée)'),
+          title: s('Village Rooms', 'Chambres du Village'),
           desc:  s('Traditional guest rooms located throughout the Village buildings.', 'Réparties dans les bâtiments historiques du Village.'),
         },
         orient: {
