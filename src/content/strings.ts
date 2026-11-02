@@ -96,7 +96,7 @@ export const strings = {
   // Navigation — back links etc.
   // ─────────────────────────────────────────
   nav: {
-    backToEvent:  s('← Return to event', '← Retour à l\'événement'),
+    backToEvent:  draft('← Wedding home', '← Accueil du mariage'),
     home:         s('Home', 'Accueil'),
   },
 

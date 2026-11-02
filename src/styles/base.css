@@ -228,7 +228,7 @@ a:hover {
   justify-self: end;
 }
 
-/* "← Return to event". One look everywhere it appears (every France
+/* "← Wedding home" (strings.nav.backToEvent). One look everywhere it appears (every France
  * sub-page header and the NYC RSVP pages): an outlined pill in the accent
  * color, so it reads as a control rather than a stray link. */
 .back-link {

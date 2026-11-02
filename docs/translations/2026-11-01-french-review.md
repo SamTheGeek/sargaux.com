@@ -119,6 +119,13 @@ The first paragraph is items 13–15 run together, with 15 in bold.
 - FR (draft): Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail Rétro Chic. Nous vous invitons également à porter une tenue colorée. Dans la tradition des mariages français, les femmes sont vivement encouragées à porter un chapeau ou un bibi. Rendez-vous sur la page Dress Code pour plus de détails et quelques inspirations.
 - Your version:
 
+### Every page: back button
+
+**18b. Back button in the header.** Shown on every sub-page; replaces "← Return to event" / "← Retour à l'événement".
+- EN: ← Wedding home
+- FR (draft): ← Accueil du mariage
+- Your version:
+
 ---
 
 ## Part 2 — reviewed French worth a second look
