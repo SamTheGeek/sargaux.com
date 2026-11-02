@@ -132,10 +132,18 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
     });
   }
 
+  // Only a width change can change which photos share the first row. iOS
+  // Safari fires height-only resizes whenever its toolbar shows or hides
+  // (scrolling, a URL change), and re-measuring 70+ tiles then — or moving
+  // them while the lightbox is open — costs frames for nothing.
   let resizeTimeout: number | undefined;
+  let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
     window.clearTimeout(resizeTimeout);
     resizeTimeout = window.setTimeout(() => {
+      if (document.querySelector('#photo-lightbox.active')) return;
       document.querySelectorAll<HTMLElement>('[data-photo-gallery]').forEach(reorderItems);
     }, 150);
   });
