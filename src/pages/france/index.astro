@@ -67,7 +67,7 @@ const rsvpFirst = features.france.rsvpFirstInExplore;
               <span class="event-time">{t(strings.france.weekend.friday.dinner.time)}</span>
               <span class="event-name">
                 {t(strings.france.weekend.friday.dinner.name)}
-                <a class="event-dresscode" href="/france/lookbook#friday">{dressCodeLine(dc.friday)} →</a>
+                <a class="details-link details-link--cta event-dresscode" href="/france/lookbook#friday">{dressCodeLine(dc.friday)} →</a>
               </span>
             </div>
           </div>
@@ -88,7 +88,7 @@ const rsvpFirst = features.france.rsvpFirstInExplore;
               <span class="event-time">{t(strings.france.weekend.saturday.celebration.time)}</span>
               <span class="event-name">
                 {t(strings.france.weekend.saturday.celebration.name)}
-                <a class="event-dresscode" href="/france/lookbook#saturday">{dressCodeLine(dc.saturday)} →</a>
+                <a class="details-link details-link--cta event-dresscode" href="/france/lookbook#saturday">{dressCodeLine(dc.saturday)} →</a>
                 <span class="event-dresscode-note">{t(strings.france.weekend.saturdayHats)}</span>
               </span>
             </div>
@@ -349,22 +349,10 @@ const rsvpFirst = features.france.rsvpFirstInExplore;
     min-width: 0;
   }
 
-  /* Dress code under the event it applies to, linking to that day's lookbook. */
+  /* Dress code under the event it applies to, linking to that day's lookbook.
+   * Its look comes from .details-link--cta; this only places it. */
   .event-dresscode {
     display: block;
-    width: fit-content;
-    margin-top: 4px;
-    font-size: var(--font-size-caption);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    color: var(--color-accent-text);
-    text-decoration: none;
-  }
-
-  .event-dresscode:hover {
-    color: var(--color-text);
-    text-decoration: underline;
   }
 
   .event-dresscode-note {
@@ -429,13 +417,25 @@ const rsvpFirst = features.france.rsvpFirstInExplore;
     letter-spacing: var(--tracking-caption);
   }
 
+  /* The one text-link style on this page: map links, "How to get there",
+   * "Explore Accommodations" and the timetable dress codes all use it, with
+   * --cta for the orange ones. Hover underlines in the text color. Add new
+   * links here rather than giving them their own rules. */
   .details-link,
   .details-value a {
     width: fit-content;
     font-size: var(--font-size-caption);
+    font-weight: 400;
     text-transform: uppercase;
     letter-spacing: var(--tracking-caption);
     text-decoration: none;
+  }
+
+  .details-link:hover,
+  .details-value a:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 
   .details-links {
