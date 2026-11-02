@@ -7,6 +7,7 @@ import type { LocalizedString } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import CalendarCta from '../../components/CalendarCta.astro';
+import { features } from '../../config/features';
 import '../../styles/france-details.css';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
@@ -78,11 +79,13 @@ const timeClass = (text: LocalizedString) => (/^\d/.test(t(text)) ? 'time time--
         />
       )}
 
-      <section class="weekend-weather">
-        <h2>{t(sch.weather.heading)}</h2>
-        <p class="weather-value"><strong>{t(sch.weather.value)}</strong></p>
-        <p class="weather-note">{t(sch.weather.note)}</p>
-      </section>
+      {features.france.scheduleWeather && (
+        <section class="weekend-weather">
+          <h2>{t(sch.weather.heading)}</h2>
+          <p class="weather-value"><strong>{t(sch.weather.value)}</strong></p>
+          <p class="weather-note">{t(sch.weather.note)}</p>
+        </section>
+      )}
 
       <section class="days">
       <!-- Friday -->

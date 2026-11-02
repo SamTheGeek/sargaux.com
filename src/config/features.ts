@@ -67,6 +67,7 @@ type FeatureFlags = {
     rsvpEnabled: boolean;
     stayingOverview: boolean;
     roomTypes: boolean;
+    scheduleWeather: boolean;
     rsvpFirstInExplore: boolean;
   };
   registry: {
@@ -123,6 +124,8 @@ const features: FeatureFlags = {
     // Village page "Room Types" cards (photos of the Village rooms and the
     // two train-car suites). On; set FEATURE_FRANCE_ROOM_TYPES=false to hide.
     roomTypes: flag(import.meta.env.FEATURE_FRANCE_ROOM_TYPES, true),
+    // Weather box near the top of the Weekend page (/france/schedule).
+    scheduleWeather: flag(import.meta.env.FEATURE_FRANCE_SCHEDULE_WEATHER, false),
     // France homepage Explore list: RSVP row at the top (true) or the bottom.
     rsvpFirstInExplore: flag(import.meta.env.FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE, true),
   },
