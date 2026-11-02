@@ -16,7 +16,7 @@ import {
   type ManifestPhoto,
   type ShareHandle,
 } from '../src/lib/icloud-stream';
-import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig';
+import { NYC_GALLERY_CONFIG, downloadFilename } from '../src/content/nycGalleryConfig';
 import { CACHE_TTL_MS, URL_LIFETIME_MS, URL_SAFETY_MS, redirectMaxAge, urlExpiry } from '../src/lib/icloud-photos';
 
 // Shapes copied from a real photos.icloud.com shared-album response, with
@@ -101,16 +101,47 @@ test.describe('parseAlbumRecords', () => {
 
   test('the manifest copies no URL, filename or other free text', () => {
     const manifest = toManifest(parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', 1)]));
-    expect(Object.keys(manifest[0]).sort()).toEqual(['full', 'guid', 'takenAt', 'thumb']);
+    expect(Object.keys(manifest[0]).sort()).toEqual(['full', 'guid', 'original', 'takenAt', 'thumb']);
     const text = JSON.stringify(manifest);
     expect(text).not.toContain('http');
     expect(text).not.toContain('c2VjcmV0');
   });
 
-  test('urlsByChecksum maps both renditions', () => {
-    const urls = urlsByChecksum(parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', 1)]));
-    expect([...urls.keys()].sort()).toEqual(['M1-m', 'M1-t']);
+  test('urlsByChecksum maps every rendition, the download original included', () => {
+    const jpegOriginal = { resOriginalFileType: { value: 'public.jpeg' }, ...res('M1-o', 3200, 2133, 'resOriginal') };
+    const urls = urlsByChecksum(parseAlbumRecords([master('M1', jpegOriginal), asset('aaaaaaaa-1', 'M1', 1)]));
+    expect([...urls.keys()].sort()).toEqual(['M1-m', 'M1-o', 'M1-t']);
   });
+});
+
+test.describe('download original', () => {
+  const pick = (masterExtra: Record<string, unknown>, assetExtra: Record<string, unknown> = {}) =>
+    parseAlbumRecords([master('M1', masterExtra), asset('aaaaaaaa-1', 'M1', 1, assetExtra)])[0].original;
+
+  test('is the camera original when it is a JPEG', () => {
+    const o = pick({ resOriginalFileType: { value: 'public.jpeg' }, ...res('ORIG', 3200, 2133, 'resOriginal') });
+    expect(o).toEqual({ checksum: 'ORIG', width: 3200, height: 2133 });
+  });
+
+  test('skips a HEIC original for the largest JPEG', () => {
+    const heic = { resOriginalFileType: { value: 'public.heic' }, ...res('HEIC', 4032, 3024, 'resOriginal') };
+    expect(pick(heic).checksum).toBe('M1-m');
+    expect(pick({ ...heic, ...res('FULLJPEG', 4032, 3024, 'resJPEGFull') }).checksum).toBe('FULLJPEG');
+  });
+
+  test('an edited rendition on the asset wins over the original', () => {
+    const o = pick(
+      { resOriginalFileType: { value: 'public.jpeg' }, ...res('ORIG', 3200, 2133, 'resOriginal') },
+      res('EDIT', 3000, 2000, 'resJPEGFull')
+    );
+    expect(o.checksum).toBe('EDIT');
+  });
+});
+
+test('downloadFilename numbers photos by gallery position, never by iCloud name', () => {
+  expect(downloadFilename('afterparty', 12)).toBe('sargaux-nyc-afterparty-012.jpg');
+  expect(downloadFilename('event', 1, 'svg')).toBe('sargaux-nyc-event-001.svg');
+  expect(downloadFilename('preparation', 1234)).toBe('sargaux-nyc-preparation-1234.jpg');
 });
 
 test.describe('buildAssetUrl', () => {
@@ -186,7 +217,7 @@ test.describe('queryAlbumRecords', () => {
 
 function photo(guid: string, takenAt: string, featured = false): ManifestPhoto {
   const d = { checksum: guid, width: 10, height: 10 };
-  return { guid, takenAt, thumb: d, full: d, ...(featured ? { featured: true } : {}) };
+  return { guid, takenAt, thumb: d, full: d, original: d, ...(featured ? { featured: true } : {}) };
 }
 
 test('sortChronologically breaks ties by GUID so reruns are stable', () => {
@@ -341,8 +372,8 @@ test.describe('committed manifests', () => {
         expect(Date.parse(photos[i].takenAt)).toBeGreaterThanOrEqual(Date.parse(photos[i - 1].takenAt));
       }
       for (const p of photos) {
-        expect(Object.keys(p).every((k) => ['guid', 'takenAt', 'thumb', 'full', 'featured'].includes(k))).toBe(true);
-        for (const d of [p.thumb, p.full]) {
+        expect(Object.keys(p).every((k) => ['guid', 'takenAt', 'thumb', 'full', 'original', 'featured'].includes(k))).toBe(true);
+        for (const d of [p.thumb, p.full, p.original]) {
           expect(typeof d.checksum).toBe('string');
           expect(d.width).toBeGreaterThan(0);
           expect(d.height).toBeGreaterThan(0);

@@ -38,6 +38,11 @@ const t = createTranslator(Astro.props.lang);
   <button class="photo-lightbox-btn photo-lightbox-next" type="button" aria-label={t(strings.nyc.photos.next)}>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
   </button>
+  <!-- href/download are set per photo. A same-origin link, so <a download>
+       works on desktop; touch devices use the share sheet instead (script). -->
+  <a class="photo-lightbox-btn photo-lightbox-download" download aria-label={t(strings.nyc.photos.download)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" /></svg>
+  </a>
 </div>
 
 <script>
@@ -64,11 +69,41 @@ const t = createTranslator(Astro.props.lang);
   let closeTimeout: number | undefined;
   let settleTimeout: number | undefined;
   let touchStartX: number | null = null;
+  let downloadLink: HTMLAnchorElement | null = null;
+
+  // ── Download / save ─────────────────────────────────────────
+  // On phones and tablets the button opens the share sheet ("Save Image" puts
+  // the photo in Photos). iOS only allows navigator.share() during the tap's
+  // user activation, and fetching a multi-MB original after the tap can run
+  // past it, so the current photo's original is prefetched once the viewer
+  // has stayed on it for a moment. Desktop keeps the plain <a download>.
+  const PREFETCH_DWELL_MS = 600;
+  const shareFiles = (() => {
+    try {
+      return (
+        typeof navigator.canShare === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches &&
+        navigator.canShare({ files: [new File([''], 'photo.jpg', { type: 'image/jpeg' })] })
+      );
+    } catch {
+      return false;
+    }
+  })();
+
+  interface Prefetch {
+    href: string;
+    controller: AbortController;
+    promise: Promise<File | null>;
+    file: File | null;
+  }
+  let prefetch: Prefetch | null = null;
+  let prefetchTimer: number | undefined;
 
   function bind() {
     lightbox = document.getElementById('photo-lightbox');
     lightboxImage = document.querySelector<HTMLImageElement>('#photo-lightbox-image');
     content = lightbox?.querySelector<HTMLElement>('.photo-lightbox-content') ?? null;
+    downloadLink = lightbox?.querySelector<HTMLAnchorElement>('.photo-lightbox-download') ?? null;
     activeItem = null;
     isClosing = false;
     isZooming = false;
@@ -78,6 +113,7 @@ const t = createTranslator(Astro.props.lang);
     lightbox.querySelector('.photo-lightbox-close')?.addEventListener('click', () => closeLightbox());
     lightbox.querySelector('.photo-lightbox-prev')?.addEventListener('click', () => step(-1));
     lightbox.querySelector('.photo-lightbox-next')?.addEventListener('click', () => step(1));
+    downloadLink?.addEventListener('click', onDownloadClick);
     lightbox.addEventListener('click', (e) => {
       const target = e.target as Node;
       if (lightboxImage?.contains(target)) return;
@@ -203,6 +239,7 @@ const t = createTranslator(Astro.props.lang);
       close?.focus({ preventScroll: true });
     }
     loadFull(activeItem, token);
+    schedulePrefetch(token);
   }
 
   function closeLightbox() {
@@ -236,6 +273,7 @@ const t = createTranslator(Astro.props.lang);
   function finalizeClose() {
     if (!lightbox || !lightboxImage) return;
     loadToken++;
+    cancelPrefetch();
     lightbox.classList.remove('active', 'is-closing');
     isClosing = false;
     clearPhotoParam();
@@ -264,6 +302,78 @@ const t = createTranslator(Astro.props.lang);
     const next = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-next');
     if (prev) prev.hidden = index <= 0;
     if (next) next.hidden = index >= items.length - 1;
+    const href = activeItem.dataset.downloadSrc;
+    if (downloadLink && href) {
+      if (prefetch && prefetch.href !== href) cancelPrefetch();
+      downloadLink.href = href;
+      downloadLink.download = activeItem.dataset.downloadName ?? '';
+    }
+  }
+
+  function cancelPrefetch() {
+    window.clearTimeout(prefetchTimer);
+    prefetch?.controller.abort();
+    prefetch = null;
+  }
+
+  function startPrefetch(href: string, name: string): Prefetch {
+    const controller = new AbortController();
+    const entry: Prefetch = { href, controller, file: null, promise: Promise.resolve(null) };
+    entry.promise = fetch(href, { signal: controller.signal, credentials: 'same-origin' })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob) return null;
+        entry.file = new File([blob], name, { type: blob.type || 'image/jpeg' });
+        return entry.file;
+      })
+      .catch(() => null);
+    prefetch = entry;
+    return entry;
+  }
+
+  /** Fetch the current photo's original once the viewer has lingered on it. */
+  function schedulePrefetch(token: number) {
+    if (!shareFiles || !downloadLink) return;
+    const href = downloadLink.getAttribute('href');
+    if (!href || prefetch?.href === href) return;
+    cancelPrefetch();
+    const name = downloadLink.download;
+    prefetchTimer = window.setTimeout(() => {
+      if (token === loadToken && downloadLink?.getAttribute('href') === href) startPrefetch(href, name);
+    }, PREFETCH_DWELL_MS);
+  }
+
+  async function shareOrDownload(file: File, href: string) {
+    try {
+      await navigator.share({ files: [file] });
+    } catch (err) {
+      // Dismissing the sheet is a choice, not a failure.
+      if ((err as DOMException)?.name === 'AbortError') return;
+      // Activation expired or files refused: fall back to a plain download.
+      window.location.href = href;
+    }
+  }
+
+  async function onDownloadClick(e: MouseEvent) {
+    if (!shareFiles || !downloadLink) return; // desktop: the native download
+    const href = downloadLink.getAttribute('href');
+    if (!href) return;
+    e.preventDefault();
+    if (prefetch?.href === href && prefetch.file) {
+      void shareOrDownload(prefetch.file, href);
+      return;
+    }
+    // Not ready yet: fetch now and try; shareOrDownload falls back if the
+    // tap's activation has run out by the time the file arrives.
+    const entry = prefetch?.href === href ? prefetch : (cancelPrefetch(), startPrefetch(href, downloadLink.download));
+    downloadLink.setAttribute('aria-busy', 'true');
+    const file = await entry.promise;
+    downloadLink.removeAttribute('aria-busy');
+    if (!file) {
+      window.location.href = href;
+      return;
+    }
+    await shareOrDownload(file, href);
   }
 
   // ── Image loading & geometry ────────────────────────────────
@@ -439,6 +549,7 @@ const t = createTranslator(Astro.props.lang);
 
   // Never carry an open lightbox across a ClientRouter swap.
   document.addEventListener('astro:before-swap', () => {
+    cancelPrefetch();
     window.clearTimeout(closeTimeout);
     window.clearTimeout(settleTimeout);
     isZooming = false;
@@ -579,6 +690,18 @@ const t = createTranslator(Astro.props.lang);
     right: 22px;
   }
 
+  /* Mirrors close: the right edge is one control column, ✕ above, ⤓ below. */
+  .photo-lightbox-download {
+    bottom: 20px;
+    right: 22px;
+    text-decoration: none;
+  }
+
+  .photo-lightbox-download[aria-busy='true'] {
+    opacity: 0.55;
+    cursor: progress;
+  }
+
   .photo-lightbox-prev,
   .photo-lightbox-next {
     top: 50%;
@@ -598,11 +721,21 @@ const t = createTranslator(Astro.props.lang);
       padding: 4rem 0.75rem;
     }
 
+    /* ‹ › pair up in the bottom-left so download keeps the bottom-right corner. */
     .photo-lightbox-prev,
     .photo-lightbox-next {
       top: auto;
       bottom: 1.25rem;
       margin-top: 0;
+    }
+
+    .photo-lightbox-next {
+      right: auto;
+      left: calc(1rem + 2.5rem + 0.5rem);
+    }
+
+    .photo-lightbox-download {
+      bottom: 1.25rem;
     }
   }
 

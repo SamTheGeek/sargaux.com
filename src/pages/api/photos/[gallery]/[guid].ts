@@ -3,6 +3,7 @@ import { getAuthenticatedGuest } from '../../../../lib/auth';
 import { features } from '../../../../config/features';
 import { getNycGallery, isPhotoTestFixture } from '../../../../content/nycGalleries';
 import { redirectMaxAge, resolvePhotoUrls } from '../../../../lib/icloud-photos';
+import { placeholderSvg } from '../../../../lib/photo-placeholder';
 
 /**
  * GET /api/photos/{gallery}/{guid}?size=thumb|full
@@ -57,8 +58,3 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
     },
   });
 };
-
-/** A flat tile of the photo's exact aspect ratio, used only by the test fixture. */
-function placeholderSvg(width: number, height: number): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#8a9a7b"/></svg>`;
-}
