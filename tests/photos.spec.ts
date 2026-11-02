@@ -101,18 +101,80 @@ test.describe('NYC photo galleries', () => {
     const second = await items.nth(1).getAttribute('data-photo-guid');
     const third = await items.nth(2).getAttribute('data-photo-guid');
 
+    // The URL and focus update once the open zoom has settled, not in its
+    // first frame (see PhotoLightbox), so poll for them.
+    const photoParam = () => new URL(page.url()).searchParams.get('photo');
+
     await items.nth(1).click();
     await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
     await expect(page.locator('.photo-lightbox-close')).toBeFocused();
-    expect(new URL(page.url()).searchParams.get('photo')).toBe(second);
+    await expect.poll(photoParam).toBe(second);
 
     await page.keyboard.press('ArrowRight');
-    expect(new URL(page.url()).searchParams.get('photo')).toBe(third);
+    await expect.poll(photoParam).toBe(third);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('#photo-lightbox')).not.toHaveClass(/active/);
-    expect(new URL(page.url()).searchParams.has('photo')).toBe(false);
+    await expect.poll(photoParam).toBeNull();
     await expect(items.nth(2)).toBeFocused();
+  });
+
+  test('tapping a tile opens the lightbox in place, never a ClientRouter navigation', async ({ page }) => {
+    await login(page);
+    for (const path of ['/nyc/photos/afterparty', '/nyc']) {
+      await page.goto(path);
+      await page.evaluate(() => {
+        (window as unknown as { __navs: number }).__navs = 0;
+        document.addEventListener('astro:before-preparation', () => {
+          (window as unknown as { __navs: number }).__navs++;
+        });
+      });
+      await page.locator('.photo-gallery-item').first().click();
+      await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
+      await page.waitForTimeout(600);
+      expect(await page.evaluate(() => (window as unknown as { __navs: number }).__navs), path).toBe(0);
+      await page.keyboard.press('Escape');
+    }
+  });
+
+  test('opening the lightbox defers the URL update until the zoom ends', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    // Record the URL in the same task as the click, i.e. the zoom's first frame.
+    const urlAtOpen = await page.evaluate(() => {
+      document.querySelectorAll<HTMLElement>('.photo-gallery-item')[1].click();
+      return location.search;
+    });
+    expect(urlAtOpen).not.toContain('photo=');
+    await expect.poll(() => new URL(page.url()).searchParams.has('photo')).toBe(true);
+  });
+
+  test('the page underneath never moves: no body lock, no scroll on step or wheel', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    const items = page.locator('.photo-gallery-item');
+    await items.nth(1).click();
+    const lightbox = page.locator('#photo-lightbox');
+    await expect(lightbox).toHaveClass(/active/);
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+
+    const bodyStyle = await page.evaluate(() => ({
+      overflow: document.body.style.overflow,
+      paddingRight: document.body.style.paddingRight,
+    }));
+    expect(bodyStyle).toEqual({ overflow: '', paddingRight: '' });
+    await expect(lightbox).toHaveAttribute('data-elastic-ignore', '');
+    await expect(lightbox).toHaveCSS('touch-action', 'none');
+
+    const scrollY = () => page.evaluate(() => window.scrollY);
+    const before = await scrollY();
+    await page.mouse.move(200, 400);
+    await page.mouse.wheel(0, 600);
+    await page.keyboard.press('PageDown');
+    for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(300);
+    expect(await scrollY()).toBe(before);
   });
 
   test('a ?photo= link opens that photo', async ({ page }) => {
