@@ -40,6 +40,16 @@ test.describe('NYC photo galleries', () => {
     expect(order).toEqual(['info', 'band', 'photos', 'explore']);
   });
 
+  test('post-event layout hides dress code, RSVP deadline, and the Travel/RSVP Explore rows', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc');
+    await expect(page.locator('.nyc-info-row')).toHaveCount(2);
+    await expect(page.locator('.nyc-info .nyc-info-link-inline[href="/nyc/rsvp"]')).toHaveCount(0);
+    await expect(page.locator('.nyc-nav .nyc-strip-link[href="/nyc/travel"]')).toHaveCount(0);
+    await expect(page.locator('.nyc-nav .nyc-strip-link[href="/nyc/rsvp"]')).toHaveCount(0);
+    await expect(page.locator('.nyc-nav .nyc-strip-link[href="/nyc/details"]')).toHaveCount(1);
+  });
+
   test('only galleries with photos render on /nyc', async ({ page }) => {
     await login(page);
     await page.goto('/nyc');
