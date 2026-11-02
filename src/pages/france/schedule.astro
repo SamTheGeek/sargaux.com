@@ -447,8 +447,8 @@ main {
   .dresscode-name {
     display: inline-block;
     font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.1rem; /* 19.8px on the 18px desktop root */
+    font-weight: 400;
     text-transform: uppercase;
     letter-spacing: var(--tracking-h3);
     color: var(--color-text);
@@ -463,7 +463,7 @@ main {
   }
 
   .dresscode-link::after {
-    content: ' →';
+    content: '\00a0→'; /* non-breaking: the arrow never wraps alone */
     font-family: var(--font-arrow);
   }
 
@@ -510,7 +510,7 @@ main {
 
     .dresscode-link,
     .dresscode-name {
-      font-size: 1.0625rem;
+      font-size: 0.9rem; /* 15.3px on the 17px mobile root */
     }
 
     /* Single-column layout: the range reads fine on one line again. */
