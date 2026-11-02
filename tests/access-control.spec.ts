@@ -86,6 +86,22 @@ test.describe('Event Access Control', () => {
     await expect(page).toHaveURL(getPrimaryEventRoute(['nyc', 'france']));
   });
 
+  // Couple and Registry are shared by both weddings: no switcher, even for a
+  // dual-invited guest, just a back button to the homepage, which forwards to
+  // the date-based default event (asserted by the homepage tests above).
+  for (const path of ['/couple', '/registry']) {
+    test(`${path} shows a back button to the homepage instead of the switcher`, async ({ page, context }) => {
+      await setSessionCookie(context, ['nyc', 'france']);
+      await page.goto(path);
+      await expect(page.locator('.event-toggle')).toHaveCount(0);
+      const back = page.locator('.site-header .back-link');
+      await expect(back).toBeVisible();
+      await expect(back).toHaveAttribute('href', '/');
+      await back.click();
+      await expect(page).toHaveURL(getPrimaryEventRoute(['nyc', 'france']));
+    });
+  }
+
   test('dual-invited guest can access both events and sees switcher', async ({ page, context }) => {
     await setSessionCookie(context, ['nyc', 'france']);
 

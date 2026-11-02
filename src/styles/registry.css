@@ -16,19 +16,6 @@
   background: var(--color-bg);
 }
 
-.registry-event-nav-link {
-  color: var(--color-text-muted);
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caption);
-  font-size: var(--font-size-caption);
-  font-weight: 500;
-}
-
-.registry-event-nav-link:hover {
-  color: var(--color-text);
-}
-
 .registry-shell {
   position: relative;
   overflow: clip;
