@@ -4,104 +4,188 @@ import { test, expect } from '@playwright/test';
 import {
   applyFeatured,
   buildAssetUrl,
-  parseAssetUrls,
-  parseWebstream,
-  pickDerivatives,
-  postStream,
-  redirectHost,
+  parseAlbumRecords,
+  parseShareHandle,
+  queryAlbumRecords,
   sortChronologically,
+  toManifest,
+  urlsByChecksum,
   DEFAULT_FEATURED_COUNT,
   type ManifestPhoto,
+  type ShareHandle,
 } from '../src/lib/icloud-stream';
 import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig';
-import { CACHE_TTL_MS, URL_LIFETIME_MS, URL_SAFETY_MS, redirectMaxAge } from '../src/lib/icloud-photos';
+import { CACHE_TTL_MS, URL_LIFETIME_MS, URL_SAFETY_MS, redirectMaxAge, urlExpiry } from '../src/lib/icloud-photos';
 
-const derivative = (checksum: string, width: number, height: number) => ({
-  checksum,
-  width: String(width),
-  height: String(height),
-  fileSize: '1000',
-});
+// Shapes copied from a real photos.icloud.com shared-album response, with
+// invented ids, checksums and signatures.
+const ZONE = { zoneName: 'SharedCollection-TEST', ownerRecordName: '_owner', zoneType: 'REGULAR_CUSTOM_ZONE' };
+const dl = (sum: string) =>
+  `https://cvws-h2.icloud-content.com/B/${sum}/\${f}?o=signed&v=1&x=3`;
 
-function rawPhoto(guid: string, dateCreated: string | undefined, extra: Record<string, unknown> = {}) {
+function res(sum: string, w: number, h: number, prefix: string) {
   return {
-    photoGuid: guid,
-    dateCreated,
-    batchDateCreated: '2026-10-12T05:00:00Z',
-    caption: 'should never be copied',
-    derivatives: {
-      '342': derivative(`${guid}-s`, 342, 256),
-      '2049': derivative(`${guid}-l`, 2048, 1536),
-    },
-    ...extra,
+    [`${prefix}Res`]: { type: 'ASSETID', value: { fileChecksum: sum, size: 1000, downloadURL: dl(sum) } },
+    [`${prefix}Width`]: { type: 'INT64', value: w },
+    [`${prefix}Height`]: { type: 'INT64', value: h },
   };
 }
+
+function master(name: string, extra: Record<string, unknown> = {}) {
+  return {
+    recordName: name,
+    recordType: 'CPLMaster',
+    fields: {
+      itemType: { value: 'public.jpeg' },
+      filenameEnc: { value: 'c2VjcmV0LW5hbWUuanBn' },
+      originalCreationDate: { value: 1791778800000 },
+      ...res(`${name}-t`, 509, 339, 'resJPEGThumb'),
+      ...res(`${name}-m`, 2172, 1448, 'resJPEGMed'),
+      ...extra,
+    },
+  };
+}
+
+function asset(guid: string, masterName: string, assetDate: number | undefined, extra: Record<string, unknown> = {}) {
+  return {
+    recordName: guid,
+    recordType: 'CPLAsset',
+    fields: {
+      ...(assetDate === undefined ? {} : { assetDate: { value: assetDate } }),
+      masterRef: { value: { recordName: masterName, zoneID: ZONE } },
+      ...extra,
+    },
+  };
+}
+
+test.describe('parseAlbumRecords', () => {
+  test('pairs assets with masters and sorts oldest first', () => {
+    const photos = parseAlbumRecords([
+      master('M3'), asset('cccccccc-3', 'M3', 1791790000000),
+      master('M1'), asset('aaaaaaaa-1', 'M1', 1791770000000),
+      master('M2'), asset('bbbbbbbb-2', 'M2', 1791780000000),
+    ]);
+    expect(photos.map((p) => p.guid)).toEqual(['aaaaaaaa-1', 'bbbbbbbb-2', 'cccccccc-3']);
+    expect(photos[0].thumb).toEqual({ checksum: 'M1-t', width: 509, height: 339 });
+    expect(photos[0].full).toEqual({ checksum: 'M1-m', width: 2172, height: 1448 });
+    expect(photos[0].thumbUrl).toBe('https://cvws-h2.icloud-content.com/B/M1-t/photo.jpg?o=signed&v=1&x=3');
+  });
+
+  test('falls back to the master creation date when the asset has none', () => {
+    const [p] = parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', undefined)]);
+    expect(p.takenAt).toBe(new Date(1791778800000).toISOString());
+  });
+
+  test('prefers an edited rendition on the asset over the master', () => {
+    const [p] = parseAlbumRecords([
+      master('M1'),
+      asset('aaaaaaaa-1', 'M1', 1791770000000, res('EDIT-f', 2000, 2000, 'resJPEGFull')),
+    ]);
+    expect(p.full.checksum).toBe('EDIT-f');
+  });
+
+  test('skips videos, orphans, bad ids and photos without both renditions', () => {
+    const noMed = master('M4');
+    delete (noMed.fields as Record<string, unknown>).resJPEGMedRes;
+    const photos = parseAlbumRecords([
+      master('M1', { itemType: { value: 'com.apple.quicktime-movie' } }), asset('aaaaaaaa-1', 'M1', 1),
+      asset('bbbbbbbb-2', 'MISSING', 2),
+      master('M3'), asset('bad id!', 'M3', 3),
+      noMed, asset('dddddddd-4', 'M4', 4),
+      master('M5'), asset('eeeeeeee-5', 'M5', 5),
+    ]);
+    expect(photos.map((p) => p.guid)).toEqual(['eeeeeeee-5']);
+  });
+
+  test('the manifest copies no URL, filename or other free text', () => {
+    const manifest = toManifest(parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', 1)]));
+    expect(Object.keys(manifest[0]).sort()).toEqual(['full', 'guid', 'takenAt', 'thumb']);
+    const text = JSON.stringify(manifest);
+    expect(text).not.toContain('http');
+    expect(text).not.toContain('c2VjcmV0');
+  });
+
+  test('urlsByChecksum maps both renditions', () => {
+    const urls = urlsByChecksum(parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', 1)]));
+    expect([...urls.keys()].sort()).toEqual(['M1-m', 'M1-t']);
+  });
+});
+
+test.describe('buildAssetUrl', () => {
+  test('fills the filename placeholder and accepts only https on icloud-content.com', () => {
+    expect(buildAssetUrl(dl('X'))).toBe('https://cvws-h2.icloud-content.com/B/X/photo.jpg?o=signed&v=1&x=3');
+    expect(buildAssetUrl('https://evil.example.com/${f}')).toBeNull();
+    expect(buildAssetUrl('https://cvws.icloud-content.com.evil.com/${f}')).toBeNull();
+    expect(buildAssetUrl('http://cvws.icloud-content.com/${f}')).toBeNull();
+    expect(buildAssetUrl(undefined)).toBeNull();
+  });
+});
+
+test.describe('parseShareHandle', () => {
+  const good = {
+    results: [{
+      zoneID: ZONE,
+      ownerIdentity: { lookupInfo: { emailAddress: 'owner@example.com' } },
+      anonymousPublicAccess: { token: 'TOKEN', databasePartition: 'https://p121-ckdatabasews.icloud.com:443' },
+    }],
+  };
+
+  test('reads the partition, token and zone, and nothing about the owner', () => {
+    const handle = parseShareHandle(good);
+    expect(handle).toEqual({
+      partition: 'https://p121-ckdatabasews.icloud.com',
+      accessToken: 'TOKEN',
+      zoneID: ZONE,
+    });
+    expect(JSON.stringify(handle)).not.toContain('owner@example.com');
+  });
+
+  test('rejects a partition that is not a CloudKit host', () => {
+    const bad = structuredClone(good);
+    bad.results[0].anonymousPublicAccess.databasePartition = 'https://evil.example.com';
+    expect(parseShareHandle(bad)).toBeNull();
+    expect(parseShareHandle({ results: [] })).toBeNull();
+    expect(parseShareHandle(null)).toBeNull();
+  });
+});
+
+test.describe('queryAlbumRecords', () => {
+  const share: ShareHandle = { partition: 'https://p121-ckdatabasews.icloud.com', accessToken: 'TOK', zoneID: ZONE };
+
+  test('follows continuationMarker until the album is exhausted', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    const urls: string[] = [];
+    const fake = async (url: string, init?: RequestInit) => {
+      urls.push(url);
+      const body = JSON.parse(String(init?.body));
+      bodies.push(body);
+      const page = bodies.length;
+      return new Response(
+        JSON.stringify(page === 1 ? { records: [master('M1')], continuationMarker: 'NEXT' } : { records: [asset('aaaaaaaa-1', 'M1', 1)] }),
+        { status: 200 }
+      );
+    };
+    const records = await queryAlbumRecords(fake, 'SHARETOKEN', share);
+    expect(records).toHaveLength(2);
+    expect(bodies[1].continuationMarker).toBe('NEXT');
+    expect(bodies[0].zoneID).toEqual(ZONE);
+    const u = new URL(urls[0]);
+    expect(u.hostname).toBe('p121-ckdatabasews.icloud.com');
+    expect(u.pathname).toContain('/shared/records/query');
+    expect(u.searchParams.get('publicAccessAuthToken')).toBe('TOK');
+    expect(u.searchParams.get('sharing_url_key')).toBe('SHARETOKEN');
+  });
+
+  test('surfaces an HTTP error', async () => {
+    const fake = async () => new Response('{}', { status: 421 });
+    await expect(queryAlbumRecords(fake, 'SHARETOKEN', share)).rejects.toThrow(/421/);
+  });
+});
 
 function photo(guid: string, takenAt: string, featured = false): ManifestPhoto {
   const d = { checksum: guid, width: 10, height: 10 };
   return { guid, takenAt, thumb: d, full: d, ...(featured ? { featured: true } : {}) };
 }
-
-test.describe('parseWebstream', () => {
-  test('sorts oldest first regardless of album order', () => {
-    const parsed = parseWebstream({
-      photos: [
-        rawPhoto('CCCCCCCC-3', '2026-10-12T01:00:00Z'),
-        rawPhoto('AAAAAAAA-1', '2026-10-11T23:00:00Z'),
-        rawPhoto('BBBBBBBB-2', '2026-10-12T00:30:00Z'),
-      ],
-    });
-    expect(parsed.map((p) => p.guid)).toEqual(['AAAAAAAA-1', 'BBBBBBBB-2', 'CCCCCCCC-3']);
-  });
-
-  test('falls back to batchDateCreated when the capture time is missing', () => {
-    const [p] = parseWebstream({ photos: [rawPhoto('AAAAAAAA-1', undefined)] });
-    expect(p.takenAt).toBe('2026-10-12T05:00:00.000Z');
-  });
-
-  test('skips videos and items without usable stills', () => {
-    const parsed = parseWebstream({
-      photos: [
-        rawPhoto('AAAAAAAA-1', '2026-10-11T23:00:00Z', { mediaAssetType: 'video' }),
-        rawPhoto('BBBBBBBB-2', '2026-10-11T23:00:00Z', { derivatives: { PosterFrame: derivative('x', 640, 480) } }),
-        rawPhoto('bad guid!', '2026-10-11T23:00:00Z'),
-        rawPhoto('CCCCCCCC-3', '2026-10-11T23:00:00Z'),
-      ],
-    });
-    expect(parsed.map((p) => p.guid)).toEqual(['CCCCCCCC-3']);
-  });
-
-  test('copies no caption or other free text', () => {
-    const [p] = parseWebstream({ photos: [rawPhoto('AAAAAAAA-1', '2026-10-11T23:00:00Z')] });
-    expect(Object.keys(p).sort()).toEqual(['full', 'guid', 'takenAt', 'thumb']);
-    expect(JSON.stringify(p)).not.toContain('should never be copied');
-  });
-
-  test('returns nothing for a malformed body', () => {
-    expect(parseWebstream(null)).toEqual([]);
-    expect(parseWebstream({ photos: 'nope' })).toEqual([]);
-  });
-});
-
-test.describe('pickDerivatives', () => {
-  test('thumb is the smallest rendition at least 400px wide, full the largest', () => {
-    const picked = pickDerivatives([
-      { checksum: 'l', width: 2048, height: 1536 },
-      { checksum: 's', width: 342, height: 256 },
-      { checksum: 'm', width: 640, height: 480 },
-    ]);
-    expect(picked?.thumb.checksum).toBe('m');
-    expect(picked?.full.checksum).toBe('l');
-  });
-
-  test('falls back to the largest rendition when every one is small', () => {
-    const picked = pickDerivatives([
-      { checksum: 'a', width: 300, height: 200 },
-      { checksum: 'b', width: 342, height: 256 },
-    ]);
-    expect(picked?.thumb.checksum).toBe('b');
-  });
-});
 
 test('sortChronologically breaks ties by GUID so reruns are stable', () => {
   const t = '2026-10-11T23:00:00.000Z';
@@ -137,49 +221,6 @@ test.describe('applyFeatured', () => {
   });
 });
 
-test.describe('asset URLs', () => {
-  test('builds https URLs on Apple hosts only', () => {
-    expect(buildAssetUrl('cvws.icloud-content.com', '/S/abc/IMG.JPG?o=1')).toBe(
-      'https://cvws.icloud-content.com/S/abc/IMG.JPG?o=1'
-    );
-    expect(buildAssetUrl('evil.example.com', '/x')).toBeNull();
-    expect(buildAssetUrl('cvws.icloud-content.com.evil.com', '/x')).toBeNull();
-    expect(buildAssetUrl('cvws.icloud-content.com', 'x')).toBeNull();
-  });
-
-  test('parseAssetUrls maps checksum → URL and drops bad entries', () => {
-    const urls = parseAssetUrls({
-      items: {
-        c1: { url_location: 'cvws.icloud-content.com', url_path: '/a' },
-        c2: { url_location: 'evil.example.com', url_path: '/b' },
-        c3: { url_path: '/c' },
-      },
-    });
-    expect([...urls.keys()]).toEqual(['c1']);
-  });
-});
-
-test.describe('postStream', () => {
-  test('follows the one-time 330 partition redirect', async () => {
-    const calls: string[] = [];
-    const fake = async (url: string) => {
-      calls.push(url);
-      if (url.includes('p23-')) {
-        return new Response('{}', { status: 330, headers: { 'X-Apple-MMe-Host': 'p42-sharedstreams.icloud.com' } });
-      }
-      return new Response(JSON.stringify({ photos: [] }), { status: 200 });
-    };
-    const { host, body } = await postStream(fake, 'TOKEN123', 'webstream', { streamCtag: null });
-    expect(host).toBe('p42-sharedstreams.icloud.com');
-    expect(body).toEqual({ photos: [] });
-    expect(calls).toHaveLength(2);
-  });
-
-  test('ignores a redirect to a non-sharedstreams host', () => {
-    expect(redirectHost(330, 'evil.example.com')).toBeNull();
-    expect(redirectHost(200, 'p42-sharedstreams.icloud.com')).toBeNull();
-  });
-});
 
 test.describe('committed manifests', () => {
   const dir = join(import.meta.dirname, '../src/content/nycPhotos');
@@ -233,6 +274,17 @@ test.describe('redirectMaxAge (iCloud URLs expire ~15 minutes after issue)', () 
   test('an expired or nearly expired URL is not cached at all', () => {
     expect(redirectMaxAge(t0, t0 + 13 * min)).toBe(0);
     expect(redirectMaxAge(t0, t0 + 20 * min)).toBe(0);
+  });
+
+  test("honours the URL's own e= expiry when it is sooner", () => {
+    const url = `https://cvws-h2.icloud-content.com/B/X/photo.jpg?o=s&e=${Math.floor((t0 + 5 * min) / 1000)}`;
+    expect(urlExpiry(url)).toBe(t0 + 5 * min);
+    // 5 min stated − 2 min margin = 3 min, despite a fresh fetch.
+    expect(redirectMaxAge(t0, t0, url)).toBe(180);
+    // A later stated expiry never extends past issue + 15 min.
+    const late = `https://cvws-h2.icloud-content.com/B/X/photo.jpg?e=${Math.floor((t0 + 60 * min) / 1000)}`;
+    expect(redirectMaxAge(t0, t0 + 11 * min, late)).toBe(120);
+    expect(urlExpiry('https://cvws-h2.icloud-content.com/B/X/photo.jpg')).toBeNull();
   });
 
   test('the server cache is shorter than the URL lifetime minus the margin', () => {

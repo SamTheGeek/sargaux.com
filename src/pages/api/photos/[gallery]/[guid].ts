@@ -16,7 +16,7 @@ import { redirectMaxAge, resolvePhotoUrls } from '../../../../lib/icloud-photos'
  *   purpose: a page of thumbnails fires dozens of these at once, and the page
  *   that embeds them already ran middleware's live Notion checks.
  * - Not an open proxy: only a GUID in a visible gallery's committed manifest
- *   resolves, and `parseAssetUrls` only accepts Apple-hosted https URLs.
+ *   resolves, and `buildAssetUrl` only accepts https URLs on *.icloud-content.com.
  * - Apple's URLs expire ~15 minutes after issue, so the redirect is
  *   browser-cached only for what is left of that URL's life (minus a margin),
  *   never longer than 5 minutes.
@@ -43,10 +43,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
   }
 
   if (!gallery.albumToken) return new Response(null, { status: 404 });
-  const { urls, fetchedAt } = await resolvePhotoUrls(
-    gallery.albumToken,
-    gallery.photos.map((p) => p.guid)
-  );
+  const { urls, fetchedAt } = await resolvePhotoUrls(gallery.albumToken);
   const target = urls.get(derivative.checksum);
   if (!target) {
     return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
@@ -56,7 +53,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
     status: 302,
     headers: {
       Location: target,
-      'Cache-Control': `private, max-age=${redirectMaxAge(fetchedAt)}`,
+      'Cache-Control': `private, max-age=${redirectMaxAge(fetchedAt, Date.now(), target)}`,
     },
   });
 };

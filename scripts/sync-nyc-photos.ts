@@ -8,26 +8,26 @@
  *   node scripts/sync-nyc-photos.ts afterparty --reshuffle   # re-pick the random preview
  *
  * Writes src/content/nycPhotos/{id}.json: one entry per still photo (videos
- * are skipped) with its GUID, capture time and the two renditions the site
- * uses, sorted oldest-first. No URLs (iCloud's expire within hours; the
- * /api/photos endpoint resolves fresh ones) and no captions (the repo is
- * public). Commit the result.
+ * are skipped) with its asset id, capture time and the two renditions the site
+ * uses, sorted oldest-first. No URLs (iCloud's expire ~15 minutes after issue;
+ * the /api/photos endpoint fetches fresh ones), and no captions, filenames or
+ * owner details (the repo is public). Commit the result.
  *
  * Preview: the first sync marks DEFAULT_FEATURED_COUNT random photos
  * `featured`, which is what /nyc shows. Reruns keep those flags, so you can
  * also hand-edit them to curate the preview; `--reshuffle` draws a new random
  * set.
  *
- * Needs network access to *.icloud.com.
+ * Needs network access to *.icloud.com (ckdatabasews + its p*- partitions).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig.ts';
 import {
   applyFeatured,
+  fetchAlbum,
   isValidAlbumToken,
-  parseWebstream,
-  postStream,
+  toManifest,
   type ManifestPhoto,
 } from '../src/lib/icloud-stream.ts';
 
@@ -70,8 +70,7 @@ for (const gallery of targets) {
   }
 
   try {
-    const { body } = await postStream(fetch, gallery.albumToken, 'webstream', { streamCtag: null });
-    const photos = parseWebstream(body);
+    const photos = toManifest(await fetchAlbum(fetch, gallery.albumToken));
     if (photos.length === 0) {
       console.error(`${gallery.id}: the album returned no photos — manifest left unchanged`);
       failed = true;
