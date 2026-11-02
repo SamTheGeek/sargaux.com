@@ -42,6 +42,8 @@ if (guestId) {
 
 const dressCodeLine = (name: LocalizedString) => `${t(dc.label)}${t(dc.sep)}${t(name)}`;
 const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
+// See .time--digits in the styles below.
+const timeClass = (text: LocalizedString) => (/^\d/.test(t(text)) ? 'time time--digits' : 'time');
 ---
 
 <WireframeLayout title={t(sch.pageTitle)} event="france" page="schedule">
@@ -88,14 +90,14 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
         <h2>{t(sch.friday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time">{t(sch.friday.checkin.time)}</span>
+            <span class={timeClass(sch.friday.checkin.time)}>{t(sch.friday.checkin.time)}</span>
             <div class="event">
               <h4>{t(sch.friday.checkin.title)}</h4>
               <p>{t(sch.friday.checkin.desc)}</p>
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(sch.friday.dinner.time)}</span>
+            <span class={timeClass(sch.friday.dinner.time)}>{t(sch.friday.dinner.time)}</span>
             <div class="event">
               <h4>{t(sch.friday.dinner.title)}</h4>
               <p class="location">{t(sch.friday.dinner.location)}</p>
@@ -114,7 +116,7 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
         <h2>{t(sch.saturday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time time--range">
+            <span class="time time--digits time--range">
               <span>{t(sch.saturday.breakfast.time)}</span>
               <span class="time-dash">—</span>
               <span>{t(sch.saturday.breakfast.timeEnd)}</span>
@@ -125,7 +127,7 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
             </div>
           </div>
           <div class="timeline-item optional">
-            <span class="time">{t(sch.saturday.excursion.time)}</span>
+            <span class={timeClass(sch.saturday.excursion.time)}>{t(sch.saturday.excursion.time)}</span>
             <div class="event">
               <h4>{t(sch.saturday.excursion.title)}</h4>
               <p>{t(sch.saturday.excursion.desc)}</p>
@@ -135,21 +137,21 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
                one box with a connecting rule instead of three separate cards. -->
           <div class="timeline-group" data-testid="saturday-evening">
             <div class="timeline-step">
-              <span class="time">{t(sch.saturday.ceremony.time)}</span>
+              <span class={timeClass(sch.saturday.ceremony.time)}>{t(sch.saturday.ceremony.time)}</span>
               <div class="event">
                 <h4>{t(sch.saturday.ceremony.title)}</h4>
                 <p class="location">{t(sch.saturday.ceremony.location)}</p>
               </div>
             </div>
             <div class="timeline-step">
-              <span class="time">{t(sch.saturday.cocktail.time)}</span>
+              <span class={timeClass(sch.saturday.cocktail.time)}>{t(sch.saturday.cocktail.time)}</span>
               <div class="event">
                 <h4>{t(sch.saturday.cocktail.title)}</h4>
                 <p class="location">{t(sch.saturday.cocktail.location)}</p>
               </div>
             </div>
             <div class="timeline-step">
-              <span class="time">{t(sch.saturday.reception.time)}</span>
+              <span class={timeClass(sch.saturday.reception.time)}>{t(sch.saturday.reception.time)}</span>
               <div class="event">
                 <h4>{t(sch.saturday.reception.title)}</h4>
                 <p>{t(sch.saturday.reception.desc)}</p>
@@ -169,7 +171,7 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
         <h2>{t(sch.sunday.heading)}</h2>
         <div class="timeline">
           <div class="timeline-item">
-            <span class="time time--range">
+            <span class="time time--digits time--range">
               <span>{t(sch.sunday.breakfast.time)}</span>
               <span class="time-dash">—</span>
               <span>{t(sch.sunday.breakfast.timeEnd)}</span>
@@ -180,7 +182,7 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time time--range">
+            <span class="time time--digits time--range">
               <span>{t(sch.sunday.brunch.time)}</span>
               <span class="time-dash">—</span>
               <span>{t(sch.sunday.brunch.timeEnd)}</span>
@@ -195,7 +197,7 @@ const paras = (text: LocalizedString) => t(text).split('\n\n').filter(Boolean);
             </div>
           </div>
           <div class="timeline-item">
-            <span class="time">{t(sch.sunday.venueCloses.time)}</span>
+            <span class={timeClass(sch.sunday.venueCloses.time)}>{t(sch.sunday.venueCloses.time)}</span>
             <div class="event">
               <h4>{t(sch.sunday.venueCloses.title)}</h4>
             </div>
@@ -342,12 +344,25 @@ main {
     background: var(--color-bg);
   }
 
+  /* The time and the event title share one line-box height, so their first
+   * lines sit on the same row. See .event h4. */
   .time {
     font-size: 1rem;
+    line-height: 1.6rem;
     font-weight: 600;
     color: var(--color-text);
     min-width: 80px;
     flex-shrink: 0;
+  }
+
+  /* Futura's figures are shorter than its capitals, so a time that starts
+   * with a digit ("5:00 PM", "17 h 30") tops out ~1.5px below the title's
+   * capitals even on an equal line box. Lift those; a time that starts with
+   * a letter ("Evening", "Matin") already lines up. Measured against the
+   * rendered glyphs in Chromium; rem-based, so it scales with the root. */
+  .time--digits {
+    position: relative;
+    top: -0.083rem;
   }
 
   .event {
@@ -357,6 +372,7 @@ main {
   .event h4 {
     margin: 0 0 0.25rem 0;
     font-size: 1.125rem;
+    line-height: 1.6rem; /* matches .time */
     font-weight: 500;
   }
 
@@ -381,7 +397,6 @@ main {
   .time--range {
     display: flex;
     flex-direction: column;
-    line-height: 1.3;
   }
 
   .time-dash {
@@ -501,6 +516,10 @@ main {
 
     .time {
       min-width: auto;
+    }
+
+    .time--digits {
+      top: 0; /* stacked above the title here, nothing to line up with */
     }
 
     .timeline-step {
