@@ -120,9 +120,9 @@ const features: FeatureFlags = {
     locationMap: flag(import.meta.env.FEATURE_FRANCE_LOCATION_MAP, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_FRANCE_RSVP_ENABLED, false),
     stayingOverview: flag(import.meta.env.FEATURE_FRANCE_STAYING_OVERVIEW, false),
-    // Village page "Room Types" cards. Hidden while room assignments are
-    // handled by the couple after the RSVP deadline.
-    roomTypes: flag(import.meta.env.FEATURE_FRANCE_ROOM_TYPES, false),
+    // Village page "Room Types" cards (photos of the Village rooms and the
+    // two train-car suites). On; set FEATURE_FRANCE_ROOM_TYPES=false to hide.
+    roomTypes: flag(import.meta.env.FEATURE_FRANCE_ROOM_TYPES, true),
     // France homepage Explore list: RSVP row at the top (true) or the bottom.
     rsvpFirstInExplore: flag(import.meta.env.FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE, true),
   },
