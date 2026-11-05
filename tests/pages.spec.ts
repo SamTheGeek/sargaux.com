@@ -13,7 +13,7 @@ async function login(page: Page) {
 
 // ── 1. Back links ─────────────────────────────────────────────────────────────
 
-test.describe('Back links ("Return to event")', () => {
+test.describe('Back links ("Wedding home")', () => {
   test.skip(!weddingSiteEnabled, 'Wedding site must be enabled for back-link tests');
   test.describe.configure({ mode: 'serial' });
 
@@ -45,11 +45,11 @@ test.describe('Back links ("Return to event")', () => {
   ];
 
   for (const { path, selector } of subPages) {
-    test(`${path} shows "← Return to event" back link`, async () => {
+    test(`${path} shows "← Wedding home" back link`, async () => {
       await page.goto(path);
       const backLink = page.locator(selector).first();
       await expect(backLink).toBeVisible();
-      await expect(backLink).toContainText('← Return to event');
+      await expect(backLink).toContainText('← Wedding home');
     });
   }
 });

@@ -59,8 +59,10 @@ const travel = strings.france.travel;
           </p>
         </article>
 
-        <!-- Getting to the Venue from Paris (shown to everyone) -->
-        <article class="travel-card">
+        <!-- Getting to the Venue from Paris (shown to everyone). The id is the
+             target of the "How to get there" links on the homepage and the
+             Village page — keep it stable. -->
+        <article class="travel-card" id="from-paris">
           <h2>{t(travel.toVenue.heading)}</h2>
 
           <h3>{t(travel.toVenue.train.heading)}</h3>

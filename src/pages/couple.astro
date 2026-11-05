@@ -12,17 +12,6 @@ import path from 'path';
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
-const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
-const singleEventHref = eventInvitations.includes('nyc')
-  ? '/nyc'
-  : eventInvitations.includes('france')
-    ? '/france'
-    : null;
-const singleEventLabel = eventInvitations.includes('nyc')
-  ? 'NYC'
-  : eventInvitations.includes('france')
-    ? 'France'
-    : null;
 const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
 
 function formatDateLabel(date: string | null): string {
@@ -119,18 +108,10 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
   <header class="site-header couple-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
-      <div class="nav-actions">
-        {showEventToggle && (
-          <div class="event-toggle" transition:name="event-toggle">
-            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
-            <span class="divider">|</span>
-            <a href="/france" class="event-toggle-item event-toggle-item--france">France</a>
-          </div>
-        )}
-        {!showEventToggle && singleEventHref && singleEventLabel && (
-          <a href={singleEventHref} class="couple-event-nav-link">{singleEventLabel}</a>
-        )}
-      </div>
+      {/* Shared page, so no event switcher: the back button goes to the homepage,
+           which forwards a logged-in guest to their event by the date rules in
+           src/lib/event-routing.ts. */}
+      <a href="/" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
@@ -260,19 +241,6 @@ const closingCards = shuffled.slice(idx, idx + 2).map(makeCard);
 <style>
   .couple-header {
     background: var(--color-bg);
-  }
-
-  .couple-event-nav-link {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caption);
-    font-size: var(--font-size-caption);
-    font-weight: 500;
-  }
-
-  .couple-event-nav-link:hover {
-    color: var(--color-text);
   }
 
   .couple-shell {

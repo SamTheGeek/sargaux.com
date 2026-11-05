@@ -228,10 +228,34 @@ a:hover {
   justify-self: end;
 }
 
+/* "← Wedding home" (strings.nav.backToEvent). One look everywhere it appears (every France
+ * sub-page header and the NYC RSVP pages): an outlined pill in the accent
+ * color, so it reads as a control rather than a stray link. */
 .back-link {
   grid-column: 3;
   justify-self: end;
-  text-align: right;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 16px;
+  border: 2px solid var(--color-accent);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--color-text);
+  background: transparent;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.back-link:hover {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-bg);
 }
 
 @media (max-width: 768px) {
@@ -253,7 +277,39 @@ a:hover {
 
   .back-link {
     grid-column: 2;
+    min-height: 36px;
+    padding: 4px 12px;
+    font-size: 12px;
   }
+}
+
+/* === Hat callout ===
+ * "Women are strongly encouraged to wear hats or fascinators." Used on the
+ * France Weekend page and Lookbook. Bold text beside a sun disc inside an
+ * accent outline, so it can't be skimmed past as one more paragraph.
+ */
+
+.hat-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 18px;
+  border: 2px solid var(--color-accent);
+  font-weight: 600;
+  font-size: 1.0625em;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.hat-callout::before {
+  content: '';
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 0.3em;
+  border-radius: 50%;
+  background: var(--color-accent);
 }
 
 /* === Footer === */
@@ -283,6 +339,42 @@ a:hover {
 }
 
 .site-footer nav a:hover {
+  color: var(--color-text);
+}
+
+/* Home is the footer's primary action: an outlined button on its own line,
+ * set apart from the guest name. Logout is a plainly underlined link. */
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs) 6px;
+}
+
+.site-footer nav .footer-home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 20px;
+  margin-right: var(--space-sm);
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Hover swaps only the border, never the fill: several pages paint the
+ * footer in the dark surface color and recolor its links, and a filled hover
+ * would land text-on-text there. */
+.site-footer nav .footer-home:hover {
+  border-color: var(--color-accent);
+}
+
+.site-footer nav .footer-logout {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
   color: var(--color-text);
 }
 
@@ -334,7 +426,10 @@ a:hover {
 
 .event-toggle {
   display: grid;
-  grid-template-columns: var(--event-toggle-nyc-width, 2.75rem) 0.75rem var(--event-toggle-france-width, 4.25rem);
+  /* px, not rem: France pages scale the root font size up (tokens.css), and
+   * the toggle must keep identical geometry on both events or it shifts
+   * during the NYC ↔ France transition. 44/12/68px = the old rem values. */
+  grid-template-columns: var(--event-toggle-nyc-width, 44px) 12px var(--event-toggle-france-width, 68px);
   align-items: center;
   justify-items: center;
   font-size: var(--font-size-caption);
@@ -364,6 +459,24 @@ a:hover {
 
 .event-toggle .active {
   color: var(--color-text);
+}
+
+/* Header FAQ link for single-event guests: sits in the event toggle's slot,
+ * beside the RSVP button, on the NYC and France home pages. */
+.header-faq-link {
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caption);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.header-faq-link:hover {
+  color: var(--color-accent);
 }
 
 .site-nav .btn,

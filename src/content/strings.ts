@@ -31,6 +31,20 @@ function s(en: string, fr: string): T {
   return { en, fr };
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// [DRAFT] FRENCH — PENDING MARGAUX'S REVIEW
+// ═════════════════════════════════════════════════════════════════════════
+// `draft(en, fr)` is `s(en, fr)` whose French is a Claude-written draft, not
+// yet reviewed by a native speaker. It ships as-is (so the French site never
+// falls back to English), and `grep -n "draft(" src/content/strings.ts` lists
+// every string still waiting on review. When Margaux returns a translation,
+// paste it in and change `draft(` back to `s(`. Introduced with the
+// 2026-11-01 website edits; the review sheet for that batch lists them all.
+// ═════════════════════════════════════════════════════════════════════════
+function draft(en: string, fr: string): T {
+  return { en, fr };
+}
+
 /**
  * English-only content. Used for sections that only render on the English site
  * (e.g. the France Travel page's ETIAS, International Driving Permit, and
@@ -82,7 +96,7 @@ export const strings = {
   // Navigation — back links etc.
   // ─────────────────────────────────────────
   nav: {
-    backToEvent:  s('← Return to event', '← Retour à l\'événement'),
+    backToEvent:  draft('← Wedding home', '← Accueil du mariage'),
     home:         s('Home', 'Accueil'),
   },
 
@@ -601,6 +615,23 @@ export const strings = {
       appleMapLink:  s('View on Apple Maps ↗', 'Voir sur Apple Maps ↗'),
       googleMapLink: s('View on Google Maps ↗', 'Voir sur Google Maps ↗'),
     },
+    // Shared by the homepage Details band and the Village page's Location
+    // block; both link to the Journey page's "from Paris" section.
+    howToGetThere: draft('How to get there →', 'Comment s\'y rendre →'),
+    // Dress code names and the hat line, shared by the homepage timetable, the
+    // Weekend page and the Lookbook so the three can't drift apart again.
+    dressCode: {
+      label:    s('Dress Code', 'Dress Code'),
+      // "Dress Code: Garden Party" — French typography puts a space before ':'.
+      sep:      s(': ', ' : '),
+      friday:   s('Garden Party', 'Garden Party'),
+      saturday: draft('Retro Chic Cocktail', 'Cocktail Rétro Chic'),
+      sunday:   s('Casual', 'Décontracté'),
+      hats:     draft(
+        'Following the French wedding tradition, women are strongly encouraged to wear hats or fascinators.',
+        'Dans la tradition des mariages français, les femmes sont vivement encouragées à porter un chapeau ou un bibi.',
+      ),
+    },
     accommodation: {
       heading:       s('Stay', 'Hébergement'),
       stayAtVillage: s('Stay at Village de Sully', 'Dormir au Village de Sully'),
@@ -622,6 +653,11 @@ export const strings = {
           name: s('Dinner at the Village Market', 'Dîner au Marché du Village'),
         },
       },
+      // Homepage timetable dress-code lines (the event names above stay as-is).
+      saturdayHats: draft(
+        'Women are strongly encouraged to wear a hat or fascinator.',
+        'Les femmes sont vivement encouragées à porter un chapeau ou un bibi.',
+      ),
       saturday: {
         day:       s('Saturday', 'Samedi'),
         excursion: {
@@ -658,7 +694,7 @@ export const strings = {
     nav: {
       schedule: {
         title: s('The Weekend', 'Le Week-end'),
-        desc:  s('Schedule', 'Le programme du mariage'),
+        desc:  draft('Schedule of Activities', 'Le programme du week-end'),
       },
       venue: {
         title: s('The Village', 'Le Village'),
@@ -695,21 +731,50 @@ export const strings = {
       pageTitle: s('Lookbook', 'Dress Code'),
       heading:   s('Lookbook', 'Dress Code'),
       subtitle:  s('Dress Code & Inspiration', 'Inspiration & idées'),
+      // Jump links at the top of the page, one per day section.
+      jumpFriday:   draft('Friday Dress Code Inspiration', 'Inspiration tenues du vendredi'),
+      jumpSaturday: draft('Saturday Dress Code Inspiration', 'Inspiration tenues du samedi'),
+      // Each day's dress code name comes from strings.france.dressCode; the
+      // description is one entry per paragraph so new paragraphs can carry
+      // their own draft marker.
       friday: {
         day:  s('Friday', 'Vendredi'),
-        code: s('Garden Party', 'Garden Party'),
-        desc: s(
-          'Our Friday evening Welcome Dinner will take place outdoors throughout the Village.\n\nExpect a relaxed evening spent mingling, enjoying market-style food stations, and celebrating together under the open sky.\n\nThe Village grounds are paved, so heels are perfectly suitable.',
-          'Le dîner de bienvenue du vendredi soir se déroulera en extérieur, dans les différents espaces du Village.\n\nVous passerez la soirée à circuler entre les différents stands, à profiter du dîner et à passer du temps ensemble.\n\nLes allées du Village sont pavées ; les talons ne poseront donc aucun problème.',
-        ),
+        desc: [
+          s(
+            'Our Friday evening Welcome Dinner will take place outdoors throughout the Village.',
+            'Le dîner de bienvenue du vendredi soir se déroulera en extérieur, dans les différents espaces du Village.',
+          ),
+          s(
+            'Expect a relaxed evening spent mingling, enjoying market-style food stations, and celebrating together under the open sky.',
+            'Vous passerez la soirée à circuler entre les différents stands, à profiter du dîner et à passer du temps ensemble.',
+          ),
+          draft(
+            'For men, a linen suit or colorful blazer, and a fun button down without a tie is appropriate. For women, a spring dress, romper, or pantsuit fits the vibe perfectly.',
+            "Pour les hommes, un costume en lin ou un blazer coloré, avec une chemise fantaisie sans cravate, sera parfait. Pour les femmes, une robe printanière, une combi-short ou un tailleur-pantalon seront tout à fait dans l'esprit.",
+          ),
+          s(
+            'The Village grounds are paved, so heels are perfectly suitable.',
+            'Les allées du Village sont pavées ; les talons ne poseront donc aucun problème.',
+          ),
+        ],
       },
       saturday: {
         day:  s('Saturday', 'Samedi'),
-        code: s('Cocktail Attire', 'Cocktail'),
-        desc: s(
-          "Our ceremony and cocktail hour will take place outdoors on paved surfaces, followed by dinner and dancing indoors.\n\nWe invite you to wear something colorful for the occasion.\n\nThe Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.\n\nFollowing the French wedding tradition, women are encouraged to wear hats or fascinators.",
-          "La cérémonie et le cocktail auront lieu en extérieur, sur des surfaces pavées. Le dîner et la soirée dansante se dérouleront ensuite en intérieur.\n\nNous vous invitons à porter une tenue colorée pour l'occasion.\n\nL'ambiance du Village, avec son charme rétro inspiré des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous en inspirer.\n\nDans la belle tradition des mariages français, les chapeaux sont les bienvenus !",
-        ),
+        // Followed by strings.france.dressCode.hats, rendered as a callout.
+        desc: [
+          s(
+            'Our ceremony and cocktail hour will take place outdoors on paved surfaces, followed by dinner and dancing indoors.',
+            'La cérémonie et le cocktail auront lieu en extérieur, sur des surfaces pavées. Le dîner et la soirée dansante se dérouleront ensuite en intérieur.',
+          ),
+          s(
+            'We invite you to wear something colorful for the occasion.',
+            "Nous vous invitons à porter une tenue colorée pour l'occasion.",
+          ),
+          s(
+            "The Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.",
+            "L'ambiance du Village, avec son charme rétro inspiré des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous en inspirer.",
+          ),
+        ],
       },
     },
 
@@ -719,11 +784,15 @@ export const strings = {
       heading:        s('The Weekend', 'Le programme du week-end'),
       subtitle:       s('May 28–30, 2027', '28–30 mai 2027'),
       calendarBtn:    s('Add events to calendar', 'Ajouter des événements à votre calendrier'),
-      calendarNote:   s(
-        'RSVP to unlock your personalized weekend schedule and add it to your calendar.',
-        'Répondez à votre invitation pour ajouter votre programme personnalisé à votre calendrier.',
+      calendarNote:   draft(
+        'RSVP to add to your calendar',
+        'Répondez à votre invitation pour l\'ajouter à votre calendrier',
       ),
-      dressCodeLabel: s('Dress Code', 'Dress Code'),
+      // Shown under the greyed-out button for a guest who declined.
+      calendarDeclinedNote: draft(
+        "You've let us know you can't make it, so there's nothing to add to your calendar.",
+        "Vous nous avez indiqué que vous ne pourrez pas être des nôtres : il n'y a donc rien à ajouter à votre calendrier.",
+      ),
       weather: {
         heading: s('Weather', 'Météo'),
         value:   s('Late May: 60–72°F (15–22°C)', 'Fin mai : 15–22°C (60–72°F)'),
@@ -746,7 +815,6 @@ export const strings = {
           ),
         },
         dressCode: {
-          code: s('Garden Party', 'Garden Party'),
           desc: s(
             'The Welcome Dinner will take place outdoors. Come ready to mingle, enjoy market-style food stations, and celebrate together under the open sky. The Village grounds are paved, so heels are perfectly suitable.',
             'Le dîner du vendredi se déroulera en extérieur. Les allées étant pavées, les talons sont parfaitement adaptés.',
@@ -756,9 +824,10 @@ export const strings = {
       saturday: {
         heading: s('Saturday, May 29', 'Samedi 29 mai'),
         breakfast: {
-          time:  s('9:00 AM–11:00 AM', '9 h à 11 h'),
-          title: s('Breakfast', 'Petit déjeuner'),
-          desc:  s('Included for guests staying at Village de Sully.', 'Inclus pour les personnes logeant au Village de Sully.'),
+          time:    s('9:00 AM', '9 h'),
+          timeEnd: s('11:00 AM', '11 h'),
+          title:   s('Breakfast', 'Petit déjeuner'),
+          desc:    draft('For guests staying at Village de Sully.', 'Pour les personnes logeant au Village de Sully.'),
         },
         excursion: {
           time:  s('10:00 AM', 'Matin'),
@@ -777,36 +846,34 @@ export const strings = {
         },
         reception: {
           time:  s('Evening', 'Soirée'),
-          title: s('Dinner & Dancing', 'Dîner & soirée dansante'),
+          title: draft('Reception', 'Réception'),
           desc:  s('Dinner, speeches, and dancing late into the night.', 'Dîner, discours et soirée dansante jusque tard dans la nuit.'),
         },
+        // Followed by strings.france.dressCode.hats, rendered as a callout.
         dressCode: {
-          code: s('Cocktail Attire', 'Cocktail'),
           desc: s(
-            "We invite you to wear something colorful for the occasion.\n\nThe Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.\n\nFollowing the French wedding tradition, women are encouraged to wear hats or fascinators.",
-            "Nous vous invitons à porter une tenue colorée pour l'occasion.\n\nL'ambiance du Village, avec son charme rétro des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous inspirer du charme rétro années 70-80 du Village !\n\nEt si vous cherchiez une bonne occasion de porter un chapeau, la voici !",
+            "We invite you to wear something colorful for the occasion.\n\nThe Village's restored retro charm, somewhere between the 1970s and 1980s, and our love of disco have inspired the weekend's atmosphere, so if you'd like to lean into that spirit, we'd love to see it.",
+            "Nous vous invitons à porter une tenue colorée pour l'occasion.\n\nL'ambiance du Village, avec son charme rétro des années 1970 et 1980, ainsi que notre amour du disco, ont inspiré l'atmosphère du week-end. Si le cœur vous en dit, n'hésitez pas à vous inspirer du charme rétro années 70-80 du Village !",
           ),
         },
       },
       sunday: {
         heading: s('Sunday, May 30', 'Dimanche 30 mai'),
         breakfast: {
-          time:  s('9:00 AM–11:00 AM', '9 h à 11 h'),
-          title: s('Breakfast', 'Petit déjeuner'),
-          desc:  s('Included for guests staying at Village de Sully.', 'Inclus pour les personnes logeant au Village de Sully.'),
+          time:    s('9:00 AM', '9 h'),
+          timeEnd: s('11:00 AM', '11 h'),
+          title:   s('Breakfast', 'Petit déjeuner'),
+          desc:    draft('For guests staying at Village de Sully.', 'Pour les personnes logeant au Village de Sully.'),
         },
         brunch: {
-          time:     s('11:30 AM–2:00 PM', '11 h 30–14 h'),
+          time:     s('11:30 AM', '11 h 30'),
+          timeEnd:  s('2:00 PM', '14 h'),
           title:    s('Farewell Brunch & Games', 'Brunch & jeux'),
           location: s('Village Square', 'La Place du Village'),
           desc:     s(
             'Join us for one last morning of brunch, games, and good company before the weekend comes to a close.',
             'Rejoignez-nous pour un brunch, quelques parties de pétanque et pour profiter ensemble des derniers instants du week-end.',
           ),
-        },
-        dressCode: {
-          code: s('Casual', 'Décontracté'),
-          desc: s('', ''),
         },
         venueCloses: {
           time:  s('4:00 PM', '16 h'),
@@ -819,7 +886,6 @@ export const strings = {
     details: {
       pageTitle: s('The Village', 'Le Village'),
       heading:   s('The Village', 'Le Village'),
-      subtitle:  s('Village de Sully', 'Village de Sully'),
       intro:     s(
         "We'll be spending the entire wedding weekend together at Village de Sully. Every event, from Friday evening's welcome dinner to Sunday's brunch, takes place within the Village, so once you arrive, all you have to do is settle in and enjoy the weekend with us.",
         "Nous passerons tout notre week-end de mariage au Village de Sully. Tous les événements, du dîner de bienvenue du vendredi soir au brunch du dimanche, se dérouleront au sein du Village. Une fois sur place, il ne vous restera plus qu'à vous installer et profiter pleinement du week-end avec nous.",
@@ -880,7 +946,7 @@ export const strings = {
         heading: s('Overview', 'Votre séjour'),
         items: [
           s('Private accommodations are available for couples, families, and larger groups.', 'Des chambres sont disponibles pour les couples, les familles et les groupes.'),
-          s('Village Rooms (limited availability)', 'Chambres du Village (Disponibilité limitée)'),
+          s('Village Rooms', 'Chambres du Village'),
           s('Orient-Express train car suites', 'Suites dans les wagons Orient-Express'),
           s('Louisiana train car suites', 'Suites dans les wagons Louisiane'),
           s('Breakfast included each morning', 'Petit déjeuner inclus chaque matin'),
@@ -891,10 +957,22 @@ export const strings = {
       },
       booking: {
         heading: s('Booking', 'Réservation'),
-        reserve: s('Reserve your accommodations through your RSVP.', 'Réservez votre chambre lors de votre RSVP.'),
-        pricing: s(
-          'Room options and pricing vary depending on your party size, with rooms starting at €150 per night for double occupancy. Private accommodations are available for couples, families, and larger groups.',
-          'Les tarifs varient selon la taille de votre groupe, avec des chambres doubles à partir de 150 € la nuit. Des chambres sont disponibles pour les couples, les familles et les groupes.',
+        // Lead paragraph: `capacity` + `pricing`, then `reserve` in bold.
+        capacity: draft(
+          'The venue can accommodate everyone on site (yes, including you!).',
+          'Le Village peut accueillir tout le monde sur place (oui, vous aussi !).',
+        ),
+        pricing: draft(
+          'Rooms start at €150 per night for double occupancy.',
+          'Les chambres doubles sont à partir de 150 € la nuit.',
+        ),
+        reserve: draft(
+          'If you would like to stay on site, please make sure to indicate it on your RSVP.',
+          'Si vous souhaitez dormir sur place, merci de bien l\'indiquer dans votre RSVP.',
+        ),
+        rooms: draft(
+          "All rooms are private, air-conditioned, and have ensuite baths. The sleeping arrangements vary based on the number of people in your party, but we'll make sure everyone has the right bed arrangement for their family. The rooms are located in and around the village in the buildings and restored train cars.",
+          "Toutes les chambres sont privées, climatisées et disposent d'une salle de bain. La configuration des lits dépend du nombre de personnes dans votre groupe, mais nous veillerons à ce que chaque famille soit installée confortablement. Les chambres se trouvent dans les bâtiments du Village et ses alentours, ainsi que dans les anciens wagons restaurés.",
         ),
         followup: s(
           "We'll be in touch after the RSVP deadline to confirm your room assignment and accommodation details. If you have any questions or need special accommodations, please reach out by email or text.",
@@ -902,9 +980,8 @@ export const strings = {
         ),
       },
       roomTypes: {
-        heading: s('Room Types', 'Types de chambres'),
         village: {
-          title: s('Village Rooms (Limited Availability)', 'Chambres du Village (Disponibilité limitée)'),
+          title: s('Village Rooms', 'Chambres du Village'),
           desc:  s('Traditional guest rooms located throughout the Village buildings.', 'Réparties dans les bâtiments historiques du Village.'),
         },
         orient: {
@@ -1066,9 +1143,9 @@ export const strings = {
         },
         accommodation: {
           heading:  s('Accommodations', 'Chambre'),
-          intro:    s(
-            "We hope you'll choose to stay with us at Village de Sully. Staying on site is the best way to enjoy the full wedding weekend. You'll be just steps away from every event, with more time to relax, celebrate, and enjoy the Village together.",
-            'Dormir sur place est la meilleure façon de profiter pleinement du week-end. Vous serez à quelques pas de chaque événement, avec plus de temps pour vous détendre, célébrer et profiter du Village ensemble.',
+          intro:    draft(
+            "The venue can accommodate everyone we've invited, so we hope you'll choose to stay with us at Village de Sully. Staying on site is the best way to enjoy the full wedding weekend. Yes, even you, wondering whether it's the right decision to stay at the Village: you should stay on site! If you've got any questions, let us know below and we'll reach out to allay your concerns.",
+            "Le Village peut accueillir toutes les personnes invitées : nous espérons donc que vous choisirez de séjourner avec nous au Village de Sully. Dormir sur place est la meilleure façon de profiter pleinement du week-end. Oui, même vous qui vous demandez si c'est vraiment la bonne décision : restez sur place ! Si vous avez des questions, dites-le-nous ci-dessous et nous reviendrons vers vous pour vous rassurer.",
           ),
           question: s('Would you like to reserve accommodations at Village de Sully?', 'Souhaitez-vous réserver une chambre au Village de Sully ?'),
           unsure:   s("I'm not sure yet", "J'y réfléchis"),
@@ -1169,9 +1246,9 @@ export const strings = {
         },
         dressCode: {
           q: s('Is there a dress code?', 'Y a-t-il un dress code ?'),
-          a: s(
-            "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Cocktail Attire**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nIn true French wedding tradition, we'd also love to see a few fabulous hats and fascinators!\n\nPlease visit the **Lookbook** page for additional inspiration.",
-            'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail. Nous vous invitons également à porter une tenue colorée. Dans la belle tradition des mariages français, les chapeaux sont les bienvenus ! Rendez-vous sur la page Dress Code pour plus de détails et quelques inspirations.',
+          a: draft(
+            "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Retro Chic Cocktail**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nFollowing the French wedding tradition, women are strongly encouraged to wear hats or fascinators.\n\nPlease visit the **Lookbook** page for additional inspiration.",
+            'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail Rétro Chic. Nous vous invitons également à porter une tenue colorée. Dans la tradition des mariages français, les femmes sont vivement encouragées à porter un chapeau ou un bibi. Rendez-vous sur la page Dress Code pour plus de détails et quelques inspirations.',
           ),
           ctaHref:  '/france/lookbook',
           ctaLabel: s('Go to the Lookbook page →', 'Voir la page Dress Code →'),

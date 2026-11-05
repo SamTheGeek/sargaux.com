@@ -59,5 +59,13 @@ export default defineConfig({
   },
   server: {
     port: 1213
-  }
+  },
+  vite: {
+    define: {
+      // One random seed per build: `src/lib/build-shuffle.ts` uses it so the
+      // France lookbook photo order changes on every build/deploy but stays
+      // identical across requests (and CDN variants) within one deploy.
+      __BUILD_SEED__: JSON.stringify(Math.floor(Math.random() * 2 ** 32)),
+    },
+  },
 });

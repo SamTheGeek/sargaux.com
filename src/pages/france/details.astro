@@ -32,7 +32,6 @@ const details = strings.france.details;
   <main>
     <div class="france-page-content" transition:name="france-details-content">
       <h1>{t(strings.france.details.heading)}</h1>
-      <p class="subtitle">{t(strings.france.details.subtitle)}</p>
 
       <section class="hero-venue">
         <div class="venue-image-frame venue-image-frame--hero">
@@ -69,6 +68,9 @@ const details = strings.france.details;
             class="venue-link"
           >
             {t(details.location.googleMapLink)}
+          </a>
+          <a href="/france/travel#from-paris" class="venue-link venue-link--directions">
+            {t(strings.france.howToGetThere)}
           </a>
         </div>
       </section>
@@ -134,14 +136,16 @@ const details = strings.france.details;
 
         <div class="accommodation-info accommodation-info--booking">
           <h3>{t(details.booking.heading)}</h3>
-          <p class="booking-lead"><strong>{t(details.booking.reserve)}</strong></p>
-          <p class="booking-pricing">{t(details.booking.pricing)}</p>
+          <p class="booking-lead">
+            {t(details.booking.capacity)} {t(details.booking.pricing)} <strong>{t(details.booking.reserve)}</strong>
+          </p>
+          <p class="booking-rooms">{t(details.booking.rooms)}</p>
           <p class="booking-note">{t(details.booking.followup)}</p>
         </div>
       </section>
 
+      {features.france.roomTypes && (
       <section class="venue-spaces">
-        <h2>{t(details.roomTypes.heading)}</h2>
         <div class="spaces-grid">
           <div class="space-card">
             <div class="venue-image-frame venue-image-frame--card">
@@ -166,6 +170,7 @@ const details = strings.france.details;
           </div>
         </div>
       </section>
+      )}
     </div>
   </main>
 

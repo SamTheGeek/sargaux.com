@@ -49,6 +49,9 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
+        {!showEventToggle && (
+          <a href="/nyc/faq" class="header-faq-link">{t(strings.nyc.nav.faq.title)}</a>
+        )}
         <a href="/nyc/rsvp" class="btn nyc-rsvp-btn" transition:name="header-rsvp" data-loading-button>{t(strings.global.rsvpBtn)}<LoadingDots /></a>
       </div>
     </nav>

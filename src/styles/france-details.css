@@ -74,7 +74,8 @@ html[data-event="france"][data-page="details"] .venue-info p {
 
 html[data-event="france"][data-page="details"] .venue-links {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
   margin: 1rem 0;
 }
 
@@ -88,6 +89,12 @@ html[data-event="france"][data-page="details"] .venue-link {
 
 html[data-event="france"][data-page="details"] .venue-link:hover {
   background: var(--color-bg);
+}
+
+html[data-event="france"][data-page="details"] .venue-link--directions {
+  border-color: var(--color-accent);
+  border-width: 2px;
+  font-weight: 600;
 }
 
 html[data-event="france"][data-page="details"] .venue-desc {
@@ -144,11 +151,21 @@ html[data-event="france"][data-page="details"] .accommodation-details {
   margin: 0 auto;
 }
 
+/* "Staying at the Village" callout. White with a heavy accent border in
+ * light mode; in dark mode a soft light blue rather than white, so it still
+ * jumps off the navy page without glaring at night. Text is pinned to
+ * Prussian blue in both, since the panel is light either way. */
 html[data-event="france"][data-page="details"] .recommendation-banner {
-  background: var(--color-info-bg);
-  border: 1px solid var(--color-accent);
-  padding: 1.25rem;
+  background: #ffffff;
+  border: 3px solid var(--color-accent);
+  padding: 1.5rem;
   margin: 1rem 0 1.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="france"][data-page="details"] .recommendation-banner {
+    background: #cddcf0;
+  }
 }
 
 html[data-event="france"][data-page="details"] .recommendation-banner strong {
@@ -159,8 +176,9 @@ html[data-event="france"][data-page="details"] .recommendation-banner strong {
 
 html[data-event="france"][data-page="details"] .recommendation-banner p {
   margin: 0;
-  color: var(--color-text-muted);
-  font-size: 1.0625rem;
+  color: var(--color-prussian-blue);
+  font-size: 1.25rem;
+  font-weight: 500;
   line-height: 1.5;
 }
 
@@ -251,8 +269,7 @@ html[data-event="france"][data-page="details"] .booking-lead {
   line-height: 1.5;
 }
 
-html[data-event="france"][data-page="details"] .booking-pricing {
-  color: var(--color-text-muted);
+html[data-event="france"][data-page="details"] .booking-rooms {
   margin: 0 0 0.75rem;
   line-height: 1.5;
 }
@@ -263,12 +280,4 @@ html[data-event="france"][data-page="details"] .booking-pricing {
   }
 }
 
-/* ── Schedule page ───────────────────────────────────────────────────────── */
 
-@media (prefers-color-scheme: dark) {
-  html[data-event="france"][data-page="schedule"] button[disabled] {
-    background: var(--color-accent);
-    color: var(--color-surface-text);
-    opacity: 0.42;
-  }
-}

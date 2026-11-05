@@ -16,19 +16,6 @@
   background: var(--color-bg);
 }
 
-.registry-event-nav-link {
-  color: var(--color-text-muted);
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caption);
-  font-size: var(--font-size-caption);
-  font-weight: 500;
-}
-
-.registry-event-nav-link:hover {
-  color: var(--color-text);
-}
-
 .registry-shell {
   position: relative;
   overflow: clip;
@@ -192,7 +179,10 @@
   gap: var(--space-xs);
 }
 
-.registry-card-body h3 {
+/* Card titles: a gift's sits under its photo; a fund's leads the card. */
+.registry-card-body h3,
+.registry-fund-title {
+  margin: 0;
   font-size: var(--font-size-body);
   font-weight: 500;
   letter-spacing: normal;
@@ -226,6 +216,36 @@
   color: var(--color-accent);
 }
 
+/* Whole-card click target. Each fund and gift card has exactly one link
+ * (.registry-card-link); its ::after is stretched over the card (which is
+ * position: relative), so a click anywhere on the card follows that link to
+ * Joy. Screen readers and the keyboard still see a single link with its
+ * real label, not a card-sized wrapper. Hovering or focusing the card
+ * styles the link as if it were hovered. */
+.registry-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+
+.registry-card:has(.registry-card-link) {
+  cursor: pointer;
+}
+
+.registry-card:has(.registry-card-link):hover .registry-card-link {
+  color: var(--color-accent);
+}
+
+.registry-card-link:focus-visible {
+  outline: none;
+}
+
+.registry-card-link:focus-visible::after {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* ── Fund cards — prussian blue, like the Couple hero card ── */
 
 .registry-card--fund {
@@ -234,17 +254,16 @@
 }
 
 .registry-card--fund h3,
-.registry-card--fund .registry-label,
 .registry-card--fund .registry-joy-link {
   color: var(--color-warm-cream);
 }
 
-.registry-card--fund .registry-label--muted,
 .registry-card--fund .registry-card-desc {
   color: var(--color-surface-text-placeholder);
 }
 
-.registry-card--fund .registry-joy-link:hover {
+.registry-card--fund .registry-joy-link:hover,
+.registry-card--fund:hover .registry-card-link {
   color: var(--color-mustard);
 }
 

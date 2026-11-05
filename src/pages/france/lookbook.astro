@@ -3,10 +3,12 @@ import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/france-lookbook.css';
 import '../../styles/lookbook.css';
 import { strings } from '../../content/strings';
+import type { LocalizedString } from '../../content/strings';
 import { createTranslator } from '../../lib/i18n';
 import SiteFooter from '../../components/SiteFooter.astro';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import { buildShuffle } from '../../lib/build-shuffle';
 
 const guest = Astro.locals.guest;
 const t = createTranslator(Astro.locals.lang ?? 'en');
@@ -15,28 +17,40 @@ const lb = strings.france.lookbook;
 /* One board per dress code — the two days are genuinely different moods
  * (relaxed garden party vs. cocktail and hats), so each day's copy is
  * followed by its own band of pins rather than a single shared board. */
-function sortedImages(glob: Record<string, { default: ImageMetadata }>): ImageMetadata[] {
-  return Object.entries(glob)
+/* Photo order is shuffled once per build (see src/lib/build-shuffle.ts): a
+ * fresh mix on every deploy, stable across requests and CDN variants. Sorting
+ * first makes the shuffle depend only on the seed, not on glob order. */
+function shuffledImages(glob: Record<string, { default: ImageMetadata }>, salt: number): ImageMetadata[] {
+  const sorted = Object.entries(glob)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, mod]) => mod.default);
+  return buildShuffle(sorted, salt);
 }
 
-const fridayImages = sortedImages(
+const fridayImages = shuffledImages(
   import.meta.glob<{ default: ImageMetadata }>(
     '../../assets/images/france/lookbook/friday/*.{jpg,jpeg}',
     { eager: true }
-  )
+  ),
+  1,
 );
-const saturdayImages = sortedImages(
+const saturdayImages = shuffledImages(
   import.meta.glob<{ default: ImageMetadata }>(
     '../../assets/images/france/lookbook/saturday/*.{jpg,jpeg}',
     { eager: true }
-  )
+  ),
+  2,
 );
 
+const dc = strings.france.dressCode;
+const dressCodeLine = (name: LocalizedString) => `${t(dc.label)}${t(dc.sep)}${t(name)}`;
+
+// Saturday leads: it's the wedding day and the dress code guests ask about
+// most. The section ids are the anchors the Weekend page, homepage and the
+// jump links below point at — keep them stable.
 const days = [
-  { key: 'friday', copy: lb.friday, images: fridayImages },
-  { key: 'saturday', copy: lb.saturday, images: saturdayImages },
+  { key: 'saturday', copy: lb.saturday, code: dc.saturday, hats: true, images: saturdayImages, jump: lb.jumpSaturday },
+  { key: 'friday', copy: lb.friday, code: dc.friday, hats: false, images: fridayImages, jump: lb.jumpFriday },
 ] as const;
 ---
 
@@ -53,20 +67,26 @@ const days = [
       <div class="france-lookbook-intro">
         <h1 class="lookbook-heading" aria-label={t(lb.heading)}><span aria-hidden="true">LO</span><span class="lookbook-disc-slot" aria-hidden="true"><span class="lookbook-o-ghost">O</span><div class="lookbook-disc" transition:name="event-disc"></div></span><span aria-hidden="true">KBOOK</span></h1>
         <p class="subtitle">{t(lb.subtitle)}</p>
+        <nav class="dresscode-jumps" aria-label={t(lb.subtitle)}>
+          {days.map((day) => (
+            <a class="dresscode-jump" href={`#${day.key}`}>{t(day.jump)} <span aria-hidden="true">↓</span></a>
+          ))}
+        </nav>
       </div>
     </div>
 
     {days.map((day) => (
-      <section class="dresscode-day" data-day={day.key}>
+      <section class="dresscode-day" data-day={day.key} id={day.key}>
         <div class="dresscode-day-copy">
           <div class="dresscode-day-head">
-            <span class="dresscode-day-label">{t(day.copy.day)}</span>
-            <h2 class="dresscode-day-code">{t(day.copy.code)}</h2>
+            <h2 class="dresscode-day-name">{t(day.copy.day)}</h2>
+            <p class="dresscode-day-code">{dressCodeLine(day.code)}</p>
           </div>
           <div class="dresscode-day-body">
-            {t(day.copy.desc).split('\n\n').filter(Boolean).map((para) => (
-              <p>{para}</p>
+            {day.copy.desc.map((para) => (
+              <p>{t(para)}</p>
             ))}
+            {day.hats && <p class="hat-callout">{t(dc.hats)}</p>}
           </div>
         </div>
 
