@@ -1250,7 +1250,7 @@ export const strings = {
           q: s('Is there a dress code?', 'Y a-t-il un dress code ?'),
           a: s(
             "Yes, and we hope you will have fun with it!\n\nFriday evening: **Garden Party**.\n\nSaturday: **Retro Chic Cocktail**.\n\nThe weekend is our joyful celebration with you. Vibrant colors and playful prints are highly encouraged.\n\nFollowing the French wedding tradition, women are strongly encouraged to wear hats or fascinators.\n\nPlease visit the **Lookbook** page for additional inspiration.",
-            'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail Rétro Chic. Les couleurs vives et les imprimés sont plus que bienvenus!\n\nDans la tradition des mariages français, les femmes sont vivement encouragées à porter un chapeau ou un bibi.\n\nRendez-vous sur la page Lookbook pour d’autres idées d’inspiration.',
+            'Oui. Le vendredi soir, le dress code est Garden Party, et le samedi Cocktail Rétro Chic. Les couleurs vives et les imprimés sont plus que bienvenus !\n\nDans la tradition des mariages français, les femmes sont vivement encouragées à porter un chapeau ou un bibi.\n\nRendez-vous sur le Dress Code pour d’autres idées d’inspiration.',
           ),
           ctaHref:  '/france/lookbook',
           ctaLabel: s('Go to the Lookbook page →', 'Voir la page Dress Code →'),
