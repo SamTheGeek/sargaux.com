@@ -338,3 +338,105 @@ test.describe('Photo downloads', () => {
     expect(dl.suggestedFilename()).toMatch(/^sargaux-nyc-afterparty-\d{3}\.svg$/);
   });
 });
+
+test.describe('Photo downloads — preparing state on touch devices', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  /** Pretend the browser can share files, and record what gets shared. */
+  async function stubShare(page: Page) {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __shared: Array<{ name: string; type: string }> };
+      w.__shared = [];
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (data: { files?: File[] }) => {
+          for (const f of data.files ?? []) w.__shared.push({ name: f.name, type: f.type });
+        },
+      });
+    });
+  }
+
+  /** Hold each download response for `ms`, always with a Content-Length. */
+  async function slowDownloads(page: Page, ms: number) {
+    await page.route('**/api/photos/**/download', async (route) => {
+      const res = await route.fetch();
+      const body = await res.body();
+      await new Promise((r) => setTimeout(r, ms));
+      await route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-length': String(body.length) } });
+    });
+  }
+
+  async function openPhoto(page: Page, n: number) {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(n).tap();
+    await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
+  }
+
+  test('the button shows a progress ring while the original downloads, then settles as ready', async ({ page }) => {
+    await stubShare(page);
+    await slowDownloads(page, 1500);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+
+    await expect(download).toHaveAttribute('data-state', 'loading');
+    await expect(download).toHaveAttribute('aria-busy', 'true');
+    await expect(download.locator('.photo-lightbox-progress')).toHaveCSS('opacity', '1');
+
+    await expect(download).toHaveAttribute('data-state', 'ready', { timeout: 10_000 });
+    await expect(download).not.toHaveAttribute('aria-busy', /.*/);
+    expect(await download.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--progress'))).toBe('1');
+  });
+
+  test('stepping to another photo mid-download resets the ring and starts that photo', async ({ page }) => {
+    await stubShare(page);
+    await slowDownloads(page, 2500);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    await expect(download).toHaveAttribute('data-state', 'loading');
+
+    await page.locator('.photo-lightbox-next').tap();
+    const third = (await page.locator('.photo-gallery-item').nth(2).getAttribute('data-photo-guid'))!;
+    await expect(download).toHaveAttribute('href', `/api/photos/afterparty/${third}/download`);
+    // Reset first (the old download was aborted), then the new photo's own load.
+    await expect(download).toHaveAttribute('data-state', 'loading', { timeout: 5_000 });
+    await expect(download).toHaveAttribute('data-state', 'ready', { timeout: 10_000 });
+  });
+
+  test('tapping while it is still preparing opens the share sheet once the file arrives', async ({ page }) => {
+    await stubShare(page);
+    await slowDownloads(page, 1500);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    await expect(download).toHaveAttribute('data-state', 'loading');
+
+    await download.tap();
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __shared: Array<{ name: string }> }).__shared), {
+        timeout: 10_000,
+      })
+      .toEqual([expect.objectContaining({ name: expect.stringMatching(/^sargaux-nyc-afterparty-\d{3}\.svg$/) })]);
+    await expect(download).toHaveAttribute('data-state', 'ready');
+  });
+});
+
+test.describe('Photo downloads — no preparing state on desktop', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+
+  test('desktop never prefetches, so the button stays idle', async ({ page }) => {
+    let downloads = 0;
+    await page.route('**/api/photos/**/download', (route) => {
+      downloads++;
+      return route.continue();
+    });
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    await page.waitForTimeout(1200);
+    await expect(page.locator('.photo-lightbox-download')).toHaveAttribute('data-state', 'idle');
+    expect(downloads).toBe(0);
+  });
+});
