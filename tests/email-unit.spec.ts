@@ -5,6 +5,7 @@ import {
   saveTheDateNYC,
   saveTheDateFrance,
   reminderGeneral,
+  rsvpConfirmation,
 } from '../src/lib/email-templates';
 import type { TemplateName } from '../src/lib/email-templates';
 
@@ -92,6 +93,34 @@ test.describe('Email — payload assembly', () => {
       expect(html).toContain(GUEST.name);
       expect(text).toContain(GUEST.name);
     }
+  });
+});
+
+test.describe('RSVP confirmation: dress code link', () => {
+  const DRESS_CODE_URL = 'https://sargaux.com/france/lookbook';
+  const base = {
+    guestName: GUEST.name,
+    guestsAttending: GUEST.name,
+    updateUrl: 'https://sargaux.com/france/rsvp',
+  };
+
+  test('France, attending: HTML and plain text both link to the Dress Code page', () => {
+    const { html, text } = rsvpConfirmation({ ...base, event: 'france', attending: true });
+    expect(html).toContain(`href="${DRESS_CODE_URL}"`);
+    expect(html).toContain('Dress code &amp; inspiration');
+    expect(text).toContain(DRESS_CODE_URL);
+  });
+
+  test('France, declined: no dress code link', () => {
+    const { html, text } = rsvpConfirmation({ ...base, event: 'france', attending: false });
+    expect(html).not.toContain(DRESS_CODE_URL);
+    expect(text).not.toContain(DRESS_CODE_URL);
+  });
+
+  test('NYC: no dress code link', () => {
+    const { html, text } = rsvpConfirmation({ ...base, event: 'nyc', attending: true });
+    expect(html).not.toContain('/lookbook');
+    expect(text).not.toContain('/lookbook');
   });
 });
 

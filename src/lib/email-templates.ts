@@ -78,6 +78,10 @@ export function rsvpConfirmation({
   const dateLabel     = isNYC ? 'October 11, 2026' : 'May 28\u201330, 2027';
   const siteUrl       = isNYC ? 'sargaux.com/nyc' : 'sargaux.com/france';
   const fullSiteUrl   = isNYC ? 'https://sargaux.com/nyc' : 'https://sargaux.com/france';
+  // France only: attending guests get a pointer to the Dress Code page — the
+  // RSVP is when people start thinking about what to wear. Not on the
+  // on-site confirmation page, by request.
+  const dressCodeUrl  = isNYC ? null : 'https://sargaux.com/france/lookbook';
 
   const openingLine = attending
     ? `We've received your RSVP \u2014 we're excited that you are <strong>attending</strong> our ${escHtml(locationLabel)} celebration.`
@@ -142,6 +146,13 @@ export function rsvpConfirmation({
     <tr>
       <td style="background:${cream};padding:18px 40px 20px;">
         <p style="margin:0;font-family:${bodyStack};font-size:15px;line-height:1.65;color:${bodyText};">${escHtml(dietary)}</p>
+      </td>
+    </tr>` : ''}
+    ${dressCodeUrl ? `
+    ${band('Dress Code')}
+    <tr>
+      <td style="background:${cream};padding:18px 40px 20px;">
+        <p style="margin:0;font-family:${bodyStack};font-size:15px;line-height:1.65;color:${bodyText};">Wondering what to wear? <a href="${dressCodeUrl}" style="color:${amber};text-decoration:underline;">Dress code &amp; inspiration &rarr;</a></p>
       </td>
     </tr>` : ''}
     ${calendarUrl ? `
@@ -251,6 +262,9 @@ export function rsvpConfirmation({
     }
     if (dietary) {
       textLines.push(`Dietary Notes: ${dietary}`, '');
+    }
+    if (dressCodeUrl) {
+      textLines.push(`Wondering what to wear? Dress code & inspiration: ${dressCodeUrl}`, '');
     }
     if (calendarUrl) {
       textLines.push(
