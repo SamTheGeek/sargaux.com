@@ -1,0 +1,84 @@
+[
+  {
+    "guid": "FIXTURE-C001-0000-0000-000000000000",
+    "master": "FIXTUREMASTERC001",
+    "takenAt": "2026-10-11T21:10:00.000Z",
+    "thumb": {
+      "checksum": "fixturecthumb0001",
+      "width": 480,
+      "height": 320
+    },
+    "full": {
+      "checksum": "fixturecfull0001",
+      "width": 2048,
+      "height": 1366
+    },
+    "original": {
+      "checksum": "fixturecoriginal0001",
+      "width": 3072,
+      "height": 2049
+    },
+    "featured": true
+  },
+  {
+    "guid": "FIXTURE-C002-0000-0000-000000000000",
+    "master": "FIXTUREMASTERC002",
+    "takenAt": "2026-10-11T21:19:00.000Z",
+    "thumb": {
+      "checksum": "fixturecthumb0002",
+      "width": 480,
+      "height": 720
+    },
+    "full": {
+      "checksum": "fixturecfull0002",
+      "width": 1366,
+      "height": 2048
+    },
+    "original": {
+      "checksum": "fixturecoriginal0002",
+      "width": 2049,
+      "height": 3072
+    }
+  },
+  {
+    "guid": "FIXTURE-C003-0000-0000-000000000000",
+    "master": "FIXTUREMASTERC003",
+    "takenAt": "2026-10-11T21:28:00.000Z",
+    "thumb": {
+      "checksum": "fixturecthumb0003",
+      "width": 480,
+      "height": 320
+    },
+    "full": {
+      "checksum": "fixturecfull0003",
+      "width": 2048,
+      "height": 1366
+    },
+    "original": {
+      "checksum": "fixturecoriginal0003",
+      "width": 3072,
+      "height": 2049
+    },
+    "featured": true
+  },
+  {
+    "guid": "FIXTURE-C004-0000-0000-000000000000",
+    "master": "FIXTUREMASTERC004",
+    "takenAt": "2026-10-11T21:37:00.000Z",
+    "thumb": {
+      "checksum": "fixturecthumb0004",
+      "width": 480,
+      "height": 360
+    },
+    "full": {
+      "checksum": "fixturecfull0004",
+      "width": 2048,
+      "height": 1536
+    },
+    "original": {
+      "checksum": "fixturecoriginal0004",
+      "width": 3072,
+      "height": 2304
+    }
+  }
+]

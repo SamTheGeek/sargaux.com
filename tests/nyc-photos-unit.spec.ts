@@ -6,7 +6,9 @@ import {
   buildAssetUrl,
   parseAlbumRecords,
   parseShareHandle,
+  lookupRenditionUrls,
   queryAlbumReactions,
+  renditionUrlsFromRecords,
   queryAlbumRecords,
   sortChronologically,
   thumbsDownAssetIds,
@@ -101,7 +103,8 @@ test.describe('parseAlbumRecords', () => {
 
   test('the manifest copies no URL, filename or other free text', () => {
     const manifest = toManifest(parseAlbumRecords([master('M1'), asset('aaaaaaaa-1', 'M1', 1)]));
-    expect(Object.keys(manifest[0]).sort()).toEqual(['full', 'guid', 'original', 'takenAt', 'thumb']);
+    expect(Object.keys(manifest[0]).sort()).toEqual(['full', 'guid', 'master', 'original', 'takenAt', 'thumb']);
+    expect(manifest[0].master).toBe('M1');
     const text = JSON.stringify(manifest);
     expect(text).not.toContain('http');
     expect(text).not.toContain('c2VjcmV0');
@@ -111,6 +114,49 @@ test.describe('parseAlbumRecords', () => {
     const jpegOriginal = { resOriginalFileType: { value: 'public.jpeg' }, ...res('M1-o', 3200, 2133, 'resOriginal') };
     const urls = urlsByChecksum(parseAlbumRecords([master('M1', jpegOriginal), asset('aaaaaaaa-1', 'M1', 1)]));
     expect([...urls.keys()].sort()).toEqual(['M1-m', 'M1-o', 'M1-t']);
+  });
+});
+
+test.describe('per-photo URL lookup', () => {
+  const share: ShareHandle = { partition: 'https://p121-ckdatabasews.icloud.com', accessToken: 'TOK', zoneID: ZONE };
+
+  test('looks up the named records with only the rendition fields, and maps checksum → URL', async () => {
+    let sent: Record<string, any> = {};
+    let url = '';
+    const fake = async (u: string, init?: RequestInit) => {
+      url = u;
+      sent = JSON.parse(String(init?.body));
+      // An unedited photo: the asset carries no renditions, the master three.
+      return new Response(JSON.stringify({ records: [
+        { recordName: 'aaaaaaaa-1', recordType: 'CPLAsset', fields: {} },
+        { recordName: 'M1', recordType: 'CPLMaster', fields: {
+          ...res('T1', 509, 339, 'resJPEGThumb'), ...res('D1', 2172, 1448, 'resJPEGMed'), ...res('O1', 3200, 2133, 'resOriginal'),
+        } },
+      ] }), { status: 200 });
+    };
+    const urls = await lookupRenditionUrls(fake, 'SHARETOKEN', share, ['aaaaaaaa-1', 'M1']);
+    expect([...urls.keys()].sort()).toEqual(['D1', 'O1', 'T1']);
+    expect(urls.get('O1')).toBe('https://cvws-h2.icloud-content.com/B/O1/photo.jpg?o=signed&v=1&x=3');
+    expect(sent.records).toEqual([{ recordName: 'aaaaaaaa-1' }, { recordName: 'M1' }]);
+    expect(sent.zoneID).toEqual(ZONE);
+    expect(sent.desiredKeys).toEqual(['resJPEGThumbRes', 'resJPEGMedRes', 'resJPEGFullRes', 'resOriginalRes']);
+    const u = new URL(url);
+    expect(u.pathname).toContain('/shared/records/lookup');
+    expect(u.searchParams.get('publicAccessAuthToken')).toBe('TOK');
+  });
+
+  test('an edit on the asset contributes its URL too; foreign hosts are dropped', () => {
+    const urls = renditionUrlsFromRecords([
+      { recordType: 'CPLAsset', fields: res('EDIT', 3000, 2000, 'resJPEGFull') },
+      { recordType: 'CPLMaster', fields: { resJPEGThumbRes: { value: { fileChecksum: 'BAD', downloadURL: 'https://evil.example.com/${f}' } } } },
+    ]);
+    expect([...urls.keys()]).toEqual(['EDIT']);
+  });
+
+  test('an expired share token surfaces as a 401 the resolver can retry on', async () => {
+    const fake = async () => new Response('{}', { status: 401 });
+    const err = await lookupRenditionUrls(fake, 'SHARETOKEN', share, ['x']).catch((e) => e);
+    expect(err.status).toBe(401);
   });
 });
 
@@ -140,7 +186,7 @@ test.describe('download original', () => {
 
 test('downloadFilename numbers photos by gallery position, never by iCloud name', () => {
   expect(downloadFilename('afterparty', 12)).toBe('sargaux-nyc-afterparty-012.jpg');
-  expect(downloadFilename('event', 1, 'svg')).toBe('sargaux-nyc-event-001.svg');
+  expect(downloadFilename('celebration', 1, 'svg')).toBe('sargaux-nyc-celebration-001.svg');
   expect(downloadFilename('preparation', 1234)).toBe('sargaux-nyc-preparation-1234.jpg');
 });
 
@@ -217,7 +263,7 @@ test.describe('queryAlbumRecords', () => {
 
 function photo(guid: string, takenAt: string, featured = false): ManifestPhoto {
   const d = { checksum: guid, width: 10, height: 10 };
-  return { guid, takenAt, thumb: d, full: d, original: d, ...(featured ? { featured: true } : {}) };
+  return { guid, master: `M-${guid}`, takenAt, thumb: d, full: d, original: d, ...(featured ? { featured: true } : {}) };
 }
 
 test('sortChronologically breaks ties by GUID so reruns are stable', () => {
@@ -372,7 +418,8 @@ test.describe('committed manifests', () => {
         expect(Date.parse(photos[i].takenAt)).toBeGreaterThanOrEqual(Date.parse(photos[i - 1].takenAt));
       }
       for (const p of photos) {
-        expect(Object.keys(p).every((k) => ['guid', 'takenAt', 'thumb', 'full', 'original', 'featured'].includes(k))).toBe(true);
+        expect(Object.keys(p).every((k) => ['guid', 'master', 'takenAt', 'thumb', 'full', 'original', 'featured'].includes(k))).toBe(true);
+        expect(typeof p.master === 'string' && p.master.length > 0).toBe(true);
         for (const d of [p.thumb, p.full, p.original]) {
           expect(typeof d.checksum).toBe('string');
           expect(d.width).toBeGreaterThan(0);

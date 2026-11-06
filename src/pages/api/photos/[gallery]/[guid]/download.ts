@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
   }
 
   if (!gallery.albumToken) return new Response(null, { status: 404 });
-  const { urls } = await resolvePhotoUrls(gallery.albumToken);
+  const { urls } = await resolvePhotoUrls(gallery.albumToken, photo);
   const source = urls.get(photo.original.checksum);
   if (!source) return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
 

@@ -7,8 +7,9 @@ import { TEST_GUEST_NAME } from './fixtures';
 /*
   NYC photo galleries. playwright.config.ts builds with PHOTOS_TEST_FIXTURE, so
   `afterparty` holds the invented photos in src/content/nycPhotos/fixture.json,
-  `preparation` and `event` are empty (and must stay hidden), and /api/photos
-  answers with placeholder SVGs instead of resolving iCloud URLs.
+  `celebration` those in fixture-celebration.json, `preparation` is empty (and
+  must stay hidden), and /api/photos answers with placeholder SVGs instead of
+  resolving iCloud URLs.
 */
 
 const weddingSiteEnabled = process.env.FEATURE_GLOBAL_WEDDING_SITE_ENABLED === 'true';
@@ -22,6 +23,9 @@ const fixture = JSON.parse(
   readFileSync(join(import.meta.dirname, '../src/content/nycPhotos/fixture.json'), 'utf8')
 ) as FixturePhoto[];
 const featured = fixture.filter((p) => p.featured);
+const celebrationFixture = JSON.parse(
+  readFileSync(join(import.meta.dirname, '../src/content/nycPhotos/fixture-celebration.json'), 'utf8')
+) as FixturePhoto[];
 
 async function login(page: Page) {
   const res = await page.request.post('/api/login', { form: { name: TEST_GUEST_NAME } });
@@ -50,11 +54,27 @@ test.describe('NYC photo galleries', () => {
     await expect(page.locator('.nyc-nav .nyc-strip-link[href="/nyc/details"]')).toHaveCount(1);
   });
 
-  test('only galleries with photos render on /nyc', async ({ page }) => {
+  test('galleries with photos render on /nyc in configured order; empty ones are hidden', async ({ page }) => {
     await login(page);
     await page.goto('/nyc');
-    await expect(page.locator('[data-gallery-preview]')).toHaveCount(1);
-    await expect(page.locator('[data-gallery-preview="afterparty"]')).toBeVisible();
+    const ids = await page.$$eval('[data-gallery-preview]', (els) =>
+      els.map((el) => (el as HTMLElement).dataset.galleryPreview)
+    );
+    // Configured order is celebration, preparation, afterparty; preparation has no photos here.
+    expect(ids).toEqual(['celebration', 'afterparty']);
+    await expect(page.locator('[data-gallery-preview="celebration"] .nyc-strip-title')).toHaveText(/celebration/i);
+  });
+
+  test('each preview links to its own gallery, which names downloads after it', async ({ page }) => {
+    await login(page);
+    await page.goto('/nyc');
+    await page.click('[data-gallery-preview="celebration"] .nyc-photos-heading');
+    await page.waitForURL(/\/nyc\/photos\/celebration$/);
+    await expect(page.locator('.photo-gallery-item')).toHaveCount(celebrationFixture.length);
+    const first = page.locator('.photo-gallery-item').first();
+    const guid = (await first.getAttribute('data-photo-guid'))!;
+    const position = celebrationFixture.findIndex((p) => p.guid === guid) + 1;
+    await expect(first).toHaveAttribute('data-download-name', `sargaux-nyc-celebration-${String(position).padStart(3, '0')}.svg`);
   });
 
   test('the preview shows the featured photos, oldest first', async ({ page }) => {
@@ -228,7 +248,8 @@ test.describe('/api/photos', () => {
 
   test('rejects GUIDs that are not in the gallery manifest', async ({ page }) => {
     await login(page);
-    for (const path of [`/api/photos/afterparty/NOT-IN-MANIFEST-0000`, `/api/photos/event/${guid}`, `/api/photos/nope/${guid}`]) {
+    // An afterparty GUID under the celebration path: galleries don't share photos.
+    for (const path of [`/api/photos/afterparty/NOT-IN-MANIFEST-0000`, `/api/photos/celebration/${guid}`, `/api/photos/preparation/${guid}`, `/api/photos/nope/${guid}`]) {
       const res = await page.request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBe(404);
     }
@@ -322,7 +343,8 @@ test.describe('Photo downloads', () => {
     await login(page);
     for (const path of [
       '/api/photos/afterparty/NOT-IN-MANIFEST-0000/download',
-      `/api/photos/event/${guid}/download`,
+      `/api/photos/celebration/${guid}/download`,
+      `/api/photos/preparation/${guid}/download`,
       `/api/photos/nope/${guid}/download`,
     ]) {
       expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);

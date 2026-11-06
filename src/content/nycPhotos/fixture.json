@@ -1,6 +1,7 @@
 [
   {
     "guid": "FIXTURE-0001-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0001",
     "takenAt": "2026-10-11T23:00:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0001",
@@ -20,6 +21,7 @@
   },
   {
     "guid": "FIXTURE-0002-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0002",
     "takenAt": "2026-10-11T23:07:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0002",
@@ -40,6 +42,7 @@
   },
   {
     "guid": "FIXTURE-0003-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0003",
     "takenAt": "2026-10-11T23:14:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0003",
@@ -59,6 +62,7 @@
   },
   {
     "guid": "FIXTURE-0004-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0004",
     "takenAt": "2026-10-11T23:21:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0004",
@@ -79,6 +83,7 @@
   },
   {
     "guid": "FIXTURE-0005-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0005",
     "takenAt": "2026-10-11T23:28:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0005",
@@ -99,6 +104,7 @@
   },
   {
     "guid": "FIXTURE-0006-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0006",
     "takenAt": "2026-10-11T23:35:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0006",
@@ -118,6 +124,7 @@
   },
   {
     "guid": "FIXTURE-0007-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0007",
     "takenAt": "2026-10-12T00:00:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0007",
@@ -137,6 +144,7 @@
   },
   {
     "guid": "FIXTURE-0008-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0008",
     "takenAt": "2026-10-12T00:07:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0008",
@@ -157,6 +165,7 @@
   },
   {
     "guid": "FIXTURE-0009-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0009",
     "takenAt": "2026-10-12T00:14:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0009",
@@ -176,6 +185,7 @@
   },
   {
     "guid": "FIXTURE-0010-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0010",
     "takenAt": "2026-10-12T00:21:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0010",
@@ -196,6 +206,7 @@
   },
   {
     "guid": "FIXTURE-0011-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0011",
     "takenAt": "2026-10-12T00:28:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0011",
@@ -216,6 +227,7 @@
   },
   {
     "guid": "FIXTURE-0012-0000-0000-000000000000",
+    "master": "FIXTUREMASTER0012",
     "takenAt": "2026-10-12T00:35:00.000Z",
     "thumb": {
       "checksum": "fixturethumb0012",
