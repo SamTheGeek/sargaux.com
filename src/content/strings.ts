@@ -261,6 +261,30 @@ export const strings = {
         desc:  s("Let us know you're coming", 'Confirmer votre présence'),
       },
     },
+    // Photo galleries — band on /nyc + /nyc/photos/[gallery]
+    photos: {
+      band:      s('Photos', 'Photos'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      seeAll:    s('See all', 'See all'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      close:     s('Close', 'Close'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      previous:  s('Previous photo', 'Previous photo'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      next:      s('Next photo', 'Next photo'),
+      // TODO(sam/margaux): French copy needed — English placeholder
+      download:  s('Download photo', 'Download photo'),
+      // "{gallery} photo {n} of {total}" — alt text, filled in by PhotoGallery.
+      // TODO(sam/margaux): French copy needed — English placeholder
+      alt:       s('{gallery} photo {n} of {total}', '{gallery} photo {n} of {total}'),
+      galleries: {
+        celebration: s('Celebration', 'La Célébration'),
+        // TODO(sam/margaux): French copy needed — English placeholder
+        preparation: s('Preparation', 'Preparation'),
+        // TODO(sam/margaux): French copy needed — English placeholder
+        afterparty:  s('Afterparty', 'Afterparty'),
+      },
+    },
     optional: {
       heading:     s('More to Explore', 'Plus à découvrir'),
       placeholder: s('Optional events throughout the weekend will be listed here once confirmed.', 'Les événements optionnels du week-end seront listés ici une fois confirmés.'),

@@ -57,6 +57,13 @@ interface ImportMetaEnv {
   readonly FEATURE_FRANCE_LOCATION_MAP?: string;
   readonly FEATURE_NYC_RSVP_ENABLED?: string;
   readonly FEATURE_NYC_RSVP_PREVIEW?: string;
+  readonly FEATURE_NYC_PHOTO_GALLERY?: string;
+  /**
+   * Test-only: swap the NYC photo manifests for a fixture gallery and serve
+   * placeholder SVGs from /api/photos instead of resolving iCloud URLs. Set by
+   * playwright.config.ts; never set it in netlify.toml.
+   */
+  readonly PHOTOS_TEST_FIXTURE?: string;
   readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
   readonly FEATURE_FRANCE_STAYING_OVERVIEW?: string;
   readonly FEATURE_FRANCE_ROOM_TYPES?: string;

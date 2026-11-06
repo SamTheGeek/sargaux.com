@@ -1,0 +1,871 @@
+---
+/**
+ * Full-screen photo viewer for PhotoGallery, ported from samthegeek.net's
+ * Lightbox.astro. Kept: the zoom-from-thumbnail open/close animation, showing
+ * the cached thumbnail at once and upgrading to the full rendition, Esc /
+ * backdrop close, and the `?photo=` deep link. Dropped: the EXIF, map and info
+ * panel, and the `body { overflow: hidden }` scroll lock (the overlay blocks
+ * touch, wheel and scroll keys itself). Added: previous/next (buttons, ←/→,
+ * swipe) within the clicked photo's gallery, and dialog focus handling.
+ *
+ * Opening is kept compositor-only — see the note above openLightbox(). On iOS
+ * Safari, any layout, URL change or image decode in the zoom's first frame
+ * shows up as a stutter that closing never had.
+ *
+ * Render once per page that shows a PhotoGallery. Clicks are delegated from
+ * `.photo-gallery-item` links, so a gallery works as plain links without JS.
+ */
+import { strings, type Lang } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const t = createTranslator(Astro.props.lang);
+---
+
+<div id="photo-lightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label={t(strings.nyc.photos.band)} data-elastic-ignore>
+  <div class="photo-lightbox-content">
+    <img id="photo-lightbox-image" class="photo-lightbox-image" alt="" />
+  </div>
+  <button class="photo-lightbox-btn photo-lightbox-close" type="button" aria-label={t(strings.nyc.photos.close)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19" /></svg>
+  </button>
+  <button class="photo-lightbox-btn photo-lightbox-prev" type="button" aria-label={t(strings.nyc.photos.previous)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+  </button>
+  <button class="photo-lightbox-btn photo-lightbox-next" type="button" aria-label={t(strings.nyc.photos.next)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+  </button>
+  <!-- href/download are set per photo. A same-origin link, so <a download>
+       works on desktop; touch devices use the share sheet instead (script). -->
+  <a class="photo-lightbox-btn photo-lightbox-download" download data-state="idle" aria-label={t(strings.nyc.photos.download)}>
+    <!-- Touch devices only: fills around the rim while the original downloads. -->
+    <svg class="photo-lightbox-progress" viewBox="0 0 44 44" aria-hidden="true">
+      <circle class="photo-lightbox-progress-track" cx="22" cy="22" r="20" />
+      <circle class="photo-lightbox-progress-bar" cx="22" cy="22" r="20" pathLength="100" />
+    </svg>
+    <svg class="photo-lightbox-download-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" /></svg>
+  </a>
+</div>
+
+<script>
+  interface Dimensions {
+    width: number;
+    height: number;
+  }
+
+  const ZOOM_MS = 400;
+  const SWIPE_PX = 50;
+  /** Keys that would scroll the page under the overlay. */
+  const SCROLL_KEYS = new Set([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
+
+  // Per-page element references, refreshed on every `astro:page-load`.
+  let lightbox: HTMLElement | null = null;
+  let lightboxImage: HTMLImageElement | null = null;
+  let content: HTMLElement | null = null;
+
+  let activeItem: HTMLAnchorElement | null = null;
+  let loadToken = 0;
+  let isClosing = false;
+  /** True from the first frame of the open zoom until it settles. */
+  let isZooming = false;
+  let closeTimeout: number | undefined;
+  let settleTimeout: number | undefined;
+  let touchStartX: number | null = null;
+  let downloadLink: HTMLAnchorElement | null = null;
+
+  // ── Download / save ─────────────────────────────────────────
+  // On phones and tablets the button opens the share sheet ("Save Image" puts
+  // the photo in Photos). iOS only allows navigator.share() during the tap's
+  // user activation, and fetching a multi-MB original after the tap can run
+  // past it, so the current photo's original is prefetched once the viewer
+  // has stayed on it for a moment. Desktop keeps the plain <a download>.
+  const PREFETCH_DWELL_MS = 600;
+  const shareFiles = (() => {
+    try {
+      return (
+        typeof navigator.canShare === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches &&
+        navigator.canShare({ files: [new File([''], 'photo.jpg', { type: 'image/jpeg' })] })
+      );
+    } catch {
+      return false;
+    }
+  })();
+
+  interface Prefetch {
+    href: string;
+    controller: AbortController;
+    promise: Promise<File | null>;
+    file: File | null;
+  }
+  let prefetch: Prefetch | null = null;
+  let prefetchTimer: number | undefined;
+
+  function bind() {
+    lightbox = document.getElementById('photo-lightbox');
+    lightboxImage = document.querySelector<HTMLImageElement>('#photo-lightbox-image');
+    content = lightbox?.querySelector<HTMLElement>('.photo-lightbox-content') ?? null;
+    downloadLink = lightbox?.querySelector<HTMLAnchorElement>('.photo-lightbox-download') ?? null;
+    activeItem = null;
+    isClosing = false;
+    isZooming = false;
+    if (!lightbox || lightbox.dataset.lightboxInit === 'true') return;
+    lightbox.dataset.lightboxInit = 'true';
+
+    lightbox.querySelector('.photo-lightbox-close')?.addEventListener('click', () => closeLightbox());
+    lightbox.querySelector('.photo-lightbox-prev')?.addEventListener('click', () => step(-1));
+    lightbox.querySelector('.photo-lightbox-next')?.addEventListener('click', () => step(1));
+    downloadLink?.addEventListener('click', onDownloadClick);
+    lightbox.addEventListener('click', (e) => {
+      const target = e.target as Node;
+      if (lightboxImage?.contains(target)) return;
+      if ((target as Element).closest?.('.photo-lightbox-btn')) return;
+      closeLightbox();
+    });
+    lightbox.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches.length === 1 ? e.touches[0].clientX : null;
+    }, { passive: true });
+    lightbox.addEventListener('touchend', (e) => {
+      if (touchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      touchStartX = null;
+      if (Math.abs(dx) >= SWIPE_PX) step(dx < 0 ? 1 : -1);
+    });
+    // The page under the overlay must not scroll, but locking it with
+    // `body { overflow: hidden }` re-lays out the whole page and, on iOS
+    // Safari, can nudge the scroll position and the toolbar — mid-animation.
+    // Touch is stopped by `touch-action: none` in CSS; wheel/trackpad here.
+    lightbox.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+    lightboxImage?.addEventListener('transitionend', (e) => {
+      if (e.propertyName === 'transform' && isZooming) settle(loadToken);
+    });
+
+    openFromUrlParam();
+  }
+
+  function isOpen() {
+    return Boolean(lightbox?.classList.contains('active'));
+  }
+
+  function itemsFor(item: HTMLAnchorElement): HTMLAnchorElement[] {
+    const grid = item.closest('[data-photo-gallery]');
+    return grid ? Array.from(grid.querySelectorAll<HTMLAnchorElement>('.photo-gallery-item')) : [item];
+  }
+
+  function thumbOf(item: HTMLAnchorElement | null) {
+    return item?.querySelector<HTMLImageElement>('img') ?? null;
+  }
+
+  function fullDimensions(item: HTMLAnchorElement): Dimensions | null {
+    const width = Number(item.dataset.fullWidth);
+    const height = Number(item.dataset.fullHeight);
+    return width && height ? { width, height } : null;
+  }
+
+  // ── Open / close ────────────────────────────────────────────
+  //
+  // Opening must be as cheap as closing. In the frame the zoom starts, only
+  // already-decoded pixels, a transform and a class change. Everything else
+  // (URL update, focus, the full-resolution image) waits for `settle()` after
+  // the zoom ends. Doing it all up front dropped frames on iOS Safari.
+
+  function openLightbox(item: HTMLAnchorElement) {
+    if (!lightbox || !lightboxImage) return;
+    const thumb = thumbOf(item);
+    const dims = fullDimensions(item);
+    if (!thumb || !dims) return;
+
+    window.clearTimeout(closeTimeout);
+    window.clearTimeout(settleTimeout);
+    isClosing = false;
+    lightbox.classList.remove('is-closing');
+    const token = ++loadToken;
+    const wasOpen = isOpen();
+
+    // Read phase — every layout read before any style write.
+    const target = targetRect(dims);
+    const source = wasOpen ? null : thumb.getBoundingClientRect();
+    if (!target) return;
+
+    // Write phase.
+    showSource(activeItem);
+    activeItem = item;
+    lightboxImage.alt = thumb.alt;
+    // The tile's pixels are already decoded, so this paints without a decode.
+    lightboxImage.src = thumb.currentSrc || thumb.src;
+    sizeImage(target);
+    hideSource(item);
+
+    if (wasOpen) {
+      // Stepping between photos: swap in place. The page underneath is not
+      // scrolled here; closeLightbox() brings the tile into view first.
+      resetTransform();
+      updateNavButtons();
+      settle(token);
+      return;
+    }
+
+    const start = source ? transformBetween(source, target) : '';
+    lightboxImage.style.transformOrigin = 'top left';
+    lightboxImage.style.transition = 'none';
+    lightboxImage.style.transform = start || 'translateZ(0) scale(1)';
+    lightbox.classList.add('active');
+    updateNavButtons();
+
+    if (!start) {
+      settle(token);
+      return;
+    }
+    // Commit the start transform in its own frame, then animate from it in
+    // the next. Safari can otherwise coalesce the two and skip or jump.
+    isZooming = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (token !== loadToken || !lightboxImage) return;
+        lightboxImage.style.transition = '';
+        lightboxImage.style.transform = 'translateZ(0) scale(1)';
+        // transitionend is the normal path; this covers a missed event.
+        settleTimeout = window.setTimeout(() => settle(token), ZOOM_MS + 50);
+      });
+    });
+  }
+
+  /** Everything opening defers until the image is still. */
+  function settle(token: number) {
+    if (token !== loadToken || !lightbox || !activeItem) return;
+    isZooming = false;
+    window.clearTimeout(settleTimeout);
+    setPhotoParam(activeItem);
+    const close = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-close');
+    if (document.activeElement !== close && !lightbox.contains(document.activeElement)) {
+      close?.focus({ preventScroll: true });
+    }
+    loadFull(activeItem, token);
+    schedulePrefetch(token);
+  }
+
+  function closeLightbox() {
+    if (!lightbox || !lightboxImage || isClosing || !isOpen()) return;
+    isClosing = true;
+    isZooming = false;
+    window.clearTimeout(settleTimeout);
+    const item = activeItem;
+    const thumb = thumbOf(item);
+    // Stepping may have left the active tile off-screen. Bring it into view
+    // in one instant jump while the overlay still covers the page, so the
+    // zoom has somewhere to land.
+    if (thumb) {
+      const r = thumb.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) {
+        item?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      }
+    }
+    const dims = item ? fullDimensions(item) : null;
+    const from = dims ? targetRect(dims) : null;
+    const back = thumb && from ? transformBetween(thumb.getBoundingClientRect(), from) : '';
+    lightbox.classList.add('is-closing');
+    if (back) {
+      lightboxImage.style.transition = '';
+      lightboxImage.style.transformOrigin = 'top left';
+      lightboxImage.style.transform = back;
+    }
+    closeTimeout = window.setTimeout(finalizeClose, back ? ZOOM_MS : 0);
+  }
+
+  function finalizeClose() {
+    if (!lightbox || !lightboxImage) return;
+    loadToken++;
+    cancelPrefetch();
+    lightbox.classList.remove('active', 'is-closing');
+    isClosing = false;
+    clearPhotoParam();
+    resetTransform();
+    lightboxImage.removeAttribute('src');
+    lightboxImage.style.width = '';
+    lightboxImage.style.height = '';
+    const item = activeItem;
+    showSource(item);
+    activeItem = null;
+    item?.focus({ preventScroll: true });
+  }
+
+  function step(delta: number) {
+    if (!activeItem || isClosing) return;
+    const items = itemsFor(activeItem);
+    const next = items[items.indexOf(activeItem) + delta];
+    if (next) openLightbox(next);
+  }
+
+  function updateNavButtons() {
+    if (!lightbox || !activeItem) return;
+    const items = itemsFor(activeItem);
+    const index = items.indexOf(activeItem);
+    const prev = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-prev');
+    const next = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-next');
+    if (prev) prev.hidden = index <= 0;
+    if (next) next.hidden = index >= items.length - 1;
+    const href = activeItem.dataset.downloadSrc;
+    if (downloadLink && href) {
+      if (prefetch && prefetch.href !== href) cancelPrefetch();
+      downloadLink.href = href;
+      downloadLink.download = activeItem.dataset.downloadName ?? '';
+    }
+  }
+
+  function cancelPrefetch() {
+    window.clearTimeout(prefetchTimer);
+    prefetch?.controller.abort();
+    prefetch = null;
+    setDownloadState('idle');
+  }
+
+  // ── Download button state (touch only) ──────────────────────
+  // idle → loading (ring fills as bytes arrive) → ready (ring completes and
+  // fades). Only a custom property and two attributes on one small element
+  // change, so progress paints never touch the photo or the open zoom.
+
+  type DownloadState = 'idle' | 'loading' | 'ready';
+  let progressFrame = 0;
+  let pendingProgress = 0;
+
+  function setDownloadState(state: DownloadState, opts: { indeterminate?: boolean } = {}) {
+    if (!downloadLink) return;
+    cancelAnimationFrame(progressFrame);
+    progressFrame = 0;
+    downloadLink.dataset.state = state;
+    downloadLink.toggleAttribute('data-indeterminate', state === 'loading' && Boolean(opts.indeterminate));
+    if (state === 'loading') downloadLink.setAttribute('aria-busy', 'true');
+    else downloadLink.removeAttribute('aria-busy');
+    downloadLink.style.setProperty('--progress', state === 'ready' ? '1' : '0');
+  }
+
+  /** At most one progress paint per frame, however fast chunks arrive. */
+  function reportProgress(fraction: number) {
+    pendingProgress = Math.min(1, Math.max(0, fraction));
+    if (progressFrame) return;
+    progressFrame = requestAnimationFrame(() => {
+      progressFrame = 0;
+      downloadLink?.style.setProperty('--progress', pendingProgress.toFixed(3));
+    });
+  }
+
+  function startPrefetch(href: string, name: string): Prefetch {
+    const controller = new AbortController();
+    const entry: Prefetch = { href, controller, file: null, promise: Promise.resolve(null) };
+    const current = () => prefetch === entry && downloadLink?.getAttribute('href') === href;
+    prefetch = entry;
+    setDownloadState('loading', { indeterminate: true });
+    entry.promise = (async () => {
+      try {
+        const res = await fetch(href, { signal: controller.signal, credentials: 'same-origin' });
+        if (!res.ok || !res.body) throw new Error(`download ${res.status}`);
+        const total = Number(res.headers.get('Content-Length')) || 0;
+        // With a length the ring shows real progress; without one it spins.
+        if (current()) setDownloadState('loading', { indeterminate: total === 0 });
+        const reader = res.body.getReader();
+        const chunks: BlobPart[] = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.byteLength;
+          if (total && current()) reportProgress(received / total);
+        }
+        const type = res.headers.get('Content-Type') || 'image/jpeg';
+        entry.file = new File(chunks, name, { type });
+        if (current()) setDownloadState('ready');
+        return entry.file;
+      } catch {
+        if (current()) setDownloadState('idle');
+        return null;
+      }
+    })();
+    return entry;
+  }
+
+  /** Fetch the current photo's original once the viewer has lingered on it. */
+  function schedulePrefetch(token: number) {
+    if (!shareFiles || !downloadLink) return;
+    const href = downloadLink.getAttribute('href');
+    if (!href || prefetch?.href === href) return;
+    cancelPrefetch();
+    const name = downloadLink.download;
+    prefetchTimer = window.setTimeout(() => {
+      if (token === loadToken && downloadLink?.getAttribute('href') === href) startPrefetch(href, name);
+    }, PREFETCH_DWELL_MS);
+  }
+
+  async function shareOrDownload(file: File, href: string) {
+    try {
+      await navigator.share({ files: [file] });
+    } catch (err) {
+      // Dismissing the sheet is a choice, not a failure.
+      if ((err as DOMException)?.name === 'AbortError') return;
+      // Activation expired or files refused: fall back to a plain download.
+      window.location.href = href;
+    }
+  }
+
+  async function onDownloadClick(e: MouseEvent) {
+    if (!shareFiles || !downloadLink) return; // desktop: the native download
+    const href = downloadLink.getAttribute('href');
+    if (!href) return;
+    e.preventDefault();
+    if (prefetch?.href === href && prefetch.file) {
+      void shareOrDownload(prefetch.file, href);
+      return;
+    }
+    // Not ready yet: fetch now and try; shareOrDownload falls back if the
+    // tap's activation has run out by the time the file arrives.
+    // The ring shows the wait either way: startPrefetch puts the button in its
+    // loading state, and an in-flight prefetch already is.
+    const entry = prefetch?.href === href ? prefetch : (cancelPrefetch(), startPrefetch(href, downloadLink.download));
+    const file = await entry.promise;
+    if (!file) {
+      window.location.href = href;
+      return;
+    }
+    await shareOrDownload(file, href);
+  }
+
+  // ── Image loading & geometry ────────────────────────────────
+
+  /**
+   * Swaps in the full rendition only once it is fully decoded (decode() runs
+   * off the main thread), and never while a zoom is running.
+   */
+  function loadFull(item: HTMLAnchorElement, token: number) {
+    const fullSrc = item.dataset.fullSrc;
+    if (!fullSrc || !lightboxImage) return;
+    if (lightboxImage.getAttribute('src') === fullSrc) return;
+    const hires = new Image();
+    hires.decoding = 'async';
+    hires.src = fullSrc;
+    hires
+      .decode()
+      .then(() => {
+        if (token === loadToken && !isZooming && !isClosing && lightboxImage) lightboxImage.src = fullSrc;
+      })
+      .catch(() => undefined);
+  }
+
+  // Same sizing rule as samthegeek.net: fit inside the padded content box,
+  // capped at 1400 × min(90vh, 860), never upscaled past the rendition.
+  function targetRect(dims: Dimensions): DOMRect | null {
+    if (!content) return null;
+    const rect = content.getBoundingClientRect();
+    const styles = window.getComputedStyle(content);
+    const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+    const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+    const contentW = Math.max(0, (rect.width || window.innerWidth) - padX);
+    const contentH = Math.max(0, (rect.height || window.innerHeight) - padY);
+    const maxW = Math.min(contentW, 1400);
+    const maxH = Math.min(contentH, window.innerHeight * 0.9, 860);
+    const scale = Math.min(1, maxW / dims.width, maxH / dims.height);
+    const width = Math.max(1, dims.width * scale);
+    const height = Math.max(1, dims.height * scale);
+    return {
+      left: rect.left + padX / 2 + (contentW - width) / 2,
+      top: rect.top + padY / 2 + (contentH - height) / 2,
+      width,
+      height,
+    } as DOMRect;
+  }
+
+  function sizeImage(rect: DOMRect) {
+    if (!lightboxImage) return;
+    lightboxImage.style.width = `${Math.floor(rect.width)}px`;
+    lightboxImage.style.height = `${Math.floor(rect.height)}px`;
+  }
+
+  function transformBetween(source: DOMRect, target: DOMRect): string {
+    if (!source.width || !source.height || !target.width || !target.height) return '';
+    const scaleX = source.width / target.width;
+    const scaleY = source.height / target.height;
+    return `translate3d(${source.left - target.left}px, ${source.top - target.top}px, 0) scale(${scaleX}, ${scaleY})`;
+  }
+
+  function resetTransform() {
+    if (!lightboxImage) return;
+    lightboxImage.style.transform = '';
+    lightboxImage.style.transformOrigin = '';
+  }
+
+  function hideSource(item: HTMLAnchorElement | null) {
+    const img = thumbOf(item);
+    if (img) img.style.visibility = 'hidden';
+  }
+
+  function showSource(item: HTMLAnchorElement | null) {
+    const img = thumbOf(item);
+    if (img) img.style.visibility = '';
+  }
+
+  // iOS fires `resize` for toolbar show/hide (height only); resizing the open
+  // image mid-zoom would fight the transition, so wait until it settles.
+  window.addEventListener('resize', () => {
+    if (!isOpen() || isClosing || isZooming || !activeItem) return;
+    const dims = fullDimensions(activeItem);
+    const rect = dims ? targetRect(dims) : null;
+    if (rect) sizeImage(rect);
+  });
+
+  // ── ?photo= deep link ───────────────────────────────────────
+  // replaceState keeps ClientRouter's own history.state intact. It runs only
+  // once the image is still: Safari may resize its toolbar on a URL change.
+
+  function setPhotoParam(item: HTMLAnchorElement) {
+    const guid = item.dataset.photoGuid;
+    if (!guid) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('photo') === guid) return;
+    url.searchParams.set('photo', guid);
+    history.replaceState(history.state, '', url);
+  }
+
+  function clearPhotoParam() {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('photo')) return;
+    url.searchParams.delete('photo');
+    history.replaceState(history.state, '', url);
+  }
+
+  function openFromUrlParam() {
+    const guid = new URL(window.location.href).searchParams.get('photo');
+    if (!guid) return;
+    const item = Array.from(document.querySelectorAll<HTMLAnchorElement>('.photo-gallery-item')).find(
+      (el) => el.dataset.photoGuid === guid
+    );
+    if (!item) return;
+    // Jump (never smooth-scroll) to the tile, and only start the zoom once its
+    // thumbnail is decoded, so it never zooms from a moving or blank tile.
+    item.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const thumb = thumbOf(item);
+    if (!thumb) return;
+    // A lazy thumbnail below the fold hasn't started loading yet.
+    thumb.loading = 'eager';
+    const open = () => requestAnimationFrame(() => openLightbox(item));
+    thumb.decode().then(open, open);
+  }
+
+  // ── Global listeners (registered once per document lifetime) ─
+
+  // Capture phase, so this runs before ClientRouter's own document click
+  // listener. ClientRouter turns any same-origin link click into a view-
+  // transition navigation; in the bubble phase it got the tile's click first,
+  // so every tap re-rendered the page to `?photo=…` and only then opened the
+  // lightbox through the deep-link path — a page swap, a scroll jump and the
+  // zoom all at once. preventDefault() here makes ClientRouter skip the click.
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const item = (e.target as Element).closest?.<HTMLAnchorElement>('a.photo-gallery-item');
+      if (!item || !lightbox) return;
+      e.preventDefault();
+      openLightbox(item);
+    },
+    { capture: true }
+  );
+
+  document.addEventListener('keydown', (e) => {
+    if (!isOpen() || !lightbox) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      step(-1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      step(1);
+    } else if (e.key === 'Tab') {
+      // Keep focus on the dialog's own controls.
+      const buttons = Array.from(lightbox.querySelectorAll<HTMLButtonElement>('.photo-lightbox-btn')).filter(
+        (b) => !b.hidden
+      );
+      if (buttons.length === 0) return;
+      const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const nextIndex = e.shiftKey
+        ? (index <= 0 ? buttons.length - 1 : index - 1)
+        : (index === -1 || index === buttons.length - 1 ? 0 : index + 1);
+      e.preventDefault();
+      buttons[nextIndex].focus();
+    } else if (SCROLL_KEYS.has(e.key)) {
+      // Keyboard scrolling would move the page under the overlay. Space on a
+      // focused button is that button's click, so let it through.
+      const onButton = Boolean((e.target as Element | null)?.closest?.('button'));
+      if (!(e.key === ' ' && onButton)) e.preventDefault();
+    }
+  });
+
+  // Never carry an open lightbox across a ClientRouter swap.
+  document.addEventListener('astro:before-swap', () => {
+    cancelPrefetch();
+    window.clearTimeout(closeTimeout);
+    window.clearTimeout(settleTimeout);
+    isZooming = false;
+  });
+
+  document.addEventListener('astro:page-load', bind);
+  bind();
+</script>
+
+<style>
+  .photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    pointer-events: none;
+    --zoom-duration: 400ms;
+    --fade-duration: 340ms;
+    --fade-delay-open: calc(var(--zoom-duration) - var(--fade-duration));
+  }
+
+  .photo-lightbox.active {
+    visibility: visible;
+    pointer-events: auto;
+    /* Stops iOS touch-scrolling the page underneath without a body lock. */
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+
+  .photo-lightbox.is-closing {
+    pointer-events: none;
+  }
+
+  .photo-lightbox::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 45%, rgba(23, 50, 11, 0.55) 0%, rgba(10, 20, 6, 0.9) 72%, rgba(8, 14, 5, 0.95) 100%);
+    opacity: 0;
+    transition: opacity var(--fade-duration) ease;
+  }
+
+  .photo-lightbox.active::before {
+    opacity: 1;
+    transition-delay: var(--fade-delay-open);
+  }
+
+  .photo-lightbox.is-closing::before {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+
+  .photo-lightbox-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 4rem;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .photo-lightbox-image {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    max-width: min(100%, 1400px);
+    max-height: min(90vh, 860px);
+    object-fit: contain;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 249, 240, 0.08);
+    transform: translateZ(0);
+    transition: transform var(--zoom-duration) cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    pointer-events: auto;
+  }
+
+  .photo-lightbox-btn {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 249, 240, 0.25);
+    background: rgba(23, 50, 11, 0.7);
+    color: var(--color-warm-cream);
+    cursor: pointer;
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+    transition: opacity var(--fade-duration) ease, transform var(--zoom-duration) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .photo-lightbox-btn[hidden] {
+    display: none;
+  }
+
+  .photo-lightbox.active .photo-lightbox-btn {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: var(--fade-delay-open);
+  }
+
+  .photo-lightbox.is-closing .photo-lightbox-btn {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+
+  .photo-lightbox-btn:hover,
+  .photo-lightbox-btn:focus-visible {
+    border-color: var(--color-burnt-amber);
+    color: var(--color-burnt-amber);
+  }
+
+  .photo-lightbox-btn:focus-visible {
+    outline: 2px solid var(--color-burnt-amber);
+    outline-offset: 2px;
+  }
+
+  .photo-lightbox-btn svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .photo-lightbox-close {
+    top: 20px;
+    right: 22px;
+  }
+
+  /* Mirrors close: the right edge is one control column, ✕ above, ⤓ below. */
+  .photo-lightbox-download {
+    bottom: 20px;
+    right: 22px;
+    text-decoration: none;
+  }
+
+  /* Progress ring: hugs the button's rim, starts at 12 o'clock, fills clockwise. */
+  .photo-lightbox-download .photo-lightbox-progress {
+    position: absolute;
+    inset: -3px;
+    width: calc(100% + 6px);
+    height: calc(100% + 6px);
+    transform: rotate(-90deg);
+    opacity: 0;
+    transition: opacity 300ms ease;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .photo-lightbox-progress circle {
+    fill: none;
+    stroke-width: 2.5;
+  }
+
+  .photo-lightbox-progress-track {
+    stroke: rgba(255, 249, 240, 0.18);
+  }
+
+  .photo-lightbox-progress-bar {
+    stroke: var(--color-burnt-amber);
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: calc(100 - 100 * var(--progress, 0));
+    transition: stroke-dashoffset 120ms linear;
+  }
+
+  .photo-lightbox-download-icon {
+    transition: opacity 200ms ease;
+  }
+
+  .photo-lightbox-download[data-state='loading'] {
+    cursor: progress;
+  }
+
+  .photo-lightbox-download[data-state='loading'] .photo-lightbox-progress {
+    opacity: 1;
+  }
+
+  .photo-lightbox-download[data-state='loading'] .photo-lightbox-download-icon {
+    opacity: 0.5;
+  }
+
+  /* Ready: the ring completes, then fades away; the icon is back to full. */
+  .photo-lightbox-download[data-state='ready'] .photo-lightbox-progress {
+    opacity: 0;
+    transition-delay: 150ms;
+  }
+
+  /* No Content-Length: a quarter arc that spins instead of filling. */
+  .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress-bar {
+    stroke-dashoffset: 72;
+    transition: none;
+  }
+
+  .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress {
+    animation: photo-lightbox-spin 900ms linear infinite;
+  }
+
+  @keyframes photo-lightbox-spin {
+    from { transform: rotate(-90deg); }
+    to { transform: rotate(270deg); }
+  }
+
+  .photo-lightbox-prev,
+  .photo-lightbox-next {
+    top: 50%;
+    margin-top: -1.25rem;
+  }
+
+  .photo-lightbox-prev {
+    left: 1rem;
+  }
+
+  .photo-lightbox-next {
+    right: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .photo-lightbox-content {
+      padding: 4rem 0.75rem;
+    }
+
+    /* ‹ › pair up in the bottom-left so download keeps the bottom-right corner. */
+    .photo-lightbox-prev,
+    .photo-lightbox-next {
+      top: auto;
+      bottom: 1.25rem;
+      margin-top: 0;
+    }
+
+    .photo-lightbox-next {
+      right: auto;
+      left: calc(1rem + 2.5rem + 0.5rem);
+    }
+
+    .photo-lightbox-download {
+      bottom: 1.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo-lightbox {
+      --zoom-duration: 1ms;
+      --fade-duration: 1ms;
+    }
+
+    /* A static partial ring still says "working" without the motion. */
+    .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress {
+      animation: none;
+    }
+  }
+</style>

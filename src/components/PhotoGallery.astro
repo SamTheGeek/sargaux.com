@@ -1,0 +1,218 @@
+---
+/**
+ * Masonry photo grid, ported from samthegeek.net's Gallery.astro: CSS
+ * multi-column layout (3 → 2 → 1 columns) plus the same first-row fix-up that
+ * swaps unusually tall or wide photos out of the top row for normal ones.
+ *
+ * Differences from the original:
+ * - Images are plain <img> pointing at /api/photos (iCloud-hosted, signed URLs
+ *   that expire), not astro:assets. Width/height come from the manifest, so
+ *   tiles reserve their space up front and aspect classification doesn't wait
+ *   for the images to load.
+ * - Each tile is a link to the photo on its gallery page, so the grid works
+ *   with the keyboard and without JS; PhotoLightbox intercepts the click.
+ * - The script is a bundled module re-run on `astro:page-load` (ClientRouter).
+ */
+import type { ManifestPhoto } from '../lib/icloud-stream';
+import {
+  downloadFilename,
+  downloadPath,
+  getNycGallery,
+  isPhotoTestFixture,
+  type NycGalleryId,
+} from '../content/nycGalleries';
+import { strings, type Lang } from '../content/strings';
+import { createTranslator } from '../lib/i18n';
+
+interface Props {
+  gallery: NycGalleryId;
+  photos: ManifestPhoto[];
+  variant: 'preview' | 'full';
+  lang: Lang;
+}
+
+const { gallery, photos, variant, lang } = Astro.props;
+const t = createTranslator(lang);
+const title = t(strings.nyc.photos.galleries[gallery]);
+const total = photos.length;
+const src = (guid: string, size: 'thumb' | 'full') =>
+  `/api/photos/${gallery}/${encodeURIComponent(guid)}?size=${size}`;
+const altFor = (n: number) =>
+  t(strings.nyc.photos.alt)
+    .replace('{gallery}', title)
+    .replace('{n}', String(n))
+    .replace('{total}', String(total));
+// A download is named by the photo's place in the whole gallery, so the same
+// photo gets the same file name from the /nyc preview and the full page.
+const positions = new Map((getNycGallery(gallery)?.photos ?? photos).map((p, i) => [p.guid, i + 1]));
+const downloadExt = isPhotoTestFixture() ? 'svg' : 'jpg';
+// Matches the column breakpoints below.
+const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(50vw - 1rem), calc(33vw - 1rem)';
+---
+
+<div class="photo-gallery-grid" data-photo-gallery={gallery} data-variant={variant}>
+  {photos.map((photo, index) => (
+    <a
+      class="photo-gallery-item"
+      href={`/nyc/photos/${gallery}?photo=${encodeURIComponent(photo.guid)}`}
+      data-photo-guid={photo.guid}
+      data-full-src={src(photo.guid, 'full')}
+      data-full-width={photo.full.width}
+      data-full-height={photo.full.height}
+      data-download-src={downloadPath(gallery, photo.guid)}
+      data-download-name={downloadFilename(gallery, positions.get(photo.guid) ?? index + 1, downloadExt)}
+    >
+      <img
+        src={src(photo.guid, 'thumb')}
+        srcset={`${src(photo.guid, 'thumb')} ${photo.thumb.width}w, ${src(photo.guid, 'full')} ${photo.full.width}w`}
+        sizes={sizes}
+        width={photo.thumb.width}
+        height={photo.thumb.height}
+        alt={altFor(index + 1)}
+        loading="lazy"
+        decoding="async"
+      />
+    </a>
+  ))}
+</div>
+
+<script>
+  type Aspect = 'tall' | 'wide' | 'normal';
+
+  // Same thresholds as samthegeek.net.
+  function classifyAspect(item: HTMLElement) {
+    const img = item.querySelector<HTMLImageElement>('img');
+    if (!img) return;
+    const width = img.width || img.naturalWidth || Number(img.getAttribute('width'));
+    const height = img.height || img.naturalHeight || Number(img.getAttribute('height'));
+    if (!width || !height) return;
+    const ratio = height / width;
+    let aspect: Aspect = 'normal';
+    if (ratio > 16 / 9) aspect = 'tall';
+    else if (ratio < 9 / 16) aspect = 'wide';
+    item.dataset.aspect = aspect;
+  }
+
+  const pending = new WeakSet<HTMLElement>();
+
+  // Swap tall/wide photos out of the first visual row for the next normal one,
+  // batching layout reads before DOM writes.
+  function reorderItems(grid: HTMLElement) {
+    if (pending.has(grid)) return;
+    pending.add(grid);
+    requestAnimationFrame(() => {
+      pending.delete(grid);
+      const items = Array.from(grid.querySelectorAll<HTMLElement>('.photo-gallery-item'));
+      if (items.length === 0) return;
+
+      const positions = items.map((item) => ({ item, top: item.getBoundingClientRect().top }));
+      const minTop = Math.min(...positions.map((pos) => pos.top));
+      const threshold = minTop + 4;
+      const firstRowItems = positions.filter((pos) => pos.top <= threshold).map((pos) => pos.item);
+
+      const ordered = [...items];
+      let changed = false;
+      for (const rowItem of firstRowItems) {
+        const aspect = rowItem.dataset.aspect;
+        if (aspect === 'tall' || aspect === 'wide') {
+          const rowIndex = ordered.indexOf(rowItem);
+          const swapIndex = ordered.findIndex(
+            (candidate, index) => index > rowIndex && candidate.dataset.aspect === 'normal'
+          );
+          if (swapIndex !== -1) {
+            [ordered[rowIndex], ordered[swapIndex]] = [ordered[swapIndex], ordered[rowIndex]];
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        const fragment = document.createDocumentFragment();
+        ordered.forEach((item) => fragment.appendChild(item));
+        grid.appendChild(fragment);
+      }
+    });
+  }
+
+  function initGalleries() {
+    document.querySelectorAll<HTMLElement>('[data-photo-gallery]').forEach((grid) => {
+      if (grid.dataset.galleryInit === 'true') return;
+      grid.dataset.galleryInit = 'true';
+      // Dimensions are in the markup, so classification never waits on a load.
+      grid.querySelectorAll<HTMLElement>('.photo-gallery-item').forEach(classifyAspect);
+      reorderItems(grid);
+    });
+  }
+
+  // Only a width change can change which photos share the first row. iOS
+  // Safari fires height-only resizes whenever its toolbar shows or hides
+  // (scrolling, a URL change), and re-measuring 70+ tiles then — or moving
+  // them while the lightbox is open — costs frames for nothing.
+  let resizeTimeout: number | undefined;
+  let lastWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
+    window.clearTimeout(resizeTimeout);
+    resizeTimeout = window.setTimeout(() => {
+      if (document.querySelector('#photo-lightbox.active')) return;
+      document.querySelectorAll<HTMLElement>('[data-photo-gallery]').forEach(reorderItems);
+    }, 150);
+  });
+
+  document.addEventListener('astro:page-load', initGalleries);
+  initGalleries();
+</script>
+
+<style>
+  .photo-gallery-grid {
+    --tile-gap: 0.25rem;
+    column-gap: var(--tile-gap);
+    column-count: 3;
+    column-width: 280px;
+    column-fill: balance;
+    margin-top: 0;
+    font-size: 0;
+  }
+
+  .photo-gallery-item {
+    display: inline-block;
+    width: 100%;
+    vertical-align: top;
+    break-inside: avoid;
+    margin-bottom: var(--tile-gap);
+    overflow: hidden;
+    background: rgba(255, 249, 240, 0.08);
+    line-height: normal;
+    transition: opacity 0.2s;
+  }
+
+  .photo-gallery-item:hover {
+    opacity: 0.9;
+  }
+
+  .photo-gallery-item:focus-visible {
+    /* Inset: the tile clips its overflow, so an outset ring would be cut off. */
+    outline: 3px solid var(--color-burnt-amber);
+    outline-offset: -3px;
+  }
+
+  .photo-gallery-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: zoom-in;
+  }
+
+  @media (max-width: 1280px) {
+    .photo-gallery-grid {
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .photo-gallery-grid {
+      column-count: 1;
+    }
+  }
+</style>
