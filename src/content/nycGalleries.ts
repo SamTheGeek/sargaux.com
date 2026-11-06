@@ -9,24 +9,25 @@
  */
 import type { ManifestPhoto } from '../lib/icloud-stream';
 import { NYC_GALLERY_CONFIG, type NycGalleryConfig, type NycGalleryId } from './nycGalleryConfig';
+import celebration from './nycPhotos/celebration.json';
 import preparation from './nycPhotos/preparation.json';
-import event from './nycPhotos/event.json';
 import afterparty from './nycPhotos/afterparty.json';
 import fixture from './nycPhotos/fixture.json';
+import fixtureCelebration from './nycPhotos/fixture-celebration.json';
 
 export type { NycGalleryId };
 export { downloadFilename, downloadPath } from './nycGalleryConfig';
 
 const MANIFESTS: Record<NycGalleryId, ManifestPhoto[]> = {
+  celebration: celebration as ManifestPhoto[],
   preparation: preparation as ManifestPhoto[],
-  event: event as ManifestPhoto[],
   afterparty: afterparty as ManifestPhoto[],
 };
 
 /**
- * Playwright builds with PHOTOS_TEST_FIXTURE so the gallery tests see a known
- * set of invented photos in `afterparty`, and an empty `preparation`/`event`,
- * regardless of what the real manifests hold.
+ * Playwright builds with PHOTOS_TEST_FIXTURE so the gallery tests see known,
+ * invented photos in `celebration` and `afterparty` and an empty
+ * `preparation` (the hidden-gallery case), whatever the real manifests hold.
  */
 const useFixture = import.meta.env.PHOTOS_TEST_FIXTURE === 'true';
 
@@ -39,7 +40,11 @@ export interface NycGallery extends NycGalleryConfig {
 }
 
 function photosFor(id: NycGalleryId): ManifestPhoto[] {
-  if (useFixture) return id === 'afterparty' ? (fixture as ManifestPhoto[]) : [];
+  if (useFixture) {
+    if (id === 'afterparty') return fixture as ManifestPhoto[];
+    if (id === 'celebration') return fixtureCelebration as ManifestPhoto[];
+    return [];
+  }
   return MANIFESTS[id];
 }
 

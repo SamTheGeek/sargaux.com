@@ -261,10 +261,11 @@ export const strings = {
       // "{gallery} photo {n} of {total}" — alt text, filled in by PhotoGallery.
       // TODO(sam/margaux): French copy needed — English placeholder
       alt:       s('{gallery} photo {n} of {total}', '{gallery} photo {n} of {total}'),
-      // TODO(sam/margaux): final gallery titles TBD (EN + FR) — working names
       galleries: {
+        celebration: s('Celebration', 'La Célébration'),
+        // TODO(sam/margaux): French copy needed — English placeholder
         preparation: s('Preparation', 'Preparation'),
-        event:       s('The Party', 'La Célébration'),
+        // TODO(sam/margaux): French copy needed — English placeholder
         afterparty:  s('Afterparty', 'Afterparty'),
       },
     },

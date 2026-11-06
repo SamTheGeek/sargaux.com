@@ -1,6 +1,7 @@
 /**
  * Which iCloud shared album backs each NYC photo gallery, in the order the
- * galleries appear on /nyc (chronological through the day).
+ * galleries appear on /nyc. The order is Sam's choice (the main event first),
+ * not chronological: Preparation was shot before Celebration.
  *
  * Kept apart from `nycGalleries.ts` because `scripts/sync-nyc-photos.ts` reads
  * it under Node's built-in type stripping: no relative imports, no JSON
@@ -11,7 +12,7 @@
  * Display titles live in `strings.nyc.photos.galleries`, keyed by id.
  */
 
-export type NycGalleryId = 'preparation' | 'event' | 'afterparty';
+export type NycGalleryId = 'celebration' | 'preparation' | 'afterparty';
 
 export interface NycGalleryConfig {
   id: NycGalleryId;
@@ -20,8 +21,8 @@ export interface NycGalleryConfig {
 }
 
 export const NYC_GALLERY_CONFIG: readonly NycGalleryConfig[] = [
-  { id: 'preparation', albumToken: null },
-  { id: 'event', albumToken: null },
+  { id: 'celebration', albumToken: '0f1GKdpYrMOJjt1ZkD-dj96sQ' },
+  { id: 'preparation', albumToken: '08cZlzM8IP63jgg92dci0WJYQ' },
   { id: 'afterparty', albumToken: '0d25IMBv-34QfR6fX_9rXc9aA' },
 ];
 

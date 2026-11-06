@@ -34,6 +34,12 @@ export interface PhotoDerivative {
 export interface ManifestPhoto {
   /** The CPLAsset record name (a UUID). */
   guid: string;
+  /**
+   * The photo's CPLMaster record name — an opaque id, not a name. Lets the
+   * site fetch fresh URLs for one photo with a record lookup instead of
+   * re-querying the whole album (see lookupRenditionUrls).
+   */
+  master: string;
   /** ISO capture time. Used only to sort the gallery oldest-first; never rendered. */
   takenAt: string;
   thumb: PhotoDerivative;
@@ -86,8 +92,18 @@ async function postJson(fetchImpl: Fetch, url: string, body: unknown, signal?: A
     body: JSON.stringify(body),
     signal,
   });
-  if (!res.ok) throw new Error(`iCloud ${new URL(url).pathname.split('/').pop()} returned ${res.status}`);
+  if (!res.ok) {
+    throw Object.assign(new Error(`iCloud ${new URL(url).pathname.split('/').pop()} returned ${res.status}`), {
+      status: res.status,
+    });
+  }
   return res.json();
+}
+
+/** The HTTP status carried by an error from an iCloud call, if any. */
+export function iCloudErrorStatus(err: unknown): number | undefined {
+  const status = (err as { status?: unknown } | null)?.status;
+  return typeof status === 'number' ? status : undefined;
 }
 
 /** Accepts only a CloudKit partition origin, so a hostile answer can't redirect our queries. */
@@ -166,10 +182,48 @@ export async function queryAlbumRecords(
   throw new Error('iCloud album query did not finish paginating');
 }
 
-/** resolve + query: everything the runtime URL resolver needs. */
-export async function fetchAlbum(fetchImpl: Fetch, token: string, signal?: AbortSignal): Promise<ResolvedPhoto[]> {
-  const share = await resolveShare(fetchImpl, token, signal);
-  return parseAlbumRecords(await queryAlbumRecords(fetchImpl, token, share, signal));
+/** The rendition fields that carry a signed `downloadURL`. */
+export const RENDITION_KEYS = ['resJPEGThumbRes', 'resJPEGMedRes', 'resJPEGFullRes', 'resOriginalRes'] as const;
+
+/**
+ * Fresh signed URLs for specific records, by record name: one photo's asset
+ * (which holds an edit's renditions) and master (the rest). A lookup like this
+ * answers in well under a second, whereas querying a whole album costs ~5 s
+ * per 100 photos — far too slow for a request path once a gallery has
+ * hundreds of photos.
+ */
+export async function lookupRenditionUrls(
+  fetchImpl: Fetch,
+  token: string,
+  share: ShareHandle,
+  recordNames: string[],
+  signal?: AbortSignal
+): Promise<Map<string, string>> {
+  const qs = new URLSearchParams({
+    remapEnums: 'true',
+    sharing_url_key: token,
+    publicAccessAuthToken: share.accessToken,
+  });
+  const body = (await postJson(
+    fetchImpl,
+    `${share.partition}${DB_PATH}/shared/records/lookup?${qs}`,
+    { records: recordNames.map((recordName) => ({ recordName })), zoneID: share.zoneID, desiredKeys: RENDITION_KEYS },
+    signal
+  )) as { records?: unknown[] };
+  return renditionUrlsFromRecords(Array.isArray(body.records) ? body.records : []);
+}
+
+/** checksum → signed URL for every rendition field on the given records. */
+export function renditionUrlsFromRecords(records: unknown[]): Map<string, string> {
+  const urls = new Map<string, string>();
+  for (const record of records as RawRecord[]) {
+    for (const key of RENDITION_KEYS) {
+      const res = record?.fields?.[key]?.value as { fileChecksum?: unknown; downloadURL?: unknown } | undefined;
+      const url = buildAssetUrl(res?.downloadURL);
+      if (res && typeof res.fileChecksum === 'string' && url) urls.set(res.fileChecksum, url);
+    }
+  }
+  return urls;
 }
 
 /**
@@ -342,6 +396,7 @@ export function parseAlbumRecords(records: unknown[]): ResolvedPhoto[] {
     seen.add(guid);
     out.push({
       guid,
+      master: masterName as string,
       takenAt: new Date(ms).toISOString(),
       thumb: strip(thumb),
       full: strip(full),
@@ -376,7 +431,7 @@ function pickOriginal(
 
 /** Manifest entries (no URLs) from a fetch. */
 export function toManifest(photos: ResolvedPhoto[]): ManifestPhoto[] {
-  return photos.map(({ guid, takenAt, thumb, full, original }) => ({ guid, takenAt, thumb, full, original }));
+  return photos.map(({ guid, master, takenAt, thumb, full, original }) => ({ guid, master, takenAt, thumb, full, original }));
 }
 
 /** rendition checksum → signed URL, for the photo endpoint. */
@@ -428,9 +483,9 @@ export function applyFeatured(
     [pool[i], pool[j]] = [pool[j], pool[i]];
     chosen.add(pool[i]);
   }
-  return next.map(({ guid, takenAt, thumb, full, original }) =>
+  return next.map(({ guid, master, takenAt, thumb, full, original }) =>
     chosen.has(guid)
-      ? { guid, takenAt, thumb, full, original, featured: true }
-      : { guid, takenAt, thumb, full, original }
+      ? { guid, master, takenAt, thumb, full, original, featured: true }
+      : { guid, master, takenAt, thumb, full, original }
   );
 }

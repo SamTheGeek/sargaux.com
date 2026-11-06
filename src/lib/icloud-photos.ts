@@ -4,17 +4,24 @@
  * script).
  *
  * iCloud's asset URLs (cvws.icloud-content.com) expire about 15 minutes after
- * they are issued, so the committed manifests hold GUIDs and checksums and
- * this module turns them into URLs on demand: one batched round-trip covers
- * the whole gallery, then the answer is reused for CACHE_TTL_MS. Every reader
- * also gets `fetchedAt`, so the endpoint can cap how long a browser may keep
- * the redirect to what is actually left of the URL's life.
+ * they are issued, so the committed manifests hold record ids and checksums
+ * and this module turns them into URLs on demand, **one photo at a time**: a
+ * record lookup of the photo's asset + master answers in ~0.4 s. Re-querying
+ * the whole album instead costs ~5 s per 100 photos (Celebration, at 384
+ * photos, took ~20 s) — far past a function's time budget.
+ *
+ * Two in-memory caches per function instance:
+ *  - the share's anonymous access token (Apple gives it ~20 minutes; reused
+ *    for SHARE_TTL_MS), so a lookup is one round-trip, not two;
+ *  - each photo's URLs, reused for CACHE_TTL_MS. Every reader also gets
+ *    `fetchedAt`, so the endpoint can cap how long a browser may keep the
+ *    redirect to what is actually left of the URL's life.
+ * Concurrent requests for the same photo share one lookup.
  *
  * Never throws: a failure resolves to an empty map and the endpoint answers
  * 502 for that image, the same fail-soft contract as `src/lib/joy.ts`.
  */
-import { getStore } from '@netlify/blobs';
-import { fetchAlbum, urlsByChecksum } from './icloud-stream';
+import { iCloudErrorStatus, lookupRenditionUrls, resolveShare, type ShareHandle } from './icloud-stream';
 
 /** How long Apple's signed asset URLs stay valid after issue. */
 export const URL_LIFETIME_MS = 15 * 60 * 1000;
@@ -62,83 +69,68 @@ export function redirectMaxAge(fetchedAt: number, now: number = Date.now(), url?
 }
 
 const FETCH_TIMEOUT_MS = 8000;
-const BLOB_STORE = 'photo-urls';
+
+/** Apple's anonymous share tokens last ~20 minutes; refresh well before. */
+const SHARE_TTL_MS = 15 * 60 * 1000;
 
 interface CachedUrls {
   fetchedAt: number;
-  urls: Record<string, string>;
+  urls: Map<string, string>;
 }
 
-const memory = new Map<string, CachedUrls>();
+const shares = new Map<string, { handle: ShareHandle; at: number }>();
+const photoUrls = new Map<string, CachedUrls>();
 const inFlight = new Map<string, Promise<ResolvedUrls>>();
 
-function fresh(entry: CachedUrls | null | undefined): entry is CachedUrls {
-  return Boolean(entry && Date.now() - entry.fetchedAt < CACHE_TTL_MS);
+async function getShare(token: string, signal: AbortSignal, refresh = false): Promise<ShareHandle> {
+  const cached = shares.get(token);
+  if (!refresh && cached && Date.now() - cached.at < SHARE_TTL_MS) return cached.handle;
+  const handle = await resolveShare(fetch, token, signal);
+  shares.set(token, { handle, at: Date.now() });
+  return handle;
 }
 
-function blobKey(token: string): string {
-  return `v3:${token}`;
-}
-
-async function readBlob(token: string): Promise<CachedUrls | null> {
+async function lookup(token: string, recordNames: string[], signal: AbortSignal): Promise<Map<string, string>> {
   try {
-    const raw = (await getStore(BLOB_STORE).get(blobKey(token), { type: 'json' })) as CachedUrls | null;
-    return raw && typeof raw.fetchedAt === 'number' && raw.urls ? raw : null;
-  } catch {
-    // No Blobs context (local node adapter) or a transient error — skip the layer.
-    return null;
+    return await lookupRenditionUrls(fetch, token, await getShare(token, signal), recordNames, signal);
+  } catch (err) {
+    // A cached access token Apple has since expired: resolve the share again once.
+    const status = iCloudErrorStatus(err);
+    if (status !== 401 && status !== 403) throw err;
+    return lookupRenditionUrls(fetch, token, await getShare(token, signal, true), recordNames, signal);
   }
 }
 
-async function writeBlob(token: string, entry: CachedUrls): Promise<void> {
-  try {
-    await getStore(BLOB_STORE).setJSON(blobKey(token), entry);
-  } catch {
-    // Best-effort.
-  }
-}
+/**
+ * checksum → signed URL for every rendition of one photo (its thumbnail,
+ * lightbox image and download original), looked up by its asset and master
+ * record ids.
+ */
+export async function resolvePhotoUrls(token: string, photo: { guid: string; master: string }): Promise<ResolvedUrls> {
+  const key = `${token}:${photo.guid}`;
+  const cached = photoUrls.get(key);
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached;
 
-async function fetchUrls(token: string): Promise<Map<string, string>> {
-  // One resolve + one query (the album fits in a page) returns every photo's
-  // renditions with freshly signed URLs.
-  return urlsByChecksum(await fetchAlbum(fetch, token, AbortSignal.timeout(FETCH_TIMEOUT_MS)));
-}
-
-/** Rendition checksum → signed URL for every photo in an album; one fetch warms every image on the page. */
-export async function resolvePhotoUrls(token: string): Promise<ResolvedUrls> {
-
-  const cached = memory.get(token);
-  if (fresh(cached)) return { urls: new Map(Object.entries(cached.urls)), fetchedAt: cached.fetchedAt };
-
-  const pending = inFlight.get(token);
+  const pending = inFlight.get(key);
   if (pending) return pending;
 
-  const work = (async () => {
-    const blob = await readBlob(token);
-    if (fresh(blob)) {
-      memory.set(token, blob);
-      return { urls: new Map(Object.entries(blob.urls)), fetchedAt: blob.fetchedAt };
-    }
+  const work = (async (): Promise<ResolvedUrls> => {
     // Stamp before the request: Apple's clock starts when it signs, not when we finish reading.
     const fetchedAt = Date.now();
     try {
-      const urls = await fetchUrls(token);
-      if (urls.size > 0) {
-        const entry: CachedUrls = { fetchedAt, urls: Object.fromEntries(urls) };
-        memory.set(token, entry);
-        await writeBlob(token, entry);
-      }
+      const urls = await lookup(token, [photo.guid, photo.master], AbortSignal.timeout(FETCH_TIMEOUT_MS));
+      if (urls.size > 0) photoUrls.set(key, { fetchedAt, urls });
       return { urls, fetchedAt };
     } catch (err) {
-      console.warn('[photos] iCloud URL resolution failed:', err instanceof Error ? err.message : err);
+      console.warn('[photos] iCloud URL lookup failed:', err instanceof Error ? err.message : err);
       return { urls: new Map<string, string>(), fetchedAt };
     }
   })();
 
-  inFlight.set(token, work);
+  inFlight.set(key, work);
   try {
     return await work;
   } finally {
-    inFlight.delete(token);
+    inFlight.delete(key);
   }
 }
