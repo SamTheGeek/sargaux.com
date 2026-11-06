@@ -41,7 +41,7 @@ html[data-event="france"][data-page="lookbook"] .lookbook-heading {
 }
 
 html[data-event="france"][data-page="lookbook"] .france-lookbook-intro .subtitle {
-  font-size: var(--font-size-caption);
+  font-size: 17px;
   text-transform: uppercase;
   letter-spacing: var(--tracking-caption);
   color: var(--color-text-muted);
@@ -64,35 +64,74 @@ html[data-event="france"][data-page="lookbook"] .dresscode-day + .dresscode-day 
   padding-top: var(--space-2xl);
 }
 
+/* Jump links to each day's section. The sticky header would cover a plain
+ * anchor jump, hence the scroll-margin on the sections. */
+html[data-event="france"][data-page="lookbook"] .dresscode-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--space-md);
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 2px solid var(--color-accent);
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-jump:hover {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day {
+  scroll-margin-top: 72px;
+}
+
+/* Day name leads; the dress code sits under it, above the rule. */
 html[data-event="france"][data-page="lookbook"] .dresscode-day-head {
   max-width: 760px;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.875rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-html[data-event="france"][data-page="lookbook"] .dresscode-day-label {
-  display: block;
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  margin-bottom: 0.35rem;
+html[data-event="france"][data-page="lookbook"] .dresscode-day-name {
+  font-family: var(--font-display);
+  font-size: clamp(2.125rem, 4.5vw, 3rem);
+  margin: 0 0 0.35rem;
 }
 
 html[data-event="france"][data-page="lookbook"] .dresscode-day-code {
-  font-family: var(--font-display);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 400;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text);
   margin: 0;
 }
 
+/* Body copy: 17px → ~20px (1.125rem on the enlarged France root). */
 html[data-event="france"][data-page="lookbook"] .dresscode-day-body p {
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   line-height: 1.6;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   margin: 0 0 1rem;
   max-width: 60ch;
+}
+
+html[data-event="france"][data-page="lookbook"] .dresscode-day-body .hat-callout {
+  max-width: 60ch;
+  margin-top: 1.5rem;
 }
 
 html[data-event="france"][data-page="lookbook"] .dresscode-day-body p:last-child {

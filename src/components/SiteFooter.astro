@@ -31,17 +31,16 @@ const footerClassName = ['site-footer', className].filter(Boolean).join(' ');
     <nav>
       {homeHref && (
         <>
-          <a href={homeHref}>{t(strings.nav.home)}</a>
-          {guest && <span> · </span>}
+          <a href={homeHref} class="footer-home">{t(strings.nav.home)}</a>
         </>
       )}
       {guest && (
         <>
           <span class="guest-name">{guest}</span>
-          <span> · </span>
+          <span aria-hidden="true"> · </span>
         </>
       )}
-      <a href="/api/logout">{t(strings.global.logout)}</a>
+      <a href="/api/logout" class="footer-logout">{t(strings.global.logout)}</a>
     </nav>
   )}
   <div class="site-footer-meta">

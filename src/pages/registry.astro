@@ -11,17 +11,6 @@ const lang = Astro.locals.lang ?? 'en';
 const t = createTranslator(lang);
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
-const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
-const singleEventHref = eventInvitations.includes('nyc')
-  ? '/nyc'
-  : eventInvitations.includes('france')
-    ? '/france'
-    : null;
-const singleEventLabel = eventInvitations.includes('nyc')
-  ? 'NYC'
-  : eventInvitations.includes('france')
-    ? 'France'
-    : null;
 const homeHref = getPrimaryEventRoute(eventInvitations as ('nyc' | 'france')[]);
 
 function formatPrice(price: number | null, currencyCode: string | null): string | null {
@@ -47,18 +36,10 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
   <header class="site-header registry-header" transition:name="site-header">
     <nav class="site-nav">
       <a href="/" class="site-logo" transition:name="site-logo">{t(strings.global.siteName)}</a>
-      <div class="nav-actions">
-        {showEventToggle && (
-          <div class="event-toggle" transition:name="event-toggle">
-            <a href="/nyc" class="event-toggle-item event-toggle-item--nyc">NYC</a>
-            <span class="divider">|</span>
-            <a href="/france" class="event-toggle-item event-toggle-item--france">France</a>
-          </div>
-        )}
-        {!showEventToggle && singleEventHref && singleEventLabel && (
-          <a href={singleEventHref} class="registry-event-nav-link">{singleEventLabel}</a>
-        )}
-      </div>
+      {/* Shared page, so no event switcher: the back button goes to the homepage,
+           which forwards a logged-in guest to their event by the date rules in
+           src/lib/event-routing.ts. */}
+      <a href="/" class="back-link">{t(strings.nav.backToEvent)}</a>
     </nav>
   </header>
 
@@ -94,19 +75,15 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
           {funds.map((fund) => (
             <article class="registry-card registry-card--fund">
               <div class="registry-card-inner">
-                <div class="registry-label-row">
-                  <span class="registry-label">{t(strings.registry.fundsHeading)}</span>
-                  <span class="registry-label registry-label--muted">{t(strings.global.siteName)}</span>
-                </div>
+                <h3 class="registry-fund-title">{fund.title}</h3>
                 {fund.photoUrl && (
                   <figure class="registry-photo-frame">
                     <img src={fund.photoUrl} alt="" loading="lazy" />
                   </figure>
                 )}
                 <div class="registry-card-body">
-                  <h3>{fund.title}</h3>
                   {fund.description && <p class="registry-card-desc">{fund.description}</p>}
-                  <a href={joyItemUrl(fund.id)} class="registry-joy-link" target="_blank" rel="noopener">
+                  <a href={joyItemUrl(fund.id)} class="registry-joy-link registry-card-link" target="_blank" rel="noopener">
                     {t(strings.registry.contributeOnJoy)}
                   </a>
                 </div>
@@ -135,7 +112,7 @@ const claimedGifts = gifts.filter((gift) => gift.stillNeeded === 0);
                 )}
                 <div class="registry-card-body">
                   <h3>{gift.title}</h3>
-                  <a href={joyItemUrl(gift.id)} class="registry-joy-link" target="_blank" rel="noopener">
+                  <a href={joyItemUrl(gift.id)} class="registry-joy-link registry-card-link" target="_blank" rel="noopener">
                     {t(strings.registry.viewOnJoy)}
                   </a>
                 </div>

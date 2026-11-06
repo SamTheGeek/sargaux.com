@@ -66,6 +66,9 @@ interface ImportMetaEnv {
   readonly PHOTOS_TEST_FIXTURE?: string;
   readonly FEATURE_FRANCE_RSVP_ENABLED?: string;
   readonly FEATURE_FRANCE_STAYING_OVERVIEW?: string;
+  readonly FEATURE_FRANCE_ROOM_TYPES?: string;
+  readonly FEATURE_FRANCE_SCHEDULE_WEATHER?: string;
+  readonly FEATURE_FRANCE_RSVP_FIRST_IN_EXPLORE?: string;
   readonly FEATURE_REGISTRY_ENABLED?: string;
   readonly FEATURE_GLOBAL_EMAIL_ENABLED?: string;
   readonly FEATURE_GLOBAL_RSVP_REQUIRE_ALL_EMAILS?: string;

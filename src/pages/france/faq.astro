@@ -176,10 +176,15 @@ const items: FaqItem[] = [
     display: none;
   }
 
+  /* Questions in the body face (Futura) rather than Peignot, whose
+   * unicase letterforms were hard to read at this size. Demi (600) is the
+   * heaviest Futura cut the site ships; a heavier weight would be
+   * browser-synthesized faux bold. */
   .faq-question {
-    font-family: var(--font-display);
-    font-size: 1.1875rem;
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-size: 1.3125rem;
+    font-weight: 600;
+    line-height: 1.35;
     color: var(--color-text);
   }
 
@@ -222,9 +227,9 @@ const items: FaqItem[] = [
 
   .faq-answer p {
     margin: 0 0 1rem;
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
     line-height: 1.6;
-    color: var(--color-text-muted);
+    color: var(--color-text);
   }
 
   .faq-answer p:last-child {
@@ -234,10 +239,11 @@ const items: FaqItem[] = [
   .faq-cta {
     display: inline-block;
     margin-top: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     text-decoration: none;
   }
 
@@ -250,23 +256,24 @@ const items: FaqItem[] = [
   .faq-salons li,
   .faq-contact-list li {
     margin-bottom: 0.4rem;
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
     line-height: 1.5;
-    color: var(--color-text-muted);
+    color: var(--color-text);
   }
 
   .faq-salons a,
   .faq-contact-list a {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
   .faq-more {
     margin-top: 2rem;
-    color: var(--color-text-muted);
+    font-size: 1.25rem;
+    color: var(--color-text);
   }
 
   .faq-more a {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 
 </style>
