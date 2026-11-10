@@ -14,6 +14,12 @@
  *   CHROME_PATH     optional Chrome/Chromium binary (chrome-launcher honours it)
  *   GITHUB_STEP_SUMMARY  when set, the score table is appended there too
  *
+ * The session is set as a real browser cookie scoped to LH_BASE_URL's origin
+ * (CDP `Storage.setCookies`), never as a Lighthouse `extraHeaders` Cookie:
+ * extraHeaders go on every request the page makes, third-party ones included
+ * (Google Static Maps, fonts, registry images), which would hand the session
+ * to those hosts. Lighthouse's default storage reset leaves cookies alone.
+ *
  * Report-only: scores never fail the run. The run fails only when a page
  * can't be audited as itself — a redirect (lost session), an unexpected
  * status, or a Lighthouse runtime error — so a broken login can't pass as
@@ -64,10 +70,13 @@ const ALL_PAGES = [
 // capability URL). Their scores go in the table, but their HTML reports are
 // never written, so they can't end up in a public artifact.
 
+const COOKIES = COOKIE.split(';')
+  .map((pair) => pair.trim())
+  .filter((pair) => pair.includes('='))
+  .map((pair) => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1) }));
+
 // Every cookie value, so a report that still contains one is never written.
-const COOKIE_VALUES = COOKIE.split(';')
-  .map((pair) => pair.slice(pair.indexOf('=') + 1).trim())
-  .filter((value) => value.length >= 8);
+const COOKIE_VALUES = COOKIES.map((c) => c.value).filter((value) => value.length >= 8);
 
 const subset = process.env.LH_PAGES?.split(',').map((p) => p.trim()).filter(Boolean);
 const PAGES = subset ? ALL_PAGES.filter((p) => subset.includes(p.path)) : ALL_PAGES;
@@ -88,6 +97,50 @@ async function preflight(page) {
   const headers = page.auth === false ? {} : { Cookie: COOKIE };
   const res = await fetch(BASE + page.path, { headers, redirect: 'manual' });
   return { status: res.status, location: res.headers.get('location') };
+}
+
+/**
+ * Send one browser-level CDP command over Chrome's DevTools WebSocket (Node
+ * 24's global WebSocket), so cookie setup needs no extra dependency.
+ */
+async function cdp(port, method, params = {}) {
+  const { webSocketDebuggerUrl } = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+  const ws = new WebSocket(webSocketDebuggerUrl);
+  try {
+    await new Promise((resolve, reject) => {
+      ws.addEventListener('open', resolve, { once: true });
+      ws.addEventListener('error', () => reject(new Error('CDP connection failed')), { once: true });
+    });
+    return await new Promise((resolve, reject) => {
+      ws.addEventListener('message', (event) => {
+        const msg = JSON.parse(String(event.data));
+        if (msg.id !== 1) return;
+        if (msg.error) reject(new Error(`${method}: ${msg.error.message}`));
+        else resolve(msg.result);
+      });
+      ws.send(JSON.stringify({ id: 1, method, params }));
+    });
+  } finally {
+    ws.close();
+  }
+}
+
+/** Log the browser in (origin-scoped cookies) or out (no cookies at all). */
+async function setSession(port, loggedIn) {
+  await cdp(port, 'Storage.clearCookies');
+  if (!loggedIn) return;
+  const secure = BASE.startsWith('https:');
+  await cdp(port, 'Storage.setCookies', {
+    cookies: COOKIES.map(({ name, value }) => ({
+      name,
+      value,
+      url: `${BASE}/`,
+      path: '/',
+      secure,
+      httpOnly: true,
+      sameSite: 'Lax',
+    })),
+  });
 }
 
 async function main() {
@@ -122,6 +175,7 @@ async function main() {
       console.log(`Auditing ${page.path}…`);
       let result;
       try {
+        await setSession(chrome.port, page.auth !== false);
         result = await lighthouse(
           url,
           { port: chrome.port, output: 'json', logLevel: 'error' },
@@ -134,7 +188,6 @@ async function main() {
               onlyCategories: CATEGORIES,
               // Previews send `x-robots-tag: noindex` on purpose.
               skipAudits: ['is-crawlable'],
-              extraHeaders: page.auth === false ? {} : { Cookie: COOKIE },
             },
           }
         );
@@ -159,9 +212,9 @@ async function main() {
         CATEGORIES.map((id) => [id, lhr.categories[id]?.score ?? null])
       );
       if (!page.private) {
-        // Lighthouse copies the settings, extraHeaders included, into the LHR
-        // the HTML report embeds — that would publish the session cookie in
-        // the artifact. Strip it and render the report from the scrubbed LHR.
+        // The cookie never goes through Lighthouse's settings now, but the
+        // report is still rendered from a scrubbed LHR and checked for every
+        // cookie value, so no future change can quietly publish the session.
         if (lhr.configSettings) lhr.configSettings.extraHeaders = null;
         const html = ReportGenerator.generateReportHtml(lhr);
         if (COOKIE_VALUES.some((value) => html.includes(value))) {
