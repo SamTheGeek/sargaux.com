@@ -3,7 +3,9 @@ import { join } from 'node:path';
 import { test, expect } from '@playwright/test';
 import {
   applyFeatured,
+  applyPicks,
   buildAssetUrl,
+  fireAssetIds,
   parseAlbumRecords,
   parseShareHandle,
   lookupRenditionUrls,
@@ -412,6 +414,60 @@ test.describe('applyFeatured', () => {
 });
 
 
+test.describe('🔥 picks the preview', () => {
+  const photos = Array.from({ length: 20 }, (_, i) =>
+    photo(`G${String(i).padStart(2, '0')}`, `2026-10-11T23:${String(i).padStart(2, '0')}:00.000Z`)
+  );
+  const featuredOf = (out: ManifestPhoto[]) => out.filter((p) => p.featured).map((p) => p.guid);
+  const react = (guid: string, emoji: string, extra: Record<string, unknown> = {}) => ({
+    recordName: `R-${guid}-${emoji}`,
+    recordType: 'CPLReact',
+    fields: { emojiStringEnc: { value: emoji }, associatedAssetRef: { value: { recordName: guid } } },
+    ...extra,
+  });
+
+  test('fireAssetIds reads 🔥 with or without the presentation selector, and nothing else', () => {
+    const ids = fireAssetIds([
+      react('aaaaaaaa-1', '🔥'),
+      react('bbbbbbbb-2', '🔥\uFE0F'),
+      react('cccccccc-3', '👎'),
+      react('dddddddd-4', '👍'),
+      react('eeeeeeee-5', '🔥', { deleted: true }),
+    ]);
+    expect([...ids].sort()).toEqual(['aaaaaaaa-1', 'bbbbbbbb-2']);
+  });
+
+  test('fewer than six 🔥 photos: exactly those, no random top-up', () => {
+    const out = applyPicks(photos, new Set(['G12', 'G03']), DEFAULT_FEATURED_COUNT, [], () => 0);
+    expect(featuredOf(out)).toEqual(['G03', 'G12']);
+    expect(out.map((p) => p.guid)).toEqual(photos.map((p) => p.guid));
+  });
+
+  test('more than six 🔥 photos: the oldest six', () => {
+    const picks = new Set(['G19', 'G01', 'G02', 'G04', 'G08', 'G10', 'G15', 'G16']);
+    expect(featuredOf(applyPicks(photos, picks))).toEqual(['G01', 'G02', 'G04', 'G08', 'G10', 'G15']);
+  });
+
+  test('🔥 overrides earlier random picks, and a 🔥 photo that was thumbed down is ignored', () => {
+    const previous = photos.map((p) => (['G05', 'G06'].includes(p.guid) ? { ...p, featured: true } : p));
+    // G07 has a 🔥 and a 👎: the sync already left it out of `next`.
+    const next = photos.filter((p) => p.guid !== 'G07');
+    expect(featuredOf(applyPicks(next, new Set(['G07', 'G09']), DEFAULT_FEATURED_COUNT, previous))).toEqual(['G09']);
+  });
+
+  test('no 🔥 left in the gallery: falls back to the random, sync-stable picks', () => {
+    const previous = photos.map((p) => (['G03', 'G11'].includes(p.guid) ? { ...p, featured: true } : p));
+    expect(featuredOf(applyPicks(photos, new Set(), DEFAULT_FEATURED_COUNT, previous, () => 0))).toEqual(['G03', 'G11']);
+    expect(featuredOf(applyPicks(photos, new Set(['NOT-HERE']), DEFAULT_FEATURED_COUNT, previous, () => 0))).toEqual(['G03', 'G11']);
+  });
+
+  test('taking a 🔥 back un-picks the photo on the next sync', () => {
+    const first = applyPicks(photos, new Set(['G02', 'G04']));
+    const second = applyPicks(photos, new Set(['G04']), DEFAULT_FEATURED_COUNT, first);
+    expect(featuredOf(second)).toEqual(['G04']);
+  });
+});
+
 test.describe('committed manifests', () => {
   const dir = join(import.meta.dirname, '../src/content/nycPhotos');
   const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
@@ -428,6 +484,9 @@ test.describe('committed manifests', () => {
       for (let i = 1; i < photos.length; i++) {
         expect(Date.parse(photos[i].takenAt)).toBeGreaterThanOrEqual(Date.parse(photos[i - 1].takenAt));
       }
+      const featured = photos.filter((p) => p.featured).length;
+      if (!file.startsWith('fixture')) expect(featured, 'preview size').toBeGreaterThanOrEqual(1);
+      expect(featured, 'preview size').toBeLessThanOrEqual(DEFAULT_FEATURED_COUNT);
       for (const p of photos) {
         expect(Object.keys(p).every((k) => ['guid', 'master', 'takenAt', 'thumb', 'full', 'original', 'featured'].includes(k))).toBe(true);
         expect(typeof p.master === 'string' && p.master.length > 0).toBe(true);

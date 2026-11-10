@@ -57,8 +57,7 @@
       "checksum": "ARWXyJmAFu9yb7q0Jo5+3mcna/11",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "8cc2d942-faea-469c-b6fa-9ed1be2022b6",
@@ -98,8 +97,7 @@
       "checksum": "AS16MJHgffgVAlJ8ZO9mVEDP3Qk/",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "53fb1af8-5624-496e-b594-1dbdf22127c1",
@@ -199,7 +197,8 @@
       "checksum": "AUmcDDogFea4oJgyCskOaFoVX0Z1",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "ca23ff60-6f13-4d37-bf3b-46fb62b60546",
@@ -479,7 +478,8 @@
       "checksum": "AYFPQhvGhKiwDJ/zkR+NaAC+vDtf",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "4f725aff-e771-4d46-ab3f-3c19fe543213",
@@ -599,8 +599,7 @@
       "checksum": "AQaukB0zUfnY4vKah8GXZKt/QDNX",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "ed553bae-704b-4467-8e31-80c20dff17e9",
@@ -840,8 +839,7 @@
       "checksum": "AR3mhE61H8CCvkv9z7ju8VmHqil/",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "df3067f7-43d4-4387-9b17-a2ee0eec9f94",
@@ -1021,8 +1019,7 @@
       "checksum": "Aev8VfHotW05WAHXUbvpcT4Ty3oD",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "8bb19326-bb1c-4d88-b9f4-477775b024a4",
@@ -1162,8 +1159,7 @@
       "checksum": "AQRQ7SB8HN3qd0a6NMpAlRhTLHJZ",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "015d0db6-ad4d-4a12-b02c-1e06294fd9b3",

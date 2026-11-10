@@ -56,10 +56,17 @@ const downloadExt = isPhotoTestFixture() ? 'svg' : 'jpg';
 // widest layout; the preview is small enough to load in full.
 const EAGER_TILES = 3;
 const isEager = (index: number) => variant === 'preview' || index < EAGER_TILES;
+// A preview of one or two photos (the 🔥 picks can be that few) would leave
+// masonry columns half empty, so those sit side by side at one height instead.
+const asRow = variant === 'preview' && photos.length < 3;
 const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(50vw - 1rem), calc(33vw - 1rem)';
 ---
 
-<div class="photo-gallery-grid" data-photo-gallery={gallery} data-variant={variant}>
+<div
+  class:list={['photo-gallery-grid', { 'photo-gallery-grid--row': asRow }]}
+  data-photo-gallery={gallery}
+  data-variant={variant}
+>
   {photos.map((photo, index) => (
     <a
       class="photo-gallery-item"
@@ -70,6 +77,7 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
       data-full-height={photo.full.height}
       data-download-src={downloadPath(gallery, photo.guid)}
       data-download-name={downloadFilename(gallery, positions.get(photo.guid) ?? index + 1, downloadExt)}
+      style={asRow ? `--tile-ratio: ${photo.thumb.width / photo.thumb.height}` : undefined}
     >
       {isEager(index) ? (
         <img
@@ -276,6 +284,20 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
     cursor: zoom-in;
   }
 
+  /* Justified row: each tile's share of the width follows its aspect ratio,
+     so every photo ends up the same height and the row fills the width. */
+  .photo-gallery-grid--row {
+    display: flex;
+    gap: var(--tile-gap);
+    column-count: auto;
+  }
+
+  .photo-gallery-grid--row .photo-gallery-item {
+    flex: var(--tile-ratio, 1) 1 0;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
   @media (max-width: 1280px) {
     .photo-gallery-grid {
       column-count: 2;
@@ -285,6 +307,14 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
   @media (max-width: 768px) {
     .photo-gallery-grid {
       column-count: 1;
+    }
+
+    .photo-gallery-grid--row {
+      display: block;
+    }
+
+    .photo-gallery-grid--row .photo-gallery-item {
+      margin-bottom: var(--tile-gap);
     }
   }
 </style>

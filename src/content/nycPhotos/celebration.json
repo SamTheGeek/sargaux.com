@@ -457,8 +457,7 @@
       "checksum": "AU2eLW4ZI2SfOHSyN50luxz8ZOUb",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "94dfd148-121d-44f5-843c-2164053734b9",
@@ -2018,8 +2017,7 @@
       "checksum": "AULuhERxTWZZ/BiVTZJn2cxZ/02Y",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "e9e65283-9a4d-4235-bd71-7cff864733df",
@@ -2999,7 +2997,8 @@
       "checksum": "Ad6afDHRYeI4amCRxH7bqekeegQw",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "735d0a34-5bd0-4750-ac27-f15f3bc4af25",
@@ -4819,7 +4818,8 @@
       "checksum": "AY7NoHm+aOWFNZZwCeNh1R5XYhRc",
       "width": 2133,
       "height": 3200
-    }
+    },
+    "featured": true
   },
   {
     "guid": "83fafbef-1a2a-47f8-a9bb-600b46ee8a88",
@@ -4979,8 +4979,7 @@
       "checksum": "Aahy50ee4a9UYoywIQmhksk0dgVT",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "6d0360f5-b91a-4b74-b6bc-444ec6925ea6",
@@ -5080,8 +5079,7 @@
       "checksum": "AW88oUDkpz3kPubn9JSsQ4zBWDmU",
       "width": 2133,
       "height": 3200
-    },
-    "featured": true
+    }
   },
   {
     "guid": "5568be0f-3c49-42d6-8a02-3ae9c8c2ccfe",
@@ -6301,8 +6299,7 @@
       "checksum": "AbxM68bK0zrTWSFtZmFM2FTc3rsc",
       "width": 3200,
       "height": 2133
-    },
-    "featured": true
+    }
   },
   {
     "guid": "296ac76f-b83e-4b7c-aa71-498de410e238",
@@ -6862,7 +6859,8 @@
       "checksum": "ARQaUm0JIu2DlJMUaRHfpfmkmPt4",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "e027ce38-0bb4-43ef-a451-fb3208db3ec5",
@@ -7003,7 +7001,8 @@
       "checksum": "ASdaBdZyMag0abyLG//i2kFCt0yN",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "24c9f635-1ea7-4246-9038-ada81b49cb6e",
@@ -7303,7 +7302,8 @@
       "checksum": "Af84NMKBuGMTQ9j6I4aX5bKY0BAJ",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "10e331b2-1ea3-4cb1-86fa-66be86bddb3f",

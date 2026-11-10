@@ -88,6 +88,31 @@ test.describe('NYC photo galleries', () => {
     expect(guids).toHaveLength(featured.length);
   });
 
+  test('a preview of one or two photos sits in one row at one height; on phones it stacks', async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/nyc');
+    const boxes = async (gallery: string) =>
+      page.$$eval(`[data-gallery-preview="${gallery}"] .photo-gallery-item`, (els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { x: Math.round(r.x), top: Math.round(r.top), height: Math.round(r.height) };
+        })
+      );
+    // The celebration fixture has two featured photos; afterparty has six.
+    const pair = await boxes('celebration');
+    expect(pair).toHaveLength(2);
+    expect(pair[0].top).toBe(pair[1].top);
+    expect(Math.abs(pair[0].height - pair[1].height)).toBeLessThanOrEqual(1);
+    expect(pair[1].x).toBeGreaterThan(pair[0].x);
+    await expect(page.locator('[data-gallery-preview="afterparty"] .photo-gallery-grid--row')).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const stacked = await boxes('celebration');
+    expect(stacked[0].x).toBe(stacked[1].x);
+    expect(stacked[1].top).toBeGreaterThan(stacked[0].top);
+  });
+
   test('"See all" opens the full gallery page', async ({ page }) => {
     await login(page);
     await page.goto('/nyc');

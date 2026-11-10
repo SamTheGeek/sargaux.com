@@ -17,11 +17,13 @@
  * Removing the 👎 in Photos brings it back on the next sync. Who reacted is
  * never read.
  *
- * Preview: the first sync marks DEFAULT_FEATURED_COUNT random photos
- * `featured`, which is what /nyc shows. Reruns keep those flags, so you can
- * also hand-edit them to curate the preview; a featured photo that gets a 👎
- * (or leaves the album) is replaced at random. `--reshuffle` draws a new
- * random set.
+ * Preview: the photos with a 🔥 reaction (from anyone) are marked
+ * `featured`, which is what /nyc shows: oldest first, at most
+ * DEFAULT_FEATURED_COUNT, and fewer stay fewer. A photo with both a 🔥 and a
+ * 👎 is hidden. Only a gallery with no 🔥 at all falls back to random picks:
+ * the first sync marks DEFAULT_FEATURED_COUNT at random, reruns keep them (so
+ * they can be hand-edited there), a lost one is replaced at random, and
+ * `--reshuffle` draws a new set.
  *
  * Needs network access to *.icloud.com (ckdatabasews + its p*- partitions).
  */
@@ -29,7 +31,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig.ts';
 import {
-  applyFeatured,
+  applyPicks,
   fetchAlbumForSync,
   isValidAlbumToken,
   toManifest,
@@ -83,7 +85,8 @@ for (const gallery of targets) {
       failed = true;
       continue;
     }
-    const manifest = applyFeatured(photos, reshuffle ? [] : previous);
+    const manifest = applyPicks(photos, album.fire, undefined, reshuffle ? [] : previous);
+    const pickedByFire = manifest.some((p) => p.featured && album.fire.has(p.guid));
     writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 
     const before = new Set(previous.map((p) => p.guid));
@@ -92,7 +95,7 @@ for (const gallery of targets) {
     const removed = previous.filter((p) => !after.has(p.guid)).length;
     const featured = manifest.filter((p) => p.featured).length;
     console.log(
-      `${gallery.id}: ${manifest.length} photos (${hidden} hidden by 👎; +${added} / -${removed}), ${featured} featured → ${file}`
+      `${gallery.id}: ${manifest.length} photos (${hidden} hidden by 👎; +${added} / -${removed}), ${featured} featured (${pickedByFire ? '🔥' : 'random'}) → ${file}`
     );
   } catch (err) {
     console.error(`${gallery.id}: ${err instanceof Error ? err.message : err}`);

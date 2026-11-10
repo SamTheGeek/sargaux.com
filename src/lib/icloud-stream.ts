@@ -268,8 +268,9 @@ export async function queryAlbumReactions(
 }
 
 const THUMBS_DOWN = '\u{1F44E}';
+const FIRE = '\u{1F525}';
 
-/** 👎 with any skin tone or emoji-presentation selector reduces to the bare 👎. */
+/** An emoji with any skin tone or emoji-presentation selector reduces to the bare emoji. */
 function normalizeEmoji(value: string): string {
   return value.replace(/[\u{FE0F}\u{1F3FB}-\u{1F3FF}]/gu, '').trim();
 }
@@ -281,11 +282,24 @@ function normalizeEmoji(value: string): string {
  * `created`/`modified`, which identify who reacted.
  */
 export function thumbsDownAssetIds(records: unknown[]): Set<string> {
+  return reactionAssetIds(records, THUMBS_DOWN);
+}
+
+/** Asset ids with a live 🔥 from anyone: the photos picked for a gallery's preview. */
+export function fireAssetIds(records: unknown[]): Set<string> {
+  return reactionAssetIds(records, FIRE);
+}
+
+/**
+ * Asset ids carrying a live `emoji` reaction from any album member. Removed
+ * reactions come back as tombstones and don't count. Who reacted is never read.
+ */
+export function reactionAssetIds(records: unknown[], emoji: string): Set<string> {
   const ids = new Set<string>();
   for (const raw of records as Array<RawRecord & { deleted?: unknown }>) {
     if (!raw || raw.recordType !== 'CPLReact' || raw.deleted === true || !raw.fields) continue;
-    const emoji = raw.fields.emojiStringEnc?.value;
-    if (typeof emoji !== 'string' || normalizeEmoji(emoji) !== THUMBS_DOWN) continue;
+    const value = raw.fields.emojiStringEnc?.value;
+    if (typeof value !== 'string' || normalizeEmoji(value) !== emoji) continue;
     const ref = (raw.fields.associatedAssetRef?.value as { recordName?: unknown } | undefined)?.recordName;
     if (typeof ref === 'string' && isValidPhotoGuid(ref)) ids.add(ref);
   }
@@ -297,13 +311,13 @@ export async function fetchAlbumForSync(
   fetchImpl: Fetch,
   token: string,
   signal?: AbortSignal
-): Promise<{ photos: ResolvedPhoto[]; thumbsDown: Set<string> }> {
+): Promise<{ photos: ResolvedPhoto[]; thumbsDown: Set<string>; fire: Set<string> }> {
   const share = await resolveShare(fetchImpl, token, signal);
   const [records, reactions] = await Promise.all([
     queryAlbumRecords(fetchImpl, token, share, signal),
     queryAlbumReactions(fetchImpl, token, share, signal),
   ]);
-  return { photos: parseAlbumRecords(records), thumbsDown: thumbsDownAssetIds(reactions) };
+  return { photos: parseAlbumRecords(records), thumbsDown: thumbsDownAssetIds(reactions), fire: fireAssetIds(reactions) };
 }
 
 interface RawRecord {
@@ -483,6 +497,28 @@ export function applyFeatured(
     [pool[i], pool[j]] = [pool[j], pool[i]];
     chosen.add(pool[i]);
   }
+  return next.map(({ guid, master, takenAt, thumb, full, original }) =>
+    chosen.has(guid)
+      ? { guid, master, takenAt, thumb, full, original, featured: true }
+      : { guid, master, takenAt, thumb, full, original }
+  );
+}
+
+/**
+ * The preview picks for a gallery. When any photo still in the gallery has a
+ * 🔥 (`picks`), the preview is exactly those photos, oldest first, at most
+ * `count`; fewer than `count` stay fewer, with no random top-up. With no 🔥 at
+ * all, the random, sync-stable picks of applyFeatured apply instead.
+ */
+export function applyPicks(
+  next: ManifestPhoto[],
+  picks: Set<string>,
+  count: number = DEFAULT_FEATURED_COUNT,
+  previous: ManifestPhoto[] = [],
+  random: () => number = Math.random
+): ManifestPhoto[] {
+  const chosen = new Set(next.filter((p) => picks.has(p.guid)).slice(0, count).map((p) => p.guid));
+  if (chosen.size === 0) return applyFeatured(next, previous, count, random);
   return next.map(({ guid, master, takenAt, thumb, full, original }) =>
     chosen.has(guid)
       ? { guid, master, takenAt, thumb, full, original, featured: true }
