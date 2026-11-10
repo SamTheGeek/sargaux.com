@@ -1,0 +1,48 @@
+/*
+ * NYC photo galleries — the Photos band on /nyc and /nyc/photos/[gallery].
+ * Grid and lightbox styles live in PhotoGallery.astro / PhotoLightbox.astro;
+ * this file only places them inside the NYC moss zone.
+ *
+ * Kept out of inline <style> blocks for the same reason as nyc-index.css:
+ * stale route style tags can survive a ClientRouter swap.
+ */
+
+html[data-event="nyc"] .nyc-photos {
+  padding: 24px 0 48px;
+}
+
+html[data-event="nyc"] .nyc-photos-gallery + .nyc-photos-gallery {
+  margin-top: 48px;
+}
+
+/* Gallery title row: reuses the Explore strip-link look as a "See all" link. */
+html[data-event="nyc"] .nyc-photos-heading.nyc-strip-link {
+  border-top: 1px solid rgba(255, 249, 240, 0.15);
+  margin-bottom: 16px;
+}
+
+html[data-event="nyc"] .nyc-photos-full {
+  padding: 40px 0 64px;
+}
+
+/* The full gallery uses the page width (like samthegeek.net), not the text
+   column, so the masonry grid reaches three columns on desktop. */
+html[data-event="nyc"] .nyc-photos-full .page-content {
+  max-width: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-event="nyc"] .nyc-photos-full {
+    background: var(--color-nyc-skyline-dark) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html[data-event="nyc"] .nyc-photos {
+    padding: 16px 0 32px;
+  }
+
+  html[data-event="nyc"] .nyc-photos-gallery + .nyc-photos-gallery {
+    margin-top: 32px;
+  }
+}
