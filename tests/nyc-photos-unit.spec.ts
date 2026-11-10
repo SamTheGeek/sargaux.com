@@ -19,7 +19,18 @@ import {
   type ShareHandle,
 } from '../src/lib/icloud-stream';
 import { NYC_GALLERY_CONFIG, downloadFilename } from '../src/content/nycGalleryConfig';
-import { CACHE_TTL_MS, URL_LIFETIME_MS, URL_SAFETY_MS, redirectMaxAge, urlExpiry } from '../src/lib/icloud-photos';
+import {
+  CACHE_TTL_MS,
+  LOOKUP_CHUNK,
+  MAX_BATCH,
+  URL_LIFETIME_MS,
+  URL_SAFETY_MS,
+  redirectMaxAge,
+  resolveManyPhotoUrls,
+  resolvePhotoUrls,
+  urlExpiry,
+  usableUntil,
+} from '../src/lib/icloud-photos';
 
 // Shapes copied from a real photos.icloud.com shared-album response, with
 // invented ids, checksums and signatures.
@@ -469,5 +480,92 @@ test.describe('redirectMaxAge (iCloud URLs expire ~15 minutes after issue)', () 
 
   test('the server cache is shorter than the URL lifetime minus the margin', () => {
     expect(CACHE_TTL_MS).toBeLessThan(URL_LIFETIME_MS - URL_SAFETY_MS);
+  });
+});
+
+test.describe('batched URL resolution (one function call per batch of tiles)', () => {
+  // Each test uses its own album token, so the resolver's module-level caches
+  // never leak between tests.
+  const shareResponse = {
+    results: [{ zoneID: ZONE, anonymousPublicAccess: { token: 'TOK', databasePartition: 'https://p121-ckdatabasews.icloud.com:443' } }],
+  };
+  const photo = (n: number) => ({
+    guid: `asset-${n}`,
+    master: `M${n}`,
+    thumb: { checksum: `T${n}` },
+    full: { checksum: `D${n}` },
+    original: { checksum: `O${n}` },
+  });
+  const realFetch = globalThis.fetch;
+  let lookups: string[][] = [];
+
+  /** Answers resolve and lookup like CloudKit; `failing` record names make their chunk 500. */
+  function fakeICloud(failing: Set<string> = new Set()) {
+    lookups = [];
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/records/resolve')) return new Response(JSON.stringify(shareResponse), { status: 200 });
+      const names: string[] = JSON.parse(String(init?.body)).records.map((r: { recordName: string }) => r.recordName);
+      lookups.push(names);
+      if (names.some((n) => failing.has(n))) return new Response('{}', { status: 500 });
+      const records = names.filter((n) => n.startsWith('M')).map((m) => {
+        const n = m.slice(1);
+        return { recordName: m, recordType: 'CPLMaster', fields: {
+          ...res(`T${n}`, 509, 339, 'resJPEGThumb'), ...res(`D${n}`, 2172, 1448, 'resJPEGMed'), ...res(`O${n}`, 3200, 2133, 'resOriginal'),
+        } };
+      });
+      return new Response(JSON.stringify({ records }), { status: 200 });
+    }) as typeof fetch;
+  }
+
+  test.afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test('looks photos up in parallel chunks, and gives each photo only its own URLs', async () => {
+    fakeICloud();
+    const photos = Array.from({ length: 30 }, (_, i) => photo(i));
+    const out = await resolveManyPhotoUrls('ALBUM-chunks', photos);
+    expect(out.size).toBe(30);
+    expect(lookups.map((l) => l.length)).toEqual([LOOKUP_CHUNK * 2, LOOKUP_CHUNK * 2, 6 * 2]);
+    expect([...out.get('asset-7')!.urls.keys()].sort()).toEqual(['D7', 'O7', 'T7']);
+  });
+
+  test('serves cached photos without a lookup, and shares its cache with the single-photo path', async () => {
+    fakeICloud();
+    await resolveManyPhotoUrls('ALBUM-cache', [photo(1), photo(2)]);
+    expect(lookups).toHaveLength(1);
+    const again = await resolveManyPhotoUrls('ALBUM-cache', [photo(1), photo(2), photo(3)]);
+    expect(lookups).toHaveLength(2);
+    expect(lookups[1]).toEqual(['asset-3', 'M3']);
+    expect(again.size).toBe(3);
+    // The redirect and download endpoints reuse what a batch fetched.
+    const single = await resolvePhotoUrls('ALBUM-cache', photo(2));
+    expect(lookups).toHaveLength(2);
+    expect(single.urls.get('O2')).toBeTruthy();
+  });
+
+  test('a failed chunk leaves only its own photos out, uncached', async () => {
+    fakeICloud(new Set(['M0']));
+    const photos = Array.from({ length: LOOKUP_CHUNK + 2 }, (_, i) => photo(i));
+    const out = await resolveManyPhotoUrls('ALBUM-fail', photos);
+    expect(out.size).toBe(2);
+    expect(out.has('asset-0')).toBe(false);
+    expect(out.has(`asset-${LOOKUP_CHUNK}`)).toBe(true);
+    // Not cached: the next ask looks the failed photos up again.
+    fakeICloud();
+    expect((await resolveManyPhotoUrls('ALBUM-fail', [photo(0)])).size).toBe(1);
+    expect(lookups).toHaveLength(1);
+  });
+
+  test('a batch is at most four parallel chunks', () => {
+    expect(MAX_BATCH / LOOKUP_CHUNK).toBeLessThanOrEqual(4);
+  });
+
+  test("usableUntil is the sooner of e= and issue + 15 min, minus the margin", () => {
+    const t0 = 1_800_000_000_000;
+    expect(usableUntil(t0)).toBe(t0 + URL_LIFETIME_MS - URL_SAFETY_MS);
+    const soon = `https://cvws-h2.icloud-content.com/B/X/photo.jpg?e=${Math.floor((t0 + 5 * 60_000) / 1000)}`;
+    expect(usableUntil(t0, soon)).toBe(t0 + 5 * 60_000 - URL_SAFETY_MS);
   });
 });

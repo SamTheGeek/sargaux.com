@@ -106,6 +106,73 @@ test.describe('NYC photo galleries', () => {
     expect(guids.slice(6)).toEqual(byTime.slice(6));
   });
 
+  test('only the first row loads through redirects; the rest arrive in one batch', async ({ page }) => {
+    await login(page);
+    const batches: URL[] = [];
+    page.on('request', (req) => {
+      const url = new URL(req.url());
+      if (url.pathname === '/api/photos/afterparty/urls') batches.push(url);
+    });
+    // Tall enough that every fixture tile is inside the observer's margin.
+    await page.setViewportSize({ width: 1280, height: 4000 });
+    await page.goto('/nyc/photos/afterparty');
+    const imgs = page.locator('.photo-gallery-item img');
+    await expect(page.locator('img[data-photo-deferred]')).toHaveCount(0);
+    await expect.poll(() => imgs.evaluateAll((els) => els.filter((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0).length)).toBe(fixture.length);
+
+    expect(batches).toHaveLength(1);
+    expect(batches[0].searchParams.get('ids')!.split(',')).toHaveLength(fixture.length - 3);
+    // In fixture mode the batch hands back the same placeholder endpoint, so
+    // tell eager tiles from batched ones by their markup.
+    const eager = await imgs.evaluateAll((els) => els.filter((el) => !el.hasAttribute('data-fallback-src')).length);
+    expect(eager).toBe(3);
+  });
+
+  test('a failed batch falls back to the redirect endpoint for those tiles', async ({ page }) => {
+    await login(page);
+    await page.route('**/api/photos/afterparty/urls?**', (route) => route.fulfill({ status: 502, body: '' }));
+    await page.setViewportSize({ width: 1280, height: 4000 });
+    await page.goto('/nyc/photos/afterparty');
+    const last = page.locator('.photo-gallery-item img').last();
+    await expect(last).toHaveAttribute('src', /\/api\/photos\/afterparty\/[^/]+\?size=thumb$/);
+    await expect.poll(() => last.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  });
+
+  test('tiles far below the fold wait until they scroll near', async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 400, height: 300 });
+    // Push the grid well past the observer's 1500px margin.
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const grid = document.querySelector<HTMLElement>('[data-photo-gallery]');
+        if (grid) grid.style.marginTop = '6000px';
+      });
+    });
+    await page.goto('/nyc/photos/afterparty');
+    await page.waitForTimeout(300);
+    const deferred = page.locator('img[data-photo-deferred]');
+    expect(await deferred.count()).toBe(fixture.length - 3);
+    const last = page.locator('.photo-gallery-item img').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).not.toHaveAttribute('data-photo-deferred');
+    await expect.poll(() => last.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  });
+
+  test('the lightbox can step onto a tile the grid has not loaded yet', async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 400, height: 700 });
+    await page.goto('/nyc/photos/afterparty');
+    const items = page.locator('.photo-gallery-item');
+    await items.first().click();
+    await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
+    for (let i = 1; i < fixture.length; i++) await page.keyboard.press('ArrowRight');
+    const lastGuid = await items.last().getAttribute('data-photo-guid');
+    await expect.poll(() => new URL(page.url()).searchParams.get('photo')).toBe(lastGuid);
+    const image = page.locator('#photo-lightbox-image');
+    await expect(image).toHaveAttribute('src', /size=full$/);
+    await expect.poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  });
+
   test('empty and unknown galleries 404', async ({ page }) => {
     await login(page);
     for (const path of ['/nyc/photos/event', '/nyc/photos/preparation', '/nyc/photos/nope']) {
@@ -253,6 +320,41 @@ test.describe('/api/photos', () => {
       const res = await page.request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBe(404);
     }
+  });
+});
+
+test.describe('/api/photos/{gallery}/urls (batched URLs)', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+  const ids = fixture.slice(0, 3).map((p) => p.guid);
+
+  test('requires a session', async ({ request }) => {
+    const res = await request.get(`/api/photos/afterparty/urls?ids=${ids.join(',')}`);
+    expect(res.status()).toBe(401);
+  });
+
+  test('answers manifest photos of that gallery only, with a lifetime, never cached', async ({ page }) => {
+    await login(page);
+    const foreign = celebrationFixture[0].guid;
+    const res = await page.request.get(`/api/photos/afterparty/urls?ids=${[...ids, foreign, 'NOT-IN-MANIFEST'].join(',')}`);
+    expect(res.status()).toBe(200);
+    expect(res.headers()['cache-control']).toBe('private, no-store');
+    const body = (await res.json()) as { photos: Record<string, { thumb: string; full: string; ttl: number }> };
+    expect(Object.keys(body.photos).sort()).toEqual([...ids].sort());
+    for (const p of Object.values(body.photos)) {
+      expect(p.thumb).toMatch(/size=thumb$/);
+      expect(p.full).toMatch(/size=full$/);
+      expect(p.ttl).toBeGreaterThan(0);
+      // No download originals: those stay same-origin.
+      expect(Object.keys(p).sort()).toEqual(['full', 'thumb', 'ttl']);
+    }
+  });
+
+  test('rejects an empty or oversized batch, and unknown galleries', async ({ page }) => {
+    await login(page);
+    const tooMany = Array.from({ length: 49 }, (_, i) => `id-${i}`).join(',');
+    expect((await page.request.get('/api/photos/afterparty/urls')).status()).toBe(400);
+    expect((await page.request.get(`/api/photos/afterparty/urls?ids=${tooMany}`)).status()).toBe(400);
+    expect((await page.request.get(`/api/photos/nope/urls?ids=${ids[0]}`)).status()).toBe(404);
   });
 });
 

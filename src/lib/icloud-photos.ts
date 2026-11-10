@@ -10,6 +10,12 @@
  * the whole album instead costs ~5 s per 100 photos (Celebration, at 384
  * photos, took ~20 s) — far past a function's time budget.
  *
+ * Galleries ask for many photos at once through `resolveManyPhotoUrls`,
+ * which serves cached photos from memory and looks the rest up in parallel
+ * chunks of LOOKUP_CHUNK photos. One lookup's time grows with its size
+ * (~0.8 s for 1 photo, ~2.6 s for 50, ~4.4 s for 100; 200 is refused), but
+ * chunks run side by side, so 96 photos in chunks of 12 answer in ~1.1 s.
+ *
  * Two in-memory caches per function instance:
  *  - the share's anonymous access token (Apple gives it ~20 minutes; reused
  *    for SHARE_TTL_MS), so a lookup is one round-trip, not two;
@@ -61,14 +67,17 @@ export function urlExpiry(url: string): number | null {
  * whichever is sooner.
  */
 export function redirectMaxAge(fetchedAt: number, now: number = Date.now(), url?: string): number {
-  const assumed = fetchedAt + URL_LIFETIME_MS;
-  const stated = url ? urlExpiry(url) : null;
-  const expiry = stated === null ? assumed : Math.min(stated, assumed);
-  const left = expiry - URL_SAFETY_MS - now;
+  const left = usableUntil(fetchedAt, url) - now;
   return Math.max(0, Math.min(300, Math.floor(left / 1000)));
 }
 
 const FETCH_TIMEOUT_MS = 8000;
+
+/** Photos per CloudKit lookup when resolving a batch (each photo is two records). */
+export const LOOKUP_CHUNK = 12;
+
+/** The most photos one batch may ask for: four chunks in parallel. */
+export const MAX_BATCH = 48;
 
 /** Apple's anonymous share tokens last ~20 minutes; refresh well before. */
 const SHARE_TTL_MS = 15 * 60 * 1000;
@@ -133,4 +142,81 @@ export async function resolvePhotoUrls(token: string, photo: { guid: string; mas
   } finally {
     inFlight.delete(key);
   }
+}
+
+/** What a batch lookup needs to know about each photo: its records and rendition checksums. */
+export interface BatchPhoto {
+  guid: string;
+  master: string;
+  thumb: { checksum: string };
+  full: { checksum: string };
+  original: { checksum: string };
+}
+
+/**
+ * Fresh URLs for many photos of one album: guid → that photo's URLs. Cached
+ * photos come from memory; the rest are looked up LOOKUP_CHUNK at a time, all
+ * chunks in parallel, and each photo found is cached on its own, so the image
+ * and download endpoints reuse it. A photo missing from the result (its chunk
+ * failed, or iCloud no longer has it) is the caller's to fall back on.
+ * Never throws.
+ */
+export async function resolveManyPhotoUrls(token: string, photos: BatchPhoto[]): Promise<Map<string, ResolvedUrls>> {
+  const out = new Map<string, ResolvedUrls>();
+  const missing: BatchPhoto[] = [];
+  const waiting: Array<Promise<void>> = [];
+  for (const photo of photos) {
+    const key = `${token}:${photo.guid}`;
+    const cached = photoUrls.get(key);
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+      out.set(photo.guid, cached);
+      continue;
+    }
+    const pending = inFlight.get(key);
+    if (pending) {
+      waiting.push(pending.then((r) => { if (r.urls.size > 0) out.set(photo.guid, r); }));
+      continue;
+    }
+    missing.push(photo);
+  }
+
+  const chunks: BatchPhoto[][] = [];
+  for (let i = 0; i < missing.length; i += LOOKUP_CHUNK) chunks.push(missing.slice(i, i + LOOKUP_CHUNK));
+
+  await Promise.all([
+    ...waiting,
+    ...chunks.map(async (chunk) => {
+      const fetchedAt = Date.now();
+      let urls: Map<string, string>;
+      try {
+        urls = await lookup(token, chunk.flatMap((p) => [p.guid, p.master]), AbortSignal.timeout(FETCH_TIMEOUT_MS));
+      } catch (err) {
+        console.warn('[photos] iCloud batch lookup failed:', err instanceof Error ? err.message : err);
+        return;
+      }
+      for (const photo of chunk) {
+        const own = new Map<string, string>();
+        for (const { checksum } of [photo.thumb, photo.full, photo.original]) {
+          const url = urls.get(checksum);
+          if (url) own.set(checksum, url);
+        }
+        if (own.size === 0) continue;
+        const resolved = { fetchedAt, urls: own };
+        photoUrls.set(`${token}:${photo.guid}`, resolved);
+        out.set(photo.guid, resolved);
+      }
+    }),
+  ]);
+  return out;
+}
+
+/**
+ * When a browser must stop using a URL issued at `fetchedAt` (ms since
+ * epoch): the sooner of its own `e=` and issue time + 15 minutes, minus the
+ * safety margin.
+ */
+export function usableUntil(fetchedAt: number, url?: string): number {
+  const assumed = fetchedAt + URL_LIFETIME_MS;
+  const stated = url ? urlExpiry(url) : null;
+  return (stated === null ? assumed : Math.min(stated, assumed)) - URL_SAFETY_MS;
 }

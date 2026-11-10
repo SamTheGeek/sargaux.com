@@ -51,6 +51,8 @@ const t = createTranslator(Astro.props.lang);
 </div>
 
 <script>
+  import { cachedPhotoUrls, fullUrlFor, loadTile, warmPhotoUrls } from '../scripts/photo-urls';
+
   interface Dimensions {
     width: number;
     height: number;
@@ -159,6 +161,21 @@ const t = createTranslator(Astro.props.lang);
     return item?.querySelector<HTMLImageElement>('img') ?? null;
   }
 
+  /**
+   * What to paint the moment a photo opens: the tile's own decoded pixels.
+   * A tile the grid hasn't loaded yet (stepping far past the visible ones)
+   * borrows a cached thumbnail URL, or failing that the redirect endpoint,
+   * and is told to load for when the lightbox closes over it.
+   */
+  function immediateSrc(item: HTMLAnchorElement, thumb: HTMLImageElement): string {
+    const own = thumb.currentSrc || thumb.getAttribute('src');
+    if (own) return own;
+    void loadTile(thumb);
+    const gallery = item.closest<HTMLElement>('[data-photo-gallery]')?.dataset.photoGallery;
+    const guid = item.dataset.photoGuid;
+    return (gallery && guid ? cachedPhotoUrls(gallery, guid)?.thumb : null) ?? thumb.dataset.fallbackSrc ?? '';
+  }
+
   function fullDimensions(item: HTMLAnchorElement): Dimensions | null {
     const width = Number(item.dataset.fullWidth);
     const height = Number(item.dataset.fullHeight);
@@ -195,7 +212,7 @@ const t = createTranslator(Astro.props.lang);
     activeItem = item;
     lightboxImage.alt = thumb.alt;
     // The tile's pixels are already decoded, so this paints without a decode.
-    lightboxImage.src = thumb.currentSrc || thumb.src;
+    lightboxImage.src = immediateSrc(item, thumb);
     sizeImage(target);
     hideSource(item);
 
@@ -243,7 +260,7 @@ const t = createTranslator(Astro.props.lang);
     if (document.activeElement !== close && !lightbox.contains(document.activeElement)) {
       close?.focus({ preventScroll: true });
     }
-    loadFull(activeItem, token);
+    void loadFull(activeItem, token);
     schedulePrefetch(token);
   }
 
@@ -307,6 +324,8 @@ const t = createTranslator(Astro.props.lang);
     const next = lightbox.querySelector<HTMLButtonElement>('.photo-lightbox-next');
     if (prev) prev.hidden = index <= 0;
     if (next) next.hidden = index >= items.length - 1;
+    // Have the URLs for wherever the guest steps next in hand already.
+    warmPhotoUrls([items[index - 1], items[index + 1], items[index + 2]]);
     const href = activeItem.dataset.downloadSrc;
     if (downloadLink && href) {
       if (prefetch && prefetch.href !== href) cancelPrefetch();
@@ -438,9 +457,9 @@ const t = createTranslator(Astro.props.lang);
    * Swaps in the full rendition only once it is fully decoded (decode() runs
    * off the main thread), and never while a zoom is running.
    */
-  function loadFull(item: HTMLAnchorElement, token: number) {
-    const fullSrc = item.dataset.fullSrc;
-    if (!fullSrc || !lightboxImage) return;
+  async function loadFull(item: HTMLAnchorElement, token: number) {
+    const fullSrc = await fullUrlFor(item);
+    if (token !== loadToken || !fullSrc || !lightboxImage) return;
     if (lightboxImage.getAttribute('src') === fullSrc) return;
     const hires = new Image();
     hires.decoding = 'async';
@@ -546,10 +565,11 @@ const t = createTranslator(Astro.props.lang);
     item.scrollIntoView({ block: 'center', behavior: 'instant' });
     const thumb = thumbOf(item);
     if (!thumb) return;
-    // A lazy thumbnail below the fold hasn't started loading yet.
+    // A lazy thumbnail below the fold hasn't started loading yet, and a
+    // deferred one has no source until its batch answers.
     thumb.loading = 'eager';
     const open = () => requestAnimationFrame(() => openLightbox(item));
-    thumb.decode().then(open, open);
+    void loadTile(thumb).then(() => thumb.decode()).then(open, open);
   }
 
   // ── Global listeners (registered once per document lifetime) ─
