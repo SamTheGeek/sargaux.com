@@ -147,9 +147,11 @@ jobs:
             exit 1
           fi
 
-          # Netscape jar format: name is field 6, value field 7.
+          # Netscape jar format: name is field 6, value field 7. Mask only the
+          # session: sargaux_lang is just "en"/"fr", and masking it would
+          # blank every "en" in the log ("cal***dar").
           while read -r value; do echo "::add-mask::$value"; done \
-            < <(awk '$6 ~ /^sargaux_(auth|lang)$/ { print $7 }' "$jar")
+            < <(awk '$6 == "sargaux_auth" { print $7 }' "$jar")
           LH_COOKIE=$(awk '$6 ~ /^sargaux_(auth|lang)$/ { printf "%s%s=%s", sep, $6, $7; sep="; " }' "$jar")
           rm -f "$jar"
           if [[ "$LH_COOKIE" != *sargaux_auth=* ]]; then
