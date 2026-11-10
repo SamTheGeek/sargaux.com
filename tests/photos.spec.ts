@@ -163,6 +163,23 @@ test.describe('NYC photo galleries', () => {
     await expect.poll(() => last.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   });
 
+  test('without JavaScript, every tile still shows its photo', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 4000 } });
+    const page = await context.newPage();
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    // The empty deferred <img> is hidden; its <noscript> twin is what renders.
+    const visible = page.locator('.photo-gallery-item img:visible');
+    await expect(visible).toHaveCount(fixture.length);
+    await expect
+      .poll(() => visible.evaluateAll((els) => els.filter((el) => (el as HTMLImageElement).naturalWidth > 0).length))
+      .toBe(fixture.length);
+    // Every visible tile image fills its tile, so the noscript copy is styled like the rest.
+    const widths = await visible.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(new Set(widths).size).toBe(1);
+    await context.close();
+  });
+
   test('tiles far below the fold wait until they scroll near', async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 400, height: 300 });

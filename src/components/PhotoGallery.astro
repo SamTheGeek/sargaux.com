@@ -91,6 +91,7 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
           decoding="async"
         />
       ) : (
+        <>
         <img
           data-photo-deferred
           data-fallback-src={src(photo.guid, 'thumb')}
@@ -104,6 +105,21 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
           alt={altFor(index + 1)}
           decoding="async"
         />
+        {/* Without JavaScript nothing fills the tile above, so it is hidden
+            (`scripting: none`) and this plain redirect-backed image shows
+            instead. Browsers with JavaScript never parse <noscript>, so it
+            costs them nothing. */}
+        <noscript>
+          <img
+            src={src(photo.guid, 'thumb')}
+            width={photo.thumb.width}
+            height={photo.thumb.height}
+            alt={altFor(index + 1)}
+            loading="lazy"
+            decoding="async"
+          />
+        </noscript>
+        </>
       )}
     </a>
   ))}
@@ -282,6 +298,12 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
     height: auto;
     display: block;
     cursor: zoom-in;
+  }
+
+  @media (scripting: none) {
+    .photo-gallery-item img[data-photo-deferred] {
+      display: none;
+    }
   }
 
   /* Justified row: each tile's share of the width follows its aspect ratio,
