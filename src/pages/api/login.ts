@@ -23,6 +23,7 @@ import {
   refundRateLimitHit,
 } from '../../lib/rate-limit';
 import { isTestGuest } from '../../lib/test-guests';
+import { testGuestsAllowed } from '../../lib/test-guest-login';
 
 /**
  * The guest backend (Notion) could not answer. Distinct from "no such name":
@@ -81,12 +82,13 @@ function toResolvedGuest(record: GuestRecord): ResolvedGuest {
  * Synthetic 🤖 guests are real rows in the Notion Guest List, and their names
  * are published in this repo (tests/fixtures.ts, the fallback list in auth.ts).
  * Without this gate anyone who reads the repo could type one into the live
- * login and get a session. `global.testGuestLogin` is on for `npm run dev` and
- * the Playwright server, and is deliberately absent from netlify.toml's
- * deploy-preview environment, so production and previews both refuse them.
+ * login and get a session. `allowed` comes from `testGuestsAllowed()`
+ * (src/lib/test-guest-login.ts): true under `npm run dev` and the Playwright
+ * server, and on deploy previews only when the request carries the secret
+ * `X-Test-Guest-Login` header. Production always refuses them.
  */
-function denyTestGuests<T extends { name: string }>(records: T[]): T[] {
-  if (features.global.testGuestLogin) return records;
+function denyTestGuests<T extends { name: string }>(records: T[], allowed: boolean): T[] {
+  if (allowed) return records;
   return records.filter((record) => !isTestGuest(record));
 }
 
@@ -250,7 +252,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
     // Same 401 as an unknown id — a blocked bot must be indistinguishable from
     // a name that does not exist, so this can't be used to confirm one.
-    if (!guest || denyTestGuests([guest]).length === 0) {
+    if (!guest || denyTestGuests([guest], testGuestsAllowed(request, features.global)).length === 0) {
       return notFoundResponse();
     }
 
@@ -269,7 +271,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   let matches: GuestRecord[];
   try {
-    matches = denyTestGuests(await resolveByName(name));
+    matches = denyTestGuests(await resolveByName(name), testGuestsAllowed(request, features.global));
   } catch (err) {
     if (err instanceof LoginBackendUnavailableError) {
       // Not the guest's fault — refund the attempt so retrying after the

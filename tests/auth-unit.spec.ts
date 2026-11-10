@@ -412,6 +412,33 @@ test.describe('Test-guest login gate', () => {
     expect(netlifyToml).not.toContain('FEATURE_GLOBAL_TEST_GUEST_LOGIN');
   });
 
+  test('the test-guest login secret is never committed to netlify.toml', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const netlifyToml = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
+    expect(netlifyToml).not.toContain('TEST_GUEST_LOGIN_SECRET');
+  });
+
+  test('the preview test-guest flag is set only for deploy previews', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const netlifyToml = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
+
+    // Map each assignment of the flag to the [table] it sits under. Comments
+    // are stripped so a mention in prose doesn't count as an assignment.
+    const tables: string[] = [];
+    let current = '';
+    for (const rawLine of netlifyToml.split('\n')) {
+      const line = rawLine.replace(/#.*$/, '').trim();
+      const header = line.match(/^\[+([^\]]+)\]+$/);
+      if (header) {
+        current = header[1].trim();
+        continue;
+      }
+      if (/^FEATURE_GLOBAL_PREVIEW_TEST_GUEST_LOGIN\s*=/.test(line)) tables.push(current);
+    }
+
+    expect(tables).toEqual(['context.deploy-preview.environment']);
+  });
+
   test('every synthetic guest name is covered by isTestGuest', async () => {
     const { TEST_GUEST_DISPLAY_NAMES, isTestGuest } = await import('../src/lib/test-guests');
     const { TEST_GUEST_NAME, TEST_GUEST_FRANCE_NAME } = await import('./fixtures');
@@ -429,5 +456,60 @@ test.describe('Test-guest login gate', () => {
     const { TEST_GUEST_NORMALIZED_NAMES: appNames } = await import('../src/lib/test-guests');
     const { TEST_GUEST_NORMALIZED_NAMES: scriptNames } = await import('../scripts/lib/test-guests.mjs');
     expect([...scriptNames].sort()).toEqual([...appNames].sort());
+  });
+});
+
+/**
+ * The decision behind the gate. On a deploy preview a bot may log in only when
+ * the request carries the secret header; everywhere else that isn't dev or
+ * Playwright, never.
+ */
+test.describe('testGuestsAllowed', () => {
+  const SECRET = 'a'.repeat(64);
+  const off = { testGuestLogin: false, previewTestGuestLogin: false };
+  const preview = { testGuestLogin: false, previewTestGuestLogin: true };
+  const dev = { testGuestLogin: true, previewTestGuestLogin: false };
+
+  function req(header?: string): Request {
+    const headers = new Headers();
+    if (header !== undefined) headers.set('X-Test-Guest-Login', header);
+    return new Request('https://example.test/api/login', { method: 'POST', headers });
+  }
+
+  test('preview flag off refuses even the right header', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(SECRET), off, SECRET)).toBe(false);
+  });
+
+  test('preview flag on with the secret unset or empty refuses', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(SECRET), preview, undefined)).toBe(false);
+    expect(testGuestsAllowed(req(''), preview, '')).toBe(false);
+  });
+
+  test('a missing header refuses', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(), preview, SECRET)).toBe(false);
+  });
+
+  test('a wrong header of the same length refuses', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req('b'.repeat(64)), preview, SECRET)).toBe(false);
+  });
+
+  test('a header of a different length refuses', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(SECRET + 'a'), preview, SECRET)).toBe(false);
+    expect(testGuestsAllowed(req(SECRET.slice(1)), preview, SECRET)).toBe(false);
+  });
+
+  test('the right header on a preview build allows', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(SECRET), preview, SECRET)).toBe(true);
+  });
+
+  test('the dev/Playwright flag allows without a header', async () => {
+    const { testGuestsAllowed } = await import('../src/lib/test-guest-login');
+    expect(testGuestsAllowed(req(), dev, undefined)).toBe(true);
   });
 });
