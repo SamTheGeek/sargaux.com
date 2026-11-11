@@ -35,6 +35,12 @@ type FeatureFlags = {
      * deploy previews; on for `npm run dev` and the Playwright server.
      */
     testGuestLogin: boolean;
+    /**
+     * Deploy previews only: allow the 🤖 test guests to log in when the request
+     * also carries the `X-Test-Guest-Login` secret header (see
+     * src/lib/test-guest-login.ts). Unlocks nothing on its own.
+     */
+    previewTestGuestLogin: boolean;
   };
   dev: {
     loginDelay: boolean; // Adds 2s artificial delay to login so the loading animation is visible
@@ -102,6 +108,9 @@ const features: FeatureFlags = {
     // Deliberately NOT listed in netlify.toml's deploy-preview environment:
     // previews are shareable URLs, so the bots must be refused there too.
     testGuestLogin: flag(import.meta.env.FEATURE_GLOBAL_TEST_GUEST_LOGIN, false) || import.meta.env.DEV,
+    // Set ONLY in netlify.toml's deploy-preview environment. Safe there because
+    // it merely enables the secret-header check in src/lib/test-guest-login.ts.
+    previewTestGuestLogin: flag(import.meta.env.FEATURE_GLOBAL_PREVIEW_TEST_GUEST_LOGIN, false),
   },
   dev: {
     loginDelay: flag(import.meta.env.FEATURE_DEV_LOGIN_DELAY, false),

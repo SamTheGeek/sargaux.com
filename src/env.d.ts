@@ -23,6 +23,7 @@ declare namespace NodeJS {
     RESEND_API_KEY?: string; // Resend transactional email API key (never commit)
     RESEND_FROM_ADDRESS?: string; // e.g. "Sargaux Wedding <hello@sargaux.com>"
     RESEND_ADMIN_SECRET?: string; // Bearer secret for admin + /api/warm endpoints (never commit)
+    TEST_GUEST_LOGIN_SECRET?: string; // X-Test-Guest-Login header value that lets 🤖 bots log in on deploy previews (deploy-preview context only; never commit)
     CALENDAR_TEST_MODE?: string; // When "true", calendar endpoints use mock blob store (tests only — keep off in prod)
     GOOGLE_MAPS_STATIC_API_KEY?: string; // Google Maps Static API key (domain-restricted, visible in HTML)
     JOY_EVENT_HANDLE?: string; // Joy registry event handle (withjoy.com/<handle>)
@@ -76,6 +77,7 @@ interface ImportMetaEnv {
   readonly FEATURE_GLOBAL_RSVP_DELETE_ENABLED?: string;
   readonly FEATURE_GLOBAL_ENVELOPE_LOGIN?: string;
   readonly FEATURE_GLOBAL_TEST_GUEST_LOGIN?: string;
+  readonly FEATURE_GLOBAL_PREVIEW_TEST_GUEST_LOGIN?: string;
 }
 
 interface ImportMeta {

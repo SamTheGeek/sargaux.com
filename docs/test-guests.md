@@ -13,6 +13,14 @@ Both pages use the robot icon (🤖) and should have the **Test Guest** checkbox
 
 The same names exist in the hardcoded dev fallback list (`src/lib/auth.ts`) so login works when `FEATURE_GLOBAL_NOTION_BACKEND` is off.
 
+## Where the bots can log in
+
+Their names are public (this repo), so the login refuses them except where a stranger can't use them. The decision is `testGuestsAllowed()` in `src/lib/test-guest-login.ts`:
+
+- **`npm run dev` and the Playwright server** — `global.testGuestLogin` (never set in `netlify.toml`).
+- **Deploy previews, only with the secret header** — builds there have `global.previewTestGuestLogin`, and a request must carry `X-Test-Guest-Login` equal to the `TEST_GUEST_LOGIN_SECRET` runtime secret (Netlify, Deploy Previews context only). This is how `.github/workflows/lighthouse-preview.yml` signs in to audit every page. Without the header, a bot name gets the same 401 as an unknown name.
+- **Production** — never. It doesn't build with either flag.
+
 ## What tests do
 
 - **RSVP API / security suites** log in as Alex Rivera, submit RSVPs, and **delete** that party's RSVP Responses rows on every run. Guest List `RSVP` status for the party is rewritten — that churn is expected and isolated.

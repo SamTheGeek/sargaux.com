@@ -1,0 +1,180 @@
+name: Lighthouse (Deploy Preview)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+# Netlify's Lighthouse plugin can only audit `/`: it can't send a cookie, and
+# every other page is behind the guest login. This job waits for the PR's
+# deploy preview, logs in as the 🤖 test guest using the secret
+# X-Test-Guest-Login header (the only way a bot can log in on a preview — see
+# src/lib/test-guest-login.ts), and runs Lighthouse on every page with that
+# session. Report-only: scores go in the job summary and never fail the run.
+#
+# It only reads pages, so unlike e2e-tests.yml it stays out of the
+# notion-security-tests concurrency group. A newer push to the same PR cancels
+# the older run, whose preview is stale anyway.
+concurrency:
+  group: lighthouse-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  statuses: read
+  checks: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse (all pages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Skip for draft PRs, like the other test workflows.
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Same docs-only skip as e2e-tests.yml; `predicate-quantifier: every` is
+      # load-bearing (see the comment there).
+      - name: Filter docs/config changes
+        id: paths
+        uses: dorny/paths-filter@v4
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            non_docs:
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!**/*.yaml'
+              - '!LICENSE'
+              - '!.gitignore'
+              - '!playwright.config.ts'
+
+      - name: Determine docs-only changes
+        id: filter
+        run: |
+          if [[ "${{ steps.paths.outputs.non_docs }}" != "true" ]]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.filter.outputs.docs_only != 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.filter.outputs.docs_only != 'true'
+        run: npm ci
+
+      # Netlify reports the preview as the `netlify/sargaux/deploy-preview`
+      # commit status on the PR head. Its target_url is the
+      # deploy-preview-N alias, which can still serve the previous commit, so
+      # prefer the unique deploy permalink (<deploy-id>--sargaux.netlify.app),
+      # derived from the deploy id in the URL of Netlify's check runs on the
+      # same commit.
+      - name: Wait for the deploy preview of this commit
+        if: steps.filter.outputs.docs_only != 'true'
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          CONTEXT: netlify/sargaux/deploy-preview
+        run: |
+          deadline=$(( $(date +%s) + 15 * 60 ))
+          while :; do
+            status=$(gh api "repos/$REPO/commits/$SHA/statuses?per_page=100" \
+              --jq "[.[] | select(.context == \"$CONTEXT\")][0] // empty")
+            state=$(jq -r '.state // empty' <<<"$status")
+            case "$state" in
+              success) break ;;
+              failure|error)
+                echo "::error::Netlify reported the deploy preview as '$state': $(jq -r '.description' <<<"$status")"
+                exit 1 ;;
+            esac
+            if (( $(date +%s) > deadline )); then
+              echo "::error::No successful '$CONTEXT' status on $SHA after 15 minutes (last state: ${state:-none}). Did Netlify build this commit?"
+              exit 1
+            fi
+            echo "Waiting for $CONTEXT on $SHA (state: ${state:-not reported yet})…"
+            sleep 20
+          done
+
+          alias_url=$(jq -r '.target_url' <<<"$status")
+          deploy_id=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+            --jq '[.check_runs[].details_url // empty | capture("app\\.netlify\\.com/projects/sargaux/deploys/(?<id>[0-9a-f]+)") | .id][0] // empty')
+          if [[ -n "$deploy_id" ]]; then
+            base="https://${deploy_id}--sargaux.netlify.app"
+          else
+            echo "::warning::Couldn't find the deploy permalink; falling back to $alias_url"
+            base="${alias_url%/}"
+          fi
+          echo "Auditing $base"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+      # Login and audit share one step so the session cookie never leaves this
+      # shell (no $GITHUB_ENV / $GITHUB_OUTPUT). It is masked before anything
+      # could print it.
+      - name: Log in as the test guest and run Lighthouse
+        if: steps.filter.outputs.docs_only != 'true'
+        env:
+          BASE: ${{ steps.preview.outputs.base }}
+          TEST_GUEST_LOGIN_SECRET: ${{ secrets.TEST_GUEST_LOGIN_SECRET }}
+          LH_REPORT_DIR: lighthouse-reports
+        run: |
+          if [[ -z "$TEST_GUEST_LOGIN_SECRET" ]]; then
+            echo "::error::The TEST_GUEST_LOGIN_SECRET GitHub Actions secret is not set."
+            exit 1
+          fi
+
+          # The bot's name comes from the test fixtures, so it can't drift.
+          name=$(node -e "import('./tests/fixtures.ts').then((m) => console.log(m.TEST_GUEST_NAME))")
+          jar=$(mktemp)
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$BASE/api/login" \
+            -H "Origin: $BASE" \
+            -H "X-Test-Guest-Login: $TEST_GUEST_LOGIN_SECRET" \
+            --data-urlencode "name=$name" \
+            -c "$jar")
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Test-guest login returned HTTP $code (expected 200). Is TEST_GUEST_LOGIN_SECRET set in Netlify's Deploy Previews context, with the same value as the GitHub secret?"
+            rm -f "$jar"
+            exit 1
+          fi
+
+          # Netscape jar format: name is field 6, value field 7. Mask only the
+          # session: sargaux_lang is just "en"/"fr", and masking it would
+          # blank every "en" in the log ("cal***dar").
+          while read -r value; do echo "::add-mask::$value"; done \
+            < <(awk '$6 == "sargaux_auth" { print $7 }' "$jar")
+          LH_COOKIE=$(awk '$6 ~ /^sargaux_(auth|lang)$/ { printf "%s%s=%s", sep, $6, $7; sep="; " }' "$jar")
+          rm -f "$jar"
+          if [[ "$LH_COOKIE" != *sargaux_auth=* ]]; then
+            echo "::error::Login returned 200 but set no sargaux_auth cookie."
+            exit 1
+          fi
+
+          export LH_BASE_URL="$BASE" LH_COOKIE
+          node scripts/ci/lighthouse-preview.mjs
+
+      # The script never writes reports for /nyc/details or /france/schedule:
+      # they embed the bot's personal calendar subscription link (a capability
+      # URL), and artifacts on this public repo are downloadable by anyone
+      # signed in to GitHub.
+      - name: Upload Lighthouse reports
+        if: steps.filter.outputs.docs_only != 'true' && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-preview-reports
+          path: lighthouse-reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Docs-only change detected; Lighthouse skipped
+        if: steps.filter.outputs.docs_only == 'true'
+        run: echo "Docs-only change detected; Lighthouse skipped"
