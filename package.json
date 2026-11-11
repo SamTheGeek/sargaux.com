@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
@@ -40,7 +40,9 @@
     "@playwright/test": "^1.65.0",
     "@types/node": "^24.19.2",
     "axe-core": "^4.14.0",
+    "chrome-launcher": "1.2.2",
     "exceljs": "^4.4.0",
+    "lighthouse": "13.6.0",
     "node-gyp": "^13.1.0",
     "sharp": "^0.35.5",
     "tsx": "^4.23.15",
