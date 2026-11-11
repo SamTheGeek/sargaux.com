@@ -1,4 +1,5 @@
 ---
+import { nycRsvpButtonHref } from '../../lib/nyc-rsvp-lock';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpages.css';
 import { features } from '../../config/features';
@@ -10,6 +11,9 @@ const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
+// Post-event, the header RSVP button links to the saved confirmation, and only
+// for parties that have one (see src/lib/nyc-rsvp-lock.ts).
+const rsvpHref = await nycRsvpButtonHref(Astro.locals.guestId);
 ---
 
 <WireframeLayout title={t(strings.nyc.travel.pageTitle)} fullTitle="Chez Sargaux | NYC — Travel" event="nyc" page="travel">
@@ -29,7 +33,9 @@ const t = createTranslator(Astro.locals.lang ?? 'en');
             <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        {rsvpHref && (
+          <a href={rsvpHref} class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        )}
       </div>
     </nav>
   </header>

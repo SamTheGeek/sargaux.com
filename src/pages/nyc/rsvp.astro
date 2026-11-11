@@ -12,11 +12,20 @@ import { formatEventDate, sortEventsByDateTime } from '../../lib/rsvp-display';
 import { localizeEvent } from '../../lib/event-i18n';
 import { memberAttendedResponse } from '../../lib/rsvp-attendance';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../types';
+import { partyHasNycRsvp, NYC_RSVP_CONFIRMED_PATH } from '../../lib/nyc-rsvp-lock';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
 const guest = Astro.locals.guest ?? 'Guest';
 const guestId = Astro.locals.guestId;
+
+// Post-event lock: the form is closed. A party with a saved answer can still
+// read it on the confirmation page; everyone else goes back to the event page.
+// A failed lookup errs toward the confirmation page, which reports the error.
+if (features.nyc.rsvpLocked) {
+  const onRecord = guestId ? await partyHasNycRsvp(guestId).catch(() => true) : false;
+  return Astro.redirect(onRecord ? NYC_RSVP_CONFIRMED_PATH : '/nyc');
+}
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const PREVIEW_SUBMITTED_AT = '2025-12-13T20:21:00-05:00';
