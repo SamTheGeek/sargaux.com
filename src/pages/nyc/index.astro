@@ -9,12 +9,22 @@ import skylineFill from '../../assets/nyc/skyline-fill.svg?raw';
 import skylineOutline from '../../assets/nyc/skyline.svg?url';
 import { features } from '../../config/features';
 import { getRegistryLink } from '../../lib/registry-routing';
+import PhotoGallery from '../../components/PhotoGallery.astro';
+import PhotoLightbox from '../../components/PhotoLightbox.astro';
+import { getVisibleNycGalleries, previewPhotos } from '../../content/nycGalleries';
+import '../../styles/nyc-photos.css';
 
 const guest = Astro.locals.guest;
 const eventInvitations = Astro.locals.eventInvitations ?? ['nyc', 'france'];
 const showEventToggle = eventInvitations.includes('nyc') && eventInvitations.includes('france');
 const t = createTranslator(Astro.locals.lang ?? 'en');
 const { href: registryHref, external: registryIsExternal } = getRegistryLink(Astro.locals.country);
+const lang = Astro.locals.lang ?? 'en';
+// Galleries with no photos yet are left out entirely; with none at all, so is the band.
+const photoGalleries = features.nyc.photoGallery ? getVisibleNycGalleries() : [];
+// Post-event layout, shipped with the galleries: the event has happened, so the
+// dress code and RSVP-deadline rows and the Travel/RSVP Explore entries go.
+const postEvent = features.nyc.photoGallery;
 ---
 
 <WireframeLayout title={t(strings.nyc.pageTitle)} fullTitle="Chez Sargaux | NYC" description="NYC Wedding - October 2026" event="nyc">
@@ -107,19 +117,44 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
             <span class="nyc-info-secondary">{t(strings.nyc.where.separator)} {t(strings.nyc.where.dancing)}</span>
           </span>
         </div>
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.dressCode.heading)}</span>
-          <span class="nyc-info-val">{t(strings.nyc.dressCode.value)}</span>
-        </div>
-        <div class="nyc-info-row">
-          <span class="nyc-info-key">{t(strings.nyc.rsvpDeadline.heading)}</span>
-          <span class="nyc-info-val">
-            <a href="/nyc/rsvp" class="nyc-info-link-inline">{t(strings.nyc.rsvpDeadline.value)}</a>
-          </span>
-        </div>
+        {!postEvent && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">{t(strings.nyc.dressCode.heading)}</span>
+            <span class="nyc-info-val">{t(strings.nyc.dressCode.value)}</span>
+          </div>
+        )}
+        {!postEvent && (
+          <div class="nyc-info-row">
+            <span class="nyc-info-key">{t(strings.nyc.rsvpDeadline.heading)}</span>
+            <span class="nyc-info-val">
+              <a href="/nyc/rsvp" class="nyc-info-link-inline">{t(strings.nyc.rsvpDeadline.value)}</a>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   </section>
+
+  {photoGalleries.length > 0 && (
+    <>
+      <div class="nyc-moss nyc-explore-band nyc-photos-band">{t(strings.nyc.photos.band)}</div>
+      <section class="nyc-moss nyc-photos" aria-label={t(strings.nyc.photos.band)}>
+        <div class="page-content">
+          {photoGalleries.map((gallery) => (
+            <div class="nyc-photos-gallery" data-gallery-preview={gallery.id}>
+              <a href={`/nyc/photos/${gallery.id}`} class="nyc-strip-link nyc-photos-heading">
+                <span class="nyc-strip-title">{t(strings.nyc.photos.galleries[gallery.id])}</span>
+                <span class="nyc-strip-desc">{t(strings.nyc.photos.seeAll)}</span>
+                <span class="nyc-strip-arrow">→</span>
+              </a>
+              <PhotoGallery gallery={gallery.id} photos={previewPhotos(gallery)} variant="preview" lang={lang} />
+            </div>
+          ))}
+        </div>
+      </section>
+      <PhotoLightbox lang={lang} />
+    </>
+  )}
 
   <div class="nyc-moss nyc-explore-band">{t(strings.global.explore)}</div>
 
@@ -130,11 +165,13 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
         <span class="nyc-strip-desc">{t(strings.nyc.nav.details.desc)}</span>
         <span class="nyc-strip-arrow">→</span>
       </a>
-      <a href="/nyc/travel" class="nyc-strip-link">
-        <span class="nyc-strip-title">{t(strings.nyc.nav.travel.title)}</span>
-        <span class="nyc-strip-desc">{t(strings.nyc.nav.travel.desc)}</span>
-        <span class="nyc-strip-arrow">→</span>
-      </a>
+      {!postEvent && (
+        <a href="/nyc/travel" class="nyc-strip-link">
+          <span class="nyc-strip-title">{t(strings.nyc.nav.travel.title)}</span>
+          <span class="nyc-strip-desc">{t(strings.nyc.nav.travel.desc)}</span>
+          <span class="nyc-strip-arrow">→</span>
+        </a>
+      )}
       <a href="/couple" class="nyc-strip-link">
         <span class="nyc-strip-title">{t(strings.nyc.nav.couple.title)}</span>
         <span class="nyc-strip-desc">{t(strings.nyc.nav.couple.desc)}</span>
@@ -162,11 +199,13 @@ const { href: registryHref, external: registryIsExternal } = getRegistryLink(Ast
         <span class="nyc-strip-desc">{t(strings.nyc.nav.faq.desc)}</span>
         <span class="nyc-strip-arrow">→</span>
       </a>
-      <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta" data-loading-button>
-        <span class="nyc-strip-title">{t(strings.nyc.nav.rsvp.title)}</span>
-        <span class="nyc-strip-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
-        <span class="nyc-strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
-      </a>
+      {!postEvent && (
+        <a href="/nyc/rsvp" class="nyc-strip-link nyc-strip-cta" data-loading-button>
+          <span class="nyc-strip-title">{t(strings.nyc.nav.rsvp.title)}</span>
+          <span class="nyc-strip-desc">{t(strings.nyc.nav.rsvp.desc)}</span>
+          <span class="nyc-strip-arrow"><span class="loading-hide">→</span><LoadingDots /></span>
+        </a>
+      )}
     </nav>
   </section>
 

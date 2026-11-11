@@ -193,8 +193,14 @@ function insideScrolledContainer(target: EventTarget | null): boolean {
   return false;
 }
 
+/** Overlays (the photo lightbox) that own their gestures opt out with `data-elastic-ignore`. */
+function insideIgnoredElement(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[data-elastic-ignore]') !== null;
+}
+
 function onTouchStart(e: TouchEvent): void {
-  touchActive = e.touches.length === 1 && !insideScrolledContainer(e.target);
+  touchActive =
+    e.touches.length === 1 && !insideScrolledContainer(e.target) && !insideIgnoredElement(e.target);
   // Catching the header mid-spring: carry on from where it is. A touch this
   // module ignores leaves the spring running, or the header would stay down.
   if (touchActive) cancelSpring();

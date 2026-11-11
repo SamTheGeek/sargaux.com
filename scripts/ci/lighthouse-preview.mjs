@@ -186,8 +186,13 @@ async function main() {
               // and what Netlify's plugin reports for `/`.
               formFactor: 'mobile',
               onlyCategories: CATEGORIES,
-              // Previews send `x-robots-tag: noindex` on purpose.
-              skipAudits: ['is-crawlable'],
+              // Previews send `x-robots-tag: noindex` on purpose. The two
+              // screenshot audits and the full-page capture are off because
+              // the reports are a downloadable artifact on a public repo, and
+              // /nyc and the gallery pages show guests' photos. Scores don't
+              // depend on them (speed index reads the trace, not these).
+              skipAudits: ['is-crawlable', 'screenshot-thumbnails', 'final-screenshot'],
+              disableFullPageScreenshot: true,
             },
           }
         );

@@ -65,6 +65,7 @@
   # Lets the Lighthouse CI job log in as a 🤖 bot, but only with the secret
   # X-Test-Guest-Login header (src/lib/test-guest-login.ts). Deploy previews only.
   FEATURE_GLOBAL_PREVIEW_TEST_GUEST_LOGIN = "true"
+  FEATURE_NYC_PHOTO_GALLERY = "true"
   FEATURE_FRANCE_STAYING_OVERVIEW = "false"
   FEATURE_FRANCE_ROOM_TYPES = "true"
   FEATURE_FRANCE_SCHEDULE_WEATHER = "false"
