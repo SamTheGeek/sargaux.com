@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../../../../lib/auth';
+import { hasGalleryPass } from '../../../../../lib/gallery-pass';
 import { features } from '../../../../../config/features';
 import { downloadFilename, getNycGallery, isPhotoTestFixture } from '../../../../../content/nycGalleries';
 import { resolvePhotoUrls } from '../../../../../lib/icloud-photos';
@@ -23,7 +24,7 @@ const UPSTREAM_TIMEOUT_MS = 20_000;
  */
 export const GET: APIRoute = async ({ params, cookies }) => {
   if (!features.nyc.photoGallery) return new Response(null, { status: 404 });
-  if (!getAuthenticatedGuest(cookies)) return new Response(null, { status: 401 });
+  if (!getAuthenticatedGuest(cookies) && !hasGalleryPass(cookies)) return new Response(null, { status: 401 });
 
   const gallery = getNycGallery(params.gallery);
   const index = gallery?.photos.findIndex((p) => p.guid === params.guid) ?? -1;

@@ -5,6 +5,7 @@ import { loginUrlFor } from './lib/return-to';
 import { eventForPath, isProtectedPath } from './lib/route-patterns';
 import { isSiteEnabled, features } from './config/features';
 import { getGuestById } from './lib/notion';
+import { GALLERY_PASS_COOKIE, hasGalleryPass, isGalleryPassPath } from './lib/gallery-pass';
 import { normalize } from './lib/normalize';
 import { detectLocaleFromAcceptLanguage } from './lib/locale-routing';
 import type { Lang } from './content/strings';
@@ -84,7 +85,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // of the handful of protected page paths.
       response.headers.set(
         'Netlify-Vary',
-        'query=lang|next,language=en|fr,cookie=sargaux_auth|sargaux_lang'
+        `query=lang|next,language=en|fr,cookie=sargaux_auth|sargaux_lang|${GALLERY_PASS_COOKIE}`
       );
 
       // Security headers (audit P1-5). These must be set here, not in
@@ -157,6 +158,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Check authentication
   const auth = getAuthenticatedGuest(context.cookies);
+
+  // Gallery pass (QR code on the mailed photo cards): no session, but the
+  // event page and the gallery pages open, as an NYC-only visitor with no
+  // name. Everything else, including every link on those pages that leads
+  // elsewhere, falls through to the login redirect below. The pass cookie is
+  // in Netlify-Vary above, so this variant never shares a cache entry with the
+  // anonymous redirect. See src/lib/gallery-pass.ts.
+  if (!auth && features.nyc.photoGallery && isGalleryPassPath(pathname) && hasGalleryPass(context.cookies)) {
+    context.locals.eventInvitations = ['nyc'];
+    context.locals.country = null;
+    return withCacheVary();
+  }
 
   if (!auth) {
     // Redirect to homepage for login, carrying the requested page so login can

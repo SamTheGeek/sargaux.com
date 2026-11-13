@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuthenticatedGuest } from '../../../../lib/auth';
+import { hasGalleryPass } from '../../../../lib/gallery-pass';
 import { features } from '../../../../config/features';
 import { getNycGallery, isPhotoTestFixture } from '../../../../content/nycGalleries';
 import { redirectMaxAge, resolvePhotoUrls } from '../../../../lib/icloud-photos';
@@ -24,7 +25,7 @@ import { placeholderSvg } from '../../../../lib/photo-placeholder';
  */
 export const GET: APIRoute = async ({ params, url, cookies }) => {
   if (!features.nyc.photoGallery) return new Response(null, { status: 404 });
-  if (!getAuthenticatedGuest(cookies)) return new Response(null, { status: 401 });
+  if (!getAuthenticatedGuest(cookies) && !hasGalleryPass(cookies)) return new Response(null, { status: 401 });
 
   const gallery = getNycGallery(params.gallery);
   const photo = gallery?.photos.find((p) => p.guid === params.guid);

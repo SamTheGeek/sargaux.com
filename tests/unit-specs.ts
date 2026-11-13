@@ -17,6 +17,7 @@ export const UNIT_SPECS = [
   'envelope-login-unit',
   'event-catalog-unit',
   'event-routing',
+  'gallery-pass-unit',
   'guest-name-unit',
   'locale-routing',
   'login-geo-unit',
