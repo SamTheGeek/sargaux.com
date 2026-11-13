@@ -43,7 +43,10 @@ if (!COOKIE) fail('LH_COOKIE is required (an authenticated session cookie)');
  * `/` is audited logged out: a signed-in guest is redirected from the
  * homepage to their event route, and the login page is what visitors see.
  * `optional` pages may legitimately 404 on a branch that doesn't have them
- * (the photo galleries exist only once they have photos).
+ * (the photo galleries exist only once they have photos). `closedTo` lists
+ * where a page may redirect once it's closed: the NYC RSVP form after the event
+ * (`nyc.rsvpLocked`) sends the bot to its confirmation, or to /nyc if it has
+ * no response on record. A redirect anywhere else is still a failure.
  */
 const ALL_PAGES = [
   { path: '/', auth: false },
@@ -52,7 +55,7 @@ const ALL_PAGES = [
   { path: '/nyc/travel' },
   { path: '/nyc/faq' },
   { path: '/nyc/lookbook' },
-  { path: '/nyc/rsvp' },
+  { path: '/nyc/rsvp', closedTo: ['/nyc', '/nyc/rsvp/confirmed'] },
   { path: '/nyc/photos/celebration', optional: true },
   { path: '/nyc/photos/preparation', optional: true },
   { path: '/nyc/photos/afterparty', optional: true },
@@ -164,6 +167,11 @@ async function main() {
 
       if (pre.status === 404 && page.optional) {
         rows.push({ page, outcome: 'skipped', note: 'not on this branch (404)' });
+        continue;
+      }
+      const target = pre.location ? new URL(pre.location, url).pathname : null;
+      if (pre.status >= 300 && pre.status < 400 && target && page.closedTo?.includes(target)) {
+        rows.push({ page, outcome: 'skipped', note: `closed (→ ${target})` });
         continue;
       }
       if (pre.status !== 200) {
