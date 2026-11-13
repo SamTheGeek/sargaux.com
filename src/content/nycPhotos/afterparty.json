@@ -77,7 +77,8 @@
       "checksum": "AXgn2YEFORragndt9Qe9T+8Yap6G",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "7db6c729-beb8-4df3-bacb-aec367999df7",
@@ -1019,7 +1020,8 @@
       "checksum": "Aev8VfHotW05WAHXUbvpcT4Ty3oD",
       "width": 3200,
       "height": 2133
-    }
+    },
+    "featured": true
   },
   {
     "guid": "8bb19326-bb1c-4d88-b9f4-477775b024a4",
