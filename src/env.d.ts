@@ -59,6 +59,7 @@ interface ImportMetaEnv {
   readonly FEATURE_NYC_RSVP_ENABLED?: string;
   readonly FEATURE_NYC_RSVP_PREVIEW?: string;
   readonly FEATURE_NYC_PHOTO_GALLERY?: string;
+  readonly FEATURE_NYC_RSVP_LOCKED?: string;
   /**
    * Test-only: swap the NYC photo manifests for a fixture gallery and serve
    * placeholder SVGs from /api/photos instead of resolving iCloud URLs. Set by

@@ -130,6 +130,12 @@ export const POST: APIRoute = async ({ request, cookies, cache }) => {
     return jsonError(400, 'Invalid event (must be "nyc" or "france")');
   }
 
+  // Post-event lock: the form is gone, but a saved tab or a hand-rolled POST
+  // must not be able to change an NYC answer after the event either.
+  if (body.event === 'nyc' && features.nyc.rsvpLocked) {
+    return jsonError(403, 'NYC RSVPs are closed');
+  }
+
   if (!Array.isArray(body.guestsAttending)) {
     return jsonError(400, 'guestsAttending must be an array');
   }

@@ -1,4 +1,5 @@
 ---
+import { nycRsvpButtonHref } from '../../lib/nyc-rsvp-lock';
 import WireframeLayout from '../../layouts/WireframeLayout.astro';
 import '../../styles/nyc-subpages.css';
 import { generateTokenIfPossible } from '../../lib/calendar';
@@ -44,6 +45,9 @@ const dinnerMapsHref = 'https://maps.app.goo.gl/f5YwZ9FCuj1osoLi7';
 const dancingMapSrc = MAPS_KEY ? buildStaticMapUrl(DANCING_LAT, DANCING_LNG) : null;
 const dancingMapsHref = 'https://maps.app.goo.gl/hqd57njm2V3SuHeU8';
 const calendarToken = generateTokenIfPossible(guestId);
+// Post-event, the header RSVP button links to the saved confirmation, and only
+// for parties that have one (see src/lib/nyc-rsvp-lock.ts).
+const rsvpHref = await nycRsvpButtonHref(Astro.locals.guestId);
 ---
 
 <WireframeLayout title={t(strings.nyc.details.pageTitle)} fullTitle="Chez Sargaux | NYC — Event Details" event="nyc" page="details">
@@ -63,7 +67,9 @@ const calendarToken = generateTokenIfPossible(guestId);
             <a href="/france" class="event-toggle-item event-toggle-item--france">{t(strings.global.toggle.france)}</a>
           </div>
         )}
-        <a href="/nyc/rsvp" class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        {rsvpHref && (
+          <a href={rsvpHref} class="btn nyc-rsvp-btn">{t(strings.global.rsvpBtn)}</a>
+        )}
       </div>
     </nav>
   </header>

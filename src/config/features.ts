@@ -64,6 +64,12 @@ type FeatureFlags = {
     rsvpPreview: boolean;
     /** Photo galleries on /nyc and /nyc/photos/[gallery]. Off in production; on in dev and deploy previews. */
     photoGallery: boolean;
+    /**
+     * Post-event RSVP lock: the NYC form and API are closed, and the header
+     * RSVP button links to the saved confirmation for parties that have one.
+     * Follows `photoGallery` (the post-event gate) unless set explicitly.
+     */
+    rsvpLocked: boolean;
   };
   france: {
     calendarSubscribe: boolean;
@@ -82,6 +88,10 @@ type FeatureFlags = {
     enabled: boolean;
   };
 };
+
+// The NYC post-event gate. Shared by the galleries and the RSVP lock, which
+// defaults to it so turning the galleries on closes RSVPs in the same deploy.
+const nycPhotoGallery = flag(import.meta.env.FEATURE_NYC_PHOTO_GALLERY, false) || import.meta.env.DEV;
 
 // Each import.meta.env.* reference must be static so Vite replaces it at build time.
 // Dynamic access like import.meta.env[key] does NOT work with Vite's static replacement.
@@ -122,7 +132,8 @@ const features: FeatureFlags = {
     sevilleSoldOut: flag(import.meta.env.FEATURE_NYC_SEVILLE_SOLD_OUT, false),
     rsvpEnabled: flag(import.meta.env.FEATURE_NYC_RSVP_ENABLED, false),
     rsvpPreview: flag(import.meta.env.FEATURE_NYC_RSVP_PREVIEW, false),
-    photoGallery: flag(import.meta.env.FEATURE_NYC_PHOTO_GALLERY, false) || import.meta.env.DEV,
+    photoGallery: nycPhotoGallery,
+    rsvpLocked: flag(import.meta.env.FEATURE_NYC_RSVP_LOCKED, nycPhotoGallery),
   },
   france: {
     calendarSubscribe: flag(import.meta.env.FEATURE_FRANCE_CALENDAR_SUBSCRIBE, false),

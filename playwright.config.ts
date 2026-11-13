@@ -154,6 +154,9 @@ export default defineConfig({
         process.env.FEATURE_FRANCE_RSVP_ENABLED ?? 'true',
       FEATURE_REGISTRY_ENABLED: process.env.FEATURE_REGISTRY_ENABLED ?? 'true',
       FEATURE_NYC_PHOTO_GALLERY: process.env.FEATURE_NYC_PHOTO_GALLERY ?? 'true',
+      // The RSVP lock follows the gallery flag by default, but the RSVP suites
+      // exercise the NYC form and API, so keep it open for them.
+      FEATURE_NYC_RSVP_LOCKED: process.env.FEATURE_NYC_RSVP_LOCKED ?? 'false',
       // Fixture photo gallery + placeholder images, so the gallery tests don't
       // depend on iCloud or on what the committed manifests currently hold.
       PHOTOS_TEST_FIXTURE: 'true',

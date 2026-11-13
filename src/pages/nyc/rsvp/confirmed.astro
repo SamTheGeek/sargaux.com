@@ -11,6 +11,7 @@ import { createTranslator } from '../../../lib/i18n';
 import SiteFooter from '../../../components/SiteFooter.astro';
 import CalendarCta from '../../../components/CalendarCta.astro';
 import type { GuestRecord, EventRecord, RSVPResponse } from '../../../types';
+import { features } from '../../../config/features';
 
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
@@ -110,6 +111,13 @@ if (isDevMock) {
     console.error('Failed to load NYC RSVP confirmation data:', error);
     loadError = 'We could not load your RSVP details right now. Please refresh and try again.';
   }
+}
+
+// Post-event lock: this page is read-only, so the edit link goes, and a party
+// with nothing on record has nothing to see here.
+const rsvpLocked = features.nyc.rsvpLocked;
+if (rsvpLocked && guestId && !isDevMock && !loadError && !existingRSVP) {
+  return Astro.redirect('/nyc');
 }
 
 const attendingNames = getAttendingNames(existingRSVP);
@@ -325,15 +333,17 @@ const submittedAtFallback = submittedAtISO
           </div>
         </section>
 
-        <div class="page-content rsvp-submit-zone confirmation-submit-zone">
-          <a href="/nyc/rsvp" class="confirmation-edit-link">
-            <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
-              <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
-              <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
-            </svg>
-            <span>{t(strings.nyc.rsvp.confirmation.editLink)}</span>
-          </a>
-        </div>
+        {!rsvpLocked && (
+          <div class="page-content rsvp-submit-zone confirmation-submit-zone">
+            <a href="/nyc/rsvp" class="confirmation-edit-link">
+              <svg viewBox="0 0 16 16" aria-hidden="true" class="confirmation-edit-icon">
+                <path d="M11.9 1.6a1.5 1.5 0 0 1 2.1 2.1l-8 8L3 12.9l1.2-3.1 7.7-8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+                <path d="M9.9 3.6 12.4 6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"></path>
+              </svg>
+              <span>{t(strings.nyc.rsvp.confirmation.editLink)}</span>
+            </a>
+          </div>
+        )}
       </>
     )}
   </main>
