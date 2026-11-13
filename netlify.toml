@@ -20,6 +20,9 @@
   FEATURE_NYC_TRAVEL_MTA = "true"
   FEATURE_NYC_TRAVEL_MUSEUMS = "true"
   FEATURE_NYC_RSVP_ENABLED = "true"
+  # Post-event: NYC galleries, the gallery-pass QR, the post-event /nyc layout,
+  # and (via nyc.rsvpLocked, which follows this flag) closed NYC RSVPs.
+  FEATURE_NYC_PHOTO_GALLERY = "true"
   FEATURE_FRANCE_CALENDAR_SUBSCRIBE = "true"
   FEATURE_FRANCE_OPTIONAL_EXCURSIONS = "true"
   FEATURE_FRANCE_TRAVEL_RESTRUCTURED = "true"
