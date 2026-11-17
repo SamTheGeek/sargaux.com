@@ -27,7 +27,7 @@
   "dependencies": {
     "@astrojs/netlify": "^8.2.12",
     "@astrojs/node": "^11.1.11",
-    "@netlify/blobs": "^11.1.7",
+    "@netlify/blobs": "^11.1.9",
     "@notionhq/client": "^5.31.0",
     "astro": "^7.4.7",
     "resend": "^6.37.0"
