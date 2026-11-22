@@ -1,0 +1,4 @@
+# Chez Sargaux is a private wedding site behind a guest login.
+# Nothing here is meant for search engines or AI crawlers.
+User-agent: *
+Disallow: /

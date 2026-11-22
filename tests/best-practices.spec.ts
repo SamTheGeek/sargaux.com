@@ -54,6 +54,15 @@ test.describe('Best Practices Tests', () => {
     );
     expect(imagesMissingAlt).toBe(0);
   });
+
+  test('robots.txt turns every crawler away', async ({ request }) => {
+    // Without this file Netlify serves a permissive default, and the site is
+    // private: crawling it only burns the team's bandwidth.
+    const res = await request.get('/robots.txt');
+    expect(res.status()).toBe(200);
+    expect(res.headers()['content-type']).toContain('text/plain');
+    expect(await res.text()).toMatch(/^User-agent: \*\nDisallow: \/$/m);
+  });
 });
 
 test.describe('Client bundles', () => {
