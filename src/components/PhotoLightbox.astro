@@ -40,7 +40,10 @@ const t = createTranslator(Astro.props.lang);
   </button>
   <!-- href/download are set per photo. A same-origin link, so <a download>
        works on desktop; touch devices use the share sheet instead (script). -->
-  <a class="photo-lightbox-btn photo-lightbox-download" download data-state="idle" aria-label={t(strings.nyc.photos.download)}>
+  <!-- No Astro prefetch: ClientRouter prefetches every same-origin link on
+       hover/focus, which fetched the multi-MB original just for pointing at
+       (or tapping, which focuses) this button. -->
+  <a class="photo-lightbox-btn photo-lightbox-download" download data-astro-prefetch="false" data-state="idle" aria-label={t(strings.nyc.photos.download)} data-label-idle={t(strings.nyc.photos.download)} data-label-ready={t(strings.nyc.photos.saveReady)}>
     <!-- Touch devices only: fills around the rim while the original downloads. -->
     <svg class="photo-lightbox-progress" viewBox="0 0 44 44" aria-hidden="true">
       <circle class="photo-lightbox-progress-track" cx="22" cy="22" r="20" />
@@ -80,11 +83,15 @@ const t = createTranslator(Astro.props.lang);
 
   // ── Download / save ─────────────────────────────────────────
   // On phones and tablets the button opens the share sheet ("Save Image" puts
-  // the photo in Photos). iOS only allows navigator.share() during the tap's
-  // user activation, and fetching a multi-MB original after the tap can run
-  // past it, so the current photo's original is prefetched once the viewer
-  // has stayed on it for a moment. Desktop keeps the plain <a download>.
-  const PREFETCH_DWELL_MS = 600;
+  // the photo in Photos). Desktop keeps the plain <a download>.
+  //
+  // The original is fetched only when the guest taps: originals are ~3 MB and
+  // stream through our own origin, so fetching every photo a guest lingered on
+  // spent Netlify bandwidth on photos nobody saved. iOS only allows
+  // navigator.share() during the tap's user activation, which a slow download
+  // can outlast. Then the button waits as "ready" with the file in hand, and a
+  // second tap shares it at once. It never re-fetches as a fallback, which
+  // would download the same original twice.
   const shareFiles = (() => {
     try {
       return (
@@ -97,14 +104,14 @@ const t = createTranslator(Astro.props.lang);
     }
   })();
 
-  interface Prefetch {
+  /** The current photo's original, fetched on a tap and kept for re-taps. */
+  interface PendingDownload {
     href: string;
     controller: AbortController;
     promise: Promise<File | null>;
     file: File | null;
   }
-  let prefetch: Prefetch | null = null;
-  let prefetchTimer: number | undefined;
+  let pending: PendingDownload | null = null;
 
   function bind() {
     lightbox = document.getElementById('photo-lightbox');
@@ -261,7 +268,6 @@ const t = createTranslator(Astro.props.lang);
       close?.focus({ preventScroll: true });
     }
     void loadFull(activeItem, token);
-    schedulePrefetch(token);
   }
 
   function closeLightbox() {
@@ -295,7 +301,7 @@ const t = createTranslator(Astro.props.lang);
   function finalizeClose() {
     if (!lightbox || !lightboxImage) return;
     loadToken++;
-    cancelPrefetch();
+    cancelDownload();
     lightbox.classList.remove('active', 'is-closing');
     isClosing = false;
     clearPhotoParam();
@@ -328,34 +334,39 @@ const t = createTranslator(Astro.props.lang);
     warmPhotoUrls([items[index - 1], items[index + 1], items[index + 2]]);
     const href = activeItem.dataset.downloadSrc;
     if (downloadLink && href) {
-      if (prefetch && prefetch.href !== href) cancelPrefetch();
+      if (pending && pending.href !== href) cancelDownload();
       downloadLink.href = href;
       downloadLink.download = activeItem.dataset.downloadName ?? '';
     }
   }
 
-  function cancelPrefetch() {
-    window.clearTimeout(prefetchTimer);
-    prefetch?.controller.abort();
-    prefetch = null;
+  function cancelDownload() {
+    pending?.controller.abort();
+    pending = null;
     setDownloadState('idle');
   }
 
   // ── Download button state (touch only) ──────────────────────
-  // idle → loading (ring fills as bytes arrive) → ready (ring completes and
-  // fades). Only a custom property and two attributes on one small element
-  // change, so progress paints never touch the photo or the open zoom.
+  // idle → loading (ring fills as bytes arrive) → ready. "ready" with
+  // data-awaiting-tap means the file arrived after the tap stopped counting,
+  // so the ring stays lit and the label says to tap again. Only a custom
+  // property and a few attributes on one small element change, so progress
+  // paints never touch the photo or the open zoom.
 
   type DownloadState = 'idle' | 'loading' | 'ready';
   let progressFrame = 0;
   let pendingProgress = 0;
 
-  function setDownloadState(state: DownloadState, opts: { indeterminate?: boolean } = {}) {
+  function setDownloadState(state: DownloadState, opts: { indeterminate?: boolean; awaitingTap?: boolean } = {}) {
     if (!downloadLink) return;
     cancelAnimationFrame(progressFrame);
     progressFrame = 0;
     downloadLink.dataset.state = state;
     downloadLink.toggleAttribute('data-indeterminate', state === 'loading' && Boolean(opts.indeterminate));
+    const awaiting = state === 'ready' && Boolean(opts.awaitingTap);
+    downloadLink.toggleAttribute('data-awaiting-tap', awaiting);
+    const label = awaiting ? downloadLink.dataset.labelReady : downloadLink.dataset.labelIdle;
+    if (label) downloadLink.setAttribute('aria-label', label);
     if (state === 'loading') downloadLink.setAttribute('aria-busy', 'true');
     else downloadLink.removeAttribute('aria-busy');
     downloadLink.style.setProperty('--progress', state === 'ready' ? '1' : '0');
@@ -371,11 +382,11 @@ const t = createTranslator(Astro.props.lang);
     });
   }
 
-  function startPrefetch(href: string, name: string): Prefetch {
+  function startDownload(href: string, name: string): PendingDownload {
     const controller = new AbortController();
-    const entry: Prefetch = { href, controller, file: null, promise: Promise.resolve(null) };
-    const current = () => prefetch === entry && downloadLink?.getAttribute('href') === href;
-    prefetch = entry;
+    const entry: PendingDownload = { href, controller, file: null, promise: Promise.resolve(null) };
+    const current = () => pending === entry && downloadLink?.getAttribute('href') === href;
+    pending = entry;
     setDownloadState('loading', { indeterminate: true });
     entry.promise = (async () => {
       try {
@@ -396,36 +407,51 @@ const t = createTranslator(Astro.props.lang);
         }
         const type = res.headers.get('Content-Type') || 'image/jpeg';
         entry.file = new File(chunks, name, { type });
-        if (current()) setDownloadState('ready');
         return entry.file;
       } catch {
-        if (current()) setDownloadState('idle');
+        if (current()) {
+          pending = null;
+          setDownloadState('idle');
+        }
         return null;
       }
     })();
     return entry;
   }
 
-  /** Fetch the current photo's original once the viewer has lingered on it. */
-  function schedulePrefetch(token: number) {
-    if (!shareFiles || !downloadLink) return;
-    const href = downloadLink.getAttribute('href');
-    if (!href || prefetch?.href === href) return;
-    cancelPrefetch();
-    const name = downloadLink.download;
-    prefetchTimer = window.setTimeout(() => {
-      if (token === loadToken && downloadLink?.getAttribute('href') === href) startPrefetch(href, name);
-    }, PREFETCH_DWELL_MS);
+  /** Save a file already in memory without asking the server for it again. */
+  function saveBlob(file: File) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
-  async function shareOrDownload(file: File, href: string) {
+  async function share(file: File) {
+    // A tap that has stopped counting would only get NotAllowedError back.
+    const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+    if (activation && !activation.isActive) {
+      setDownloadState('ready', { awaitingTap: true });
+      return;
+    }
     try {
       await navigator.share({ files: [file] });
+      setDownloadState('ready');
     } catch (err) {
+      const name = (err as DOMException)?.name;
       // Dismissing the sheet is a choice, not a failure.
-      if ((err as DOMException)?.name === 'AbortError') return;
-      // Activation expired or files refused: fall back to a plain download.
-      window.location.href = href;
+      if (name === 'AbortError') setDownloadState('ready');
+      // The tap's activation ran out (browsers without userActivation): wait for another tap.
+      else if (name === 'NotAllowedError') setDownloadState('ready', { awaitingTap: true });
+      // Files refused: save the bytes already in hand.
+      else {
+        setDownloadState('ready');
+        saveBlob(file);
+      }
     }
   }
 
@@ -434,21 +460,17 @@ const t = createTranslator(Astro.props.lang);
     const href = downloadLink.getAttribute('href');
     if (!href) return;
     e.preventDefault();
-    if (prefetch?.href === href && prefetch.file) {
-      void shareOrDownload(prefetch.file, href);
+    if (pending?.href === href) {
+      // Already in hand (a re-tap, or the tap the "ready" state asked for): share now.
+      if (pending.file) void share(pending.file);
+      // Still downloading: this tap is the newer activation, so the share
+      // made when the file lands goes through on it.
       return;
     }
-    // Not ready yet: fetch now and try; shareOrDownload falls back if the
-    // tap's activation has run out by the time the file arrives.
-    // The ring shows the wait either way: startPrefetch puts the button in its
-    // loading state, and an in-flight prefetch already is.
-    const entry = prefetch?.href === href ? prefetch : (cancelPrefetch(), startPrefetch(href, downloadLink.download));
+    cancelDownload();
+    const entry = startDownload(href, downloadLink.download);
     const file = await entry.promise;
-    if (!file) {
-      window.location.href = href;
-      return;
-    }
-    await shareOrDownload(file, href);
+    if (file && pending === entry && downloadLink.getAttribute('href') === href) await share(file);
   }
 
   // ── Image loading & geometry ────────────────────────────────
@@ -625,7 +647,7 @@ const t = createTranslator(Astro.props.lang);
 
   // Never carry an open lightbox across a ClientRouter swap.
   document.addEventListener('astro:before-swap', () => {
-    cancelPrefetch();
+    cancelDownload();
     window.clearTimeout(closeTimeout);
     window.clearTimeout(settleTimeout);
     isZooming = false;
@@ -825,6 +847,19 @@ const t = createTranslator(Astro.props.lang);
     transition-delay: 150ms;
   }
 
+  /* Ready but the tap ran out: the full ring stays lit and breathes until
+     the guest taps again. */
+  .photo-lightbox-download[data-awaiting-tap] .photo-lightbox-progress {
+    opacity: 1;
+    transition-delay: 0ms;
+    animation: photo-lightbox-breathe 1600ms ease-in-out infinite;
+  }
+
+  @keyframes photo-lightbox-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
   /* No Content-Length: a quarter arc that spins instead of filling. */
   .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress-bar {
     stroke-dashoffset: 72;
@@ -884,7 +919,8 @@ const t = createTranslator(Astro.props.lang);
     }
 
     /* A static partial ring still says "working" without the motion. */
-    .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress {
+    .photo-lightbox-download[data-indeterminate] .photo-lightbox-progress,
+    .photo-lightbox-download[data-awaiting-tap] .photo-lightbox-progress {
       animation: none;
     }
   }

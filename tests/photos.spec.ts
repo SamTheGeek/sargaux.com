@@ -541,57 +541,143 @@ test.describe('Photo downloads — preparing state on touch devices', () => {
     await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
   }
 
-  test('the button shows a progress ring while the original downloads, then settles as ready', async ({ page }) => {
+  /** Count requests for originals, so tests can prove nothing is fetched twice or early. */
+  function countDownloads(page: Page) {
+    const counter = { n: 0 };
+    page.on('request', (req) => {
+      if (/\/api\/photos\/[^/]+\/[^/]+\/download$/.test(new URL(req.url()).pathname)) counter.n++;
+    });
+    return counter;
+  }
+
+  const shared = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __shared: Array<{ name: string }> }).__shared);
+
+  test('opening and lingering on a photo downloads nothing', async ({ page }) => {
+    await stubShare(page);
+    const downloads = countDownloads(page);
+    await openPhoto(page, 1);
+    await page.waitForTimeout(1500);
+    await expect(page.locator('.photo-lightbox-download')).toHaveAttribute('data-state', 'idle');
+    expect(downloads.n).toBe(0);
+  });
+
+  test('a tap shows a progress ring while the original downloads, then opens the share sheet', async ({ page }) => {
     await stubShare(page);
     await slowDownloads(page, 1500);
+    const downloads = countDownloads(page);
     await openPhoto(page, 1);
     const download = page.locator('.photo-lightbox-download');
 
+    await download.tap();
     await expect(download).toHaveAttribute('data-state', 'loading');
     await expect(download).toHaveAttribute('aria-busy', 'true');
     await expect(download.locator('.photo-lightbox-progress')).toHaveCSS('opacity', '1');
 
-    await expect(download).toHaveAttribute('data-state', 'ready', { timeout: 10_000 });
+    await expect
+      .poll(() => shared(page), { timeout: 10_000 })
+      .toEqual([expect.objectContaining({ name: expect.stringMatching(/^sargaux-nyc-afterparty-\d{3}\.svg$/) })]);
+    await expect(download).toHaveAttribute('data-state', 'ready');
     await expect(download).not.toHaveAttribute('aria-busy', /.*/);
+    await expect(download).not.toHaveAttribute('data-awaiting-tap', /.*/);
     expect(await download.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--progress'))).toBe('1');
+
+    // A re-tap shares the file already in hand.
+    await download.tap();
+    await expect.poll(() => shared(page).then((s) => s.length)).toBe(2);
+    expect(downloads.n).toBe(1);
   });
 
-  test('stepping to another photo mid-download resets the ring and starts that photo', async ({ page }) => {
+  test('extra taps while it downloads do not start another download', async ({ page }) => {
+    await stubShare(page);
+    await slowDownloads(page, 1500);
+    const downloads = countDownloads(page);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    await download.tap();
+    await expect(download).toHaveAttribute('data-state', 'loading');
+    await download.tap();
+    await expect.poll(() => shared(page).then((s) => s.length), { timeout: 10_000 }).toBe(1);
+    expect(downloads.n).toBe(1);
+  });
+
+  test('when the tap has expired by the time the file lands, a second tap shares it without re-downloading', async ({ page }) => {
+    await stubShare(page);
+    // The first share is refused the way iOS refuses one outside a tap's activation.
+    await page.addInitScript(() => {
+      const original = navigator.share.bind(navigator);
+      let refused = false;
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (data: ShareData) => {
+          if (!refused) {
+            refused = true;
+            throw new DOMException('Activation expired', 'NotAllowedError');
+          }
+          return original(data);
+        },
+      });
+    });
+    await slowDownloads(page, 500);
+    const downloads = countDownloads(page);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    const idleLabel = await download.getAttribute('aria-label');
+
+    await download.tap();
+    await expect(download).toHaveAttribute('data-awaiting-tap', '', { timeout: 10_000 });
+    await expect(download).toHaveAttribute('data-state', 'ready');
+    await expect(download).toHaveAttribute('aria-label', (await download.getAttribute('data-label-ready'))!);
+    await expect(download.locator('.photo-lightbox-progress')).not.toHaveCSS('opacity', '0');
+    expect(await shared(page)).toEqual([]);
+
+    await download.tap();
+    await expect.poll(() => shared(page).then((s) => s.length)).toBe(1);
+    await expect(download).not.toHaveAttribute('data-awaiting-tap', /.*/);
+    await expect(download).toHaveAttribute('aria-label', idleLabel!);
+    expect(downloads.n).toBe(1);
+  });
+
+  test('stepping to another photo mid-download cancels it and leaves the next photo idle', async ({ page }) => {
     await stubShare(page);
     await slowDownloads(page, 2500);
     await openPhoto(page, 1);
     const download = page.locator('.photo-lightbox-download');
+    await download.tap();
     await expect(download).toHaveAttribute('data-state', 'loading');
 
     await page.locator('.photo-lightbox-next').tap();
     const third = (await page.locator('.photo-gallery-item').nth(2).getAttribute('data-photo-guid'))!;
     await expect(download).toHaveAttribute('href', `/api/photos/afterparty/${third}/download`);
-    // Reset first (the old download was aborted), then the new photo's own load.
-    await expect(download).toHaveAttribute('data-state', 'loading', { timeout: 5_000 });
-    await expect(download).toHaveAttribute('data-state', 'ready', { timeout: 10_000 });
-  });
-
-  test('tapping while it is still preparing opens the share sheet once the file arrives', async ({ page }) => {
-    await stubShare(page);
-    await slowDownloads(page, 1500);
-    await openPhoto(page, 1);
-    const download = page.locator('.photo-lightbox-download');
-    await expect(download).toHaveAttribute('data-state', 'loading');
-
-    await download.tap();
-    await expect
-      .poll(() => page.evaluate(() => (window as unknown as { __shared: Array<{ name: string }> }).__shared), {
-        timeout: 10_000,
-      })
-      .toEqual([expect.objectContaining({ name: expect.stringMatching(/^sargaux-nyc-afterparty-\d{3}\.svg$/) })]);
-    await expect(download).toHaveAttribute('data-state', 'ready');
+    await expect(download).toHaveAttribute('data-state', 'idle');
+    await page.waitForTimeout(3000);
+    await expect(download).toHaveAttribute('data-state', 'idle');
+    expect(await shared(page)).toEqual([]);
   });
 });
 
 test.describe('Photo downloads — no preparing state on desktop', () => {
   test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
 
-  test('desktop never prefetches, so the button stays idle', async ({ page }) => {
+  test('hovering tiles and the download button prefetches nothing', async ({ page }) => {
+    // ClientRouter prefetches same-origin links on hover; these must opt out.
+    const prefetched: string[] = [];
+    page.on('request', (req) => {
+      const url = new URL(req.url());
+      if (url.pathname.endsWith('/download') || url.searchParams.has('photo')) prefetched.push(url.pathname + url.search);
+    });
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(2).hover();
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    await page.locator('.photo-lightbox-download').hover();
+    await page.locator('.photo-lightbox-download').focus();
+    await page.waitForTimeout(500);
+    expect(prefetched).toEqual([]);
+  });
+
+  test('desktop never downloads on open, so the button stays idle', async ({ page }) => {
     let downloads = 0;
     await page.route('**/api/photos/**/download', (route) => {
       downloads++;
