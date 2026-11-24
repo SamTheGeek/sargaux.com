@@ -2,7 +2,13 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-  command = "npm run build"
+  # The NYC gallery manifests are rebuilt from the iCloud albums on every
+  # deploy, so new photos, 👎 hides and 🔥 previews go live with any merge.
+  # `--build` never uploads and never fails the deploy: a gallery it can't
+  # sync keeps its committed manifest. Album tokens are Netlify env vars
+  # (NYC_ALBUM_TOKEN_*, Builds + Functions scopes); see
+  # docs/photo-originals-aws.md. Playwright and CI builds don't run this.
+  command = "node scripts/sync-nyc-photos.ts --build && npm run build"
   publish = "dist"
 
 [build.environment]

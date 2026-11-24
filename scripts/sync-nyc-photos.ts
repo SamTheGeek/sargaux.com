@@ -6,12 +6,20 @@
  *   node scripts/sync-nyc-photos.ts              # every gallery with an album token
  *   node scripts/sync-nyc-photos.ts afterparty   # just one
  *   node scripts/sync-nyc-photos.ts afterparty --reshuffle   # re-pick the random preview
+ *   node scripts/sync-nyc-photos.ts --build      # Netlify build step: never uploads, never fails
+ *
+ * The album tokens come from env vars (NYC_ALBUM_TOKEN_CELEBRATION, …; see
+ * src/content/nycGalleryConfig.ts), never from the repo. Locally:
+ *   node --env-file-if-exists=.env.local scripts/sync-nyc-photos.ts
  *
  * Writes src/content/nycPhotos/{id}.json: one entry per still photo (videos
  * are skipped) with its asset id, capture time and the two renditions the site
  * uses, sorted oldest-first. No URLs (iCloud's expire ~15 minutes after issue;
  * the /api/photos endpoint fetches fresh ones), and no captions, filenames or
- * owner details (the repo is public). Commit the result.
+ * owner details (the repo is public). Every Netlify build runs this with
+ * `--build` and deploys the result, so committing is optional: the
+ * committed manifests are only the fallback for a build that can't reach
+ * iCloud, and the starting point for random preview picks.
  *
  * Filtering: a photo with a 👎 reaction from any album member is left out.
  * Removing the 👎 in Photos brings it back on the next sync. Who reacted is
@@ -41,7 +49,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { NYC_GALLERY_CONFIG } from '../src/content/nycGalleryConfig.ts';
+import { NYC_GALLERY_CONFIG, albumTokenFor } from '../src/content/nycGalleryConfig.ts';
 import {
   applyPicks,
   fetchAlbumForSync,
@@ -69,9 +77,17 @@ import {
 const root = join(import.meta.dirname, '..');
 const args = process.argv.slice(2);
 const reshuffle = args.includes('--reshuffle');
-const noUpload = args.includes('--no-upload');
+/**
+ * `--build`: the Netlify build step (netlify.toml). Never uploads, and never
+ * fails: a gallery that can't be synced keeps its committed manifest, so an
+ * iCloud outage can't break a deploy.
+ */
+const buildMode = args.includes('--build');
+const noUpload = buildMode || args.includes('--no-upload');
 const s3 = noUpload ? null : s3FromEnv();
-if (noUpload) {
+if (buildMode) {
+  console.log('Build step: refreshing gallery manifests from iCloud (no S3 uploads; failures keep the committed manifest).');
+} else if (noUpload) {
   console.log('--no-upload: originals are not mirrored to S3 this run.');
 } else if (!s3) {
   console.warn(
@@ -140,14 +156,14 @@ for (const id of requested) {
   }
 }
 
-const targets = NYC_GALLERY_CONFIG.filter((g) =>
+const targets = NYC_GALLERY_CONFIG.map((g) => ({ ...g, albumToken: albumTokenFor(g) })).filter((g) =>
   requested.length > 0 ? requested.includes(g.id) : g.albumToken
 );
 
 let failed = false;
 for (const gallery of targets) {
   if (!gallery.albumToken) {
-    console.error(`${gallery.id}: no album token in src/content/nycGalleryConfig.ts — skipped`);
+    console.error(`${gallery.id}: ${gallery.tokenEnv} is not set — skipped`);
     failed = true;
     continue;
   }
@@ -199,5 +215,8 @@ for (const gallery of targets) {
   }
 }
 
-if (targets.length === 0) console.log('No galleries with an album token.');
-process.exit(failed ? 1 : 0);
+if (targets.length === 0) {
+  console.log(`No album tokens set (${NYC_GALLERY_CONFIG.map((g) => g.tokenEnv).join(', ')}); manifests left as committed.`);
+}
+if (buildMode && failed) console.warn('Some galleries could not be synced; their committed manifests will be used.');
+process.exit(failed && !buildMode ? 1 : 0);

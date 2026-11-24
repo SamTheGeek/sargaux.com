@@ -1,14 +1,15 @@
 /**
  * The NYC photo galleries with their photos. Each gallery's photos are listed
  * in `src/content/nycPhotos/{id}.json` (oldest first), rebuilt by
- * `node scripts/sync-nyc-photos.ts [id…]`; the album tokens live in
- * `nycGalleryConfig.ts`.
+ * `node scripts/sync-nyc-photos.ts [id…]` (on every Netlify build, see
+ * netlify.toml; the committed copies are the fallback). The album tokens are
+ * env vars named in `nycGalleryConfig.ts`.
  *
  * A gallery with no album token or an empty manifest is hidden everywhere — no
  * empty section on /nyc and a 404 for its page.
  */
 import type { ManifestPhoto } from '../lib/icloud-stream';
-import { NYC_GALLERY_CONFIG, type NycGalleryConfig, type NycGalleryId } from './nycGalleryConfig';
+import { NYC_GALLERY_CONFIG, albumTokenFor, type NycGalleryConfig, type NycGalleryId } from './nycGalleryConfig';
 import celebration from './nycPhotos/celebration.json';
 import preparation from './nycPhotos/preparation.json';
 import afterparty from './nycPhotos/afterparty.json';
@@ -36,6 +37,8 @@ export function isPhotoTestFixture(): boolean {
 }
 
 export interface NycGallery extends NycGalleryConfig {
+  /** From the gallery's env var; null when unset (the gallery is then hidden). */
+  albumToken: string | null;
   photos: ManifestPhoto[];
 }
 
@@ -50,7 +53,7 @@ function photosFor(id: NycGalleryId): ManifestPhoto[] {
 
 /** Every configured gallery, with its photos (oldest first, as committed). */
 export function getNycGalleries(): NycGallery[] {
-  return NYC_GALLERY_CONFIG.map((config) => ({ ...config, photos: photosFor(config.id) }));
+  return NYC_GALLERY_CONFIG.map((config) => ({ ...config, albumToken: albumTokenFor(config), photos: photosFor(config.id) }));
 }
 
 /** Galleries that have photos and an album to resolve them from. */

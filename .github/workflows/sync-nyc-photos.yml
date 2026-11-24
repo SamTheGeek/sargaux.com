@@ -1,44 +1,42 @@
-name: Sync NYC Photos
+name: Sync NYC Photo Originals
 
-# Re-syncs the NYC gallery manifests from their iCloud shared albums and keeps
-# the photo originals in S3 in step (scripts/sync-nyc-photos.ts,
-# docs/photo-originals-aws.md):
-#   - new photos (and photos edited in Photos) are uploaded to S3;
-#   - photos with a 👎 from any album member, or removed from the album, are
-#     dropped from the manifest and their originals deleted from S3;
-#   - 🔥 photos become each gallery's preview.
-# If any manifest changed, it opens (or refreshes) a draft PR from the
-# `automation/nyc-photo-sync` branch. Nothing reaches the site until a person
-# merges that PR.
+# Keeps the NYC gallery originals in S3 in step with the iCloud albums
+# (scripts/sync-nyc-photos.ts, docs/photo-originals-aws.md): uploads new and
+# edited photos' originals, and deletes the originals of photos with a 👎 or
+# removed from an album. It never commits: the gallery manifests themselves
+# are rebuilt by every Netlify build (netlify.toml), so photo changes go live
+# with any deploy.
+#
+# Triggers:
+#   - every push to main, i.e. every production deploy, so the bucket matches
+#     what that deploy's build just read from iCloud;
+#   - daily, and manually from the Actions tab. If the albums changed since
+#     the last deploy and the NETLIFY_BUILD_HOOK_URL secret is set, these runs
+#     also start a Netlify build, so new photos don't wait for the next merge.
 #
 # AWS access is OIDC: the run assumes the stack's SyncRole, whose trust policy
 # only accepts workflow runs on main of this repo, for at most an hour. No AWS
 # key is stored anywhere. The role can only list/read/write/delete under the
-# bucket's nyc/ prefix.
+# bucket's nyc/ prefix (the last-deployed manifest hash is kept at
+# nyc/_state/manifests.sha256, outside every gallery's prefix).
 #
 # This repo is public, so these logs are too. The sync prints only gallery
-# ids, counts and photo GUIDs (already in the committed manifests): never an
-# iCloud or CloudFront URL, and never credentials. Keep it that way: don't add
-# steps that echo env vars or `set -x`.
+# ids, counts and photo GUIDs: never an album token, an iCloud or CloudFront
+# URL, or credentials. GitHub masks the secrets below; keep it that way and
+# don't add steps that echo env vars or `set -x`.
 #
-# Setup (once): Settings → Secrets and variables → Actions → Variables:
-#   NYC_PHOTOS_SYNC_ROLE_ARN  stack output SyncRoleArn
-#   NYC_PHOTOS_BUCKET         stack output BucketName
-#   NYC_PHOTOS_AWS_REGION     stack output BucketRegion
-# and Settings → Actions → General → "Allow GitHub Actions to create and
-# approve pull requests". Until the variables exist the job is skipped.
+# Setup (once), Settings → Secrets and variables → Actions:
+#   Variables: NYC_PHOTOS_SYNC_ROLE_ARN (stack output SyncRoleArn),
+#              NYC_PHOTOS_BUCKET (BucketName), NYC_PHOTOS_AWS_REGION (BucketRegion)
+#   Secrets:   NYC_ALBUM_TOKEN_CELEBRATION, NYC_ALBUM_TOKEN_PREPARATION,
+#              NYC_ALBUM_TOKEN_AFTERPARTY (the albums' public-link tokens),
+#              NETLIFY_BUILD_HOOK_URL (optional)
+# Until the role variable exists the job is skipped.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      galleries:
-        description: 'Gallery ids to sync, space-separated (blank = every gallery)'
-        required: false
-        default: ''
-      reshuffle:
-        description: 'Re-draw random previews (galleries with no 🔥 only)'
-        type: boolean
-        default: false
   schedule:
     - cron: '43 11 * * *' # daily, 11:43 UTC
 
@@ -47,13 +45,12 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
   id-token: write
 
 jobs:
   sync:
-    name: Sync galleries and S3 originals
+    name: Mirror originals to S3
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # The role only trusts main; skip cleanly elsewhere or before setup.
@@ -80,37 +77,37 @@ jobs:
           role-session-name: nyc-photo-sync-${{ github.run_id }}
           role-duration-seconds: 3600
 
-      - name: Sync galleries
+      - name: Sync originals
         env:
           NYC_PHOTOS_BUCKET: ${{ vars.NYC_PHOTOS_BUCKET }}
-          # Inputs pass through env, never interpolated into the script.
-          GALLERIES: ${{ inputs.galleries }}
-          RESHUFFLE: ${{ inputs.reshuffle && '--reshuffle' || '' }}
-        run: |
-          # Word-split the gallery list on purpose; the script rejects unknown ids.
-          # shellcheck disable=SC2086
-          node scripts/sync-nyc-photos.ts $GALLERIES $RESHUFFLE
+          NYC_ALBUM_TOKEN_CELEBRATION: ${{ secrets.NYC_ALBUM_TOKEN_CELEBRATION }}
+          NYC_ALBUM_TOKEN_PREPARATION: ${{ secrets.NYC_ALBUM_TOKEN_PREPARATION }}
+          NYC_ALBUM_TOKEN_AFTERPARTY: ${{ secrets.NYC_ALBUM_TOKEN_AFTERPARTY }}
+        run: node scripts/sync-nyc-photos.ts
 
-      - name: Open or refresh the PR
+      - name: Rebuild the site if the albums changed since the last deploy
         env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: automation/nyc-photo-sync
+          BUCKET: ${{ vars.NYC_PHOTOS_BUCKET }}
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK_URL }}
+          EVENT: ${{ github.event_name }}
         run: |
-          if git diff --quiet -- src/content/nycPhotos; then
-            echo "No manifest changes."
+          state="s3://$BUCKET/nyc/_state/manifests.sha256"
+          current=$(cat src/content/nycPhotos/celebration.json src/content/nycPhotos/preparation.json src/content/nycPhotos/afterparty.json | sha256sum | cut -d' ' -f1)
+          if [ "$EVENT" = "push" ]; then
+            # This push is itself being deployed, with the same albums.
+            echo "$current" | aws s3 cp - "$state" --only-show-errors
+            echo "Recorded the manifests this deploy is building."
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git checkout -B "$BRANCH"
-          npm version patch --no-git-tag-version --ignore-scripts > /dev/null
-          git add src/content/nycPhotos package.json package-lock.json
-          git commit -q -m "Refresh NYC photo galleries" -m "Synced from the iCloud shared albums by the Sync NYC Photos workflow (run ${{ github.run_id }}). Originals for new photos are already in S3; originals of thumbs-down'd or removed photos have been deleted."
-          git push -q --force origin "$BRANCH"
-          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
-            gh pr create --draft --base main --head "$BRANCH" \
-              --title "Refresh NYC photo galleries" \
-              --body "Automated by the Sync NYC Photos workflow ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})). New photos' originals are already in S3, and originals of 👎'd or removed photos have been deleted; merging publishes the updated manifests. Each run force-pushes this branch from main, so it always holds the latest sync."
-          else
-            echo "Updated the open PR on $BRANCH."
+          previous=$(aws s3 cp "$state" - 2>/dev/null || true)
+          if [ "$current" = "$previous" ]; then
+            echo "No album changes since the last deploy."
+            exit 0
           fi
+          if [ -z "$HOOK" ]; then
+            echo "Albums changed since the last deploy; they go live with the next one (NETLIFY_BUILD_HOOK_URL not set)."
+            exit 0
+          fi
+          curl -fsS -X POST -d '{}' "$HOOK" > /dev/null
+          echo "$current" | aws s3 cp - "$state" --only-show-errors
+          echo "Albums changed: started a Netlify build."

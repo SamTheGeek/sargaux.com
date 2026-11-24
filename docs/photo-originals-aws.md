@@ -29,7 +29,8 @@ CloudFront's always-free tier covers 1 TB of transfer a month; S3 storage for
 | Object key `nyc/{gallery}/{guid}/{checksum}.jpg` | `src/lib/photo-originals.ts` |
 | Signing (canned policy, RSA-SHA1, `node:crypto`) | `src/lib/cloudfront-sign.ts` |
 | Upload new / delete 👎'd originals | `scripts/sync-nyc-photos.ts` + `scripts/lib/photo-originals-s3.ts` |
-| Runs the sync daily and on demand, opens a PR | `.github/workflows/sync-nyc-photos.yml` |
+| Rebuilds the manifests on every deploy (no uploads) | `netlify.toml` build command (`--build`) |
+| Keeps S3 in step on every push to main, daily and on demand | `.github/workflows/sync-nyc-photos.yml` |
 | Prefetch / fallback in the browser | `src/components/PhotoLightbox.astro`, `src/scripts/photo-urls.ts` |
 
 ## How the sync gets AWS access
@@ -67,27 +68,53 @@ sync runs in GitHub Actions rather than in a Claude session.
    aws cloudformation describe-stacks --stack-name sargaux-photo-originals --query "Stacks[0].Outputs" --output table
    ```
 
-### 2. GitHub (the sync)
+### 2. Roll the album links (once, when they move out of the repo)
 
-1. **Settings → Secrets and variables → Actions → Variables** tab →
-   **New repository variable**, three times (these are not secrets):
-   - `NYC_PHOTOS_SYNC_ROLE_ARN`: `SyncRoleArn`
-   - `NYC_PHOTOS_BUCKET`: `BucketName`
-   - `NYC_PHOTOS_AWS_REGION`: `BucketRegion`
-2. **Settings → Actions → General → Workflow permissions**: tick
-   **Allow GitHub Actions to create and approve pull requests**.
-3. Once the workflow is on main: **Actions → Sync NYC Photos → Run workflow**.
-   The first run uploads every original (~1.5 GB, roughly 10–20 minutes) and,
-   if any manifest changed, opens a draft PR.
+The album tokens used to be committed in `src/content/nycGalleryConfig.ts`,
+and git history keeps them forever. Anyone holding one can browse that whole
+album on icloud.com, 👎'd photos included, so each public link is replaced:
+in Photos, open each of the three shared albums, open its sharing options,
+turn **Public Website** off, then on again. Copy the new link; its token is
+the last part, after `/shared/album/`. Don't paste tokens into chats, issues
+or the repo.
 
-After that it runs daily at 11:43 UTC. Merge its PR to publish new or 👎'd
-photos; the originals are already in place.
+### 3. GitHub (the S3 sync)
 
-### 3. Netlify (the site's side)
+**Settings → Secrets and variables → Actions**:
 
-After the first sync has uploaded the originals: Site configuration →
-Environment variables → Add a variable. Scope each to **Functions**, with
-values for **Production** and **Deploy Previews**:
+- **Variables** tab (not secret):
+  - `NYC_PHOTOS_SYNC_ROLE_ARN`: `SyncRoleArn`
+  - `NYC_PHOTOS_BUCKET`: `BucketName`
+  - `NYC_PHOTOS_AWS_REGION`: `BucketRegion`
+- **Secrets** tab:
+  - `NYC_ALBUM_TOKEN_CELEBRATION`, `NYC_ALBUM_TOKEN_PREPARATION`,
+    `NYC_ALBUM_TOKEN_AFTERPARTY`: the new tokens
+  - `NETLIFY_BUILD_HOOK_URL` (optional): a build hook from Netlify (Site
+    configuration → Build & deploy → Build hooks). With it, the daily run
+    starts a deploy when the albums changed, so new photos don't wait for
+    the next merge.
+
+The workflow runs on every push to main, daily at 11:43 UTC, and from
+**Actions → Sync NYC Photo Originals → Run workflow**. The first run uploads
+every original (~1.5 GB, roughly 10–20 minutes). It never commits anything.
+
+### 4. Netlify (the site's side)
+
+Site configuration → Environment variables → Add a variable, with values for
+**Production** and **Deploy Previews**.
+
+The album tokens, **before merging** the change that moved them out of the
+repo (without them the galleries are hidden). Scope: **Builds** and
+**Functions**; mark each **Contains secret values**:
+
+| Variable | Value |
+|---|---|
+| `NYC_ALBUM_TOKEN_CELEBRATION` | new Celebration token |
+| `NYC_ALBUM_TOKEN_PREPARATION` | new Preparation token |
+| `NYC_ALBUM_TOKEN_AFTERPARTY` | new Afterparty token |
+
+The CDN, **after the first S3 sync** has uploaded the originals. Scope:
+**Functions**:
 
 | Variable | Value |
 |---|---|
@@ -104,11 +131,14 @@ to `/download` one by one, spending Netlify bandwidth again.)
 
 ### Running the sync elsewhere
 
-The script reads `NYC_PHOTOS_BUCKET`, `AWS_REGION` and standard AWS
-credentials from the environment (`AWS_ACCESS_KEY_ID`,
-`AWS_SECRET_ACCESS_KEY`, optional `AWS_SESSION_TOKEN`). Without them it warns
-and only rewrites the manifests, so a local run (`node scripts/sync-nyc-photos.ts`)
-still works for previews; let the workflow do the uploads.
+The script reads the album tokens (`NYC_ALBUM_TOKEN_*`), `NYC_PHOTOS_BUCKET`,
+`AWS_REGION` and standard AWS credentials (`AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, optional `AWS_SESSION_TOKEN`) from the environment.
+Without AWS credentials it warns and only rewrites the manifests, so a local
+run (`node --env-file-if-exists=.env.local scripts/sync-nyc-photos.ts`, with
+the tokens in `.env.local`) works for checking an album; let the workflow do
+the uploads. Committing the refreshed manifests is optional: they are only
+the fallback for a build that can't reach iCloud.
 
 ## What a sync does
 
@@ -121,10 +151,14 @@ album, superseded edits. A failed upload leaves that gallery's manifest
 unchanged. `--no-upload` skips the mirror on purpose; without the env vars the
 sync warns and only rewrites manifests.
 
-The workflow uploads and deletes when it runs, but the manifests only reach
-the site when its PR is merged. In between, the live site may still list a
-photo whose original was just deleted (a fresh 👎); that photo's download
-falls back to `/download` until the merge.
+Every Netlify build runs the same sync with `--build` (no uploads, never
+fails) before `astro build`, so the deployed manifests always reflect the
+albums at deploy time, and the workflow, triggered by the same push, brings
+the bucket in line within a minute or two. Between a 👎 and the next deploy,
+the live site still lists the photo but its original is already gone from S3
+(after a daily run); its download falls back to `/download`. A photo added
+to an album shows up at the next deploy, or the next daily run with the build
+hook set.
 
 A deleted object can still be served from a CloudFront edge cache to someone
 holding a signed URL issued before the deletion, until that URL expires
