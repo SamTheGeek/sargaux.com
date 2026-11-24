@@ -2,8 +2,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
   Private storage + CDN for the NYC gallery photo originals (sargaux.com).
   A private S3 bucket, read only by CloudFront, which serves objects only to
-  signed URLs issued by the site. Plus an IAM user limited to the bucket's
-  nyc/ prefix for scripts/sync-nyc-photos.ts. See docs/photo-originals-aws.md.
+  signed URLs issued by the site. Plus a role, limited to the bucket's nyc/
+  prefix, that only GitHub Actions runs of this repo's main branch can assume
+  (OIDC, no stored keys), for scripts/sync-nyc-photos.ts. See
+  docs/photo-originals-aws.md.
 
 Parameters:
   PublicKeyPem:
@@ -11,6 +13,20 @@ Parameters:
     Description: >-
       PEM public key (-----BEGIN PUBLIC KEY----- ...) of the RSA key pair whose
       private half the site signs CloudFront URLs with.
+  GitHubRepository:
+    Type: String
+    Default: SamTheGeek/sargaux.com
+    AllowedPattern: '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+'
+    Description: owner/name of the repo whose main-branch workflow runs may assume the sync role.
+  ExistingGitHubOidcProviderArn:
+    Type: String
+    Default: ''
+    Description: >-
+      Leave empty to create the account's GitHub Actions OIDC provider. An
+      account can hold only one; if it already has one, pass its ARN here.
+
+Conditions:
+  CreateOidcProvider: !Equals [!Ref ExistingGitHubOidcProviderArn, '']
 
 Resources:
   PhotoBucket:
@@ -101,9 +117,31 @@ Resources:
               StringEquals:
                 AWS:SourceArn: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
 
-  SyncUser:
-    Type: AWS::IAM::User
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOidcProvider
     Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  SyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: scripts/sync-nyc-photos.ts from GitHub Actions on main
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If [CreateOidcProvider, !Ref GitHubOidcProvider, !Ref ExistingGitHubOidcProviderArn]
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Only workflow runs on main (manual dispatch from main, or the
+                # schedule): never a pull request or another branch.
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepository}:ref:refs/heads/main'
       Policies:
         - PolicyName: nyc-photo-sync
           PolicyDocument:
@@ -134,6 +172,6 @@ Outputs:
   SigningKeyId:
     Description: CLOUDFRONT_KEY_PAIR_ID for Netlify
     Value: !Ref SigningPublicKey
-  SyncUserName:
-    Description: Create the sync script's access key for this user
-    Value: !Ref SyncUser
+  SyncRoleArn:
+    Description: NYC_PHOTOS_SYNC_ROLE_ARN (GitHub Actions variable)
+    Value: !GetAtt SyncRole.Arn

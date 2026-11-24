@@ -1,0 +1,116 @@
+name: Sync NYC Photos
+
+# Re-syncs the NYC gallery manifests from their iCloud shared albums and keeps
+# the photo originals in S3 in step (scripts/sync-nyc-photos.ts,
+# docs/photo-originals-aws.md):
+#   - new photos (and photos edited in Photos) are uploaded to S3;
+#   - photos with a 👎 from any album member, or removed from the album, are
+#     dropped from the manifest and their originals deleted from S3;
+#   - 🔥 photos become each gallery's preview.
+# If any manifest changed, it opens (or refreshes) a draft PR from the
+# `automation/nyc-photo-sync` branch. Nothing reaches the site until a person
+# merges that PR.
+#
+# AWS access is OIDC: the run assumes the stack's SyncRole, whose trust policy
+# only accepts workflow runs on main of this repo, for at most an hour. No AWS
+# key is stored anywhere. The role can only list/read/write/delete under the
+# bucket's nyc/ prefix.
+#
+# This repo is public, so these logs are too. The sync prints only gallery
+# ids, counts and photo GUIDs (already in the committed manifests): never an
+# iCloud or CloudFront URL, and never credentials. Keep it that way: don't add
+# steps that echo env vars or `set -x`.
+#
+# Setup (once): Settings → Secrets and variables → Actions → Variables:
+#   NYC_PHOTOS_SYNC_ROLE_ARN  stack output SyncRoleArn
+#   NYC_PHOTOS_BUCKET         stack output BucketName
+#   NYC_PHOTOS_AWS_REGION     stack output BucketRegion
+# and Settings → Actions → General → "Allow GitHub Actions to create and
+# approve pull requests". Until the variables exist the job is skipped.
+
+on:
+  workflow_dispatch:
+    inputs:
+      galleries:
+        description: 'Gallery ids to sync, space-separated (blank = every gallery)'
+        required: false
+        default: ''
+      reshuffle:
+        description: 'Re-draw random previews (galleries with no 🔥 only)'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '43 11 * * *' # daily, 11:43 UTC
+
+concurrency:
+  group: nyc-photo-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  sync:
+    name: Sync galleries and S3 originals
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # The role only trusts main; skip cleanly elsewhere or before setup.
+    if: github.ref == 'refs/heads/main' && vars.NYC_PHOTOS_SYNC_ROLE_ARN != ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Assume the sync role (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.NYC_PHOTOS_SYNC_ROLE_ARN }}
+          aws-region: ${{ vars.NYC_PHOTOS_AWS_REGION }}
+          role-session-name: nyc-photo-sync-${{ github.run_id }}
+          role-duration-seconds: 3600
+
+      - name: Sync galleries
+        env:
+          NYC_PHOTOS_BUCKET: ${{ vars.NYC_PHOTOS_BUCKET }}
+          # Inputs pass through env, never interpolated into the script.
+          GALLERIES: ${{ inputs.galleries }}
+          RESHUFFLE: ${{ inputs.reshuffle && '--reshuffle' || '' }}
+        run: |
+          # Word-split the gallery list on purpose; the script rejects unknown ids.
+          # shellcheck disable=SC2086
+          node scripts/sync-nyc-photos.ts $GALLERIES $RESHUFFLE
+
+      - name: Open or refresh the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/nyc-photo-sync
+        run: |
+          if git diff --quiet -- src/content/nycPhotos; then
+            echo "No manifest changes."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BRANCH"
+          npm version patch --no-git-tag-version --ignore-scripts > /dev/null
+          git add src/content/nycPhotos package.json package-lock.json
+          git commit -q -m "Refresh NYC photo galleries" -m "Synced from the iCloud shared albums by the Sync NYC Photos workflow (run ${{ github.run_id }}). Originals for new photos are already in S3; originals of thumbs-down'd or removed photos have been deleted."
+          git push -q --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "Refresh NYC photo galleries" \
+              --body "Automated by the Sync NYC Photos workflow ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})). New photos' originals are already in S3, and originals of 👎'd or removed photos have been deleted; merging publishes the updated manifests. Each run force-pushes this branch from main, so it always holds the latest sync."
+          else
+            echo "Updated the open PR on $BRANCH."
+          fi
