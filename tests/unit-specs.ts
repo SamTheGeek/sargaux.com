@@ -23,6 +23,7 @@ export const UNIT_SPECS = [
   'login-geo-unit',
   'notion-rsvp',
   'nyc-photos-unit',
+  'photo-originals-unit',
   'rate-limit-unit',
   'registry-routing',
   'return-to-unit',

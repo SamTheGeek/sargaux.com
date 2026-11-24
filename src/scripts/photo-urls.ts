@@ -16,6 +16,8 @@
 export interface PhotoUrls {
   thumb: string;
   full: string;
+  /** Signed CloudFront URL for the download original, when the originals CDN is set up. */
+  original?: string;
 }
 
 interface Entry extends PhotoUrls {
@@ -90,11 +92,15 @@ async function fetchBatch(gallery: string, guids: string[]): Promise<void> {
       credentials: 'same-origin',
     });
     if (!res.ok) return;
-    const body = (await res.json()) as { photos?: Record<string, { thumb?: unknown; full?: unknown; ttl?: unknown }> };
+    const body = (await res.json()) as {
+      photos?: Record<string, { thumb?: unknown; full?: unknown; original?: unknown; ttl?: unknown }>;
+    };
     const now = Date.now();
     for (const [guid, p] of Object.entries(body.photos ?? {})) {
       if (typeof p.thumb !== 'string' || typeof p.full !== 'string' || typeof p.ttl !== 'number') continue;
-      cache.set(keyOf(gallery, guid), { thumb: p.thumb, full: p.full, until: now + p.ttl });
+      const entry: Entry = { thumb: p.thumb, full: p.full, until: now + p.ttl };
+      if (typeof p.original === 'string' && /^https:\/\//.test(p.original)) entry.original = p.original;
+      cache.set(keyOf(gallery, guid), entry);
     }
   } catch {
     // Offline, aborted by a navigation, or a bad response: callers fall back.
@@ -149,6 +155,18 @@ export async function fullUrlFor(item: HTMLElement): Promise<string | null> {
   if (!gallery || !guid) return fallback;
   const urls = await photoUrls(gallery, guid);
   return urls?.full ?? fallback;
+}
+
+/**
+ * The CDN URL for a photo's download original, or null when there isn't one
+ * (CDN not set up, or the batch failed): the caller then downloads through
+ * the photo's same-origin download endpoint.
+ */
+export async function originalUrlFor(item: HTMLElement): Promise<string | null> {
+  const gallery = item.closest<HTMLElement>('[data-photo-gallery]')?.dataset.photoGallery;
+  const guid = item.dataset.photoGuid;
+  if (!gallery || !guid) return null;
+  return (await photoUrls(gallery, guid))?.original ?? null;
 }
 
 /** Fetch URLs ahead of need (e.g. the lightbox's neighbours), without touching any tile. */

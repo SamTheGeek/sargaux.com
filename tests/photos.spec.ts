@@ -656,6 +656,145 @@ test.describe('Photo downloads — preparing state on touch devices', () => {
   });
 });
 
+/**
+ * Pretend the originals CDN is set up: every /urls answer gains an `original`
+ * on a stub host, which serves the same placeholder bytes as /download (or
+ * fails, with `fail`). Returns a log of CDN and /download requests.
+ */
+async function fakeCdnOriginals(page: Page, opts: { fail?: boolean; delayMs?: number } = {}) {
+  const log = { cdn: 0, site: 0 };
+  await page.route('**/api/photos/*/urls?*', async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { photos: Record<string, Record<string, unknown>> };
+    for (const [guid, p] of Object.entries(body.photos)) p.original = `https://cdn.sargaux.test/nyc/x/${guid}/o.jpg?Signature=s`;
+    await route.fulfill({ response: res, json: body });
+  });
+  await page.route('https://cdn.sargaux.test/**', async (route) => {
+    log.cdn++;
+    if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
+    if (opts.fail) return route.fulfill({ status: 403, headers: { 'access-control-allow-origin': '*' }, body: '' });
+    const guid = new URL(route.request().url()).pathname.split('/')[3];
+    const bytes = await (await page.request.get(`/api/photos/afterparty/${guid}/download`)).body();
+    return route.fulfill({
+      status: 200,
+      body: bytes,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'image/svg+xml', 'content-length': String(bytes.length) },
+    });
+  });
+  page.on('request', (req) => {
+    if (/\/api\/photos\/[^/]+\/[^/]+\/download$/.test(new URL(req.url()).pathname)) log.site++;
+  });
+  return log;
+}
+
+test.describe('Photo downloads — originals CDN on touch devices', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  async function stubShare(page: Page) {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __shared: Array<{ name: string }> };
+      w.__shared = [];
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (data: { files?: File[] }) => {
+          for (const f of data.files ?? []) w.__shared.push({ name: f.name });
+        },
+      });
+    });
+  }
+  const shared = (page: Page) => page.evaluate(() => (window as unknown as { __shared: Array<{ name: string }> }).__shared);
+
+  async function openPhoto(page: Page, n: number) {
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(n).tap();
+    await expect(page.locator('#photo-lightbox')).toHaveClass(/active/);
+  }
+
+  test('lingering fetches the original from the CDN quietly, and a tap shares it at once', async ({ page }) => {
+    await stubShare(page);
+    const log = await fakeCdnOriginals(page);
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    await expect.poll(() => log.cdn, { timeout: 5_000 }).toBe(1);
+    // A prefetch is silent: no ring until the guest asks.
+    await expect(download).toHaveAttribute('data-state', 'idle');
+    await page.waitForTimeout(300);
+
+    await download.tap();
+    await expect
+      .poll(() => shared(page))
+      .toEqual([expect.objectContaining({ name: expect.stringMatching(/^sargaux-nyc-afterparty-\d{3}\.svg$/) })]);
+    expect(log).toEqual({ cdn: 1, site: 0 });
+  });
+
+  test('a tap during the prefetch shows its progress and shares once when it lands', async ({ page }) => {
+    await stubShare(page);
+    const log = await fakeCdnOriginals(page, { delayMs: 1500 });
+    await openPhoto(page, 1);
+    const download = page.locator('.photo-lightbox-download');
+    await expect.poll(() => log.cdn, { timeout: 5_000 }).toBe(1);
+    await download.tap();
+    await expect(download).toHaveAttribute('data-state', 'loading');
+    await download.tap();
+    await expect.poll(() => shared(page).then((s) => s.length), { timeout: 10_000 }).toBe(1);
+    await page.waitForTimeout(300);
+    expect((await shared(page)).length).toBe(1);
+    expect(log).toEqual({ cdn: 1, site: 0 });
+  });
+
+  test('when the CDN fails, a tap downloads from the site instead', async ({ page }) => {
+    await stubShare(page);
+    const log = await fakeCdnOriginals(page, { fail: true });
+    await openPhoto(page, 1);
+    await expect.poll(() => log.cdn, { timeout: 5_000 }).toBe(1);
+    await expect(page.locator('.photo-lightbox-download')).toHaveAttribute('data-state', 'idle');
+    await page.locator('.photo-lightbox-download').tap();
+    await expect.poll(() => shared(page).then((s) => s.length), { timeout: 10_000 }).toBe(1);
+    expect(log).toEqual({ cdn: 1, site: 1 });
+  });
+
+  test('stepping away before the dwell ends fetches nothing', async ({ page }) => {
+    await stubShare(page);
+    const log = await fakeCdnOriginals(page);
+    await openPhoto(page, 1);
+    await page.locator('.photo-lightbox-close').tap();
+    await page.waitForTimeout(1500);
+    expect(log).toEqual({ cdn: 0, site: 0 });
+  });
+});
+
+test.describe('Photo downloads — originals CDN on desktop', () => {
+  test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
+
+  test('a click saves the CDN original under its gallery filename, never touching /download', async ({ page }) => {
+    const log = await fakeCdnOriginals(page);
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    await page.waitForTimeout(1000);
+    expect(log.cdn).toBe(0); // desktop never fetches ahead
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.photo-lightbox-download').click()]);
+    expect(dl.suggestedFilename()).toMatch(/^sargaux-nyc-afterparty-\d{3}\.svg$/);
+    expect(log).toEqual({ cdn: 1, site: 0 });
+  });
+
+  test('when the CDN fails on desktop, the click falls back to the site download', async ({ page }) => {
+    const log = await fakeCdnOriginals(page, { fail: true });
+    await login(page);
+    await page.goto('/nyc/photos/afterparty');
+    await page.locator('.photo-gallery-item').nth(1).click();
+    await expect(page.locator('.photo-lightbox-close')).toBeFocused();
+    await page.waitForTimeout(300);
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.photo-lightbox-download').click()]);
+    expect(dl.suggestedFilename()).toMatch(/^sargaux-nyc-afterparty-\d{3}\.svg$/);
+    expect(log).toEqual({ cdn: 1, site: 1 });
+  });
+});
+
 test.describe('Photo downloads — no preparing state on desktop', () => {
   test.skip(!weddingSiteEnabled, 'Wedding site must be enabled');
 

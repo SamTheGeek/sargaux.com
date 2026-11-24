@@ -54,7 +54,7 @@ const t = createTranslator(Astro.props.lang);
 </div>
 
 <script>
-  import { cachedPhotoUrls, fullUrlFor, loadTile, warmPhotoUrls } from '../scripts/photo-urls';
+  import { cachedPhotoUrls, fullUrlFor, loadTile, originalUrlFor, warmPhotoUrls } from '../scripts/photo-urls';
 
   interface Dimensions {
     width: number;
@@ -83,15 +83,24 @@ const t = createTranslator(Astro.props.lang);
 
   // ── Download / save ─────────────────────────────────────────
   // On phones and tablets the button opens the share sheet ("Save Image" puts
-  // the photo in Photos). Desktop keeps the plain <a download>.
+  // the photo in Photos); on desktop it saves the file.
   //
-  // The original is fetched only when the guest taps: originals are ~3 MB and
-  // stream through our own origin, so fetching every photo a guest lingered on
-  // spent Netlify bandwidth on photos nobody saved. iOS only allows
-  // navigator.share() during the tap's user activation, which a slow download
-  // can outlast. Then the button waits as "ready" with the file in hand, and a
-  // second tap shares it at once. It never re-fetches as a fallback, which
-  // would download the same original twice.
+  // Where the original comes from:
+  // - The originals CDN (a signed CloudFront URL from the photo batch, see
+  //   src/lib/cloudfront-sign.ts), when it's set up. Phones then fetch the
+  //   current photo's original quietly after PREFETCH_DWELL_MS, so a tap can
+  //   open the share sheet at once. That costs no Netlify bandwidth. Desktop
+  //   fetches it on click and saves it under its gallery filename (a
+  //   cross-origin <a download> can't be renamed).
+  // - Otherwise our own /download endpoint, and only on a tap: those bytes
+  //   are Netlify bandwidth, so they're never fetched ahead. Desktop keeps
+  //   the plain same-origin <a download>.
+  //
+  // iOS only allows navigator.share() during the tap's user activation, which
+  // a slow download can outlast. Then the button waits as "ready" with the
+  // file in hand, and a second tap shares it at once. Nothing re-fetches a
+  // file it already has; a CDN failure falls back to /download once.
+  const PREFETCH_DWELL_MS = 600;
   const shareFiles = (() => {
     try {
       return (
@@ -104,14 +113,27 @@ const t = createTranslator(Astro.props.lang);
     }
   })();
 
-  /** The current photo's original, fetched on a tap and kept for re-taps. */
+  /** The current photo's original, fetched for a tap (or ahead of one) and kept for re-taps. */
   interface PendingDownload {
+    /** The photo's same-origin download path: identifies the photo. */
     href: string;
+    /** Where the bytes come from: a CDN URL, or `href` itself. */
+    source: string;
     controller: AbortController;
     promise: Promise<File | null>;
     file: File | null;
+    /** False while a prefetch runs unseen; a tap makes it show progress. */
+    visible: boolean;
+    /** Bytes expected and received so far, for showing a prefetch's progress on a tap. */
+    total?: number;
+    received?: number;
+    /** A tap is already waiting to share this file; further taps don't queue another share. */
+    shareStarted?: boolean;
   }
   let pending: PendingDownload | null = null;
+  let prefetchTimer: number | undefined;
+  /** Photos whose CDN original failed this page view: they use /download from now on. */
+  const cdnFailed = new Set<string>();
 
   function bind() {
     lightbox = document.getElementById('photo-lightbox');
@@ -268,6 +290,7 @@ const t = createTranslator(Astro.props.lang);
       close?.focus({ preventScroll: true });
     }
     void loadFull(activeItem, token);
+    void schedulePrefetch(activeItem, token);
   }
 
   function closeLightbox() {
@@ -341,6 +364,7 @@ const t = createTranslator(Astro.props.lang);
   }
 
   function cancelDownload() {
+    window.clearTimeout(prefetchTimer);
     pending?.controller.abort();
     pending = null;
     setDownloadState('idle');
@@ -382,19 +406,29 @@ const t = createTranslator(Astro.props.lang);
     });
   }
 
-  function startDownload(href: string, name: string): PendingDownload {
+  /** The CDN URL for the open photo's original, if the batch gave one and it hasn't failed. */
+  function cdnSourceFor(item: HTMLAnchorElement | null, href: string): string | null {
+    if (!item || cdnFailed.has(href)) return null;
+    const gallery = item.closest<HTMLElement>('[data-photo-gallery]')?.dataset.photoGallery;
+    const guid = item.dataset.photoGuid;
+    return (gallery && guid && cachedPhotoUrls(gallery, guid)?.original) || null;
+  }
+
+  function startDownload(href: string, source: string, name: string, visible: boolean): PendingDownload {
     const controller = new AbortController();
-    const entry: PendingDownload = { href, controller, file: null, promise: Promise.resolve(null) };
+    const entry: PendingDownload = { href, source, controller, file: null, promise: Promise.resolve(null), visible };
     const current = () => pending === entry && downloadLink?.getAttribute('href') === href;
     pending = entry;
-    setDownloadState('loading', { indeterminate: true });
+    if (visible) setDownloadState('loading', { indeterminate: true });
     entry.promise = (async () => {
       try {
-        const res = await fetch(href, { signal: controller.signal, credentials: 'same-origin' });
+        const sameOrigin = source === href;
+        const res = await fetch(source, { signal: controller.signal, credentials: sameOrigin ? 'same-origin' : 'omit' });
         if (!res.ok || !res.body) throw new Error(`download ${res.status}`);
         const total = Number(res.headers.get('Content-Length')) || 0;
+        entry.total = total;
         // With a length the ring shows real progress; without one it spins.
-        if (current()) setDownloadState('loading', { indeterminate: total === 0 });
+        if (current() && entry.visible) setDownloadState('loading', { indeterminate: total === 0 });
         const reader = res.body.getReader();
         const chunks: BlobPart[] = [];
         let received = 0;
@@ -403,20 +437,51 @@ const t = createTranslator(Astro.props.lang);
           if (done) break;
           chunks.push(value);
           received += value.byteLength;
-          if (total && current()) reportProgress(received / total);
+          entry.received = received;
+          if (total && current() && entry.visible) reportProgress(received / total);
         }
         const type = res.headers.get('Content-Type') || 'image/jpeg';
         entry.file = new File(chunks, name, { type });
         return entry.file;
       } catch {
-        if (current()) {
-          pending = null;
-          setDownloadState('idle');
+        if (controller.signal.aborted || !current()) return null;
+        if (source !== href) {
+          // The CDN let us down (expired URL, missing object): remember, and
+          // if a guest is waiting, fetch it from the site instead.
+          cdnFailed.add(href);
+          if (entry.visible) return startDownload(href, href, name, true).promise;
         }
+        pending = null;
+        setDownloadState('idle');
         return null;
       }
     })();
     return entry;
+  }
+
+  /** A tap on a photo whose prefetch is still running: show its progress so far. */
+  function reveal(entry: PendingDownload) {
+    if (entry.visible) return;
+    entry.visible = true;
+    setDownloadState('loading', { indeterminate: !entry.total });
+    if (entry.total) reportProgress((entry.received ?? 0) / entry.total);
+  }
+
+  /** Phones with a CDN original: fetch it once the guest has stayed on the photo a moment. */
+  async function schedulePrefetch(item: HTMLAnchorElement, token: number) {
+    if (!shareFiles || !downloadLink) return;
+    const href = item.dataset.downloadSrc;
+    if (!href || pending?.href === href || cdnFailed.has(href)) return;
+    await originalUrlFor(item);
+    if (token !== loadToken || activeItem !== item) return;
+    const source = cdnSourceFor(item, href);
+    if (!source) return;
+    window.clearTimeout(prefetchTimer);
+    prefetchTimer = window.setTimeout(() => {
+      if (token !== loadToken || activeItem !== item || pending?.href === href) return;
+      if (downloadLink?.getAttribute('href') !== href) return;
+      startDownload(href, source, downloadLink.download, false);
+    }, PREFETCH_DWELL_MS);
   }
 
   /** Save a file already in memory without asking the server for it again. */
@@ -456,21 +521,54 @@ const t = createTranslator(Astro.props.lang);
   }
 
   async function onDownloadClick(e: MouseEvent) {
-    if (!shareFiles || !downloadLink) return; // desktop: the native download
+    if (!downloadLink) return;
     const href = downloadLink.getAttribute('href');
     if (!href) return;
+    const name = downloadLink.download;
+
+    if (!shareFiles) {
+      // Desktop: a CDN original is fetched and saved under its gallery
+      // filename; without one, the native same-origin <a download> runs.
+      const source = cdnSourceFor(activeItem, href);
+      if (!source) return;
+      e.preventDefault();
+      if (pending?.href === href) {
+        if (pending.file) saveBlob(pending.file);
+        return;
+      }
+      cancelDownload();
+      const entry = startDownload(href, source, name, true);
+      const file = await entry.promise;
+      if (file && pending?.href === href) {
+        setDownloadState('ready');
+        saveBlob(file);
+      }
+      return;
+    }
+
     e.preventDefault();
     if (pending?.href === href) {
       // Already in hand (a re-tap, or the tap the "ready" state asked for): share now.
       if (pending.file) void share(pending.file);
-      // Still downloading: this tap is the newer activation, so the share
-      // made when the file lands goes through on it.
+      // Still downloading (a tap during the prefetch, or an extra tap): this
+      // tap is the newer activation, so the share made when it lands goes
+      // through on it.
+      else {
+        const entry = pending;
+        reveal(entry);
+        const file = await entry.promise;
+        if (file && pending?.href === href && !entry.shareStarted) {
+          entry.shareStarted = true;
+          await share(file);
+        }
+      }
       return;
     }
     cancelDownload();
-    const entry = startDownload(href, downloadLink.download);
+    const entry = startDownload(href, cdnSourceFor(activeItem, href) ?? href, name, true);
+    entry.shareStarted = true;
     const file = await entry.promise;
-    if (file && pending === entry && downloadLink.getAttribute('href') === href) await share(file);
+    if (file && pending?.href === href) await share(file);
   }
 
   // ── Image loading & geometry ────────────────────────────────
