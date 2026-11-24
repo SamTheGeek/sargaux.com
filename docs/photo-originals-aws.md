@@ -53,9 +53,9 @@ your own browser.
    ```bash
    aws cloudformation describe-stacks --stack-name sargaux-photo-originals --query "Stacks[0].Outputs" --output table
    ```
-5. Make an access key for the sync user (`SyncUserName` from the outputs):
+5. Make an access key for the sync user (this looks up `SyncUserName` from the stack):
    ```bash
-   aws iam create-access-key --user-name SYNC_USER_NAME
+   aws iam create-access-key --user-name "$(aws cloudformation describe-stacks --stack-name sargaux-photo-originals --query "Stacks[0].Outputs[?OutputKey=='SyncUserName'].OutputValue" --output text)"
    ```
 
 ### 2. Netlify (the site's side)
