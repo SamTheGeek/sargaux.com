@@ -70,7 +70,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Assume the sync role (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ vars.NYC_PHOTOS_SYNC_ROLE_ARN }}
           aws-region: ${{ vars.NYC_PHOTOS_AWS_REGION }}

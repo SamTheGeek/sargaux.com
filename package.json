@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
@@ -25,23 +25,23 @@
     "verify": "npm run build && npm test"
   },
   "dependencies": {
-    "@astrojs/netlify": "^8.2.12",
-    "@astrojs/node": "^11.1.11",
-    "@netlify/blobs": "^11.1.7",
-    "@notionhq/client": "^5.31.0",
-    "astro": "^7.4.7",
-    "resend": "^6.37.0"
+    "@astrojs/netlify": "^8.2.14",
+    "@astrojs/node": "^11.1.14",
+    "@netlify/blobs": "^11.1.10",
+    "@notionhq/client": "^5.31.1",
+    "astro": "^7.4.13",
+    "resend": "^6.39.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
-    "@netlify/edge-functions": "^4.0.3",
-    "@netlify/functions": "^6.1.0",
-    "@playwright/test": "^1.65.0",
+    "@netlify/edge-functions": "^4.0.4",
+    "@netlify/functions": "^6.1.1",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^24.19.2",
     "aws4fetch": "1.0.20",
-    "axe-core": "^4.14.0",
-    "chrome-launcher": "1.2.2",
+    "axe-core": "^4.14.1",
+    "chrome-launcher": "1.2.3",
     "exceljs": "^4.4.0",
     "lighthouse": "13.6.0",
     "node-gyp": "^13.1.0",
@@ -55,6 +55,15 @@
     "sharp": "^0.35.5",
     "unstorage": {
       "@netlify/blobs": "$@netlify/blobs"
+    },
+    "exceljs": {
+      "uuid": "^11.1.0",
+      "unzipper": "^0.12.5",
+      "fast-csv": "^5.0.8",
+      "archiver": "^8.0.0"
     }
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }
