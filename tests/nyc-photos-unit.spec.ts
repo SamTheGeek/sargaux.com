@@ -20,7 +20,7 @@ import {
   type ManifestPhoto,
   type ShareHandle,
 } from '../src/lib/icloud-stream';
-import { NYC_GALLERY_CONFIG, downloadFilename } from '../src/content/nycGalleryConfig';
+import { NYC_GALLERY_CONFIG, albumTokenFor, downloadFilename } from '../src/content/nycGalleryConfig';
 import {
   CACHE_TTL_MS,
   LOOKUP_CHUNK,
@@ -626,5 +626,29 @@ test.describe('batched URL resolution (one function call per batch of tiles)', (
     expect(usableUntil(t0)).toBe(t0 + URL_LIFETIME_MS - URL_SAFETY_MS);
     const soon = `https://cvws-h2.icloud-content.com/B/X/photo.jpg?e=${Math.floor((t0 + 5 * 60_000) / 1000)}`;
     expect(usableUntil(t0, soon)).toBe(t0 + 5 * 60_000 - URL_SAFETY_MS);
+  });
+});
+
+test.describe('album tokens come from the environment', () => {
+  test('albumTokenFor reads, trims, and treats blank as unset', () => {
+    const cfg = { tokenEnv: 'NYC_ALBUM_TOKEN_AFTERPARTY' };
+    expect(albumTokenFor(cfg, { NYC_ALBUM_TOKEN_AFTERPARTY: ' 0abcDEF123 ' })).toBe('0abcDEF123');
+    expect(albumTokenFor(cfg, { NYC_ALBUM_TOKEN_AFTERPARTY: '   ' })).toBeNull();
+    expect(albumTokenFor(cfg, {})).toBeNull();
+    expect(albumTokenFor(cfg, undefined)).toBeNull();
+  });
+
+  test('every gallery names its own env var', () => {
+    const names = NYC_GALLERY_CONFIG.map((g) => g.tokenEnv);
+    expect(new Set(names).size).toBe(names.length);
+    for (const g of NYC_GALLERY_CONFIG) expect(g.tokenEnv).toBe(`NYC_ALBUM_TOKEN_${g.id.toUpperCase()}`);
+  });
+
+  test('no album token is committed in the gallery config', () => {
+    // A token opens the whole iCloud album (👎'd photos included) without the
+    // site's login. The repo is public, so tokens live only in Netlify/GitHub.
+    const source = readFileSync(join(process.cwd(), 'src/content/nycGalleryConfig.ts'), 'utf8');
+    expect(source).not.toMatch(/albumToken\s*:\s*['"]/);
+    expect(source).not.toMatch(/['"]0[A-Za-z0-9_-]{20,}['"]/);
   });
 });

@@ -4,11 +4,18 @@ import { hasGalleryPass } from '../../../../lib/gallery-pass';
 import { features } from '../../../../config/features';
 import { getNycGallery, isPhotoTestFixture } from '../../../../content/nycGalleries';
 import { MAX_BATCH, resolveManyPhotoUrls, usableUntil } from '../../../../lib/icloud-photos';
+import { originalsCdn, signedOriginalUrl } from '../../../../lib/cloudfront-sign';
 
 /** One photo's URLs as the gallery page uses them. */
 export interface BatchEntry {
   thumb: string;
   full: string;
+  /**
+   * A signed CloudFront URL for the download original, when the originals CDN
+   * is configured (src/lib/cloudfront-sign.ts). Absent otherwise, and the page
+   * downloads through /api/photos/{gallery}/{guid}/download instead.
+   */
+  original?: string;
   /**
    * How much longer (ms) the page may use these URLs, counted from when it
    * receives them. Relative, so a guest's wrong clock can't stretch it.
@@ -41,7 +48,8 @@ const json = (body: BatchResponse | null, status: number) =>
  * in that gallery's committed manifest. Unknown GUIDs are left out rather
  * than failing the batch, as are photos iCloud didn't answer for; the page
  * falls back to the redirect endpoint for any photo missing from the answer.
- * Download originals are not included: downloads stay same-origin.
+ * Download originals come as signed CloudFront URLs when that CDN is set up,
+ * so a phone can fetch one ahead of a tap without spending Netlify bandwidth.
  */
 export const GET: APIRoute = async ({ params, url, cookies }) => {
   if (!features.nyc.photoGallery) return json(null, 404);
@@ -68,6 +76,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
   if (!gallery.albumToken) return json(null, 404);
   if (photos.length === 0) return json(out, 200);
 
+  const cdn = originalsCdn();
   const resolved = await resolveManyPhotoUrls(gallery.albumToken, photos);
   for (const p of photos) {
     const r = resolved.get(p.guid);
@@ -76,7 +85,8 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
     if (!r || !thumb || !full) continue;
     const until = Math.min(usableUntil(r.fetchedAt, thumb), usableUntil(r.fetchedAt, full));
     const ttl = until - Date.now();
-    if (ttl > 0) out.photos[p.guid] = { thumb, full, ttl };
+    if (ttl <= 0) continue;
+    out.photos[p.guid] = cdn ? { thumb, full, ttl, original: signedOriginalUrl(cdn, gallery.id, p) } : { thumb, full, ttl };
   }
   return json(out, 200);
 };

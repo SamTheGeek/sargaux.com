@@ -1,7 +1,7 @@
 {
   "name": "sargaux.com",
   "type": "module",
-  "version": "2.2.4",
+  "version": "2.2.6",
   "scripts": {
     "predev": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
@@ -39,6 +39,7 @@
     "@netlify/functions": "^6.1.0",
     "@playwright/test": "^1.65.0",
     "@types/node": "^24.19.2",
+    "aws4fetch": "1.0.20",
     "axe-core": "^4.14.0",
     "chrome-launcher": "1.2.2",
     "exceljs": "^4.4.0",

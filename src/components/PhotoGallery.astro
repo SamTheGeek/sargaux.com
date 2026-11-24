@@ -72,6 +72,8 @@ const sizes = '(max-width: 768px) calc(100vw - 2rem), (max-width: 1280px) calc(5
       class="photo-gallery-item"
       href={`/nyc/photos/${gallery}?photo=${encodeURIComponent(photo.guid)}`}
       data-photo-guid={photo.guid}
+      data-astro-prefetch="false"
+     
       data-full-src={src(photo.guid, 'full')}
       data-full-width={photo.full.width}
       data-full-height={photo.full.height}
