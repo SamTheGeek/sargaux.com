@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Private storage + CDN for the NYC gallery photo originals (sargaux.com).
+  A private S3 bucket, read only by CloudFront, which serves objects only to
+  signed URLs issued by the site. Plus an IAM user limited to the bucket's
+  nyc/ prefix for scripts/sync-nyc-photos.ts. See docs/photo-originals-aws.md.
+
+Parameters:
+  PublicKeyPem:
+    Type: String
+    Description: >-
+      PEM public key (-----BEGIN PUBLIC KEY----- ...) of the RSA key pair whose
+      private half the site signs CloudFront URLs with.
+
+Resources:
+  PhotoBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  SigningPublicKey:
+    Type: AWS::CloudFront::PublicKey
+    Properties:
+      PublicKeyConfig:
+        Name: !Sub '${AWS::StackName}-signing-key'
+        CallerReference: !Sub '${AWS::StackName}-signing-key'
+        EncodedKey: !Ref PublicKeyPem
+
+  SigningKeyGroup:
+    Type: AWS::CloudFront::KeyGroup
+    Properties:
+      KeyGroupConfig:
+        Name: !Sub '${AWS::StackName}-signers'
+        Items:
+          - !Ref SigningPublicKey
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: sargaux.com NYC photo originals
+        Enabled: true
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: photos
+            DomainName: !GetAtt PhotoBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: photos
+          ViewerProtocolPolicy: https-only
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: false
+          # Managed-CachingOptimized: query strings (the URL signature) stay out of the cache key.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # Managed-SimpleCORS: Access-Control-Allow-Origin: *. Safe, since every
+          # object still needs a signed URL; lets deploy previews fetch too.
+          ResponseHeadersPolicyId: 60669652-455b-4ae9-85a4-c4c02393f86c
+          TrustedKeyGroups:
+            - !Ref SigningKeyGroup
+
+  PhotoBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PhotoBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CloudFrontReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${PhotoBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+  SyncUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: nyc-photo-sync
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ListNycPrefix
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt PhotoBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: ['nyc/*']
+              - Sid: WriteNycObjects
+                Effect: Allow
+                Action: [s3:PutObject, s3:DeleteObject, s3:GetObject]
+                Resource: !Sub '${PhotoBucket.Arn}/nyc/*'
+
+Outputs:
+  BucketName:
+    Description: NYC_PHOTOS_BUCKET for the sync script
+    Value: !Ref PhotoBucket
+  BucketRegion:
+    Description: AWS_REGION for the sync script
+    Value: !Ref AWS::Region
+  DistributionDomain:
+    Description: NYC_PHOTOS_CDN_DOMAIN for Netlify
+    Value: !GetAtt Distribution.DomainName
+  SigningKeyId:
+    Description: CLOUDFRONT_KEY_PAIR_ID for Netlify
+    Value: !Ref SigningPublicKey
+  SyncUserName:
+    Description: Create the sync script's access key for this user
+    Value: !Ref SyncUser
